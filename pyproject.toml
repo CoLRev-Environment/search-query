@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "search-query"
+version = "0.1.0"
+description = "Package for managing literature search queries."
+authors = ["Katharina Ernst <katharina-maria.ernst@stud.uni-bamberg.de>", "Gerit Wagner <gerit.wagner@uni-bamberg.de>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "search_query"}]
+include = ["LICENSE", "README.md"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.2"
+pylint = "^3.0.0"
+
+[tool.mypy]
+python_version = 3.8
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "requests.*",
+    "yaml.*",
+    "pkg_resources.*",
+]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
