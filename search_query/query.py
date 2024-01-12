@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Query class."""
 from __future__ import annotations
-from binarytree import tree
+from tree import Tree
 from node import Node
 
-
-# class QueryTree:
-# ...
 
 
 class Query:
@@ -15,36 +12,58 @@ class Query:
         self,
     ) -> None:
         pass
+    
+    #validate query string input 
+    def validateQueryString(self, query):
+        if (query.startswith("!") | query.startswith("&") | query.startswith("$") | query.startswith("%") | query.startswith("*")):
+            return False
+        else:
+            return True
+        
 
-    def buildParseList(self, *, query_string):
-        query_tree = tree('')
-        query_list = query_string.split()
-        node_list = list()
-        for elem in query_list:
-            newNode= Node()
-            newNode.value=elem
-            if(elem.equals("OR") or elem.equals("AND") or elem.equals("NOT")):
-                newNode.operator=True
-            else:
-                newNode.operator=False
-            node_list.append(newNode)
-        return node_list
-
+    #parse the query provided by the user, build nodes&tree structure
     def parseQuery(self, query):
-        if(query.startswith("OR")):
-            newNode=Node("**OR**",True, None, None)
-            childrenList=query[query.find("["):]
-            print(newNode.value)
-            print(childrenList)
 
-        if(query.startswith("NOT")):
-            newNode=Node("**NOT**",True)
-        if(query.startswith("AND")):
-            newNode=Node("**AND**",True)
+        if ("=" in query):
+            #nested structure
+            subqueries=query.split(";")
+            #TO-DO handle nested structures
 
-
+        else:
+            #basic structure - one operator, n children
+            root= self.createOperatorNode(query)
+            queryTree = Tree(root)
+            childrenStr = query[query.find("["):]
+            childrenList = childrenStr[1:-1].split(", ")
+            self.createTermNodes(childrenList,queryTree)
+            
+            queryTree.root.printNode()
         return 
-
+    
+    #build operator Nodes, print Error message
+    def createOperatorNode(self, query) -> Node:
+        operator =""
+        
+        if(query.startswith("OR")):
+            operator="OR"       
+        elif(query.startswith("NOT")):
+            operator="NOT"
+        elif(query.startswith("AND")):
+            operator="AND"
+        else:
+            print("Error: not a valid query structure")
+            return
+        node= Node(operator, True)
+        return node
+    
+    #build children term nodes, append to tree
+    def createTermNodes(self, childrenList, tree) -> None:
+        for item in childrenList:
+            termNode = Node(item, False)
+            tree.root.children.append(termNode)    
+        return
+    
+    
     def buildQueryTree (self, node_list):
         return
         

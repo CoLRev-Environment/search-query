@@ -16,8 +16,12 @@ def main():
                 + "If you need to use nested structures please enter them in the following way: \n" 
                 + "query1 = AND[dog, cat]; OR[query1, elephant]\n")
             query =Query()
-            query.parseQuery(data)
-            
+            if(query.validateQueryString(data)):
+                data.replace(" ","")
+                query.parseQuery(data)
+            else:
+                print("The search string you entered is invalid. Please review the instructions and try again!")
+                data="search"            
             run=False
 
         #perform translating operation
