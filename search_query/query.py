@@ -27,7 +27,7 @@ class Query:
         if ("=" in query):
             #nested structure
             subqueries=query.split(";")
-            #TO-DO handle nested structures
+            #TODO handle nested structures
 
         else:
             #basic structure - one operator, n children
@@ -62,14 +62,15 @@ class Query:
             termNode = Node(item, False)
             tree.root.children.append(termNode)    
         return
-    
-    
-    def buildQueryTree (self, node_list):
-        return
         
-
-
-    def generate(self) -> str:
+    #TODO implement translating logic
+    def translateDB1(self) -> str:
+        # parameter: database/syntax?
+        query_str = ""
+        return query_str
+    
+    #TODO implement translating logic    
+    def translateDB2(self) -> str:
         # parameter: database/syntax?
         query_str = ""
         return query_str
