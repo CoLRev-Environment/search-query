@@ -6,55 +6,42 @@ from node import Node
 
 
 
-class Query:
-
-    def __init__(
-        self,
-    ) -> None:
-        pass
+class OR_Query:
     
-    #validate query string input 
-    def validateQueryString(self, query):
-        if (query.startswith("!") | query.startswith("&") | query.startswith("$") | query.startswith("%") | query.startswith("*")):
+    qt=Tree(None)
+    qs=""
+    nestedQueries=[]
+
+    def __init__(self, queryString, nestedQueries):
+        self.qs = queryString
+        self.nestedQueries = nestedQueries
+        self.qt = self.parseQuery(self.qs,self.nestedQueries)
+        
+    
+    #validate query string (qs) input 
+    def validateQueryString(self, qs):
+        if (qs.startswith("!") | qs.startswith("&") | qs.startswith("$") | qs.startswith("%") | qs.startswith("*")):
             return False
         else:
             return True
         
-
-    #parse the query provided by the user, build nodes&tree structure
-    def parseQuery(self, query):
-
-        if ("=" in query):
-            #nested structure
-            subqueries=query.split(";")
-            #TODO handle nested structures
-
-        else:
-            #basic structure - one operator, n children
-            root= self.createOperatorNode(query)
-            queryTree = Tree(root)
-            childrenStr = query[query.find("["):]
-            childrenList = childrenStr[1:-1].split(", ")
-            self.createTermNodes(childrenList,queryTree)
-            
-            queryTree.root.printNode()
-        return 
-    
-    #build operator Nodes, print Error message
-    def createOperatorNode(self, query) -> Node:
-        operator =""
         
-        if(query.startswith("OR")):
-            operator="OR"       
-        elif(query.startswith("NOT")):
-            operator="NOT"
-        elif(query.startswith("AND")):
-            operator="AND"
-        else:
-            print("Error: not a valid query structure")
-            return
-        node= Node(operator, True)
-        return node
+    #parse the query provided, build nodes&tree structure
+    def parseQuery(self, qs, queries)-> Tree:
+        root = Node("OR",True)
+        qt = Tree(root)
+        
+        if(qs!=""):
+            childrenString = qs[self.qs.find("["):]
+            childrenList = childrenString[1:-1].split(", ")
+            self.createTermNodes(childrenList,qt)
+        
+        if(queries!=[]):
+            for q in queries:
+                qt.children.append(q.qt.root)
+        
+        return qt
+    
     
     #build children term nodes, append to tree
     def createTermNodes(self, childrenList, tree) -> None:
@@ -79,6 +66,41 @@ class Query:
         # generate linked_list from query_tree
         linked_list = {}
         return linked_list
+    
+class AND_Query:
+        
+    qt=Tree(None)
+    qs="QueryString"
+    nestedQueries=[]
+        
+    def __init__(self,qs, nestedQueries):
+        self.qs = qs
+        self.nestedQueries = nestedQueries
+        self.qt = self.parseQuery(self.qs,self.nestedQueries)
+        
+    def parseQuery(self, qs, queries)-> Tree:
+        root = Node("AND",True)
+        qt = Tree(root)
+        
+        if(qs!=""):
+            childrenString = qs[self.qs.find("["):]
+            childrenList = childrenString[1:-1].split(", ")
+            self.createTermNodes(childrenList,qt)
+        
+        if(queries!=[]):
+            for q in queries:
+                qt.root.children.append(q.qt.root)
+        
+        return qt
+     
+    def createTermNodes(self, childrenList, qt) -> None:
+        for item in childrenList:
+            termNode = Node(item, False)
+            qt.root.children.append(termNode)    
+        return   
+    
+        
+        
     
 
     
