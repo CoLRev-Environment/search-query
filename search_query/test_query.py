@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 """Tests for the Query"""
-from query import OR_Query,AND_Query
+from query import Query
+from or_query import OR_Query
+from and_query import AND_Query
 from tree import Tree
 from node import Node
 
 import unittest
 
 class TestQuery(unittest.TestCase):
-
-    def test1 (self)->None:
-        query1= OR_Query("OR[dog, cat]",[])
-        self.assertEqual(query1.qs,"OR[dog, cat]")
+        
         
     def testNestedeStructure(self) ->None:
-        queryPets= OR_Query("OR[dog, cat]",[])
-        queryAnimals=OR_Query("OR[elephant, giraffe]",[])
-        queryComplete=AND_Query("",[queryPets,queryAnimals])
+        queryPets = OR_Query("[dog, cat]",[])
+            
+        queryComplete = AND_Query("[elephant]",[queryPets])
+        
         for c in queryComplete.qt.root.children:
             print(c.value)
-        self.assertEqual(queryComplete.qt.root.value, queryPets.qt.root.value)
+        
+        self.assertEqual(queryComplete.qt.root.children[1].value, queryPets.qt.root.value)
         return
 
     """Example:

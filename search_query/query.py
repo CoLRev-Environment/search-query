@@ -6,16 +6,12 @@ from node import Node
 
 
 
-class OR_Query:
-    
-    qt=Tree(None)
-    qs=""
-    nestedQueries=[]
+class Query:
 
     def __init__(self, queryString, nestedQueries):
         self.qs = queryString
         self.nestedQueries = nestedQueries
-        self.qt = self.parseQuery(self.qs,self.nestedQueries)
+        self.parseQuery()
         
     
     #validate query string (qs) input 
@@ -27,27 +23,26 @@ class OR_Query:
         
         
     #parse the query provided, build nodes&tree structure
-    def parseQuery(self, qs, queries)-> Tree:
-        root = Node("OR",True)
-        qt = Tree(root)
+    def parseQuery(self):
         
-        if(qs!=""):
-            childrenString = qs[self.qs.find("["):]
+        #append Strings provided in Query Strings (qs) as children to current Query
+        if(self.qs!=""):
+            childrenString = self.qs[self.qs.find("["):]
             childrenList = childrenString[1:-1].split(", ")
-            self.createTermNodes(childrenList,qt)
+            self.createTermNodes(childrenList)
         
-        if(queries!=[]):
-            for q in queries:
-                qt.children.append(q.qt.root)
+        #append root of every Query in nestedQueries as a child to the current Query
+        if(self.nestedQueries!=[]):
+            for q in self.nestedQueries:
+                self.qt.root.children.append(q.qt.root)
         
-        return qt
-    
+        return
     
     #build children term nodes, append to tree
-    def createTermNodes(self, childrenList, tree) -> None:
+    def createTermNodes(self, childrenList) -> None:
         for item in childrenList:
             termNode = Node(item, False)
-            tree.root.children.append(termNode)    
+            self.qt.root.children.append(termNode)    
         return
         
     #TODO implement translating logic
@@ -66,42 +61,3 @@ class OR_Query:
         # generate linked_list from query_tree
         linked_list = {}
         return linked_list
-    
-class AND_Query:
-        
-    qt=Tree(None)
-    qs="QueryString"
-    nestedQueries=[]
-        
-    def __init__(self,qs, nestedQueries):
-        self.qs = qs
-        self.nestedQueries = nestedQueries
-        self.qt = self.parseQuery(self.qs,self.nestedQueries)
-        
-    def parseQuery(self, qs, queries)-> Tree:
-        root = Node("AND",True)
-        qt = Tree(root)
-        
-        if(qs!=""):
-            childrenString = qs[self.qs.find("["):]
-            childrenList = childrenString[1:-1].split(", ")
-            self.createTermNodes(childrenList,qt)
-        
-        if(queries!=[]):
-            for q in queries:
-                qt.root.children.append(q.qt.root)
-        
-        return qt
-     
-    def createTermNodes(self, childrenList, qt) -> None:
-        for item in childrenList:
-            termNode = Node(item, False)
-            qt.root.children.append(termNode)    
-        return   
-    
-        
-        
-    
-
-    
-    
