@@ -10,6 +10,6 @@ class OR_Query(Query):
         self.qs = queryString
         self.nestedQueries = nestedQueries
         self.qt=Tree(Node("OR",True))
-        self.parseQuery()
+        self.buildQueryTree()
         
     

@@ -9,12 +9,29 @@ from node import Node
 import unittest
 
 class TestQuery(unittest.TestCase):
+    
+    def testSimpleQuery(self) -> None:
+        querySimple = OR_Query("[dog, cat]",[])
+        self.assertEqual("dog", querySimple.qt.root.children[0].value)
+        self.assertEqual("cat", querySimple.qt.root.children[1].value)
+        self.assertEqual("OR", querySimple.qt.root.value)
+        return
         
         
-    def testNestedeStructure(self) ->None:
-        queryPets = OR_Query("[dog, cat]",[])
-            
+    def testNestedStructure(self) ->None:
+        queryPets = OR_Query("[dog, cat]",[])    
         queryComplete = AND_Query("[elephant]",[queryPets])
+        
+        for c in queryComplete.qt.root.children:
+            print(c.value)
+        
+        self.assertEqual(queryComplete.qt.root.children[1].value, queryPets.qt.root.value)
+        return
+    
+    def testNestedStructureMultipleQueries(self) ->None:
+        queryPets = OR_Query("[dog, cat]",[])    
+        queryAnimals = OR_Query("[elephant, giraffe]",[])  
+        queryComplete = AND_Query("",[queryPets, queryAnimals])
         
         for c in queryComplete.qt.root.children:
             print(c.value)

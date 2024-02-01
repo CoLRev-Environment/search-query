@@ -9,21 +9,34 @@ from node import Node
 class Query:
 
     def __init__(self, queryString, nestedQueries):
-        self.qs = queryString
-        self.nestedQueries = nestedQueries
-        self.parseQuery()
-        
+        if self.validateInput(): 
+            self.qs = queryString
+            self.nestedQueries = nestedQueries
+            self.buildQueryTree()
+        else:
+            raise Exception("Error: Invalid Input")
+    
+    #validate input to test if a valid tree structure can be guaranteed
+    def validateInput(self) -> bool:
+        if self in self.nestedQueries:
+            return False
+        if self.validateQueryString() == False:
+            return False
+        else:
+            return True 
+              
     
     #validate query string (qs) input 
-    def validateQueryString(self, qs):
-        if (qs.startswith("!") | qs.startswith("&") | qs.startswith("$") | qs.startswith("%") | qs.startswith("*")):
+    #TODO test ob eingabe zum Graph führt 
+    def validateQueryString(self) -> bool:
+        if (self.qs.startswith("!") | self.qs.startswith("&") | self.qs.startswith("$") | self.qs.startswith("%") | self.qs.startswith("*")):
             return False
         else:
             return True
         
         
     #parse the query provided, build nodes&tree structure
-    def parseQuery(self):
+    def buildQueryTree(self):
         
         #append Strings provided in Query Strings (qs) as children to current Query
         if(self.qs!=""):
