@@ -9,27 +9,27 @@ from node import Node
 class Query:
 
     def __init__(self, queryString, nestedQueries):
-        if self.validateInput(): 
+        if self.validateInput(queryString, nestedQueries) == True: 
             self.qs = queryString
             self.nestedQueries = nestedQueries
             self.buildQueryTree()
         else:
-            raise Exception("Error: Invalid Input")
+            raise Exception("Invalid Input")
     
     #validate input to test if a valid tree structure can be guaranteed
-    def validateInput(self) -> bool:
-        if self in self.nestedQueries:
+    def validateInput(self, qs ,nestedQueries) -> bool:
+        if self in nestedQueries:
             return False
-        if self.validateQueryString() == False:
+        if self.validateQueryString(qs) == False:
             return False
-        else:
-            return True 
+    
+        return True 
               
     
     #validate query string (qs) input 
     #TODO test ob eingabe zum Graph führt 
-    def validateQueryString(self) -> bool:
-        if (self.qs.startswith("!") | self.qs.startswith("&") | self.qs.startswith("$") | self.qs.startswith("%") | self.qs.startswith("*")):
+    def validateQueryString(self, qs) -> bool:
+        if (qs.startswith("!") | qs.startswith("&") | qs.startswith("$") | qs.startswith("%") | qs.startswith("*")):
             return False
         else:
             return True
@@ -58,6 +58,20 @@ class Query:
             self.qt.root.children.append(termNode)    
         return
         
+    def printQuery(self, startNode) -> str:
+        result= ""
+        result = f"{result}{startNode.value}"
+        if (startNode.children == []):
+            return result
+        else:
+            result= f"{result}["
+            for child in startNode.children:
+                result=f"{result}{self.printQuery(child)}"
+                if child != startNode.children[-1]:
+                    result=f"{result}, "
+        return f"{result}]"
+            
+    
     #TODO implement translating logic
     def translateDB1(self) -> str:
         # parameter: database/syntax?

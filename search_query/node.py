@@ -1,7 +1,5 @@
 class Node:
     
-    
-    
     def __init__(self, value, operator):
         self.value=value
         self.operator=operator

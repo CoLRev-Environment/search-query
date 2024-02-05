@@ -33,13 +33,28 @@ class TestQuery(unittest.TestCase):
         queryAnimals = OR_Query("[elephant, giraffe]",[])  
         queryComplete = AND_Query("",[queryPets, queryAnimals])
         
-        for c in queryComplete.qt.root.children:
-            print(c.value)
+        print(f"PRINT: {queryComplete.printQuery(queryComplete.qt.root)}")
+            
         
         self.assertEqual(queryComplete.qt.root.children[1].value, queryPets.qt.root.value)
         return
+    
+    def testPrintQuery(self) -> None:
+        queryAI=OR_Query("[ai, artificial intelligence, machine learning]",[])
+        queryHealth=OR_Query("[health care, medicine]", [])
+        queryEthics=OR_Query("[ethic*, moral*]", [])
+        queryValues=AND_Query("[values]", [queryEthics])
+        queryComplete=AND_Query("", [queryAI, queryHealth, queryValues])
+        
+        
+        return
+    
+    """def testValidInput(self)->None:
+        queryPets = OR_Query("!dog, cat",[])
+        print(queryPets.qs)
+        return
 
-    """Example:
+    Example:
     def test_parse() -> None:
         query = search_query.query.Query()
         query.parse(query_string="(digital OR online) AND work")
