@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """Tests for the Query"""
-from query import Query
-from or_query import OR_Query
-from and_query import AND_Query
-from tree import Tree
-from node import Node
+from search_query.query import Query
+from search_query.or_query import OR_Query
+from search_query.and_query import AND_Query
+from search_query.tree import Tree
+from search_query.node import Node
 
 import unittest
 
@@ -46,6 +46,7 @@ class TestQuery(unittest.TestCase):
         queryValues=AND_Query("[values]", [queryEthics])
         queryComplete=AND_Query("", [queryAI, queryHealth, queryValues])
         
+        print(f"PRINT: {queryComplete.printQuery(queryComplete.qt.root)}")
         
         return
     

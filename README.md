@@ -3,7 +3,7 @@
 A python package for literature search queries.
 
 
-To use the queries, run: 
+To use the queries, run:
 
 ```
 import search_query.query
