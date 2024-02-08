@@ -6,9 +6,9 @@ from search_query.tree import Tree
 
 
 class OR_Query(Query):
-    def __init__(self, queryString, nestedQueries):
-        if self.validateInput(queryString, nestedQueries) is True:
-            self.qs = queryString
+    def __init__(self, qs, nestedQueries):
+        if self.validateInput(qs, nestedQueries) is True:
+            self.qs = qs
             self.nestedQueries = nestedQueries
             self.qt = Tree(Node("OR", True))
             self.buildQueryTree()

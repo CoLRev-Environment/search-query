@@ -7,7 +7,10 @@ from search_query.tree import Tree
 
 class AND_Query(Query):
     def __init__(self, qs, nestedQueries):
-        self.qs = qs
-        self.nestedQueries = nestedQueries
-        self.qt = Tree(Node("AND", True))
-        self.buildQueryTree()
+        if self.validateInput(qs, nestedQueries) is True:
+            self.qs = qs
+            self.nestedQueries = nestedQueries
+            self.qt = Tree(Node("AND", True))
+            self.buildQueryTree()
+        else:
+            raise Exception("Error: Invalid Input")
