@@ -5,11 +5,19 @@ from search_query.tree import Tree
 
 class AND_Query(Query):
     
-    def __init__(self, qs, nestedQueries):
-        if self.validateInput(qs, nestedQueries) is True:
-            self.qs = qs
-            self.nestedQueries = nestedQueries
-            self.qt = Tree(Node("NOT", True))
-            self.buildQueryTree()
+    def __init__(self, qs, nestedQueries, searchField):
+        self.qs = qs
+        self.nestedQueries = nestedQueries
+        self.searchField = searchField
+        self.qt = Tree(Node("NOT", True))
+        self.buildQueryTree()
+        if(self.validTreeStructure(self.qt.root)):
+            self.qt.removeAllMarks()
+            for nq in nestedQueries:
+                nq.qt.removeAllMarks()
+            print("Valid Tree")
         else:
+            self=None
+            raise Exception("Error: Invalid Tree Structure")
+        if self.validateInput(qs, nestedQueries) is False:
             raise Exception("Error: Invalid Input")

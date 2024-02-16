@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 """Tests for the Query"""
-from search_query.query import Query
 from search_query.or_query import OR_Query
 from search_query.and_query import AND_Query
-from search_query.tree import Tree
-from search_query.node import Node
 
 import unittest
 
 class TestQuery(unittest.TestCase):
+    
+    def setUp(self) -> None:
+        self.queryAI=OR_Query("[ai, artificial intelligence, machine learning]",[])
+        self.queryHealth=OR_Query("[health care, medicine]", [])
+        self.queryEthics=OR_Query("[ethic*, moral*]", [])
+        self.queryValues=AND_Query("[values]", [self.queryEthics])
+        self.queryComplete=AND_Query("", [self.queryAI, self.queryHealth, self.queryValues])
+        
+        return
+    
     
     def testSimpleQuery(self) -> None:
         querySimple = OR_Query("[dog, cat]",[])
@@ -40,30 +47,15 @@ class TestQuery(unittest.TestCase):
         return
     
     def testPrintQuery(self) -> None:
-        queryAI=OR_Query("[ai, artificial intelligence, machine learning]",[])
-        queryHealth=OR_Query("[health care, medicine]", [])
-        queryEthics=OR_Query("[ethic*, moral*]", [])
-        queryValues=AND_Query("[values]", [queryEthics])
-        queryComplete=AND_Query("", [queryAI, queryHealth, queryValues])
         
-        print(f"PRINT: {queryComplete.printQuery(queryComplete.qt.root)}")
+        self.assertEqual("AND[OR[ai, artificial intelligence, machine learning], OR[health care, medicine], AND[values, OR[ethic*, moral*]]]",
+                         self.queryComplete.printQuery(self.queryComplete.qt.root),
+                         "Print Statement is not equal!")
         
         return
     
-    """def testValidInput(self)->None:
-        queryPets = OR_Query("!dog, cat",[])
-        print(queryPets.qs)
+    def testTreeStructure(self):
         return
-
-    Example:
-    def test_parse() -> None:
-        query = search_query.query.Query()
-        query.parse(query_string="(digital OR online) AND work")
-
-        actual_list = query.get_linked_list()
-
-        expected_list = {1: "digital", 2: "online", 3: "1 OR 2", 4: "work", 5: "3 AND 4"}
-        assert actual_list == expected_list"""
-
+       
 if __name__=='__main__':
 	unittest.main()

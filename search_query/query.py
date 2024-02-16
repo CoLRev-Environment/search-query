@@ -1,41 +1,23 @@
 #!/usr/bin/env python3
 """Query class."""
 from __future__ import annotations
-
 from search_query.node import Node
 
 
+
 class Query:
-    def __init__(self, queryString, nestedQueries):
-        if self.validateInput(queryString, nestedQueries) is True:
-            self.qs = queryString
-            self.nestedQueries = nestedQueries
-            self.buildQueryTree()
+    
+    # validate input to test if a valid tree structure can be guaranteed    
+    def validTreeStructure(self, startNode) -> bool:
+        if(startNode.marked):
+            print ("invalid Tree")
+            return False
         else:
-            raise Exception("Invalid Input")
-
-    # validate input to test if a valid tree structure can be guaranteed
-    def validateInput(self, qs, nestedQueries) -> bool:
-        if self in nestedQueries:
-            return False
-        if self.validateQueryString(qs) is False:
-            return False
-
+            startNode.marked=True
+            for c in startNode.children:
+                self.validTreeStructure(c)
         return True
-
-    # validate query string (qs) input
-    # TODO test ob eingabe zum Graph führt
-    def validateQueryString(self, qs) -> bool:
-        if (
-            qs.startswith("!")
-            | qs.startswith("&")
-            | qs.startswith("$")
-            | qs.startswith("%")
-            | qs.startswith("*")
-        ):
-            return False
-        else:
-            return True
+        
 
     # parse the query provided, build nodes&tree structure
     def buildQueryTree(self):
@@ -43,7 +25,7 @@ class Query:
         if self.qs != "":
             childrenString = self.qs[self.qs.find("[") :]
             childrenList = childrenString[1:-1].split(", ")
-            self.createTermNodes(childrenList)
+            self.createTermNodes(childrenList, self.searchField)
 
         # append root of every Query in nestedQueries as a child to the current Query
         if self.nestedQueries != []:
@@ -53,12 +35,13 @@ class Query:
         return
 
     # build children term nodes, append to tree
-    def createTermNodes(self, childrenList) -> None:
+    def createTermNodes(self, childrenList, searchField) -> None:
         for item in childrenList:
-            termNode = Node(item, False)
+            termNode = Node(item, False, searchField)
             self.qt.root.children.append(termNode)
         return
 
+    #prints query in PreNotation
     def printQuery(self, startNode) -> str:
         result = ""
         result = f"{result}{startNode.value}"
@@ -73,7 +56,7 @@ class Query:
         return f"{result}]"
 
     # TODO implement translating logic
-    def translateDB1(self) -> str:
+    def translateWebOfScience(self) -> str:
         # parameter: database/syntax?
         query_str = ""
         return query_str
