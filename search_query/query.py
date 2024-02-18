@@ -56,8 +56,9 @@ class Query:
         return f"{result}]"
 
     # TODO implement translating logic
-    #((AK=("AI"OR "Artificial Intelligence" OR "Machine learning" NOT robot*)) AND AK=("health care" OR medicine)) AND AB=(moral* OR ethic*)
+    #((AK=("AI" OR "Artificial Intelligence" OR "Machine learning" NOT robot*)) AND AK=("health care" OR medicine)) AND AB=(moral* OR ethic*)
     # AND[OR["AI", "Artificial Intelligence", "Machine Learning", NOT[robot*]], OR["health care", "medicine"], OR[ethic*, moral*]]
+    #(('AI' OR 'Artificial Intelligence' OR 'Machine Learning' OR (NOT robot* )) AND ('health care' OR 'medicine' )AND (ethic* OR moral* ))
     def translateWebOfScience(self):
         value= {
             "translatedQuery" : f"{self.printQuery(self.qt.root)}",
@@ -66,26 +67,30 @@ class Query:
         }
         
         return json.dumps(value)
-    
+        
     def printQueryWoS(self, startNode):
         result=""
         for c in startNode.children:
+            
+            #startNode is not an operator
             if(c.operator==False):
-                if(c!=startNode.children[-1]):
-                    result=f"{result}{c.value} {startNode.value} "
+                
+                #current element is first child element --> operator does not need to be appended again
+                if((c==startNode.children[0] )& (c!=startNode.children[-1])):
+                    result=f"{result}{c.value} " 
+                
+                #current element is not firstlast child    
                 else:
-                   result=f"{result}{c.value} " 
-                
-                
+                    result=f"{result}{startNode.value} {c.value} "     
+            
+            #startNode is operator Node   
             else:
-                if(c!=startNode.children[-1]):
-                    result=f"{result} {self.printQueryWoS(c)} {startNode.value}"
+                if((c==startNode.children[0] )& (c!=startNode.children[-1])):
+                    result=f"{result}{self.printQueryWoS(c)} "
                 else:
-                    result=f"{result} {self.printQueryWoS(c)})"
-                    
+                    result=f"{result}{startNode.value} {self.printQueryWoS(c)}"
                 
-        return f"{result}"
-        
+        return f"({result})"
     
     def printWoS(self, startNode):
        return  self.printQueryWoS(startNode)
