@@ -2,6 +2,7 @@
 """Query class."""
 from __future__ import annotations
 from search_query.node import Node
+import json
 
 
 
@@ -10,7 +11,6 @@ class Query:
     # validate input to test if a valid tree structure can be guaranteed    
     def validTreeStructure(self, startNode) -> bool:
         if(startNode.marked):
-            print ("invalid Tree")
             return False
         else:
             startNode.marked=True
@@ -56,11 +56,41 @@ class Query:
         return f"{result}]"
 
     # TODO implement translating logic
-    def translateWebOfScience(self) -> str:
-        # parameter: database/syntax?
-        query_str = ""
-        return query_str
-
+    #((AK=("AI"OR "Artificial Intelligence" OR "Machine learning" NOT robot*)) AND AK=("health care" OR medicine)) AND AB=(moral* OR ethic*)
+    # AND[OR["AI", "Artificial Intelligence", "Machine Learning", NOT[robot*]], OR["health care", "medicine"], OR[ethic*, moral*]]
+    def translateWebOfScience(self):
+        value= {
+            "translatedQuery" : f"{self.printQuery(self.qt.root)}",
+            "annotations" : "hihi",
+            "API":"possible"    
+        }
+        
+        return json.dumps(value)
+    
+    def printQueryWoS(self, startNode):
+        result=""
+        for c in startNode.children:
+            if(c.operator==False):
+                if(c!=startNode.children[-1]):
+                    result=f"{result}{c.value} {startNode.value} "
+                else:
+                   result=f"{result}{c.value} " 
+                
+                
+            else:
+                if(c!=startNode.children[-1]):
+                    result=f"{result} {self.printQueryWoS(c)} {startNode.value}"
+                else:
+                    result=f"{result} {self.printQueryWoS(c)})"
+                    
+                
+        return f"{result}"
+        
+    
+    def printWoS(self, startNode):
+       return  self.printQueryWoS(startNode)
+    
+    
     # TODO implement translating logic
     def translateDB2(self) -> str:
         # parameter: database/syntax?

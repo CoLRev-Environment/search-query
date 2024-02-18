@@ -10,18 +10,16 @@ class AND_Query(Query):
         self.qs = qs
         self.nestedQueries = nestedQueries
         self.searchField = searchField
-        self.qt = Tree(Node("AND", True))
+        self.qt = Tree(Node("AND", True, searchField))
         self.buildQueryTree()
         if(self.validTreeStructure(self.qt.root)):
             self.qt.removeAllMarks()
             for nq in nestedQueries:
                 nq.qt.removeAllMarks()
-            print("Valid Tree")
         else:
             print("else was executed")
             raise Exception("Error: Invalid Tree Structure")
-        if self.validateInput(qs, nestedQueries) is False:
-            raise Exception("Error: Invalid Input")
+        
         
     
     

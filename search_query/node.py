@@ -1,7 +1,7 @@
 class Node:
     def __init__(self, value, operator, searchField):
-        self.validateValue()
         self.value = value
+        self.validateValue()
         self.operator = operator
         self.children = []
         self.marked=False
