@@ -6,7 +6,7 @@ class Node:
         self.children = []
         self.marked=False
         if operator== False:
-            if(searchField):
+            if(searchField!=""):
                 self.searchField = searchField
             else:
                 self.searchField = "keywords"
