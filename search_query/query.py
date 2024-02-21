@@ -61,7 +61,7 @@ class Query:
         data= {
             "database":"Web of Science - Core Collection",
             "url":"https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery" : f"{self.get_searchField_WoS(self.searchField)}=({self.printQueryWoS(self.qt.root)})",
+            "translatedQuery" : f"({self.get_searchField_WoS(self.searchField)}={self.printQueryWoS(self.qt.root)})",
             "annotations" : "Paste the translated string without quotation marks into the advanced search free text field.",
             "API":"possible"    
         }
@@ -79,7 +79,7 @@ class Query:
                 
                 #current element is first but not only child element --> operator does not need to be appended again
                 if((c==startNode.children[0]) & (c!=startNode.children[-1])):
-                    result=f"{result}({c.value}" 
+                    result=f"{result}{self.get_searchField_WoS(c.searchField)}=({c.value}" 
                 
                 #current element is not first child    
                 else:
