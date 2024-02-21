@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """Query class."""
 from __future__ import annotations
-from search_query.node import Node
-import json
+
 import datetime
+import json
+
+from search_query.node import Node
+
 
 class Query:
-    
-    # validate input to test if a valid tree structure can be guaranteed    
+    # validate input to test if a valid tree structure can be guaranteed
     def validTreeStructure(self, startNode) -> bool:
-        if(startNode.marked):
+        if startNode.marked:
             return False
         else:
-            startNode.marked=True
-            for c in startNode.children:
-                self.validTreeStructure(c)
+            startNode.marked = True
+            if startNode.children!=[]:
+                for c in startNode.children:
+                    return self.validTreeStructure(c)
         return True
-        
 
     # parse the query provided, build nodes&tree structure
     def buildQueryTree(self):
@@ -40,7 +42,7 @@ class Query:
             self.qt.root.children.append(termNode)
         return
 
-    #prints query in PreNotation
+    # prints query in PreNotation
     def printQuery(self, startNode) -> str:
         result = ""
         result = f"{result}{startNode.value}"
@@ -54,122 +56,130 @@ class Query:
                     result = f"{result}, "
         return f"{result}]"
 
-
-    #translating method for Web of Science database
-    #creates a JSON file with translation information at ../translations/WoS/translationWoS_ddMMYYYY_HH:MM 
+    # translating method for Web of Science database
+    # creates a JSON file with translation information at ../translations/WoS/translationWoS_ddMMYYYY_HH:MM
     def translateWebOfScience(self):
-        data= {
-            "database":"Web of Science - Core Collection",
-            "url":"https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery" : f"({self.get_searchField_WoS(self.searchField)}={self.printQueryWoS(self.qt.root)})",
-            "annotations" : "Paste the translated string without quotation marks into the advanced search free text field.",
-            "API":"possible"    
+        data = {
+            "database": "Web of Science - Core Collection",
+            "url": "https://www.webofscience.com/wos/woscc/advanced-search",
+            "translatedQuery": f"({self.get_searchField_WoS(self.searchField)}={self.printQueryWoS(self.qt.root)})",
+            "annotations": "Paste the translated string without quotation marks into the advanced search free text field.",
+            "API": "possible",
         }
-        
-        with open(f'../translations/WoS/translationWoS_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json', 'w') as f:
+
+        with open(
+            f'../translations/WoS/translationWoS_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
+            "w",
+        ) as f:
             json.dump(data, f)
-    
-    #actual translation logic for WoS  
+
+    # actual translation logic for WoS
     def printQueryWoS(self, startNode):
-        result=""
+        result = ""
         for c in startNode.children:
-            
-            #startNode is not an operator
-            if(c.operator==False):
-                
-                #current element is first but not only child element --> operator does not need to be appended again
-                if((c==startNode.children[0]) & (c!=startNode.children[-1])):
-                    result=f"{result}{self.get_searchField_WoS(c.searchField)}=({c.value}" 
-                
-                #current element is not first child    
+            # startNode is not an operator
+            if c.operator is False:
+                # current element is first but not only child element --> operator does not need to be appended again
+                if (c == startNode.children[0]) & (c != startNode.children[-1]):
+                    result = (
+                        f"{result}{self.get_searchField_WoS(c.searchField)}=({c.value}"
+                    )
+
+                # current element is not first child
                 else:
-                    result=f"{result} {startNode.value} {c.value}"  
-                
-                #current Element is last Element -> closing parenthesis    
-                if (c==startNode.children[-1]):
-                   result=f"{result})" 
-            
-            #startNode is operator Node   
+                    result = f"{result} {startNode.value} {c.value}"
+
+                # current Element is last Element -> closing parenthesis
+                if c == startNode.children[-1]:
+                    result = f"{result})"
+
+            # startNode is operator Node
             else:
-                #current element is NOT Operator -> no parenthesis in WoS 
-                if(c.value=="NOT"):
-                    result=f"{result}{self.printQueryWoS(c)}"
-                
-                elif(((c==startNode.children[0] )& (c!=startNode.children[-1]))):
-                    result=f"{result}({self.printQueryWoS(c)}"
+                # current element is NOT Operator -> no parenthesis in WoS
+                if c.value == "NOT":
+                    result = f"{result}{self.printQueryWoS(c)}"
+
+                elif (c == startNode.children[0]) & (c != startNode.children[-1]):
+                    result = f"{result}({self.printQueryWoS(c)}"
                 else:
-                    result=f"{result} {startNode.value} {self.printQueryWoS(c)}"
-                    
-                if ((c==startNode.children[-1]) & (c.value!="NOT")):
-                   result=f"{result})"                
+                    result = f"{result} {startNode.value} {self.printQueryWoS(c)}"
+
+                if (c == startNode.children[-1]) & (c.value != "NOT"):
+                    result = f"{result})"
         return f"{result}"
-    
-    #translating method for Web of Science database
-    #creates a JSON file with translation information at ../translations/IEEE/translationIEEE_ddMMYYYY_HH:MM 
+
+    # translating method for Web of Science database
+    # creates a JSON file with translation information at ../translations/IEEE/translationIEEE_ddMMYYYY_HH:MM
     def translateIEEE(self):
-        data= {
-            "database":"IEEE Xplore",
-            "url":"https://ieeexplore.ieee.org/search/advanced/command",
-            "translatedQuery" : f"{self.printQueryIEEE(self.qt.root)}",
-            "annotations" : "Paste the translated string without quotation marks into the command search free text field.",
-            "API":"possible"    
+        data = {
+            "database": "IEEE Xplore",
+            "url": "https://ieeexplore.ieee.org/search/advanced/command",
+            "translatedQuery": f"{self.printQueryIEEE(self.qt.root)}",
+            "annotations": "Paste the translated string without quotation marks into the command search free text field.",
+            "API": "possible",
         }
-        
-        with open(f'../translations/IEEE/translationIEEE_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json', 'w') as f:
+
+        with open(
+            f'../translations/IEEE/translationIEEE_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
+            "w",
+        ) as f:
             json.dump(data, f)
-            
-    #actual translation logic for IEEE
+
+    # actual translation logic for IEEE
     def printQueryIEEE(self, startNode):
-        result=""
+        result = ""
         for index, c in enumerate(startNode.children):
-            
-            #startNode is not an operator
-            if(c.operator==False):
-                
-                #current element is first but not only child element --> operator does not need to be appended again
-                if((c==startNode.children[0]) & (c!=startNode.children[-1])):
-                    result=f"{result}('{c.searchField}':{c.value}" 
-                    if (startNode.children[index+1].operator==True):
-                        result=f"({result})" 
-                
-                #current element is not first child    
+            # startNode is not an operator
+            if c.operator is False:
+                # current element is first but not only child element --> operator does not need to be appended again
+                if (c == startNode.children[0]) & (c != startNode.children[-1]):
+                    result = f"{result}('{c.searchField}':{c.value}"
+                    if startNode.children[index + 1].operator is True:
+                        result = f"({result})"
+
+                # current element is not first child
                 else:
-                    result=f"{result} {startNode.value} '{c.searchField}':{c.value}" 
-                    if (c!=startNode.children[-1]):        
-                        if (startNode.children[index+1].operator==True):
-                            result=f"({result})"
-                
-                #current element is last Element -> closing parenthesis    
-                if (c==startNode.children[-1]):
-                   result=f"{result})" 
-            
-            #startNode is operator Node   
+                    result = f"{result} {startNode.value} '{c.searchField}':{c.value}"
+                    if c != startNode.children[-1]:
+                        if startNode.children[index + 1].operator is True:
+                            result = f"({result})"
+
+                # current element is last Element -> closing parenthesis
+                if c == startNode.children[-1]:
+                    result = f"{result})"
+
+            # startNode is operator Node
             else:
-                #current element is NOT operator -> no parenthesis in WoS 
-                if(c.value=="NOT"):
-                    result=f"{result}{self.printQueryIEEE(c)}"
-                
-                #current Element is OR/AND operator:
-                elif(((c==startNode.children[0] )& (c!=startNode.children[-1]))):
-                    result=f"{result}{self.printQueryIEEE(c)}"
+                # current element is NOT operator -> no parenthesis in WoS
+                if c.value == "NOT":
+                    result = f"{result}{self.printQueryIEEE(c)}"
+
+                # current Element is OR/AND operator:
+                elif (c == startNode.children[0]) & (c != startNode.children[-1]):
+                    result = f"{result}{self.printQueryIEEE(c)}"
                 else:
-                    result=f"{result} {startNode.value} {self.printQueryIEEE(c)}"
-                                   
+                    result = f"{result} {startNode.value} {self.printQueryIEEE(c)}"
+
         return f"{result}"
-    
-    def get_searchField_WoS (self, sf) -> str:
-    
-        if sf=="Author Keywords": return "AK"
-        if sf=="Abstract": return "AB"
-        if sf=="Author": return "AU"
-        if sf=="DOI": return "DO" 
-        if sf=="ISBN/ISSN": return "IS"
-        if sf=="Publisher": return "PUBL"
-        if sf=="Publication Title": return "SO"
-        if sf=="Title": return "TI"
-        
-    
-    
+
+    def get_searchField_WoS(self, sf) -> str:
+        if sf == "Author Keywords":
+            return "AK"
+        if sf == "Abstract":
+            return "AB"
+        if sf == "Author":
+            return "AU"
+        if sf == "DOI":
+            return "DO"
+        if sf == "ISBN/ISSN":
+            return "IS"
+        if sf == "Publisher":
+            return "PUBL"
+        if sf == "Publication Title":
+            return "SO"
+        if sf == "Title":
+            return "TI"
+
     def get_linked_list(self) -> dict:
         # generate linked_list from query_tree
         linked_list = {}

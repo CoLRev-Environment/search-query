@@ -12,10 +12,9 @@ class OR_Query(Query):
         self.searchField = searchField
         self.qt = Tree(Node("OR", True, searchField))
         self.buildQueryTree()
-        if(self.validTreeStructure(self.qt.root)):
+        if self.validTreeStructure(self.qt.root):
             self.qt.removeAllMarks()
             for nq in nestedQueries:
                 nq.qt.removeAllMarks()
         else:
             raise Exception("Error: Invalid Tree Structure")
-        

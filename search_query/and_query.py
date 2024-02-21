@@ -12,14 +12,9 @@ class AND_Query(Query):
         self.searchField = searchField
         self.qt = Tree(Node("AND", True, searchField))
         self.buildQueryTree()
-        if(self.validTreeStructure(self.qt.root)):
+        if self.validTreeStructure(self.qt.root):
             self.qt.removeAllMarks()
             for nq in nestedQueries:
                 nq.qt.removeAllMarks()
         else:
-            print("else was executed")
             raise Exception("Error: Invalid Tree Structure")
-        
-        
-    
-    
