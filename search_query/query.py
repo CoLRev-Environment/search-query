@@ -61,7 +61,7 @@ class Query:
         data= {
             "database":"Web of Science - Core Collection",
             "url":"https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery" : f"{self.printQueryWoS(self.qt.root)}",
+            "translatedQuery" : f"{self.get_searchField_WoS(self.searchField)}=({self.printQueryWoS(self.qt.root)})",
             "annotations" : "Paste the translated string without quotation marks into the advanced search free text field.",
             "API":"possible"    
         }
@@ -156,6 +156,19 @@ class Query:
                     result=f"{result} {startNode.value} {self.printQueryIEEE(c)}"
                                    
         return f"{result}"
+    
+    def get_searchField_WoS (self, sf) -> str:
+    
+        if sf=="Author Keywords": return "AK"
+        if sf=="Abstract": return "AB"
+        if sf=="Author": return "AU"
+        if sf=="DOI": return "DO" 
+        if sf=="ISBN/ISSN": return "IS"
+        if sf=="Publisher": return "PUBL"
+        if sf=="Publication Title": return "SO"
+        if sf=="Title": return "TI"
+        
+    
     
     def get_linked_list(self) -> dict:
         # generate linked_list from query_tree

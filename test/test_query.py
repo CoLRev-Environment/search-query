@@ -17,48 +17,9 @@ class TestQuery(unittest.TestCase):
         
         return
     
-    
-    """def testSimpleQuery(self) -> None:
-        querySimple = OR_Query("[dog, cat]",[])
-        self.assertEqual("dog", querySimple.qt.root.children[0].value)
-        self.assertEqual("cat", querySimple.qt.root.children[1].value)
-        self.assertEqual("OR", querySimple.qt.root.value)
-        return
-        
-        
-    def testNestedStructure(self) ->None:
-        queryPets = OR_Query("[dog, cat]",[])    
-        queryComplete = AND_Query("[elephant]",[queryPets])
-        
-        for c in queryComplete.qt.root.children:
-            print(c.value)
-        
-        self.assertEqual(queryComplete.qt.root.children[1].value, queryPets.qt.root.value)
-        return
-    
-    def testNestedStructureMultipleQueries(self) ->None:
-        queryPets = OR_Query("[dog, cat]",[])    
-        queryAnimals = OR_Query("[elephant, giraffe]",[])  
-        queryComplete = AND_Query("",[queryPets, queryAnimals])
-        
-        print(f"PRINT: {queryComplete.printQuery(queryComplete.qt.root)}")
-            
-        
-        self.assertEqual(queryComplete.qt.root.children[1].value, queryPets.qt.root.value)
-        return
-    
-    def testPrintQuery(self) -> None:
-        
-        
-        self.queryComplete.printQuery(self.queryComplete.qt.root)
-        
-        
-        return"""
-    
     def testJSONWoS(self):
-        print(self.queryComplete.translateWebOfScience())
-        print(self.queryComplete.translateIEEE())
-        print(self.queryComplete.printQuery(self.queryComplete.qt.root))
+        
+        self.queryComplete.translateWebOfScience()
         print("TRANSLATED WOS: "+self.queryComplete.printQueryWoS(self.queryComplete.qt.root))
         print("TRANSLATED IEEE: "+self.queryComplete.printQueryIEEE(self.queryComplete.qt.root))
         
