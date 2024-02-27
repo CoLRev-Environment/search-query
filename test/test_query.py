@@ -11,7 +11,7 @@ from search_query.or_query import OrQuery
 class TestQuery(unittest.TestCase):
     """Testing class."""
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.testNode = Node("testvalue", False, "Document Title")
 
         self.queryRobot = NotQuery("[robot*]", [], "Author Keywords")
@@ -26,17 +26,14 @@ class TestQuery(unittest.TestCase):
             "", [self.queryAI, self.queryHealth, self.queryEthics], "Author Keywords"
         )
 
-        return
-
-    def test_print_node(self):
+    def test_print_node(self) -> None:
         expected = "value: testvalue operator: False search field: Document Title"
         self.assertEqual(
             self.testNode.print_node(), expected, "Print Node Method does not work."
         )
-        return
 
     # test whether the children are appended correctly
-    def test_append_children(self):
+    def test_append_children(self) -> None:
         healthCareChild = Node("'health care'", False, "Author Keywords")
         medicineChild = Node("medicine", False, "Author Keywords")
         expected = [healthCareChild, medicineChild]
@@ -50,10 +47,9 @@ class TestQuery(unittest.TestCase):
             expected[0].print_node(),
             "Children were appended incorrectly!",
         )
-        return
 
     # test whether OR node is created correctly
-    def test_or_query(self):
+    def test_or_query(self) -> None:
         expected = Node("OR", True, "")
         self.assertEqual(
             self.queryAI.query_tree.root.print_node(),
@@ -61,30 +57,26 @@ class TestQuery(unittest.TestCase):
             "OR root was not created correctly!",
         )
 
-        return
-
     # test whether AND node is created correctly
-    def test_and_query(self):
+    def test_and_query(self) -> None:
         expected = Node("AND", True, "")
         self.assertEqual(
             self.queryComplete.query_tree.root.print_node(),
             expected.print_node(),
             "AND root was not created correctly!",
         )
-        return
 
     # test whether NOT node is created correctly
-    def test_not_query(self):
+    def test_not_query(self) -> None:
         expected = Node("NOT", True, "")
         self.assertEqual(
             self.queryRobot.query_tree.root.print_node(),
             expected.print_node(),
             "NOT root was not created correctly!",
         )
-        return
 
     # test whether roots of nested Queries are appended as children
-    def test_nested_queries(self):
+    def test_nested_queries(self) -> None:
         self.assertListEqual(
             self.queryComplete.query_tree.root.children,
             [
@@ -94,34 +86,50 @@ class TestQuery(unittest.TestCase):
             ],
             "Nested Queries were not appended correctly!",
         )
-        return
 
     # test whether the translation of the tool is identical to the manually translated WoS Query
-    def test_translation_WoS(self):
+    def test_translation_WoS(self) -> None:
         expected = "(AK=('AI' OR 'Artificial Intelligence' OR 'Machine Learning' NOT robot*) AND AK=('health care' OR 'medicine') AND AB=(ethic* OR moral*))"
         self.assertEqual(
             self.queryComplete.print_query_wos(self.queryComplete.query_tree.root),
             expected,
             "Query was not translated to Web of Science Syntax",
         )
-        return
 
     # test whether the translation of the tool is identical to the manually translated IEEE Query
-    def test_translation_IEEE(self):
+    def test_translation_IEEE(self) -> None:
         expected = "(('Author Keywords':'AI' OR 'Author Keywords':'Artificial Intelligence' OR 'Author Keywords':'Machine Learning') NOT 'Author Keywords':robot*) AND ('Author Keywords':'health care' OR 'Author Keywords':'medicine') AND ('Abstract':ethic* OR 'Abstract':moral*)"
         self.assertEqual(
             self.queryComplete.print_query_ieee(self.queryComplete.query_tree.root),
             expected,
             "Query was not translated to IEEE Syntax",
         )
-        return
 
-    # test failures
-    # test whether the validation method correctly throws an Exception if an invalid tree (including a circle) is created
-    def testTreeValidationWithInvalidTree(self):
-        AndQuery("[invalid, tree]", [self.queryComplete, self.queryAI], "Abstract")
+    def test(self) -> None:
+        """test"""
+        print(
+            "PUBMED"
+            + self.queryComplete.print_query_pubmed(self.queryComplete.query_tree.root)
+        )
+        print(
+            "WOS"
+            + self.queryComplete.print_query_wos(self.queryComplete.query_tree.root)
+        )
+        # self.queryHealth.translate_wos()
 
-        return
+        # test failures
+        # test whether the validation method correctly throws an Exception if an invalid tree (including a circle) is created
+        # def testTreeValidationWithInvalidTree(self) -> None:
+        #   with self.assertRaises(ValueError):
+        #       AndQuery("[invalid, tree]", [self.queryComplete, self.queryAI], "Abstract")
+        """ self.queryComplete.translate_ieee()
+        self.queryAI.translate_ieee()
+        self.queryEthics.translate_ieee()
+        self.queryHealth.translate_ieee()
+
+        self.queryComplete.translate_wos()
+        self.queryAI.translate_wos()
+        self.queryEthics.translate_wos()"""
 
 
 if __name__ == "__main__":

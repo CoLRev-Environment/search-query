@@ -30,17 +30,16 @@ class Query:
                 return self.valid_tree_structure(child)
         return True
 
-
-    def build_query_tree(self):
+    def build_query_tree(self) -> None:
         """parse the query provided, build nodes&tree structure"""
         if self.query_string != "":
-            """append Strings provided in Query Strings (query_string) as children to current Query"""
+            # append Strings provided in Query Strings (query_string) as children to current Query
             children_string = self.query_string[self.query_string.find("[") :]
             children_list = children_string[1:-1].split(", ")
             self.create_term_nodes(children_list, self.search_field)
 
         if self.nested_queries != []:
-            """ append root of every Query in nested_queries as a child to the current Query"""
+            # append root of every Query in nested_queries as a child to the current Query
             for query in self.nested_queries:
                 self.query_tree.root.children.append(query.query_tree.root)
 
@@ -64,7 +63,7 @@ class Query:
                 result = f"{result}, "
         return f"{result}]"
 
-    def translate_wos(self):
+    def translate_wos(self) -> None:
         """translating method for Web of Science database
         creates a JSON file with translation information at
         ../translations/WoS/translationWoS_ddMMYYYY_HH:MM
@@ -72,7 +71,7 @@ class Query:
         data = {
             "database": "Web of Science - Core Collection",
             "url": "https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery": f"({self.get_search_field_wos(self.search_field)}={self.print_query_wos(self.query_tree.root)})",
+            "translatedQuery": f"{self.print_query_wos(self.query_tree.root)}",
             "annotations": "Paste the translated string without quotation marks into the advanced search free text field.",
             "API": "possible",
         }
@@ -83,31 +82,31 @@ class Query:
         ) as file:
             json.dump(data, file)
 
-    def print_query_wos(self, start_node):
+    def print_query_wos(self, start_node) -> str:
         """actual translation logic for WoS"""
         result = ""
         for child in start_node.children:
             if child.operator is False:
-                """start_node is not an operator"""
+                # start_node is not an operator
                 if (child == start_node.children[0]) & (
                     child != start_node.children[-1]
                 ):
-                    """current element is first but not only child element
-                    -->operator does not need to be appended again"""
+                    # current element is first but not only child element
+                    # -->operator does not need to be appended again
                     result = f"{result}{self.get_search_field_wos(child.search_field)}=({child.value}"
 
                 else:
-                    """current element is not first child"""
+                    # current element is not first child
                     result = f"{result} {start_node.value} {child.value}"
 
                 if child == start_node.children[-1]:
-                    """current Element is last Element -> closing parenthesis"""
+                    # current Element is last Element -> closing parenthesis
                     result = f"{result})"
 
             else:
-                """start_node is operator node"""
+                # start_node is operator node
                 if child.value == "NOT":
-                    """current element is NOT Operator -> no parenthesis in WoS"""
+                    # current element is NOT Operator -> no parenthesis in WoS
                     result = f"{result}{self.print_query_wos(child)}"
 
                 elif (child == start_node.children[0]) & (
@@ -123,7 +122,7 @@ class Query:
                     result = f"{result})"
         return f"{result}"
 
-    def translate_ieee(self):
+    def translate_ieee(self) -> None:
         """translating method for Web of Science database
         creates a JSON file with translation information at
         ../translations/IEEE/translationIEEE_ddMMYYYY_HH:MM
@@ -142,14 +141,14 @@ class Query:
         ) as file:
             json.dump(data, file)
 
-    def print_query_ieee(self, start_node):
+    def print_query_ieee(self, start_node) -> str:
         """actual translation logic for IEEE"""
         result = ""
         for index, child in enumerate(start_node.children):
-            """start_node is not an operator"""
+            # start_node is not an operator
             if child.operator is False:
-                """current element is first but not only child element
-                --> operator does not need to be appended again"""
+                # current element is first but not only child element
+                # --> operator does not need to be appended again
                 if (child == start_node.children[0]) & (
                     child != start_node.children[-1]
                 ):
@@ -158,26 +157,26 @@ class Query:
                         result = f"({result})"
 
                 else:
-                    """current element is not first child"""
+                    # current element is not first child
                     result = f"{result} {start_node.value} '{child.search_field}':{child.value}"
                     if child != start_node.children[-1]:
                         if start_node.children[index + 1].operator is True:
                             result = f"({result})"
 
                 if child == start_node.children[-1]:
-                    """current element is last Element -> closing parenthesis"""
+                    # current element is last Element -> closing parenthesis
                     result = f"{result})"
 
             else:
-                """start_node is operator Node"""
+                # start_node is operator Node#
                 if child.value == "NOT":
-                    """current element is NOT operator -> no parenthesis in WoS"""
+                    # current element is NOT operator -> no parenthesis in WoS
                     result = f"{result}{self.print_query_ieee(child)}"
 
                 elif (child == start_node.children[0]) & (
                     child != start_node.children[-1]
                 ):
-                    """current Element is OR/AND operator:"""
+                    # current Element is OR/AND operator:
                     result = f"{result}{self.print_query_ieee(child)}"
                 else:
                     result = (
@@ -188,21 +187,95 @@ class Query:
 
     def get_search_field_wos(self, search_field) -> str:
         if search_field == "Author Keywords":
-            result= "AK"
+            result = "AK"
         elif search_field == "Abstract":
-            result= "AB"
+            result = "AB"
         elif search_field == "Author":
-            result= "AU"
+            result = "AU"
         elif search_field == "DOI":
-            result= "DO"
+            result = "DO"
         elif search_field == "ISBN/ISSN":
-            result= "IS"
+            result = "IS"
         elif search_field == "Publisher":
-            result= "PUBL"
-        elif search_field == "Publication Title":
-            result= "SO"
+            result = "PUBL"
         elif search_field == "Title":
-            result= "TI"
+            result = "TI"
+        return result
+
+    def translate_pubmed(self) -> None:
+        """translating method for PubMed database
+        creates a JSON file with translation information at
+        ../translations/PubMed/translationIEEE_ddMMYYYY_HH:MM
+        """
+        data = {
+            "database": "PubMed",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
+            "translatedQuery": f"{self.print_query_pubmed(self.query_tree.root)}",
+            "annotations": "Paste the translated string without quotation marks into the command search free text field.",
+            "API": "possible",
+        }
+
+        with open(
+            f'../translations/PubMed/translationPubMed_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
+            "w",
+        ) as file:
+            json.dump(data, file)
+
+    def print_query_pubmed(self, start_node) -> str:
+        """actual translation logic for PubMed"""
+        result = ""
+        for child in start_node.children:
+            if child.operator is False:
+                # start_node is not an operator
+                if (child == start_node.children[0]) & (
+                    child != start_node.children[-1]
+                ):
+                    # current element is first but not only child element
+                    # -->operator does not need to be appended again
+                    result = f"{result}({child.value}[{self.get_search_field_pubmed(child.search_field)}]"
+
+                else:
+                    # current element is not first child
+                    result = f"{result} {start_node.value} {child.value}[{self.get_search_field_pubmed(child.search_field)}]"
+
+                if child == start_node.children[-1]:
+                    # current Element is last Element -> closing parenthesis
+                    result = f"{result})"
+
+            else:
+                # start_node is operator node
+                if child.value == "NOT":
+                    # current element is NOT Operator -> no parenthesis in WoS
+                    result = f"{result}{self.print_query_pubmed(child)}"
+
+                elif (child == start_node.children[0]) & (
+                    child != start_node.children[-1]
+                ):
+                    result = f"{result}({self.print_query_pubmed(child)}"
+                else:
+                    result = (
+                        f"{result} {start_node.value} {self.print_query_pubmed(child)}"
+                    )
+
+                if (child == start_node.children[-1]) & (child.value != "NOT"):
+                    result = f"{result})"
+        return f"{result}"
+
+    def get_search_field_pubmed(self, search_field) -> str:
+        if search_field == "Author Keywords":
+            result = "ot"
+        elif search_field == "Abstract":
+            result = "tiab"
+        elif search_field == "Author":
+            result = "au"
+        elif search_field == "DOI":
+            result = "aid"
+        elif search_field == "ISBN/ISSN":
+            result = "isbn"
+        elif search_field == "Publisher":
+            result = "pubn"
+        elif search_field == "Title":
+            result = "ti"
         return result
 
     def get_linked_list(self) -> dict:
