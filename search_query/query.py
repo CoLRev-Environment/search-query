@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import datetime
 import json
+from abc import ABC, abstractmethod
 
 from search_query.node import Node
 from search_query.tree import Tree
 
 
-class Query:
+
+class Query(ABC):
     """Query class."""
 
+    @abstractmethod
     def __init__(self, query_string, nested_queries, search_field):
-        self.query_string = query_string
-        self.nested_queries = nested_queries
-        self.search_field = search_field
-        self.query_tree = Tree(Node("", True, search_field))
-
+       pass
+   
     def valid_tree_structure(self, start_node) -> bool:
         """validate input to test if a valid tree structure can be guaranteed"""
 
@@ -63,23 +63,19 @@ class Query:
                 result = f"{result}, "
         return f"{result}]"
 
-    def translate_wos(self) -> None:
+    def translate_wos(self,file_name) -> None:
         """translating method for Web of Science database
         creates a JSON file with translation information at
-        ../translations/WoS/translationWoS_ddMMYYYY_HH:MM
+        ../translations/WoS/file_name
         """
         data = {
             "database": "Web of Science - Core Collection",
             "url": "https://www.webofscience.com/wos/woscc/advanced-search",
             "translatedQuery": f"{self.print_query_wos(self.query_tree.root)}",
-            "annotations": "Paste the translated string without quotation marks into the advanced search free text field.",
-            "API": "possible",
+            "annotations": "Paste the translated string without quotation marks into the advanced search free text field."
         }
 
-        with open(
-            f'../translations/WoS/translationWoS_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
-            "w",
-        ) as file:
+        with open(f'../translations/WoS/{file_name}.json',"w",) as file:
             json.dump(data, file)
 
     def print_query_wos(self, start_node) -> str:
@@ -122,8 +118,8 @@ class Query:
                     result = f"{result})"
         return f"{result}"
 
-    def translate_ieee(self) -> None:
-        """translating method for Web of Science database
+    def translate_ieee(self, file_name) -> None:
+        """translating method for IEEE Xplore database
         creates a JSON file with translation information at
         ../translations/IEEE/translationIEEE_ddMMYYYY_HH:MM
         """
@@ -131,14 +127,10 @@ class Query:
             "database": "IEEE Xplore",
             "url": "https://ieeexplore.ieee.org/search/advanced/command",
             "translatedQuery": f"{self.print_query_ieee(self.query_tree.root)}",
-            "annotations": "Paste the translated string without quotation marks into the command search free text field.",
-            "API": "possible",
+            "annotations": "Paste the translated string without quotation marks into the command search free text field."
         }
 
-        with open(
-            f'../translations/IEEE/translationIEEE_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
-            "w",
-        ) as file:
+        with open(f'../translations/IEEE/{file_name}.json',"w",) as file:
             json.dump(data, file)
 
     def print_query_ieee(self, start_node) -> str:
@@ -202,23 +194,20 @@ class Query:
             result = "TI"
         return result
 
-    def translate_pubmed(self) -> None:
+    def translate_pubmed(self, file_name) -> None:
         """translating method for PubMed database
         creates a JSON file with translation information at
-        ../translations/PubMed/translationIEEE_ddMMYYYY_HH:MM
+        ../translations/PubMed/file_name
         """
         data = {
             "database": "PubMed",
             "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
             "translatedQuery": f"{self.print_query_pubmed(self.query_tree.root)}",
-            "annotations": "Paste the translated string without quotation marks into the command search free text field.",
-            "API": "possible",
+            "annotations": "Paste the translated string without quotation marks into the \"Query Box\" free text field."
         }
 
         with open(
-            f'../translations/PubMed/translationPubMed_{datetime.datetime.now().strftime("%d-%m-%Y_%H:%M")}.json',
-            "w",
-        ) as file:
+            f'../translations/PubMed/{file_name}.json', "w",) as file:
             json.dump(data, file)
 
     def print_query_pubmed(self, start_node) -> str:

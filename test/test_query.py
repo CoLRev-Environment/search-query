@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-"""Tests for the Query"""
+"""Tests for search query translation"""
 import unittest
-
 from search_query.and_query import AndQuery
 from search_query.node import Node
 from search_query.not_query import NotQuery
@@ -12,24 +11,23 @@ class TestQuery(unittest.TestCase):
     """Testing class."""
 
     def setUp(self):
-        self.testNode = Node("testvalue", False, "Document Title")
-
-        self.queryRobot = NotQuery("[robot*]", [], "Author Keywords")
-        self.queryAI = OrQuery(
+        self.test_node = Node("testvalue", False, "Document Title")
+        self.query_robot = NotQuery("[robot*]", [], "Author Keywords")
+        self.query_ai = OrQuery(
             "['AI', 'Artificial Intelligence', 'Machine Learning']",
-            [self.queryRobot],
+            [self.query_robot],
             "Author Keywords",
         )
         self.queryHealth = OrQuery("['health care', 'medicine']", [], "Author Keywords")
         self.queryEthics = OrQuery("[ethic*, moral*]", [], "Abstract")
         self.queryComplete = AndQuery(
-            "", [self.queryAI, self.queryHealth, self.queryEthics], "Author Keywords"
+            "", [self.query_ai, self.queryHealth, self.queryEthics], "Author Keywords"
         )
 
     def test_print_node(self) -> None:
         expected = "value: testvalue operator: False search field: Document Title"
         self.assertEqual(
-            self.testNode.print_node(), expected, "Print Node Method does not work."
+            self.test_node.print_node(), expected, "Print Node Method does not work."
         )
 
     # test whether the children are appended correctly
@@ -52,7 +50,7 @@ class TestQuery(unittest.TestCase):
     def test_or_query(self) -> None:
         expected = Node("OR", True, "")
         self.assertEqual(
-            self.queryAI.query_tree.root.print_node(),
+            self.query_ai.query_tree.root.print_node(),
             expected.print_node(),
             "OR root was not created correctly!",
         )
@@ -70,7 +68,7 @@ class TestQuery(unittest.TestCase):
     def test_not_query(self) -> None:
         expected = Node("NOT", True, "")
         self.assertEqual(
-            self.queryRobot.query_tree.root.print_node(),
+            self.query_robot.query_tree.root.print_node(),
             expected.print_node(),
             "NOT root was not created correctly!",
         )
@@ -80,7 +78,7 @@ class TestQuery(unittest.TestCase):
         self.assertListEqual(
             self.queryComplete.query_tree.root.children,
             [
-                self.queryAI.query_tree.root,
+                self.query_ai.query_tree.root,
                 self.queryHealth.query_tree.root,
                 self.queryEthics.query_tree.root,
             ],
@@ -115,6 +113,9 @@ class TestQuery(unittest.TestCase):
             "WOS"
             + self.queryComplete.print_query_wos(self.queryComplete.query_tree.root)
         )
+        self.queryComplete.translate_ieee("ieeeTest")
+        self.queryComplete.translate_pubmed("pubmedTest")
+        self.queryComplete.translate_wos("wosTest")
         # self.queryHealth.translate_wos()
 
         # test failures
