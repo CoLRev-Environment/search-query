@@ -1,0 +1,6 @@
+{
+    "database": "IEEE Xplore",
+    "url": "https://ieeexplore.ieee.org/search/advanced/command",
+    "translatedQuery": "((\"Author Keywords\":\"AI\" OR \"Author Keywords\":\"Artificial Intelligence\" OR \"Author Keywords\":\"Machine Learning\") OR  NOT \"Author Keywords\":robot*) AND (\"Author Keywords\":\"health care\" OR \"Author Keywords\":medicine) AND (\"Abstract\":ethic* OR \"Abstract\":moral*)",
+    "annotations": "Paste the translated string without quotation marks into the command search free text field."
+}

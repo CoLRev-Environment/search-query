@@ -1,0 +1,6 @@
+{
+    "database": "PubMed",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
+    "translatedQuery": "((\"AI\"[ot] OR \"Artificial Intelligence\"[ot] OR \"Machine Learning\"[ot] NOT robot*[ot]) AND (\"health care\"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))",
+    "annotations": "Paste the translated string without quotation marks into the \"Query Box\" free text field."
+}

@@ -12,17 +12,15 @@ class TestQuery(unittest.TestCase):
 
     def setUp(self):
         self.test_node = Node("testvalue", False, "Document Title")
-        self.query_robot = NotQuery("[robot*]", [], "Author Keywords")
+        self.query_robot = NotQuery(["robot*"], [], "Author Keywords")
         self.query_ai = OrQuery(
-            "['AI', 'Artificial Intelligence', 'Machine Learning']",
+            ["\"AI\"", "\"Artificial Intelligence\"", "\"Machine Learning\""],
             [self.query_robot],
             "Author Keywords",
         )
-        self.queryHealth = OrQuery("['health care', 'medicine']", [], "Author Keywords")
-        self.queryEthics = OrQuery("[ethic*, moral*]", [], "Abstract")
-        self.queryComplete = AndQuery(
-            "", [self.query_ai, self.queryHealth, self.queryEthics], "Author Keywords"
-        )
+        self.queryHealth = OrQuery(["\"health care\"", "medicine"], [], "Author Keywords")
+        self.queryEthics = OrQuery(["ethic*", "moral*"], [], "Abstract")
+        self.queryComplete = AndQuery([], [self.query_ai, self.queryHealth, self.queryEthics], "Author Keywords")
 
     def test_print_node(self) -> None:
         expected = "value: testvalue operator: False search field: Document Title"
@@ -32,7 +30,7 @@ class TestQuery(unittest.TestCase):
 
     # test whether the children are appended correctly
     def test_append_children(self) -> None:
-        healthCareChild = Node("'health care'", False, "Author Keywords")
+        healthCareChild = Node("\"health care\"", False, "Author Keywords")
         medicineChild = Node("medicine", False, "Author Keywords")
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
@@ -87,7 +85,7 @@ class TestQuery(unittest.TestCase):
 
     # test whether the translation of the tool is identical to the manually translated WoS Query
     def test_translation_WoS(self) -> None:
-        expected = "(AK=('AI' OR 'Artificial Intelligence' OR 'Machine Learning' NOT robot*) AND AK=('health care' OR 'medicine') AND AB=(ethic* OR moral*))"
+        expected = "(AK=(\"AI\" OR \"Artificial Intelligence\" OR \"Machine Learning\" NOT robot*) AND AK=(\"health care\" OR medicine) AND AB=(ethic* OR moral*))"
         self.assertEqual(
             self.queryComplete.print_query_wos(self.queryComplete.query_tree.root),
             expected,
@@ -96,41 +94,26 @@ class TestQuery(unittest.TestCase):
 
     # test whether the translation of the tool is identical to the manually translated IEEE Query
     def test_translation_IEEE(self) -> None:
-        expected = "(('Author Keywords':'AI' OR 'Author Keywords':'Artificial Intelligence' OR 'Author Keywords':'Machine Learning') NOT 'Author Keywords':robot*) AND ('Author Keywords':'health care' OR 'Author Keywords':'medicine') AND ('Abstract':ethic* OR 'Abstract':moral*)"
+        expected = "((\"Author Keywords\":\"AI\" OR \"Author Keywords\":\"Artificial Intelligence\" OR \"Author Keywords\":\"Machine Learning\") OR  NOT \"Author Keywords\":robot*) AND (\"Author Keywords\":\"health care\" OR \"Author Keywords\":medicine) AND (\"Abstract\":ethic* OR \"Abstract\":moral*)"
         self.assertEqual(
             self.queryComplete.print_query_ieee(self.queryComplete.query_tree.root),
             expected,
             "Query was not translated to IEEE Syntax",
         )
+        
+    def test_translation_pubmed(self) -> None:
+        expected = "((\"AI\"[ot] OR \"Artificial Intelligence\"[ot] OR \"Machine Learning\"[ot] NOT robot*[ot]) AND (\"health care\"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))"
+        self.assertEqual(
+            self.queryComplete.print_query_pubmed(self.queryComplete.query_tree.root),
+            expected,
+            "Query was not translated to PubMed Syntax",
+        )
 
     def test(self) -> None:
         """test"""
-        print(
-            "PUBMED"
-            + self.queryComplete.print_query_pubmed(self.queryComplete.query_tree.root)
-        )
-        print(
-            "WOS"
-            + self.queryComplete.print_query_wos(self.queryComplete.query_tree.root)
-        )
         self.queryComplete.translate_ieee("ieeeTest")
         self.queryComplete.translate_pubmed("pubmedTest")
         self.queryComplete.translate_wos("wosTest")
-        # self.queryHealth.translate_wos()
-
-        # test failures
-        # test whether the validation method correctly throws an Exception if an invalid tree (including a circle) is created
-        # def testTreeValidationWithInvalidTree(self) -> None:
-        #   with self.assertRaises(ValueError):
-        #       AndQuery("[invalid, tree]", [self.queryComplete, self.queryAI], "Abstract")
-        """ self.queryComplete.translate_ieee()
-        self.queryAI.translate_ieee()
-        self.queryEthics.translate_ieee()
-        self.queryHealth.translate_ieee()
-
-        self.queryComplete.translate_wos()
-        self.queryAI.translate_wos()
-        self.queryEthics.translate_wos()"""
 
 
 if __name__ == "__main__":

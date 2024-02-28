@@ -10,9 +10,9 @@ from search_query.tree import Tree
 class OrQuery(Query):
     """OR Query Class"""
 
-    def __init__(self, query_string, nested_queries, search_field):
+    def __init__(self, search_terms, nested_queries, search_field):
         """init method"""
-        self.query_string = query_string
+        self.search_terms = search_terms
         self.nested_queries = nested_queries
         self.search_field = search_field
         self.query_tree = Tree(Node("OR", True, search_field))

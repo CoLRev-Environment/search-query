@@ -1,0 +1,6 @@
+{
+    "database": "Web of Science - Core Collection",
+    "url": "https://www.webofscience.com/wos/woscc/advanced-search",
+    "translatedQuery": "(AK=(\"AI\" OR \"Artificial Intelligence\" OR \"Machine Learning\" NOT robot*) AND AK=(\"health care\" OR medicine) AND AB=(ethic* OR moral*))",
+    "annotations": "Paste the translated string without quotation marks into the advanced search free text field."
+}

@@ -15,7 +15,7 @@ class Query(ABC):
     """Query class."""
 
     @abstractmethod
-    def __init__(self, query_string, nested_queries, search_field):
+    def __init__(self, search_terms, nested_queries, search_field):
        pass
    
     def valid_tree_structure(self, start_node) -> bool:
@@ -32,11 +32,9 @@ class Query(ABC):
 
     def build_query_tree(self) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if self.query_string != "":
-            # append Strings provided in Query Strings (query_string) as children to current Query
-            children_string = self.query_string[self.query_string.find("[") :]
-            children_list = children_string[1:-1].split(", ")
-            self.create_term_nodes(children_list, self.search_field)
+        if self.search_terms != []:
+            # append Strings provided in search_terms (query_string) as children to current Query
+            self.create_term_nodes(self.search_terms, self.search_field)
 
         if self.nested_queries != []:
             # append root of every Query in nested_queries as a child to the current Query
@@ -75,8 +73,10 @@ class Query(ABC):
             "annotations": "Paste the translated string without quotation marks into the advanced search free text field."
         }
 
-        with open(f'../translations/WoS/{file_name}.json',"w",) as file:
-            json.dump(data, file)
+        json_object = json.dumps(data, indent=4)
+        
+        with open(f'../translations/WoS/{file_name}.json',"w") as file:
+            file.write(json_object)
 
     def print_query_wos(self, start_node) -> str:
         """actual translation logic for WoS"""
@@ -130,8 +130,10 @@ class Query(ABC):
             "annotations": "Paste the translated string without quotation marks into the command search free text field."
         }
 
-        with open(f'../translations/IEEE/{file_name}.json',"w",) as file:
-            json.dump(data, file)
+        json_object = json.dumps(data, indent=4)
+        
+        with open(f'../translations/IEEE/{file_name}.json',"w") as file:
+            file.write(json_object)
 
     def print_query_ieee(self, start_node) -> str:
         """actual translation logic for IEEE"""
@@ -144,13 +146,13 @@ class Query(ABC):
                 if (child == start_node.children[0]) & (
                     child != start_node.children[-1]
                 ):
-                    result = f"{result}('{child.search_field}':{child.value}"
+                    result = f"{result}(\"{child.search_field}\":{child.value}"
                     if start_node.children[index + 1].operator is True:
                         result = f"({result})"
 
                 else:
                     # current element is not first child
-                    result = f"{result} {start_node.value} '{child.search_field}':{child.value}"
+                    result = f"{result} {start_node.value} \"{child.search_field}\":{child.value}"
                     if child != start_node.children[-1]:
                         if start_node.children[index + 1].operator is True:
                             result = f"({result})"
@@ -160,21 +162,15 @@ class Query(ABC):
                     result = f"{result})"
 
             else:
-                # start_node is operator Node#
-                if child.value == "NOT":
-                    # current element is NOT operator -> no parenthesis in WoS
-                    result = f"{result}{self.print_query_ieee(child)}"
-
-                elif (child == start_node.children[0]) & (
+                # start_node is operator Node
+                if (child == start_node.children[0]) & (
                     child != start_node.children[-1]
                 ):
                     # current Element is OR/AND operator:
                     result = f"{result}{self.print_query_ieee(child)}"
                 else:
-                    result = (
-                        f"{result} {start_node.value} {self.print_query_ieee(child)}"
-                    )
-
+                    result = f"{result} {start_node.value} {self.print_query_ieee(child)}"
+        
         return f"{result}"
 
     def get_search_field_wos(self, search_field) -> str:
@@ -206,9 +202,10 @@ class Query(ABC):
             "annotations": "Paste the translated string without quotation marks into the \"Query Box\" free text field."
         }
 
-        with open(
-            f'../translations/PubMed/{file_name}.json', "w",) as file:
-            json.dump(data, file)
+        json_object = json.dumps(data, indent=4)
+        
+        with open(f'../translations/PubMed/{file_name}.json',"w") as file:
+            file.write(json_object)
 
     def print_query_pubmed(self, start_node) -> str:
         """actual translation logic for PubMed"""
@@ -267,7 +264,3 @@ class Query(ABC):
             result = "ti"
         return result
 
-    def get_linked_list(self) -> dict:
-        """generate linked_list from query_tree"""
-        linked_list = {}
-        return linked_list
