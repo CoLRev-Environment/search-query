@@ -5,11 +5,11 @@
 class Node:
     """Node class."""
 
-    def __init__(self, value, operator, search_field):
+    def __init__(self, value: str, operator: bool, search_field: str):
         """init method"""
         self.value = value
         self.operator = operator
-        self.children = []
+        self.children: list[Node] = []
         self.marked = False
         self.search_field = search_field
         if operator:

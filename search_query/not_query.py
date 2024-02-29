@@ -8,7 +8,9 @@ from search_query.tree import Tree
 class NotQuery(Query):
     """NOT Query"""
 
-    def __init__(self, search_terms, nested_queries, search_field):
+    def __init__(
+        self, search_terms: list[str], nested_queries: list[Query], search_field: str
+    ):
         """init method"""
         self.search_terms = search_terms
         self.nested_queries = nested_queries

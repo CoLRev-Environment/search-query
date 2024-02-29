@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Tree: This module contains the tree logic."""
+from search_query.node import Node
 
 
 class Tree:
     """Tree class."""
 
-    def __init__(self, root):
+    def __init__(self, root: Node):
         """init method"""
         self.root = root
 
