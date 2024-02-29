@@ -155,8 +155,8 @@ class TestQuery(unittest.TestCase):
         self.queryComplete.translate_ieee("ieeeTest")
         self.queryComplete.translate_pubmed("pubmedTest")
         self.queryComplete.translate_wos("wosTest")
-        
-        self.assertEqual(1,1)
+
+        self.assertEqual(1, 1)
 
 
 if __name__ == "__main__":

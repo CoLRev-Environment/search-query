@@ -16,6 +16,7 @@ class Query(ABC):
     def __init__(
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ):
+        """init method"""
         pass
 
     def valid_tree_structure(self, start_node: Node) -> bool:
@@ -75,7 +76,9 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(f"./translations/WoS/{file_name}.json", "w") as file:
+        with open(
+            f"./translations/WoS/{file_name}.json", "w", encoding="utf-8"
+        ) as file:
             file.write(json_object)
 
     def print_query_wos(self, start_node: Node) -> str:
@@ -132,7 +135,9 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(f"./translations/IEEE/{file_name}.json", "w") as file:
+        with open(
+            f"./translations/IEEE/{file_name}.json", "w", encoding="utf-8"
+        ) as file:
             file.write(json_object)
 
     def print_query_ieee(self, start_node: Node) -> str:
@@ -176,6 +181,7 @@ class Query(ABC):
         return f"{result}"
 
     def get_search_field_wos(self, search_field: str) -> str:
+        """transform search field to WoS Syntax"""
         if search_field == "Author Keywords":
             result = "AK"
         elif search_field == "Abstract":
@@ -206,7 +212,9 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(f"./translations/PubMed/{file_name}.json", "w") as file:
+        with open(
+            f"./translations/PubMed/{file_name}.json", "w", encoding="utf-8"
+        ) as file:
             file.write(json_object)
 
     def print_query_pubmed(self, start_node: Node) -> str:
@@ -250,6 +258,7 @@ class Query(ABC):
         return f"{result}"
 
     def get_search_field_pubmed(self, search_field: str) -> str:
+        """transform search field to PubMed Syntax"""
         if search_field == "Author Keywords":
             result = "ot"
         elif search_field == "Abstract":

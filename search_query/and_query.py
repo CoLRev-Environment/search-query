@@ -21,7 +21,7 @@ class AndQuery(Query):
         self.build_query_tree()
         if self.valid_tree_structure(self.query_tree.root):
             self.query_tree.remove_all_marks()
-            for nq in nested_queries:
-                nq.query_tree.remove_all_marks()
+            for query in nested_queries:
+                query.query_tree.remove_all_marks()
         else:
             raise ValueError("Error: Invalid Tree Structure")
