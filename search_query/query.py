@@ -17,24 +17,23 @@ class Query(ABC):
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ):
         """init method"""
-        pass
+    
 
-    def valid_tree_structure(self, start_node: Node) -> bool:
+    def valid_tree_structure(self, start_node: Node):
         """validate input to test if a valid tree structure can be guaranteed"""
-
-        if start_node.marked:
-            return False
-
-        start_node.marked = True
-        if start_node.children != []:
-            for child in start_node.children:
-                return self.valid_tree_structure(child)
+        if(start_node.marked==True):
+            raise ValueError("Building Query Tree failed")
+        start_node.marked=True
+        if start_node.children == []:
+            pass
+        for child in start_node.children:
+            self.valid_tree_structure(child)    
         return True
-
+    
+        
     def build_query_tree(self) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if self.search_terms != []:
-            # append Strings provided in search_terms (query_string) as children to current Query
+        if self.search_terms != []:            # append strings provided in search_terms (query_string) as children to current Query
             self.create_term_nodes(self.search_terms, self.search_field)
 
         if self.nested_queries != []:

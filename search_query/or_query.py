@@ -19,9 +19,11 @@ class OrQuery(Query):
         self.search_field = search_field
         self.query_tree = Tree(Node("OR", True, search_field))
         self.build_query_tree()
-        if self.valid_tree_structure(self.query_tree.root):
+        try:
+            self.valid_tree_structure(self.query_tree.root)
+        except:
+            raise ValueError("Building Query Tree failed")
+        else:
             self.query_tree.remove_all_marks()
             for query in nested_queries:
                 query.query_tree.remove_all_marks()
-        else:
-            raise ValueError("Error: Invalid Tree Structure")

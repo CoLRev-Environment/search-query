@@ -156,8 +156,10 @@ class TestQuery(unittest.TestCase):
         self.queryComplete.translate_pubmed("pubmedTest")
         self.queryComplete.translate_wos("wosTest")
 
-        self.assertEqual(1, 1)
-
+    def test_invalid_tree_structure(self):
+        """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
+        with self.assertRaises(ValueError):
+            invalid_query=AndQuery(["invalid"],[ self.queryComplete, self.query_ai],"Author Keywords")
 
 if __name__ == "__main__":
     unittest.main()
