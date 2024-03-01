@@ -19,10 +19,10 @@ class TestQuery(unittest.TestCase):
             [self.query_robot],
             "Author Keywords",
         )
-        self.queryHealth = OrQuery(['"health care"', "medicine"], [], "Author Keywords")
-        self.queryEthics = OrQuery(["ethic*", "moral*"], [], "Abstract")
-        self.queryComplete = AndQuery(
-            [], [self.query_ai, self.queryHealth, self.queryEthics], "Author Keywords"
+        self.query_health = OrQuery(['"health care"', "medicine"], [], "Author Keywords")
+        self.query_ethics = OrQuery(["ethic*", "moral*"], [], "Abstract")
+        self.query_complete = AndQuery(
+            [], [self.query_ai, self.query_health, self.query_ethics], "Author Keywords"
         )
 
     def test_print_node(self) -> None:
@@ -37,12 +37,12 @@ class TestQuery(unittest.TestCase):
         medicineChild = Node("medicine", False, "Author Keywords")
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
-            self.queryHealth.query_tree.root.children[0].print_node(),
+            self.query_health.query_tree.root.children[0].print_node(),
             expected[0].print_node(),
             "Children were appended incorrectly!",
         )
         self.assertEqual(
-            self.queryHealth.query_tree.root.children[1].print_node(),
+            self.query_health.query_tree.root.children[1].print_node(),
             expected[1].print_node(),
             "Children were appended incorrectly!",
         )
@@ -60,7 +60,7 @@ class TestQuery(unittest.TestCase):
         """test whether AND node is created correctly"""
         expected = Node("AND", True, "")
         self.assertEqual(
-            self.queryComplete.query_tree.root.print_node(),
+            self.query_complete.query_tree.root.print_node(),
             expected.print_node(),
             "AND root was not created correctly!",
         )
@@ -77,11 +77,11 @@ class TestQuery(unittest.TestCase):
     def test_nested_queries(self) -> None:
         """test whether roots of nested Queries are appended as children"""
         self.assertListEqual(
-            self.queryComplete.query_tree.root.children,
+            self.query_complete.query_tree.root.children,
             [
                 self.query_ai.query_tree.root,
-                self.queryHealth.query_tree.root,
-                self.queryEthics.query_tree.root,
+                self.query_health.query_tree.root,
+                self.query_ethics.query_tree.root,
             ],
             "Nested Queries were not appended correctly!",
         )
@@ -92,7 +92,7 @@ class TestQuery(unittest.TestCase):
 
         expected = 'AK=("health care" OR medicine)'
         self.assertEqual(
-            self.queryHealth.print_query_wos(self.queryHealth.query_tree.root),
+            self.query_health.print_query_wos(self.query_health.query_tree.root),
             expected,
             "Health Query was not translated to Web of Science Syntax",
         )
@@ -102,7 +102,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(AK=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND AK=("health care" OR medicine) AND AB=(ethic* OR moral*))'
         self.assertEqual(
-            self.queryComplete.print_query_wos(self.queryComplete.query_tree.root),
+            self.query_complete.print_query_wos(self.query_complete.query_tree.root),
             expected,
             "Complete Query was not translated to Web of Science Syntax",
         )
@@ -113,7 +113,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("Author Keywords":"health care" OR "Author Keywords":medicine)'
         self.assertEqual(
-            self.queryHealth.print_query_ieee(self.queryHealth.query_tree.root),
+            self.query_health.print_query_ieee(self.query_health.query_tree.root),
             expected,
             "Health Query was not translated to IEEE Syntax",
         )
@@ -123,7 +123,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(("Author Keywords":"AI" OR "Author Keywords":"Artificial Intelligence" OR "Author Keywords":"Machine Learning") OR  NOT "Author Keywords":robot*) AND ("Author Keywords":"health care" OR "Author Keywords":medicine) AND ("Abstract":ethic* OR "Abstract":moral*)'
         self.assertEqual(
-            self.queryComplete.print_query_ieee(self.queryComplete.query_tree.root),
+            self.query_complete.print_query_ieee(self.query_complete.query_tree.root),
             expected,
             "Query was not translated to IEEE Syntax",
         )
@@ -134,7 +134,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("health care"[ot] OR medicine[ot])'
         self.assertEqual(
-            self.queryHealth.print_query_pubmed(self.queryHealth.query_tree.root),
+            self.query_health.print_query_pubmed(self.query_health.query_tree.root),
             expected,
             "Health Query was not translated to PubMed Syntax",
         )
@@ -145,21 +145,21 @@ class TestQuery(unittest.TestCase):
 
         expected = '(("AI"[ot] OR "Artificial Intelligence"[ot] OR "Machine Learning"[ot] NOT robot*[ot]) AND ("health care"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))'
         self.assertEqual(
-            self.queryComplete.print_query_pubmed(self.queryComplete.query_tree.root),
+            self.query_complete.print_query_pubmed(self.query_complete.query_tree.root),
             expected,
             "Query was not translated to PubMed Syntax",
         )
 
     def test_json_files(self) -> None:
         """test whether the json files are created correctly"""
-        self.queryComplete.translate_ieee("ieeeTest")
-        self.queryComplete.translate_pubmed("pubmedTest")
-        self.queryComplete.translate_wos("wosTest")
+        self.query_complete.translate_ieee("ieeeTest")
+        self.query_complete.translate_pubmed("pubmedTest")
+        self.query_complete.translate_wos("wosTest")
 
     def test_invalid_tree_structure(self):
         """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
         with self.assertRaises(ValueError):
-            invalid_query=AndQuery(["invalid"],[ self.queryComplete, self.query_ai],"Author Keywords")
+            invalid_query=AndQuery(["invalid"],[ self.query_complete, self.query_ai],"Author Keywords")
 
 if __name__ == "__main__":
     unittest.main()

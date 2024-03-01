@@ -9,9 +9,13 @@ class Node:
         """init method"""
         self.value = value
         self.operator = operator
+        # flag whether the Node is an operator
         self.children: list[Node] = []
+        # list of children nodes 
         self.marked = False
+        # marked flag for validation, necessary method
         self.search_field = search_field
+        #search field to which the node (e.g. search term) should be applied 
         if operator:
             self.search_field = ""
 

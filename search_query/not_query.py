@@ -12,9 +12,13 @@ class NotQuery(Query):
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ):
         """init method"""
-        self.search_terms = search_terms
-        self.nested_queries = nested_queries
-        self.search_field = search_field
+        self.search_terms = search_terms 
+        # strings which you want to include in the search query
+        self.nested_queries = nested_queries 
+        # queries whose roots are appended to the query
+        self.search_field = search_field 
+        # search field to which the query should be applied 
+        # possible are: Author Keywords, Abstract, Author, DOI, ISBN, Publisher or Title
         self.query_tree = Tree(Node("NOT", True, search_field))
         self.build_query_tree()
         try:

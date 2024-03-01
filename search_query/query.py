@@ -33,7 +33,7 @@ class Query(ABC):
         
     def build_query_tree(self) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if self.search_terms != []:            # append strings provided in search_terms (query_string) as children to current Query
+        if self.search_terms != []: # append strings provided in search_terms (query_string) as children to current Query
             self.create_term_nodes(self.search_terms, self.search_field)
 
         if self.nested_queries != []:
@@ -240,7 +240,7 @@ class Query(ABC):
             else:
                 # start_node is operator node
                 if child.value == "NOT":
-                    # current element is NOT Operator -> no parenthesis in WoS
+                    # current element is NOT Operator -> no parenthesis in PubMed
                     result = f"{result}{self.print_query_pubmed(child)}"
 
                 elif (child == start_node.children[0]) & (
