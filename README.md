@@ -15,4 +15,3 @@ import search_query.query
 query = search_query.query.AndQuery(["search", "terms"], [nested, queries], search_field)
 
 ```
-

@@ -11,7 +11,7 @@ from search_query.or_query import OrQuery
 class TestQuery(unittest.TestCase):
     """Testing class for query translator"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_node = Node("testvalue", False, "Document Title")
         self.query_robot = NotQuery(["robot*"], [], "Author Keywords")
         self.query_ai = OrQuery(
@@ -19,7 +19,9 @@ class TestQuery(unittest.TestCase):
             [self.query_robot],
             "Author Keywords",
         )
-        self.query_health = OrQuery(['"health care"', "medicine"], [], "Author Keywords")
+        self.query_health = OrQuery(
+            ['"health care"', "medicine"], [], "Author Keywords"
+        )
         self.query_ethics = OrQuery(["ethic*", "moral*"], [], "Abstract")
         self.query_complete = AndQuery(
             [], [self.query_ai, self.query_health, self.query_ethics], "Author Keywords"
@@ -156,10 +158,13 @@ class TestQuery(unittest.TestCase):
         self.query_complete.translate_pubmed("pubmedTest")
         self.query_complete.translate_wos("wosTest")
 
-    def test_invalid_tree_structure(self):
+    def test_invalid_tree_structure(self) -> None:
         """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
         with self.assertRaises(ValueError):
-            invalid_query=AndQuery(["invalid"],[ self.query_complete, self.query_ai],"Author Keywords")
+            AndQuery(
+                ["invalid"], [self.query_complete, self.query_ai], "Author Keywords"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
