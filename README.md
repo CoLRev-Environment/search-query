@@ -16,7 +16,6 @@ import search_query.query
 
 nested_query = search_query.query.OrQuery(["index", "search"], [], "Abstract")
 query = search_query.query.AndQuery(["terms"], [nested_query], "Author Keywords")
-
 ```
 search terms: strings which you want to include in the search query
 nested queries: queries whose roots are appended to the query
