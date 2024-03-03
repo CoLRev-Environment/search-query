@@ -3,7 +3,7 @@
 This python package was developed as part of my bachelors thesis: Towards more efficient literature search: Design of an open source query translator.
 
 How to cite: 
-Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg
+Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
 
 # How to use?
 
@@ -17,12 +17,11 @@ import search_query.query
 nested_query = search_query.query.OrQuery(["index", "search"], [], "Abstract")
 query = search_query.query.AndQuery(["terms"], [nested_query], "Author Keywords")
 
-
 ```
-    search terms: strings which you want to include in the search query
-    nested queries: queries whose roots are appended to the query
-    search field: search field to which the query should be applied
-        -> possible are: Author Keywords, Abstract, Author, DOI, ISBN, Publisher or Title
+search terms: strings which you want to include in the search query
+nested queries: queries whose roots are appended to the query
+search field: search field to which the query should be applied
+  -> possible are: Author Keywords, Abstract, Author, DOI, ISBN, Publisher or Title
 
 to use the translation function, run:
 
