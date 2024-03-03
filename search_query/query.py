@@ -16,7 +16,7 @@ class Query(ABC):
     def __init__(
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ):
-        """init method"""
+        """init method - abstract"""
 
     def valid_tree_structure(self, start_node: Node):
         """validate input to test if a valid tree structure can be guaranteed"""
@@ -29,16 +29,18 @@ class Query(ABC):
             self.valid_tree_structure(child)
         return True
 
-    def build_query_tree(self) -> None:
+    def build_query_tree(
+        self, search_terms: list[str], nested_queries: list[Query], search_field: str
+    ) -> None:
         """parse the query provided, build nodes&tree structure"""
         if (
-            self.search_terms != []
+            search_terms != []
         ):  # append strings provided in search_terms (query_string) as children to current Query
-            self.create_term_nodes(self.search_terms, self.search_field)
+            self.create_term_nodes(search_terms, search_field)
 
-        if self.nested_queries != []:
+        if nested_queries != []:
             # append root of every Query in nested_queries as a child to the current Query
-            for query in self.nested_queries:
+            for query in nested_queries:
                 self.query_tree.root.children.append(query.query_tree.root)
 
     def create_term_nodes(self, children_list: list[str], search_field: str) -> None:
