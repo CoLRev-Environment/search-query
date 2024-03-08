@@ -11,7 +11,7 @@ A python package for the translation of literature search queries.
 
 To create queries, run:
 
-```
+```Python
 import search_query.query
 
 nested_query = search_query.query.OrQuery(["index", "search"], [], "Abstract")
@@ -24,7 +24,7 @@ search field: search field to which the query should be applied
 
 to use the translation function, run:
 
-```
+```Python
 query.translate_ieee("translationIEEE") 
 query.translate_pubmed("translationPubMed")
 query.translate_wos("translationWebofScience")
