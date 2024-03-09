@@ -1,0 +1,9 @@
+cff-version: 0.1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Ernst"
+  given-names: "Katharina Maria"
+title: "Towards more efficient literature search: Design of an open source query translator."
+version: 0.10.0
+date-released: 2024-03-09
+url: "https://github.com/ColRev-Environment/search-query"

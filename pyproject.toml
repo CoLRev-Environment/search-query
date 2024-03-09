@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "search-query"
-version = "0.1.0"
+version = "0.10.0"
 description = "Package for managing literature search queries."
 authors = ["Katharina Ernst <katharina-maria.ernst@stud.uni-bamberg.de>", "Gerit Wagner <gerit.wagner@uni-bamberg.de>"]
 license = "MIT"
