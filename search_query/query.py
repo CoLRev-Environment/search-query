@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from abc import ABC
 from abc import abstractmethod
+from pathlib import Path
 from typing import Optional
 
 from search_query.node import Node
@@ -66,7 +67,37 @@ class Query(ABC):
             term_node = Node(item, False, search_field)
             self.query_tree.root.children.append(term_node)
 
-    def print_query(self, node: Optional[Node] = None) -> str:
+    def write(
+        self, file_name: str, *, syntax: str, replace_existing: bool = False
+    ) -> None:
+        """writes the query to a file"""
+
+        if Path(file_name).exists() and not replace_existing:
+            raise FileExistsError("File already exists")
+        Path(file_name).parent.mkdir(parents=True, exist_ok=True)
+
+        if syntax == "wos":
+            self._write_wos(Path(file_name))
+        elif syntax == "pubmed":
+            self._write_pubmed(Path(file_name))
+        elif syntax == "ieee":
+            self._write_ieee(Path(file_name))
+        else:
+            raise ValueError(f"Syntax not supported ({syntax})")
+
+    def to_string(self, syntax: str = "pre_notation") -> str:
+        """prints the query in the selected syntax"""
+        if syntax == "pre_notation":
+            return self._print_query_pre_notation()
+        if syntax == "wos":
+            return self._print_query_wos()
+        if syntax == "pubmed":
+            return self._print_query_pubmed()
+        if syntax == "ieee":
+            return self._print_query_ieee()
+        raise ValueError(f"Syntax not supported ({syntax})")
+
+    def _print_query_pre_notation(self, node: Optional[Node] = None) -> str:
         """prints query in PreNotation"""
         # start node case
         if node is None:
@@ -79,20 +110,19 @@ class Query(ABC):
 
         result = f"{result}["
         for child in node.children:
-            result = f"{result}{self.print_query(child)}"
+            result = f"{result}{self._print_query_pre_notation(child)}"
             if child != node.children[-1]:
                 result = f"{result}, "
         return f"{result}]"
 
-    def translate_wos(self, file_name: str) -> None:
+    def _write_wos(self, file_name: Path) -> None:
         """translating method for Web of Science database
-        creates a JSON file with translation information at
-        ../translations/WoS/file_name
+        creates a JSON file with translation information
         """
         data = {
             "database": "Web of Science - Core Collection",
             "url": "https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery": f"{self.print_query_wos(self.query_tree.root)}",
+            "translatedQuery": f"{self.to_string(syntax='wos')}",
             "annotations": (
                 "Paste the translated string without quotation marks "
                 "into the advanced search free text field."
@@ -101,12 +131,10 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(
-            f"./translations/WoS/{file_name}.json", "w", encoding="utf-8"
-        ) as file:
+        with open(file_name, "w", encoding="utf-8") as file:
             file.write(json_object)
 
-    def print_query_wos(self, node: Optional[Node] = None) -> str:
+    def _print_query_wos(self, node: Optional[Node] = None) -> str:
         """actual translation logic for WoS"""
         # start node case
         if node is None:
@@ -136,26 +164,25 @@ class Query(ABC):
                 # node is operator node
                 if child.value == "NOT":
                     # current element is NOT Operator -> no parenthesis in WoS
-                    result = f"{result}{self.print_query_wos(child)}"
+                    result = f"{result}{self._print_query_wos(child)}"
 
                 elif (child == node.children[0]) & (child != node.children[-1]):
-                    result = f"{result}({self.print_query_wos(child)}"
+                    result = f"{result}({self._print_query_wos(child)}"
                 else:
-                    result = f"{result} {node.value} {self.print_query_wos(child)}"
+                    result = f"{result} {node.value} {self._print_query_wos(child)}"
 
                 if (child == node.children[-1]) & (child.value != "NOT"):
                     result = f"{result})"
         return f"{result}"
 
-    def translate_ieee(self, file_name: str) -> None:
+    def _write_ieee(self, file_name: Path) -> None:
         """translating method for IEEE Xplore database
-        creates a JSON file with translation information at
-        ../translations/IEEE/translationIEEE_ddMMYYYY_HH:MM
+        creates a JSON file with translation information
         """
         data = {
             "database": "IEEE Xplore",
             "url": "https://ieeexplore.ieee.org/search/advanced/command",
-            "translatedQuery": f"{self.print_query_ieee(self.query_tree.root)}",
+            "translatedQuery": f"{self.to_string(syntax='ieee')}",
             "annotations": (
                 "Paste the translated string "
                 "without quotation marks into the command search free text field."
@@ -164,12 +191,10 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(
-            f"./translations/IEEE/{file_name}.json", "w", encoding="utf-8"
-        ) as file:
+        with open(file_name, "w", encoding="utf-8") as file:
             file.write(json_object)
 
-    def print_query_ieee(self, node: Optional[Node] = None) -> str:
+    def _print_query_ieee(self, node: Optional[Node] = None) -> str:
         """actual translation logic for IEEE"""
         # start node case
         if node is None:
@@ -202,9 +227,9 @@ class Query(ABC):
                 # node is operator Node
                 if (child == node.children[0]) & (child != node.children[-1]):
                     # current Element is OR/AND operator:
-                    result = f"{result}{self.print_query_ieee(child)}"
+                    result = f"{result}{self._print_query_ieee(child)}"
                 else:
-                    result = f"{result} {node.value} {self.print_query_ieee(child)}"
+                    result = f"{result} {node.value} {self._print_query_ieee(child)}"
 
         return f"{result}"
 
@@ -226,15 +251,14 @@ class Query(ABC):
             result = "TI"
         return result
 
-    def translate_pubmed(self, file_name: str) -> None:
+    def _write_pubmed(self, file_name: Path) -> None:
         """translating method for PubMed database
-        creates a JSON file with translation information at
-        ../translations/PubMed/file_name
+        creates a JSON file with translation information
         """
         data = {
             "database": "PubMed",
             "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
-            "translatedQuery": f"{self.print_query_pubmed(self.query_tree.root)}",
+            "translatedQuery": f"{self.to_string(syntax='pubmed')}",
             "annotations": (
                 "Paste the translated string without quotation marks "
                 'into the "Query Box" free text field.'
@@ -243,12 +267,10 @@ class Query(ABC):
 
         json_object = json.dumps(data, indent=4)
 
-        with open(
-            f"./translations/PubMed/{file_name}.json", "w", encoding="utf-8"
-        ) as file:
+        with open(file_name, "w", encoding="utf-8") as file:
             file.write(json_object)
 
-    def print_query_pubmed(self, node: Optional[Node] = None) -> str:
+    def _print_query_pubmed(self, node: Optional[Node] = None) -> str:
         """actual translation logic for PubMed"""
         # start node case
         if node is None:
@@ -281,12 +303,12 @@ class Query(ABC):
                 # node is operator node
                 if child.value == "NOT":
                     # current element is NOT Operator -> no parenthesis in PubMed
-                    result = f"{result}{self.print_query_pubmed(child)}"
+                    result = f"{result}{self._print_query_pubmed(child)}"
 
                 elif (child == node.children[0]) & (child != node.children[-1]):
-                    result = f"{result}({self.print_query_pubmed(child)}"
+                    result = f"{result}({self._print_query_pubmed(child)}"
                 else:
-                    result = f"{result} {node.value} {self.print_query_pubmed(child)}"
+                    result = f"{result} {node.value} {self._print_query_pubmed(child)}"
 
                 if (child == node.children[-1]) & (child.value != "NOT"):
                     result = f"{result})"

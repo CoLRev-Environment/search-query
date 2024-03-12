@@ -20,23 +20,23 @@ Parameters:
 - nested queries: queries whose roots are appended to the query,
 - search field: search field to which the query should be applied (avaliable options: `Author Keywords`, `Abstract`, `Author`, `DOI`, `ISBN`, `Publisher` or `Title`)
 
-To use the translation function, run:
+To write the translated queries to a JSON file or print them, run:
 
 ```Python
-query.translate_ieee("translationIEEE")
-query.translate_pubmed("translationPubMed")
-query.translate_wos("translationWebofScience")
+query.write("translationIEEE.json", syntax="ieee")
+query.write("translationPubMed.json", syntax="pubmed")
+query.write("translationWebofScience.json", syntax="wos")
 
     or
 
-query.print_query_ieee(query.query_tree.root)
-query.print_query_pubmed(query.query_tree.root)
-query.print_query_wos(query.query_tree.root)
+query.to_string(syntax="ieee")
+query.to_string(syntax="pubmed")
+query.to_string(syntax="wos")
 
 ```
 
-The `translate()` methods create a JSON file in the "translations/databaseName/" directory under the stated file name
-The `print()` methods returns just the translated string
+The `write()` methods create a JSON file using the parameter file name
+The `to_string()` methods returns the translated string
 
 ## How to cite
 

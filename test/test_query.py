@@ -98,7 +98,7 @@ class TestQuery(unittest.TestCase):
 
         expected = 'AK=("health care" OR medicine)'
         self.assertEqual(
-            self.query_health.print_query_wos(),
+            self.query_health.to_string(syntax="wos"),
             expected,
             "Health Query was not translated to Web of Science Syntax",
         )
@@ -108,7 +108,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(AK=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND AK=("health care" OR medicine) AND AB=(ethic* OR moral*))'
         self.assertEqual(
-            self.query_complete.print_query_wos(),
+            self.query_complete.to_string(syntax="wos"),
             expected,
             "Complete Query was not translated to Web of Science Syntax",
         )
@@ -119,7 +119,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("Author Keywords":"health care" OR "Author Keywords":medicine)'
         self.assertEqual(
-            self.query_health.print_query_ieee(),
+            self.query_health.to_string(syntax="ieee"),
             expected,
             "Health Query was not translated to IEEE Syntax",
         )
@@ -129,7 +129,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(("Author Keywords":"AI" OR "Author Keywords":"Artificial Intelligence" OR "Author Keywords":"Machine Learning") OR  NOT "Author Keywords":robot*) AND ("Author Keywords":"health care" OR "Author Keywords":medicine) AND ("Abstract":ethic* OR "Abstract":moral*)'
         self.assertEqual(
-            self.query_complete.print_query_ieee(),
+            self.query_complete.to_string(syntax="ieee"),
             expected,
             "Query was not translated to IEEE Syntax",
         )
@@ -140,7 +140,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("health care"[ot] OR medicine[ot])'
         self.assertEqual(
-            self.query_health.print_query_pubmed(),
+            self.query_health.to_string(syntax="pubmed"),
             expected,
             "Health Query was not translated to PubMed Syntax",
         )
@@ -151,16 +151,24 @@ class TestQuery(unittest.TestCase):
 
         expected = '(("AI"[ot] OR "Artificial Intelligence"[ot] OR "Machine Learning"[ot] NOT robot*[ot]) AND ("health care"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))'
         self.assertEqual(
-            self.query_complete.print_query_pubmed(),
+            self.query_complete.to_string(syntax="pubmed"),
             expected,
             "Query was not translated to PubMed Syntax",
         )
 
     def test_json_files(self) -> None:
         """test whether the json files are created correctly"""
-        self.query_complete.translate_ieee("ieeeTest")
-        self.query_complete.translate_pubmed("pubmedTest")
-        self.query_complete.translate_wos("wosTest")
+        self.query_complete.write(
+            "./translations/IEEE/ieeeTest.json", syntax="ieee", replace_existing=True
+        )
+        self.query_complete.write(
+            "./translations/PubMed/pubmedTest.json",
+            syntax="pubmed",
+            replace_existing=True,
+        )
+        self.query_complete.write(
+            "./translations/WoS/wosTest.json", syntax="wos", replace_existing=True
+        )
 
     def test_invalid_tree_structure(self) -> None:
         """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
