@@ -18,9 +18,20 @@ class Query(ABC):
 
     @abstractmethod
     def __init__(
-        self, search_terms: list[str], nested_queries: list[Query], search_field: str
+        self,
+        operator: str,
+        search_terms: list[str],
+        nested_queries: list[Query],
+        search_field: str,
     ):
         """init method - abstract"""
+        self.query_tree = Tree(Node(operator, True, search_field))
+
+        self.build_query_tree(search_terms, nested_queries, search_field)
+        self.valid_tree_structure(self.query_tree.root)
+        self.query_tree.remove_all_marks()
+        for query in nested_queries:
+            query.query_tree.remove_all_marks()
 
     def valid_tree_structure(self, node: Node) -> None:
         """validate input to test if a valid tree structure can be guaranteed"""
