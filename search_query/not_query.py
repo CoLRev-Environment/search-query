@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """NOT Query"""
+from typing import List
+
 from search_query.node import Node
 from search_query.query import Query
 from search_query.tree import Tree
@@ -9,7 +11,7 @@ class NotQuery(Query):
     """NOT Query"""
 
     def __init__(
-        self, search_terms: list[str], nested_queries: list[Query], search_field: str
+        self, search_terms: List[str], nested_queries: List[Query], search_field: str
     ):
         """init method
         search terms: strings which you want to include in the search query

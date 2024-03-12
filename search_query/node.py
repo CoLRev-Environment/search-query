@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 """Node: This module contains the node logic."""
+from typing import List
+
+# pylint: disable=too-few-public-methods
 
 
 class Node:
@@ -10,7 +13,7 @@ class Node:
         self.value = value
         self.operator = operator
         # flag whether the Node is an operator
-        self.children: list[Node] = []
+        self.children: List[Node] = []
         # list of children nodes
         self.marked = False
         # marked flag for validation, necessary method

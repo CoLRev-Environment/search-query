@@ -5,12 +5,16 @@ from __future__ import annotations
 import json
 from abc import ABC
 from abc import abstractmethod
+from typing import Optional
 
 from search_query.node import Node
+from search_query.tree import Tree
 
 
 class Query(ABC):
     """Query class."""
+
+    query_tree: Tree
 
     @abstractmethod
     def __init__(

@@ -2,6 +2,8 @@
 """Tree: This module contains the tree logic."""
 from search_query.node import Node
 
+# pylint: disable=too-few-public-methods
+
 
 class Tree:
     """Tree class."""
