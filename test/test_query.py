@@ -17,18 +17,23 @@ class TestQuery(unittest.TestCase):
 
     def setUp(self) -> None:
         self.test_node = Node("testvalue", False, "Document Title")
-        self.query_robot = NotQuery(["robot*"], [], "Author Keywords")
+        self.query_robot = NotQuery(["robot*"], search_field="Author Keywords")
         self.query_ai = OrQuery(
-            ['"AI"', '"Artificial Intelligence"', '"Machine Learning"'],
-            [self.query_robot],
-            "Author Keywords",
+            [
+                '"AI"',
+                '"Artificial Intelligence"',
+                '"Machine Learning"',
+                self.query_robot,
+            ],
+            search_field="Author Keywords",
         )
         self.query_health = OrQuery(
-            ['"health care"', "medicine"], [], "Author Keywords"
+            ['"health care"', "medicine"], search_field="Author Keywords"
         )
-        self.query_ethics = OrQuery(["ethic*", "moral*"], [], "Abstract")
+        self.query_ethics = OrQuery(["ethic*", "moral*"], search_field="Abstract")
         self.query_complete = AndQuery(
-            [], [self.query_ai, self.query_health, self.query_ethics], "Author Keywords"
+            [self.query_ai, self.query_health, self.query_ethics],
+            search_field="Author Keywords",
         )
 
     def test_print_node(self) -> None:
@@ -174,7 +179,8 @@ class TestQuery(unittest.TestCase):
         """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
         with self.assertRaises(ValueError):
             AndQuery(
-                ["invalid"], [self.query_complete, self.query_ai], "Author Keywords"
+                ["invalid", self.query_complete, self.query_ai],
+                search_field="Author Keywords",
             )
 
 

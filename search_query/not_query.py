@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """NOT Query"""
 from typing import List
+from typing import Union
 
 from search_query.query import Query
 
@@ -8,9 +9,7 @@ from search_query.query import Query
 class NotQuery(Query):
     """NOT Query"""
 
-    def __init__(
-        self, search_terms: List[str], nested_queries: List[Query], search_field: str
-    ):
+    def __init__(self, children: List[Union[str, Query]], *, search_field: str):
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
@@ -20,7 +19,6 @@ class NotQuery(Query):
 
         super().__init__(
             operator="NOT",
-            search_terms=search_terms,
-            nested_queries=nested_queries,
+            children=children,
             search_field=search_field,
         )

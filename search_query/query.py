@@ -6,7 +6,9 @@ import json
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
+from typing import List
 from typing import Optional
+from typing import Union
 
 from search_query.node import Node
 from search_query.tree import Tree
@@ -22,50 +24,32 @@ class Query(ABC):
         self,
         *,
         operator: str,
-        search_terms: list[str],
-        nested_queries: list[Query],
+        children: List[Union[str, Query]],
         search_field: str,
     ):
         """init method - abstract"""
 
-        assert operator in ["AND", "OR", "NOT"]
-        self.query_tree = Tree(Node(operator, True, search_field))
-
-        self._build_query_tree(search_terms, nested_queries, search_field)
-        self._validate_tree_structure(self.query_tree.root)
-        self.query_tree.remove_all_marks()
-        for query in nested_queries:
-            query.query_tree.remove_all_marks()
-
-    def _validate_tree_structure(self, node: Node) -> None:
-        """validate input to test if a valid tree structure can be guaranteed"""
-        if node.marked:
-            raise ValueError("Building Query Tree failed")
-        node.marked = True
-        if node.children == []:
-            pass
-        for child in node.children:
-            self._validate_tree_structure(child)
+        self._build_query_tree(operator, children, search_field)
 
     def _build_query_tree(
-        self, search_terms: list[str], nested_queries: list[Query], search_field: str
+        self, operator: str, children: List[Union[str, Query]], search_field: str
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if search_terms:  # append strings provided in search_terms (query_string)
-            # as children to current Query
-            self._create_term_nodes(search_terms, search_field)
+        assert operator in ["AND", "OR", "NOT"]
+        self.query_tree = Tree(Node(operator, True, search_field))
+        for item in children:
+            if isinstance(item, str):
+                term_node = Node(item, False, search_field)
+                self.query_tree.root.children.append(term_node)
+            elif isinstance(item, Query):
+                self.query_tree.root.children.append(item.query_tree.root)
+            else:
+                raise ValueError("Invalid search term")
 
-        if nested_queries:
-            # append root of every Query in nested_queries
-            # as a child to the current Query
-            for query in nested_queries:
-                self.query_tree.root.children.append(query.query_tree.root)
-
-    def _create_term_nodes(self, children_list: list[str], search_field: str) -> None:
-        """build children term nodes, append to tree"""
-        for item in children_list:
-            term_node = Node(item, False, search_field)
-            self.query_tree.root.children.append(term_node)
+        # Mark nodes to prevent circular references
+        self.query_tree.root.mark()
+        # Remove marks
+        self.query_tree.root.remove_marks()
 
     def write(
         self, file_name: str, *, syntax: str, replace_existing: bool = False

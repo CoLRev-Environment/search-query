@@ -10,8 +10,13 @@ To create queries, run:
 ```Python
 from search_query import OrQuery, AndQuery
 
-nested_query = OrQuery(["index", "search"], [], "Abstract")
-query = AndQuery(["terms"], [nested_query], "Author Keywords")
+# Typical building-blocks approach
+digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="Abstract")
+work_synonyms = OrQuery(["work", "labor", "service"], search_field="Abstract")
+query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keywords")
+
+# Example combining queries and terms at the same level
+query = AndQuery([digital_synonyms, work_synonyms, "policy"], search_field="Author Keywords")
 ```
 
 Parameters:

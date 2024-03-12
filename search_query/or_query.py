@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import List
+from typing import Union
 
 from search_query.query import Query
 
@@ -10,9 +11,7 @@ from search_query.query import Query
 class OrQuery(Query):
     """OR Query Class"""
 
-    def __init__(
-        self, search_terms: List[str], nested_queries: List[Query], search_field: str
-    ):
+    def __init__(self, children: List[Union[str, Query]], *, search_field: str):
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
@@ -22,7 +21,6 @@ class OrQuery(Query):
 
         super().__init__(
             operator="OR",
-            search_terms=search_terms,
-            nested_queries=nested_queries,
+            children=children,
             search_field=search_field,
         )
