@@ -8,6 +8,10 @@ from search_query.not_query import NotQuery
 from search_query.or_query import OrQuery
 
 
+# pylint: disable=line-too-long
+# flake8: noqa: E501
+
+
 class TestQuery(unittest.TestCase):
     """Testing class for query translator"""
 

@@ -47,13 +47,13 @@ class Query(ABC):
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if (
-            search_terms != []
-        ):  # append strings provided in search_terms (query_string) as children to current Query
+        if search_terms != []:  # append strings provided in search_terms (query_string)
+            # as children to current Query
             self.create_term_nodes(search_terms, search_field)
 
         if nested_queries != []:
-            # append root of every Query in nested_queries as a child to the current Query
+            # append root of every Query in nested_queries
+            # as a child to the current Query
             for query in nested_queries:
                 self.query_tree.root.children.append(query.query_tree.root)
 
@@ -90,7 +90,10 @@ class Query(ABC):
             "database": "Web of Science - Core Collection",
             "url": "https://www.webofscience.com/wos/woscc/advanced-search",
             "translatedQuery": f"{self.print_query_wos(self.query_tree.root)}",
-            "annotations": "Paste the translated string without quotation marks into the advanced search free text field.",
+            "annotations": (
+                "Paste the translated string without quotation marks "
+                "into the advanced search free text field."
+            ),
         }
 
         json_object = json.dumps(data, indent=4)
@@ -112,7 +115,11 @@ class Query(ABC):
                 if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
                     # -->operator does not need to be appended again
-                    result = f"{result}{self.get_search_field_wos(child.search_field)}=({child.value}"
+                    result = (
+                        f"{result}"
+                        f"{self.get_search_field_wos(child.search_field)}="
+                        f"({child.value}"
+                    )
 
                 else:
                     # current element is not first child
@@ -146,7 +153,10 @@ class Query(ABC):
             "database": "IEEE Xplore",
             "url": "https://ieeexplore.ieee.org/search/advanced/command",
             "translatedQuery": f"{self.print_query_ieee(self.query_tree.root)}",
-            "annotations": "Paste the translated string without quotation marks into the command search free text field.",
+            "annotations": (
+                "Paste the translated string "
+                "without quotation marks into the command search free text field."
+            ),
         }
 
         json_object = json.dumps(data, indent=4)
@@ -222,7 +232,10 @@ class Query(ABC):
             "database": "PubMed",
             "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
             "translatedQuery": f"{self.print_query_pubmed(self.query_tree.root)}",
-            "annotations": 'Paste the translated string without quotation marks into the "Query Box" free text field.',
+            "annotations": (
+                "Paste the translated string without quotation marks "
+                'into the "Query Box" free text field.'
+            ),
         }
 
         json_object = json.dumps(data, indent=4)
@@ -245,11 +258,17 @@ class Query(ABC):
                 if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
                     # -->operator does not need to be appended again
-                    result = f"{result}({child.value}[{self.get_search_field_pubmed(child.search_field)}]"
+                    result = (
+                        f"{result}({child.value}"
+                        f"[{self.get_search_field_pubmed(child.search_field)}]"
+                    )
 
                 else:
                     # current element is not first child
-                    result = f"{result} {node.value} {child.value}[{self.get_search_field_pubmed(child.search_field)}]"
+                    result = (
+                        f"{result} {node.value} {child.value}"
+                        f"[{self.get_search_field_pubmed(child.search_field)}]"
+                    )
 
                 if child == node.children[-1]:
                     # current Element is last Element -> closing parenthesis

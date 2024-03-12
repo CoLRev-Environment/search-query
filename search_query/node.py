@@ -24,4 +24,8 @@ class Node:
 
     def print_node(self) -> str:
         """returns a string with all information to the node"""
-        return f"value: {self.value} operator: {str(self.operator)} search field: {self.search_field}"
+        return (
+            f"value: {self.value} "
+            f"operator: {str(self.operator)} "
+            f"search field: {self.search_field}"
+        )
