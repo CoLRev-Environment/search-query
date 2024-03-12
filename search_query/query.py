@@ -22,7 +22,7 @@ class Query(ABC):
     ):
         """init method - abstract"""
 
-    def valid_tree_structure(self, start_node: Node):
+    def valid_tree_structure(self, start_node: Node) -> None:
         """validate input to test if a valid tree structure can be guaranteed"""
         if start_node.marked is True:
             raise ValueError("Building Query Tree failed")
@@ -31,7 +31,6 @@ class Query(ABC):
             pass
         for child in start_node.children:
             self.valid_tree_structure(child)
-        return True
 
     def build_query_tree(
         self, search_terms: list[str], nested_queries: list[Query], search_field: str

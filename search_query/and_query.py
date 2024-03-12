@@ -22,10 +22,7 @@ class AndQuery(Query):
         self.query_tree = Tree(Node("AND", True, search_field))
         self.build_query_tree(search_terms, nested_queries, search_field)
         # query tree structure is build
-        try:
-            self.valid_tree_structure(self.query_tree.root)
-        except:
-            raise ValueError("Building Query Tree failed")
+        self.valid_tree_structure(self.query_tree.root)
         self.query_tree.remove_all_marks()
         for query in nested_queries:
             query.query_tree.remove_all_marks()
