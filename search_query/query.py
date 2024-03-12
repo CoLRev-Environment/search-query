@@ -38,7 +38,7 @@ class Query(ABC):
 
     def _validate_tree_structure(self, node: Node) -> None:
         """validate input to test if a valid tree structure can be guaranteed"""
-        if node.marked is True:
+        if node.marked:
             raise ValueError("Building Query Tree failed")
         node.marked = True
         if node.children == []:
@@ -50,11 +50,11 @@ class Query(ABC):
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
-        if search_terms != []:  # append strings provided in search_terms (query_string)
+        if search_terms:  # append strings provided in search_terms (query_string)
             # as children to current Query
             self._create_term_nodes(search_terms, search_field)
 
-        if nested_queries != []:
+        if nested_queries:
             # append root of every Query in nested_queries
             # as a child to the current Query
             for query in nested_queries:
@@ -113,7 +113,7 @@ class Query(ABC):
             node = self.query_tree.root
         result = ""
         for child in node.children:
-            if child.operator is False:
+            if not child.operator:
                 # node is not an operator
                 if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
@@ -177,12 +177,12 @@ class Query(ABC):
         result = ""
         for index, child in enumerate(node.children):
             # node is not an operator
-            if child.operator is False:
+            if not child.operator:
                 # current element is first but not only child element
                 # --> operator does not need to be appended again
                 if (child == node.children[0]) & (child != node.children[-1]):
                     result = f'{result}("{child.search_field}":{child.value}'
-                    if node.children[index + 1].operator is True:
+                    if node.children[index + 1].operator:
                         result = f"({result})"
 
                 else:
@@ -191,7 +191,7 @@ class Query(ABC):
                         f'{result} {node.value} "{child.search_field}":{child.value}'
                     )
                     if child != node.children[-1]:
-                        if node.children[index + 1].operator is True:
+                        if node.children[index + 1].operator:
                             result = f"({result})"
 
                 if child == node.children[-1]:
@@ -256,7 +256,7 @@ class Query(ABC):
 
         result = ""
         for child in node.children:
-            if child.operator is False:
+            if not child.operator:
                 # node is not an operator
                 if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
