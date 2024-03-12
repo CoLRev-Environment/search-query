@@ -48,12 +48,12 @@ class TestQuery(unittest.TestCase):
         medicineChild = Node("medicine", False, "Author Keywords")
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
-            self.query_health.query_tree.root.children[0].print_node(),
+            self.query_health.query_node.children[0].print_node(),
             expected[0].print_node(),
             "Children were appended incorrectly!",
         )
         self.assertEqual(
-            self.query_health.query_tree.root.children[1].print_node(),
+            self.query_health.query_node.children[1].print_node(),
             expected[1].print_node(),
             "Children were appended incorrectly!",
         )
@@ -62,7 +62,7 @@ class TestQuery(unittest.TestCase):
         """test whether OR node is created correctly"""
         expected = Node("OR", True, "")
         self.assertEqual(
-            self.query_ai.query_tree.root.print_node(),
+            self.query_ai.query_node.print_node(),
             expected.print_node(),
             "OR root was not created correctly!",
         )
@@ -71,7 +71,7 @@ class TestQuery(unittest.TestCase):
         """test whether AND node is created correctly"""
         expected = Node("AND", True, "")
         self.assertEqual(
-            self.query_complete.query_tree.root.print_node(),
+            self.query_complete.query_node.print_node(),
             expected.print_node(),
             "AND root was not created correctly!",
         )
@@ -80,7 +80,7 @@ class TestQuery(unittest.TestCase):
         """test whether NOT node is created correctly"""
         expected = Node("NOT", True, "")
         self.assertEqual(
-            self.query_robot.query_tree.root.print_node(),
+            self.query_robot.query_node.print_node(),
             expected.print_node(),
             "NOT root was not created correctly!",
         )
@@ -88,11 +88,11 @@ class TestQuery(unittest.TestCase):
     def test_nested_queries(self) -> None:
         """test whether roots of nested Queries are appended as children"""
         self.assertListEqual(
-            self.query_complete.query_tree.root.children,
+            self.query_complete.query_node.children,
             [
-                self.query_ai.query_tree.root,
-                self.query_health.query_tree.root,
-                self.query_ethics.query_tree.root,
+                self.query_ai.query_node,
+                self.query_health.query_node,
+                self.query_ethics.query_node,
             ],
             "Nested Queries were not appended correctly!",
         )
