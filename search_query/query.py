@@ -19,21 +19,24 @@ class Query(ABC):
     @abstractmethod
     def __init__(
         self,
+        *,
         operator: str,
         search_terms: list[str],
         nested_queries: list[Query],
         search_field: str,
     ):
         """init method - abstract"""
+
+        assert operator in ["AND", "OR", "NOT"]
         self.query_tree = Tree(Node(operator, True, search_field))
 
-        self.build_query_tree(search_terms, nested_queries, search_field)
-        self.valid_tree_structure(self.query_tree.root)
+        self._build_query_tree(search_terms, nested_queries, search_field)
+        self._validate_tree_structure(self.query_tree.root)
         self.query_tree.remove_all_marks()
         for query in nested_queries:
             query.query_tree.remove_all_marks()
 
-    def valid_tree_structure(self, node: Node) -> None:
+    def _validate_tree_structure(self, node: Node) -> None:
         """validate input to test if a valid tree structure can be guaranteed"""
         if node.marked is True:
             raise ValueError("Building Query Tree failed")
@@ -41,15 +44,15 @@ class Query(ABC):
         if node.children == []:
             pass
         for child in node.children:
-            self.valid_tree_structure(child)
+            self._validate_tree_structure(child)
 
-    def build_query_tree(
+    def _build_query_tree(
         self, search_terms: list[str], nested_queries: list[Query], search_field: str
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
         if search_terms != []:  # append strings provided in search_terms (query_string)
             # as children to current Query
-            self.create_term_nodes(search_terms, search_field)
+            self._create_term_nodes(search_terms, search_field)
 
         if nested_queries != []:
             # append root of every Query in nested_queries
@@ -57,7 +60,7 @@ class Query(ABC):
             for query in nested_queries:
                 self.query_tree.root.children.append(query.query_tree.root)
 
-    def create_term_nodes(self, children_list: list[str], search_field: str) -> None:
+    def _create_term_nodes(self, children_list: list[str], search_field: str) -> None:
         """build children term nodes, append to tree"""
         for item in children_list:
             term_node = Node(item, False, search_field)
