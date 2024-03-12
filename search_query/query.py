@@ -22,14 +22,14 @@ class Query(ABC):
     ):
         """init method - abstract"""
 
-    def valid_tree_structure(self, start_node: Node) -> None:
+    def valid_tree_structure(self, node: Node) -> None:
         """validate input to test if a valid tree structure can be guaranteed"""
-        if start_node.marked is True:
+        if node.marked is True:
             raise ValueError("Building Query Tree failed")
-        start_node.marked = True
-        if start_node.children == []:
+        node.marked = True
+        if node.children == []:
             pass
-        for child in start_node.children:
+        for child in node.children:
             self.valid_tree_structure(child)
 
     def build_query_tree(
@@ -52,17 +52,21 @@ class Query(ABC):
             term_node = Node(item, False, search_field)
             self.query_tree.root.children.append(term_node)
 
-    def print_query(self, start_node: Node) -> str:
+    def print_query(self, node: Optional[Node] = None) -> str:
         """prints query in PreNotation"""
+        # start node case
+        if node is None:
+            node = self.query_tree.root
+
         result = ""
-        result = f"{result}{start_node.value}"
-        if start_node.children == []:
+        result = f"{result}{node.value}"
+        if node.children == []:
             return result
 
         result = f"{result}["
-        for child in start_node.children:
+        for child in node.children:
             result = f"{result}{self.print_query(child)}"
-            if child != start_node.children[-1]:
+            if child != node.children[-1]:
                 result = f"{result}, "
         return f"{result}]"
 
@@ -85,43 +89,40 @@ class Query(ABC):
         ) as file:
             file.write(json_object)
 
-    def print_query_wos(self, start_node: Node) -> str:
+    def print_query_wos(self, node: Optional[Node] = None) -> str:
         """actual translation logic for WoS"""
+        # start node case
+        if node is None:
+            node = self.query_tree.root
         result = ""
-        for child in start_node.children:
+        for child in node.children:
             if child.operator is False:
-                # start_node is not an operator
-                if (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                # node is not an operator
+                if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
                     # -->operator does not need to be appended again
                     result = f"{result}{self.get_search_field_wos(child.search_field)}=({child.value}"
 
                 else:
                     # current element is not first child
-                    result = f"{result} {start_node.value} {child.value}"
+                    result = f"{result} {node.value} {child.value}"
 
-                if child == start_node.children[-1]:
+                if child == node.children[-1]:
                     # current Element is last Element -> closing parenthesis
                     result = f"{result})"
 
             else:
-                # start_node is operator node
+                # node is operator node
                 if child.value == "NOT":
                     # current element is NOT Operator -> no parenthesis in WoS
                     result = f"{result}{self.print_query_wos(child)}"
 
-                elif (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                elif (child == node.children[0]) & (child != node.children[-1]):
                     result = f"{result}({self.print_query_wos(child)}"
                 else:
-                    result = (
-                        f"{result} {start_node.value} {self.print_query_wos(child)}"
-                    )
+                    result = f"{result} {node.value} {self.print_query_wos(child)}"
 
-                if (child == start_node.children[-1]) & (child.value != "NOT"):
+                if (child == node.children[-1]) & (child.value != "NOT"):
                     result = f"{result})"
         return f"{result}"
 
@@ -144,43 +145,42 @@ class Query(ABC):
         ) as file:
             file.write(json_object)
 
-    def print_query_ieee(self, start_node: Node) -> str:
+    def print_query_ieee(self, node: Optional[Node] = None) -> str:
         """actual translation logic for IEEE"""
+        # start node case
+        if node is None:
+            node = self.query_tree.root
         result = ""
-        for index, child in enumerate(start_node.children):
-            # start_node is not an operator
+        for index, child in enumerate(node.children):
+            # node is not an operator
             if child.operator is False:
                 # current element is first but not only child element
                 # --> operator does not need to be appended again
-                if (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                if (child == node.children[0]) & (child != node.children[-1]):
                     result = f'{result}("{child.search_field}":{child.value}'
-                    if start_node.children[index + 1].operator is True:
+                    if node.children[index + 1].operator is True:
                         result = f"({result})"
 
                 else:
                     # current element is not first child
-                    result = f'{result} {start_node.value} "{child.search_field}":{child.value}'
-                    if child != start_node.children[-1]:
-                        if start_node.children[index + 1].operator is True:
+                    result = (
+                        f'{result} {node.value} "{child.search_field}":{child.value}'
+                    )
+                    if child != node.children[-1]:
+                        if node.children[index + 1].operator is True:
                             result = f"({result})"
 
-                if child == start_node.children[-1]:
+                if child == node.children[-1]:
                     # current element is last Element -> closing parenthesis
                     result = f"{result})"
 
             else:
-                # start_node is operator Node
-                if (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                # node is operator Node
+                if (child == node.children[0]) & (child != node.children[-1]):
                     # current Element is OR/AND operator:
                     result = f"{result}{self.print_query_ieee(child)}"
                 else:
-                    result = (
-                        f"{result} {start_node.value} {self.print_query_ieee(child)}"
-                    )
+                    result = f"{result} {node.value} {self.print_query_ieee(child)}"
 
         return f"{result}"
 
@@ -221,43 +221,41 @@ class Query(ABC):
         ) as file:
             file.write(json_object)
 
-    def print_query_pubmed(self, start_node: Node) -> str:
+    def print_query_pubmed(self, node: Optional[Node] = None) -> str:
         """actual translation logic for PubMed"""
+        # start node case
+        if node is None:
+            node = self.query_tree.root
+
         result = ""
-        for child in start_node.children:
+        for child in node.children:
             if child.operator is False:
-                # start_node is not an operator
-                if (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                # node is not an operator
+                if (child == node.children[0]) & (child != node.children[-1]):
                     # current element is first but not only child element
                     # -->operator does not need to be appended again
                     result = f"{result}({child.value}[{self.get_search_field_pubmed(child.search_field)}]"
 
                 else:
                     # current element is not first child
-                    result = f"{result} {start_node.value} {child.value}[{self.get_search_field_pubmed(child.search_field)}]"
+                    result = f"{result} {node.value} {child.value}[{self.get_search_field_pubmed(child.search_field)}]"
 
-                if child == start_node.children[-1]:
+                if child == node.children[-1]:
                     # current Element is last Element -> closing parenthesis
                     result = f"{result})"
 
             else:
-                # start_node is operator node
+                # node is operator node
                 if child.value == "NOT":
                     # current element is NOT Operator -> no parenthesis in PubMed
                     result = f"{result}{self.print_query_pubmed(child)}"
 
-                elif (child == start_node.children[0]) & (
-                    child != start_node.children[-1]
-                ):
+                elif (child == node.children[0]) & (child != node.children[-1]):
                     result = f"{result}({self.print_query_pubmed(child)}"
                 else:
-                    result = (
-                        f"{result} {start_node.value} {self.print_query_pubmed(child)}"
-                    )
+                    result = f"{result} {node.value} {self.print_query_pubmed(child)}"
 
-                if (child == start_node.children[-1]) & (child.value != "NOT"):
+                if (child == node.children[-1]) & (child.value != "NOT"):
                     result = f"{result})"
         return f"{result}"
 

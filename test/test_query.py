@@ -94,7 +94,7 @@ class TestQuery(unittest.TestCase):
 
         expected = 'AK=("health care" OR medicine)'
         self.assertEqual(
-            self.query_health.print_query_wos(self.query_health.query_tree.root),
+            self.query_health.print_query_wos(),
             expected,
             "Health Query was not translated to Web of Science Syntax",
         )
@@ -104,7 +104,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(AK=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND AK=("health care" OR medicine) AND AB=(ethic* OR moral*))'
         self.assertEqual(
-            self.query_complete.print_query_wos(self.query_complete.query_tree.root),
+            self.query_complete.print_query_wos(),
             expected,
             "Complete Query was not translated to Web of Science Syntax",
         )
@@ -115,7 +115,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("Author Keywords":"health care" OR "Author Keywords":medicine)'
         self.assertEqual(
-            self.query_health.print_query_ieee(self.query_health.query_tree.root),
+            self.query_health.print_query_ieee(),
             expected,
             "Health Query was not translated to IEEE Syntax",
         )
@@ -125,7 +125,7 @@ class TestQuery(unittest.TestCase):
         testing the complete, multi-level Query"""
         expected = '(("Author Keywords":"AI" OR "Author Keywords":"Artificial Intelligence" OR "Author Keywords":"Machine Learning") OR  NOT "Author Keywords":robot*) AND ("Author Keywords":"health care" OR "Author Keywords":medicine) AND ("Abstract":ethic* OR "Abstract":moral*)'
         self.assertEqual(
-            self.query_complete.print_query_ieee(self.query_complete.query_tree.root),
+            self.query_complete.print_query_ieee(),
             expected,
             "Query was not translated to IEEE Syntax",
         )
@@ -136,7 +136,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '("health care"[ot] OR medicine[ot])'
         self.assertEqual(
-            self.query_health.print_query_pubmed(self.query_health.query_tree.root),
+            self.query_health.print_query_pubmed(),
             expected,
             "Health Query was not translated to PubMed Syntax",
         )
@@ -147,7 +147,7 @@ class TestQuery(unittest.TestCase):
 
         expected = '(("AI"[ot] OR "Artificial Intelligence"[ot] OR "Machine Learning"[ot] NOT robot*[ot]) AND ("health care"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))'
         self.assertEqual(
-            self.query_complete.print_query_pubmed(self.query_complete.query_tree.root),
+            self.query_complete.print_query_pubmed(),
             expected,
             "Query was not translated to PubMed Syntax",
         )
