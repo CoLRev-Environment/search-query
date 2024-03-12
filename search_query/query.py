@@ -131,7 +131,7 @@ class Query(ABC):
                     # -->operator does not need to be appended again
                     result = (
                         f"{result}"
-                        f"{self.get_search_field_wos(child.search_field)}="
+                        f"{self._get_search_field_wos(child.search_field)}="
                         f"({child.value}"
                     )
 
@@ -216,7 +216,7 @@ class Query(ABC):
 
         return f"{result}"
 
-    def get_search_field_wos(self, search_field: str) -> str:
+    def _get_search_field_wos(self, search_field: str) -> str:
         """transform search field to WoS Syntax"""
         if search_field == "Author Keywords":
             result = "AK"
@@ -268,14 +268,14 @@ class Query(ABC):
                     # -->operator does not need to be appended again
                     result = (
                         f"{result}({child.value}"
-                        f"[{self.get_search_field_pubmed(child.search_field)}]"
+                        f"[{self._get_search_field_pubmed(child.search_field)}]"
                     )
 
                 else:
                     # current element is not first child
                     result = (
                         f"{result} {node.value} {child.value}"
-                        f"[{self.get_search_field_pubmed(child.search_field)}]"
+                        f"[{self._get_search_field_pubmed(child.search_field)}]"
                     )
 
                 if child == node.children[-1]:
@@ -297,7 +297,7 @@ class Query(ABC):
                     result = f"{result})"
         return f"{result}"
 
-    def get_search_field_pubmed(self, search_field: str) -> str:
+    def _get_search_field_pubmed(self, search_field: str) -> str:
         """transform search field to PubMed Syntax"""
         if search_field == "Author Keywords":
             result = "ot"
