@@ -35,10 +35,10 @@ class Query(ABC):
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
         assert operator in ["AND", "OR", "NOT"]
-        self.query_node = Node(operator, True, search_field)
+        self.query_node = Node(operator, operator=True, search_field=search_field)
         for item in children:
             if isinstance(item, str):
-                term_node = Node(item, False, search_field)
+                term_node = Node(item, operator=False, search_field=search_field)
                 self.query_node.children.append(term_node)
             elif isinstance(item, Query):
                 self.query_node.children.append(item.query_node)
