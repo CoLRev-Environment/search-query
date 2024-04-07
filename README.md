@@ -23,7 +23,7 @@ Parameters:
 
 - search terms: strings which you want to include in the search query,
 - nested queries: queries whose roots are appended to the query,
-- search field: search field to which the query should be applied (avaliable options: `Author Keywords`, `Abstract`, `Author`, `DOI`, `ISBN`, `Publisher` or `Title`)
+- search field: search field to which the query should be applied (available options: `Author Keywords`, `Abstract`, `Author`, `DOI`, `ISBN`, `Publisher` or `Title`)
 
 To write the translated queries to a JSON file or print them, run:
 
