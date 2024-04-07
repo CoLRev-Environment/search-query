@@ -8,7 +8,9 @@ from typing import List
 class Node:
     """Node class."""
 
-    def __init__(self, value: str, *, operator: bool, search_field: str):
+    def __init__(
+        self, value: str, *, operator: bool = False, search_field: str = "Abstract"
+    ):
         """init method"""
         self.value = value
         self.operator = operator

@@ -13,10 +13,8 @@ from typing import Union
 from search_query.node import Node
 
 
-class Query(ABC):
+class Query(ABC, Node):
     """Query class."""
-
-    query_node: Node
 
     @abstractmethod
     def __init__(
@@ -24,10 +22,11 @@ class Query(ABC):
         *,
         operator: str,
         children: List[Union[str, Query]],
-        search_field: str,
+        search_field: str = "Abstract",
     ):
         """init method - abstract"""
 
+        Node.__init__(self, value=operator, operator=True, search_field=search_field)
         self._build_query_node(operator, children, search_field)
 
     def _build_query_node(
@@ -35,20 +34,19 @@ class Query(ABC):
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
         assert operator in ["AND", "OR", "NOT"]
-        self.query_node = Node(operator, operator=True, search_field=search_field)
         for item in children:
             if isinstance(item, str):
                 term_node = Node(item, operator=False, search_field=search_field)
-                self.query_node.children.append(term_node)
+                self.children.append(term_node)
             elif isinstance(item, Query):
-                self.query_node.children.append(item.query_node)
+                self.children.append(item)
             else:
                 raise ValueError("Invalid search term")
 
         # Mark nodes to prevent circular references
-        self.query_node.mark()
+        self.mark()
         # Remove marks
-        self.query_node.remove_marks()
+        self.remove_marks()
 
     def write(
         self, file_name: str, *, syntax: str, replace_existing: bool = False
@@ -84,7 +82,10 @@ class Query(ABC):
         """prints query in PreNotation"""
         # start node case
         if node is None:
-            node = self.query_node
+            node = self
+
+        if not hasattr(node, "value"):
+            return " (?) "
 
         result = ""
         result = f"{result}{node.value}"
@@ -121,7 +122,7 @@ class Query(ABC):
         """actual translation logic for WoS"""
         # start node case
         if node is None:
-            node = self.query_node
+            node = self
         result = ""
         for child in node.children:
             if not child.operator:
@@ -181,7 +182,7 @@ class Query(ABC):
         """actual translation logic for IEEE"""
         # start node case
         if node is None:
-            node = self.query_node
+            node = self
         result = ""
         for index, child in enumerate(node.children):
             # node is not an operator
@@ -257,7 +258,7 @@ class Query(ABC):
         """actual translation logic for PubMed"""
         # start node case
         if node is None:
-            node = self.query_node
+            node = self
 
         result = ""
         for child in node.children:

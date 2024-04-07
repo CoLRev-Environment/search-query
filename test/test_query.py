@@ -16,7 +16,7 @@ class TestQuery(unittest.TestCase):
     """Testing class for query translator"""
 
     def setUp(self) -> None:
-        self.test_node = Node("testvalue", False, "Document Title")
+        self.test_node = Node("testvalue", search_field="Document Title")
         self.query_robot = NotQuery(["robot*"], search_field="Author Keywords")
         self.query_ai = OrQuery(
             [
@@ -44,43 +44,43 @@ class TestQuery(unittest.TestCase):
 
     def test_append_children(self) -> None:
         """test whether the children are appended correctly"""
-        healthCareChild = Node('"health care"', False, "Author Keywords")
-        medicineChild = Node("medicine", False, "Author Keywords")
+        healthCareChild = Node('"health care"', search_field="Author Keywords")
+        medicineChild = Node("medicine", search_field="Author Keywords")
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
-            self.query_health.query_node.children[0].print_node(),
+            self.query_health.children[0].print_node(),
             expected[0].print_node(),
             "Children were appended incorrectly!",
         )
         self.assertEqual(
-            self.query_health.query_node.children[1].print_node(),
+            self.query_health.children[1].print_node(),
             expected[1].print_node(),
             "Children were appended incorrectly!",
         )
 
     def test_or_query(self) -> None:
         """test whether OR node is created correctly"""
-        expected = Node("OR", True, "")
+        expected = Node("OR", operator=True)
         self.assertEqual(
-            self.query_ai.query_node.print_node(),
+            self.query_ai.print_node(),
             expected.print_node(),
             "OR root was not created correctly!",
         )
 
     def test_and_query(self) -> None:
         """test whether AND node is created correctly"""
-        expected = Node("AND", True, "")
+        expected = Node("AND", operator=True)
         self.assertEqual(
-            self.query_complete.query_node.print_node(),
+            self.query_complete.print_node(),
             expected.print_node(),
             "AND root was not created correctly!",
         )
 
     def test_not_query(self) -> None:
         """test whether NOT node is created correctly"""
-        expected = Node("NOT", True, "")
+        expected = Node("NOT", operator=True)
         self.assertEqual(
-            self.query_robot.query_node.print_node(),
+            self.query_robot.print_node(),
             expected.print_node(),
             "NOT root was not created correctly!",
         )
@@ -88,11 +88,11 @@ class TestQuery(unittest.TestCase):
     def test_nested_queries(self) -> None:
         """test whether roots of nested Queries are appended as children"""
         self.assertListEqual(
-            self.query_complete.query_node.children,
+            self.query_complete.children,
             [
-                self.query_ai.query_node,
-                self.query_health.query_node,
-                self.query_ethics.query_node,
+                self.query_ai,
+                self.query_health,
+                self.query_ethics,
             ],
             "Nested Queries were not appended correctly!",
         )
