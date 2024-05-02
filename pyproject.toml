@@ -10,10 +10,8 @@ include = ["LICENSE", "README.md"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-
-[tool.poetry.group.dev.dependencies]
-pylint = {version = "^3.0.0", optional = true }
-pytest = {version = "^7.4.2", optional = true }
+pylint = { version = "3.0.1", optional = true }
+pytest = { version = "^7.4.2", optional = true }
 
 [tool.poetry.extras]
 dev = ["pylint", "pytest"]

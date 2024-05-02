@@ -1,0 +1,56 @@
+name: Tests
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Install poetry dependencies
+        run: |
+          poetry install -E dev
+          poetry show
+      - name: Setup git
+        run: |
+          git config --global user.name "Search-query test"
+          git config --global user.email "actions@users.noreply.github.com"
+          git config --global url.https://github.com/.insteadOf git://github.com/
+      - name: Run poetry tests
+        run: poetry run pytest test -vv
+
+  pip-install:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install via pip
+        run: |
+          pip install -e .[dev]
+          pip list
+      - name: Setup git
+        run: |
+          git config --global user.name "Search-query test"
+          git config --global user.email "actions@users.noreply.github.com"
+          git config --global url.https://github.com/.insteadOf git://github.com/
+      - name: Run tests
+        run: pytest test -vv
