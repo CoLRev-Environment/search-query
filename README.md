@@ -9,6 +9,7 @@
 </div>
 
 Search-query is a Python package to translate literature search queries across databases, such as PubMed and Web of Science.
+It can be used programmatically, has zero dependencies, and can therefore be integrated in a variety of environments.
 This package was developed as part of my Bachelor's thesis: Towards more efficient literature search: Design of an open source query translator.
 
 ## How to use?
