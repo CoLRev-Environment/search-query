@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Union
 
 from search_query.node import Node
-
+from search_query.constants import Fields
 
 class Query(ABC, Node):
     """Query class."""
@@ -219,19 +219,19 @@ class Query(ABC, Node):
 
     def _get_search_field_wos(self, search_field: str) -> str:
         """transform search field to WoS Syntax"""
-        if search_field == "Author Keywords":
+        if search_field == Fields.AUTHOR_KEYWORDS:
             result = "AK"
-        elif search_field == "Abstract":
+        elif search_field == Fields.ABSTRACT:
             result = "AB"
-        elif search_field == "Author":
+        elif search_field == Fields.AUTHOR:
             result = "AU"
-        elif search_field == "DOI":
+        elif search_field == Fields.DOI:
             result = "DO"
-        elif search_field == "ISBN/ISSN":
+        elif search_field == Fields.ISBN_ISSN:
             result = "IS"
-        elif search_field == "Publisher":
+        elif search_field == Fields.PUBLISHER:
             result = "PUBL"
-        elif search_field == "Title":
+        elif search_field == Fields.TITLE:
             result = "TI"
         return result
 
@@ -300,18 +300,19 @@ class Query(ABC, Node):
 
     def _get_search_field_pubmed(self, search_field: str) -> str:
         """transform search field to PubMed Syntax"""
-        if search_field == "Author Keywords":
+        result = "ti"
+        if search_field == Fields.AUTHOR_KEYWORDS:
             result = "ot"
-        elif search_field == "Abstract":
+        elif search_field == Fields.ABSTRACT:
             result = "tiab"
-        elif search_field == "Author":
+        elif search_field == Fields.AUTHOR:
             result = "au"
-        elif search_field == "DOI":
+        elif search_field == Fields.DOI:
             result = "aid"
-        elif search_field == "ISBN/ISSN":
+        elif search_field == Fields.ISBN_ISSN:
             result = "isbn"
-        elif search_field == "Publisher":
+        elif search_field == Fields.PUBLISHER:
             result = "pubn"
-        elif search_field == "Title":
+        elif search_field == Fields.TITLE:
             result = "ti"
         return result
