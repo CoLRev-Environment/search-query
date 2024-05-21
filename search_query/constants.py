@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 """Constants for search-query"""
 # pylint: disable=too-few-public-methods
-import typing
-from enum import Enum
-from pathlib import Path
 
 
 class Fields:
     """Search fields"""
+
     AUTHOR_KEYWORDS = "Author Keywords"
     ABSTRACT = "Abstract"
     AUTHOR = "Author"
@@ -16,8 +14,20 @@ class Fields:
     PUBLISHER = "Publisher"
     TITLE = "Title"
 
-class Operators: 
+
+class Operators:
     """Operators"""
+
     AND = "AND"
     OR = "OR"
     NOT = "NOT"
+
+
+class Colors:
+    """Colors for CLI printing"""
+
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    ORANGE = "\033[93m"
+    BLUE = "\033[94m"
+    END = "\033[0m"

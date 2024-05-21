@@ -11,7 +11,9 @@ from search_query.query import Query
 class AndQuery(Query):
     """AND Query"""
 
-    def __init__(self, children: List[Union[str, Query]], *, search_field: str):
+    def __init__(
+        self, children: List[Union[str, Query]], *, search_field: str, position=None
+    ):
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
@@ -23,4 +25,5 @@ class AndQuery(Query):
             operator="AND",
             children=children,
             search_field=search_field,
+            position=position,
         )

@@ -9,7 +9,13 @@ class Node:
     """Node class."""
 
     def __init__(
-        self, value: str, *, operator: bool = False, search_field: str = "Abstract"
+        self,
+        value: str,
+        *,
+        operator: bool = False,
+        search_field: str = "Abstract",
+        position=None,
+        color=None,
     ):
         """init method"""
         self.value = value
@@ -23,6 +29,8 @@ class Node:
         # search field to which the node (e.g. search term) should be applied
         if operator:
             self.search_field = ""
+        self.position = position
+        self.color = color
 
     def mark(self) -> None:
         """marks the node"""

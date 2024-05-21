@@ -10,8 +10,10 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-from search_query.node import Node
+from search_query.constants import Colors
 from search_query.constants import Fields
+from search_query.node import Node
+
 
 class Query(ABC, Node):
     """Query class."""
@@ -21,16 +23,25 @@ class Query(ABC, Node):
         self,
         *,
         operator: str,
-        children: List[Union[str, Query]],
+        children: List[Union[str, Node, Query]],
         search_field: str = "Abstract",
+        position=None,
+        color=None,
     ):
         """init method - abstract"""
 
-        Node.__init__(self, value=operator, operator=True, search_field=search_field)
+        Node.__init__(
+            self,
+            value=operator,
+            operator=True,
+            search_field=search_field,
+            position=position,
+            color=color,
+        )
         self._build_query_node(operator, children, search_field)
 
     def _build_query_node(
-        self, operator: str, children: List[Union[str, Query]], search_field: str
+        self, operator: str, children: List[Union[str, Node, Query]], search_field: str
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
         assert operator in ["AND", "OR", "NOT"]
@@ -40,8 +51,10 @@ class Query(ABC, Node):
                 self.children.append(term_node)
             elif isinstance(item, Query):
                 self.children.append(item)
+            elif isinstance(item, Node):
+                self.children.append(item)
             else:
-                raise ValueError("Invalid search term")
+                raise ValueError(f"Invalid search term ({item})")
 
         # Mark nodes to prevent circular references
         self.mark()
@@ -88,7 +101,10 @@ class Query(ABC, Node):
             return " (?) "
 
         result = ""
-        result = f"{result}{node.value}"
+        if node.color:
+            result = f"{result}{node.color}{node.value}{Colors.END}"
+        else:
+            result = f"{result}{node.value}"
         if node.children == []:
             return result
 
