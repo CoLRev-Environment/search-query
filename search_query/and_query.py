@@ -2,18 +2,24 @@
 """AND Query"""
 from __future__ import annotations
 
-from typing import List
-from typing import Union
+import typing
 
 from search_query.query import Query
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from search_query.node import Node
 
 
 class AndQuery(Query):
     """AND Query"""
 
     def __init__(
-        self, children: List[Union[str, Query]], *, search_field: str, position=None
-    ):
+        self,
+        children: typing.List[typing.Union[str, Node, Query]],
+        *,
+        search_field: str,
+        position: typing.Optional[tuple] = None,
+    ) -> None:
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
