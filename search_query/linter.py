@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from search_query.constants import Colors
-from search_query.node import Node
+from search_query.query import Query
 
 
 class QueryLinter:
@@ -14,7 +14,7 @@ class QueryLinter:
     def __init__(self) -> None:
         self.msgs: typing.List[str] = []
 
-    def get_position_range(self, query: Node) -> tuple:
+    def get_position_range(self, query: Query) -> tuple:
         """Get the position range of the query."""
         if not query.children:
             if query.position:
@@ -35,7 +35,7 @@ class QueryLinter:
 
         return start, end
 
-    def _validate_alphabetical_order_children(self, query: Node) -> None:
+    def _validate_alphabetical_order_children(self, query: Query) -> None:
         for index in range(len(query.children) - 1):
             if query.children[index].operator or query.children[index + 1].operator:
                 continue
@@ -54,7 +54,7 @@ class QueryLinter:
                         query.children[index].color = Colors.ORANGE
                         query.children[index + 1].color = Colors.ORANGE
 
-    def validate_alphabetical_order(self, query: Node) -> None:
+    def validate_alphabetical_order(self, query: Query) -> None:
         """Validate the alphabetical order of the query."""
         if not query.children:
             return

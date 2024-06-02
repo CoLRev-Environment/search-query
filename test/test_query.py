@@ -3,9 +3,9 @@
 import unittest
 
 from search_query.and_query import AndQuery
-from search_query.node import Node
 from search_query.not_query import NotQuery
 from search_query.or_query import OrQuery
+from search_query.query import Query
 
 
 # pylint: disable=line-too-long
@@ -16,7 +16,7 @@ class TestQuery(unittest.TestCase):
     """Testing class for query translator"""
 
     def setUp(self) -> None:
-        self.test_node = Node("testvalue", search_field="Document Title")
+        self.test_node = Query("testvalue", search_field="Document Title")
         self.query_robot = NotQuery(["robot*"], search_field="Author Keywords")
         self.query_ai = OrQuery(
             [
@@ -44,8 +44,8 @@ class TestQuery(unittest.TestCase):
 
     def test_append_children(self) -> None:
         """test whether the children are appended correctly"""
-        healthCareChild = Node('"health care"', search_field="Author Keywords")
-        medicineChild = Node("medicine", search_field="Author Keywords")
+        healthCareChild = Query('"health care"', search_field="Author Keywords")
+        medicineChild = Query("medicine", search_field="Author Keywords")
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
             self.query_health.children[0].print_node(),
@@ -60,7 +60,7 @@ class TestQuery(unittest.TestCase):
 
     def test_or_query(self) -> None:
         """test whether OR node is created correctly"""
-        expected = Node("OR", operator=True)
+        expected = Query("OR", operator=True)
         self.assertEqual(
             self.query_ai.print_node(),
             expected.print_node(),
@@ -69,7 +69,7 @@ class TestQuery(unittest.TestCase):
 
     def test_and_query(self) -> None:
         """test whether AND node is created correctly"""
-        expected = Node("AND", operator=True)
+        expected = Query("AND", operator=True)
         self.assertEqual(
             self.query_complete.print_node(),
             expected.print_node(),
@@ -78,7 +78,7 @@ class TestQuery(unittest.TestCase):
 
     def test_not_query(self) -> None:
         """test whether NOT node is created correctly"""
-        expected = Node("NOT", operator=True)
+        expected = Query("NOT", operator=True)
         self.assertEqual(
             self.query_robot.print_node(),
             expected.print_node(),

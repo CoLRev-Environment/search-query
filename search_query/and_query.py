@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import typing
 
+from search_query.constants import Operators
 from search_query.query import Query
-
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from search_query.node import Node
 
 
 class AndQuery(Query):
@@ -15,7 +13,7 @@ class AndQuery(Query):
 
     def __init__(
         self,
-        children: typing.List[typing.Union[str, Node, Query]],
+        children: typing.List[typing.Union[str, Query]],
         *,
         search_field: str,
         position: typing.Optional[tuple] = None,
@@ -28,7 +26,8 @@ class AndQuery(Query):
         """
 
         super().__init__(
-            operator="AND",
+            value=Operators.AND,
+            operator=True,
             children=children,
             search_field=search_field,
             position=position,

@@ -2,7 +2,7 @@
 """NOT Query"""
 import typing
 
-from search_query.node import Node
+from search_query.constants import Operators
 from search_query.query import Query
 
 
@@ -11,7 +11,7 @@ class NotQuery(Query):
 
     def __init__(
         self,
-        children: typing.List[typing.Union[str, Node, Query]],
+        children: typing.List[typing.Union[str, Query]],
         *,
         search_field: str,
         position: typing.Optional[tuple] = None
@@ -24,7 +24,8 @@ class NotQuery(Query):
         """
 
         super().__init__(
-            operator="NOT",
+            value=Operators.NOT,
+            operator=True,
             children=children,
             search_field=search_field,
             position=position,

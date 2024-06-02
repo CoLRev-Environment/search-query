@@ -2,14 +2,14 @@
 """Query parser."""
 from __future__ import annotations
 
-from search_query.node import Node
+from search_query.query import Query
 
 
 # pylint: disable=too-few-public-methods
 class QueryRefiner:
     """Query refiner."""
 
-    def simplify_tree(self, node: Node) -> None:
+    def simplify_tree(self, node: Query) -> None:
         """Simplify the tree."""
         # Simplify based on associativity
         if not node.children or not node.operator:

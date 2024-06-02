@@ -5,12 +5,8 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.and_query import AndQuery
 from search_query.constants import Colors
 from search_query.constants import Operators
-from search_query.node import Node
-from search_query.not_query import NotQuery
-from search_query.or_query import OrQuery
 from search_query.query import Query
 
 
@@ -110,12 +106,12 @@ class WOSParser(QueryStringParser):
 
     def parse_node(
         self, tokens: list, search_field: str = "", unary_not: bool = False
-    ) -> Node:
+    ) -> Query:
         """Parse a node from a list of tokens."""
         # Assume that expressions start with "("
         # (we can always add surrounding parentheses)
 
-        node = Node(search_field=search_field, operator=True)
+        node = Query(search_field=search_field, operator=True)
         if unary_not:
             node.value = Operators.NOT
 
@@ -136,7 +132,7 @@ class WOSParser(QueryStringParser):
 
             if self.is_term(next_item):
                 value = next_item.lstrip('"').rstrip('"')
-                term_node = Node(
+                term_node = Query(
                     value=value, operator=False, search_field=search_field, position=pos
                 )
                 node.children.append(term_node)
@@ -182,7 +178,7 @@ class WOSParser(QueryStringParser):
         # was created to the node (for debugging)
         return node
 
-    def translate_search_fields(self, node: Node) -> None:
+    def translate_search_fields(self, node: Query) -> None:
         """Translate search fields."""
         if not node.children:
             # TODO : expand
@@ -197,26 +193,7 @@ class WOSParser(QueryStringParser):
         self.tokenize()
         node = self.parse_node(self.tokens)
         # self.translate_search_fields(node)
-
-        if node.value == Operators.AND:
-            return AndQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        if node.value == Operators.OR:
-            return OrQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        if node.value == Operators.NOT:
-            return NotQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        raise ValueError("Invalid operator")
+        return node
 
 
 class PubmedParser(QueryStringParser):
@@ -252,12 +229,12 @@ class PubmedParser(QueryStringParser):
 
     def parse_node(
         self, tokens: list, search_field: str = "", unary_not: bool = False
-    ) -> Node:
+    ) -> Query:
         """Parse a node from a list of tokens."""
         # Assume that expressions start with "("
         # (we can always add surrounding parentheses)
 
-        node = Node(search_field=search_field, operator=True)
+        node = Query(search_field=search_field, operator=True)
         if unary_not:
             node.value = "NOT"
 
@@ -274,7 +251,7 @@ class PubmedParser(QueryStringParser):
 
             if self.is_term(next_item):
                 value = next_item.lstrip('"').rstrip('"')
-                term_node = Node(
+                term_node = Query(
                     value=value, operator=False, search_field=search_field, position=pos
                 )
 
@@ -328,7 +305,7 @@ class PubmedParser(QueryStringParser):
         # was created to the node (for debugging)
         return node
 
-    # def translate_search_fields(self, node: Node) -> None:
+    # def translate_search_fields(self, node: Query) -> None:
     #     """Translate search fields."""
     #     if not node.children:
     #         # TODO : expand
@@ -342,28 +319,8 @@ class PubmedParser(QueryStringParser):
         """Parse a query string."""
         self.tokenize()
         node = self.parse_node(self.tokens)
-        # print(node.to_string())
         # self.translate_search_fields(node)
-
-        if node.value == Operators.AND:
-            return AndQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        if node.value == Operators.OR:
-            return OrQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        if node.value == Operators.NOT:
-            return NotQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        raise ValueError("Invalid operator")
+        return node
 
 
 # pylint: disable=too-few-public-methods
@@ -388,7 +345,7 @@ class QueryListParser(QueryParser):
         """Get the children of a node."""
         raise NotImplementedError
 
-    def parse_term_node(self, term_str: str) -> Node:
+    def parse_term_node(self, term_str: str) -> Query:
         """Parse a term node."""
         raise NotImplementedError
 
@@ -424,17 +381,17 @@ class QueryListParser(QueryParser):
         output += f"\n {Colors.RED}NOT-MATCHED{Colors.END}"
         return output
 
-    def parse_node(self, node_nr: str) -> Node:
+    def parse_node(self, node_nr: str) -> Query:
         """Parse a node from the node list."""
 
         if self.is_or_node(self.tokens[node_nr]):
-            node = Node(value="OR", operator=True)
+            node = Query(value="OR", operator=True)
             for child in self.get_children(self.tokens[node_nr]):
                 node.children.append(self.parse_node(child))
             return node
 
         if self.is_and_node(self.tokens[node_nr]):
-            node = Node(value="AND", operator=True)
+            node = Query(value="AND", operator=True)
             for child in self.get_children(self.tokens[node_nr]):
                 node.children.append(self.parse_node(child))
             return node
@@ -446,26 +403,7 @@ class QueryListParser(QueryParser):
 
         self.parse_list()
         node = self.parse_node(list(self.tokens.keys())[-1])
-
-        if node.value == Operators.AND:
-            return AndQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        if node.value == Operators.OR:
-            return OrQuery(
-                children=list(node.children),
-                search_field=node.search_field,
-                position=node.position,
-            )
-        # if node.value == Operators.NOT:
-        #     return NotQuery(
-        #         children=list(node.children),
-        #         search_field=node.search_field,
-        #         position=node.position,
-        #     )
-        raise ValueError("Invalid operator")
+        return node
 
 
 class WOSListParser(QueryListParser):
@@ -493,7 +431,7 @@ class WOSListParser(QueryListParser):
             node_nr, node_content = match.groups()
             self.tokens[f"#{node_nr}"] = node_content
 
-    def parse_term_node(self, term_str: str) -> Node:
+    def parse_term_node(self, term_str: str) -> Query:
         """Parse a term node."""
         node_parser = WOSParser(term_str)
         node_parser.tokenize()
@@ -528,10 +466,10 @@ class CINAHLParser(QueryListParser):
             node_nr, node_content = match.groups()
             self.tokens[f"S{node_nr}"] = node_content
 
-    def parse_term_node(self, term_str: str) -> Node:
+    def parse_term_node(self, term_str: str) -> Query:
         """Parse a term node."""
         # TODO: tbd: how to parse CINAHL terms (could there be children?)
-        return Node(value=term_str, operator=False)
+        return Query(value=term_str, operator=False)
 
     def get_children(self, node_content: str) -> list:
         """Get the children of a node."""
