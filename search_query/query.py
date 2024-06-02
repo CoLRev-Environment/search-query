@@ -147,10 +147,13 @@ class Query(ABC):
             return " (?) "
 
         result = ""
+        node_content = node.value
+        if hasattr(node, "near_param"):
+            node_content += f"({node.near_param})"
         if node.color:
-            result = f"{result}{node.color}{node.value}{Colors.END}"
+            result = f"{result}{node.color}{node_content}{Colors.END}"
         else:
-            result = f"{result}{node.value}"
+            result = f"{result}{node_content}"
         if node.children == []:
             return result
 

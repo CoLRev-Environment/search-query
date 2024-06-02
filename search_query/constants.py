@@ -21,6 +21,7 @@ class Operators:
     AND = "AND"
     OR = "OR"
     NOT = "NOT"
+    NEAR = "NEAR"
 
 
 class Colors:

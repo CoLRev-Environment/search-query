@@ -91,18 +91,45 @@ class QueryStringParser(QueryParser):
 class WOSParser(QueryStringParser):
     """Parser for Web of Science queries."""
 
+    # TODO : use pydantic?!
+
+    # TODO: check &, %, #, @, in tokenization (valid?)
+    # TODO : restrict search-fields to valid ones:
+    # https://images.webofknowledge.com/images/help/WOS/hs_advanced_fieldtags.html
+    search_field_regex = r"[A-Z]+="
+    boolean_operators_regex = r"\b(AND|OR|NOT)\b"
+    proximity_search_regex = r"\bNEAR\/\d+"
+    parentheses_regex = r"\(|\)"
+    quoted_string_regex = r"\"[^\"]*\""
+    string_regex = r"\b(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+(?:\s+(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+)*\*?"
+
+    pattern = "|".join(
+        [
+            search_field_regex,
+            boolean_operators_regex,
+            proximity_search_regex,
+            parentheses_regex,
+            quoted_string_regex,
+            string_regex,
+        ]
+    )
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
         query_str = self.query_str.replace("”", '"').replace("“", '"')
-        pattern = r"[A-Z]+=|\"[^\"]*\"|\bAND\b|\bOR\b|\bNOT\b|\(|\)|\b[\w-]+\b\*?"
+
         tokens = [
             (m.group(0), (m.start(), m.end()))
-            for m in re.finditer(pattern, query_str, re.IGNORECASE)
+            for m in re.finditer(self.pattern, query_str, re.IGNORECASE)
         ]
         self.tokens = [(token.strip(), pos) for token, pos in tokens if token.strip()]
 
     def is_search_field(self, token: str) -> bool:
         return bool(re.search(r"^[A-Z]+=$", token))
+
+    def is_operator(self, token: str) -> bool:
+        """Token is operator"""
+        return bool(re.match(r"^(AND|OR|NOT|NEAR/\d+)$", token, re.IGNORECASE))
 
     def parse_node(
         self, tokens: list, search_field: str = "", unary_not: bool = False
@@ -137,6 +164,22 @@ class WOSParser(QueryStringParser):
                 )
                 node.children.append(term_node)
                 expecting_operator = True
+                continue
+
+            if next_item.upper().startswith("NEAR"):
+                assert expecting_operator, tokens
+                # if current_operator.upper() not in [next_item.upper(), ""]:
+                #     raise ValueError(
+                #         f"Invalid Syntax (combining {current_operator} "
+                #         f"with {next_item})"
+                #     )
+                _, near_param = next_item.upper().split("/")
+                node.near_param = int(near_param)
+                node.operator = True
+                node.value = "NEAR"
+                node.position = pos
+                expecting_operator = False
+                current_operator = "NEAR"
                 continue
 
             if next_item.upper() in [Operators.AND, Operators.OR]:
