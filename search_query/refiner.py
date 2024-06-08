@@ -30,7 +30,3 @@ class QueryRefiner:
         node.children = children_to_append + node.children
         # Note: search queries often have parentheses at the beginning.
         # otherwise, node.children.extend(children_to_append) would be better
-
-
-# TODO : extract
-# self.simplify_tree(node)

@@ -18,7 +18,6 @@ class QueryParser:
         self.query_str = query_str
 
 
-# TODO : QueryStringParserPreSearchField vs. QueryStringParserPostSearchField
 class QueryStringParser(QueryParser):
     """QueryStringParser"""
 
@@ -91,17 +90,16 @@ class QueryStringParser(QueryParser):
 class WOSParser(QueryStringParser):
     """Parser for Web of Science queries."""
 
-    # TODO : use pydantic?!
-
-    # TODO: check &, %, #, @, in tokenization (valid?)
-    # TODO : restrict search-fields to valid ones:
     # https://images.webofknowledge.com/images/help/WOS/hs_advanced_fieldtags.html
     search_field_regex = r"[A-Z]+="
     boolean_operators_regex = r"\b(AND|OR|NOT)\b"
     proximity_search_regex = r"\bNEAR\/\d+"
     parentheses_regex = r"\(|\)"
     quoted_string_regex = r"\"[^\"]*\""
-    string_regex = r"\b(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+(?:\s+(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+)*\*?"
+    string_regex = (
+        r"\b(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+"
+        + r"(?:\s+(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+)*\*?"
+    )
 
     pattern = "|".join(
         [
@@ -174,7 +172,7 @@ class WOSParser(QueryStringParser):
                 #         f"with {next_item})"
                 #     )
                 _, near_param = next_item.upper().split("/")
-                node.near_param = int(near_param)
+                node.near_param = int(near_param)  # type: ignore
                 node.operator = True
                 node.value = "NEAR"
                 node.position = pos
@@ -224,7 +222,6 @@ class WOSParser(QueryStringParser):
     def translate_search_fields(self, node: Query) -> None:
         """Translate search fields."""
         if not node.children:
-            # TODO : expand
             node.search_field = node.search_field.replace("AB=", "Abstract")
             return
 
@@ -351,7 +348,6 @@ class PubmedParser(QueryStringParser):
     # def translate_search_fields(self, node: Query) -> None:
     #     """Translate search fields."""
     #     if not node.children:
-    #         # TODO : expand
     #         node.search_field = node.search_field.replace("AB=", "Abstract")
     #         return
 
@@ -511,7 +507,7 @@ class CINAHLParser(QueryListParser):
 
     def parse_term_node(self, term_str: str) -> Query:
         """Parse a term node."""
-        # TODO: tbd: how to parse CINAHL terms (could there be children?)
+
         return Query(value=term_str, operator=False)
 
     def get_children(self, node_content: str) -> list:
