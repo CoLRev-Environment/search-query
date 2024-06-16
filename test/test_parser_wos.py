@@ -186,7 +186,7 @@ from search_query.parser import WOSParser
         ("ne?t", [("ne?t", (0, 4))]),
     ],
 )
-def test_tokenization(query_string: str, tokens: tuple) -> None:
+def test_tokenization_wos(query_string: str, tokens: tuple) -> None:
     print(query_string)
     print()
     wos_parser = WOSParser(query_string)
@@ -255,87 +255,6 @@ def test_wos_query_parser(source: str, query_string: str, expected: str) -> None
     print(query_string)
     print()
     query = parse(query_string, query_type="wos")
-    query_str = query.to_string()
-    print(query_str)
-
-    assert query_str == expected
-
-
-@pytest.mark.parametrize(
-    "source, query_string, expected",
-    [
-        (
-            "https://www.cabidigitallibrary.org/doi/10.1079/searchRxiv.2023.00244",
-            # """((Environment[Mesh:NoExp] OR "Environment health*"[tiab] OR "Environmental health*"[tiab] OR "planetary health*"[tiab] OR "planet health*"[tiab] OR "environmental issue*"[tiab] OR "environment issue*"[tiab] OR Ecolog*[tiab] OR "Carbon Footprint"[Mesh] OR "carbon footprint*"[tiab] OR Climate[Mesh:NoExp] OR Climat*[tiab] OR Ecosystem[Mesh:NoExp] OR Ecosystem*[tiab] OR Conservation*[tiab] OR "environment protection*"[tiab] OR "environmental protection*"[tiab] OR "environment remediation*"[tiab] OR "environmental remediation*"[tiab] OR "environment restoration*"[tiab] OR "environmental restoration*"[tiab] OR "sustainable develop*"[tiab] OR "environmental sustain*"[tiab] OR "environment sustain*"[tiab] OR Disasters[Mesh:NoExp] OR Disaster*[tiab] OR "Natural Disasters"[Mesh:NoExp] OR "Environmental Policy"[Mesh] OR "environmental polic*"[tiab] OR "environment polic*"[tiab] OR Environmentalism[Mesh] OR Environmentalism*[tiab] OR "Environmental Advocacy"[tiab] OR "Environmental Activism"[tiab] OR "Environmental justice"[tiab] OR "environment justice"[tiab] OR "environment awareness"[tiab] OR "environmental awareness"[tiab] OR "Energy-Generating Resources"[Mesh:NoExp] OR "energy generating resource*"[tiab] OR "Fossil Fuels"[Mesh:NoExp] OR "fossil fuel*"[tiab] OR "Natural Gas"[Mesh] OR "natural gas*"[tiab] OR "Renewable Energy"[Mesh:NoExp] OR "renewable energ*"[tiab] OR "sustainable energ*"[tiab] OR "Ecological and Environmental Phenomena"[Mesh:NoExp] OR "environmental phenomen*"[tiab] OR "Climate Change"[Mesh] OR "global warm*"[tiab] OR "Environmental Pollution"[Mesh:NoExp] OR Pollution*[tiab] OR "Air Pollution"[Mesh:NoExp] OR "Air Qualit*"[tiab] OR "Light Pollution"[Mesh] OR "Petroleum Pollution"[Mesh] OR "oil spill"[tiab] OR "Waste Products"[Mesh:NoExp] OR "waste product*"[tiab] OR "Water Pollution"[Mesh:NoExp] OR "acid rain"[tiab] OR "Environmental Health"[Mesh:NoExp] OR Ecotoxicology[Mesh] OR ecotoxicol*[tiab] OR "environmental toxic*"[tiab] OR "environment toxic*"[tiab] OR Sanitation[Mesh:NoExp] OR Sanitation[tiab] OR "Environmental Exposure"[Mesh:NoExp] OR "environmental exposure*"[tiab] OR "environment exposure*"[tiab] OR "Environmental Monitoring"[Mesh:NoExp] OR "environmental monitor*"[tiab] OR "environment monitor*"[tiab] OR "Environmental Biomarkers"[Mesh] OR "environmental biomarker*"[tiab] OR "Environmental Indicators"[Mesh] OR "environmental indicator*"[tiab] OR "environment indicator*"[tiab] OR "Water Quality"[Mesh] OR "water quality"[tiab] OR "sanitary survey*"[tiab] OR "Environmental Illness"[Mesh:NoExp] OR "environment illness*"[tiab] OR "environmental disease*"[tiab] OR "environmental illness*"[tiab] OR "environmental hypersensitivit*"[tiab]) AND (Literacy[Mesh] OR Literac*[tiab] OR Illiterac*[tiab] OR "Health Literacy"[Mesh] OR "Patient Education as Topic"[Mesh:NoExp] OR "patient education*"[tiab] OR "education of patient*"[tiab] OR "informal education*"[tiab] OR "Consumer Health Information"[Mesh:NoExp] OR "consumer health*"[tiab] OR "Health Knowledge, Attitudes, Practice"[Mesh] OR "health knowledge*"[tiab] OR "Health Communication"[Mesh] OR "health communication*"[tiab] OR "community-based participatory research"[Mesh] OR "participatory research*"[tiab] OR "citizen science*"[tiab]))""",
-            """(Environment[Mesh:NoExp] OR "Environment health*"[tiab]) AND (Literacy[Mesh] OR Literac*[tiab])""",
-            """AND[OR[Environment, Environment health*], OR[Literacy, Literac*]]""",
-        )
-    ],
-)
-def test_pubmed_query_parser(source: str, query_string: str, expected: str) -> None:
-    """Test the translation of a search query to a Pubmed query"""
-
-    # STRATEGIE
-    # - Web-of-science und pubmed
-    # - list format: https://www.cabidigitallibrary.org/doi/10.1079/searchRxiv.2024.00492
-
-    print("--------------------")
-    print(source)
-    print()
-    print(query_string)
-    print()
-    query = parse(query_string, query_type="pubmed")
-    query_str = query.to_string()
-    print(query_str)
-
-    assert query_str == expected
-
-
-@pytest.mark.parametrize(
-    "source, query_string, expected",
-    [
-        (
-            "https://www.cabidigitallibrary.org/doi/10.1079/searchRxiv.2023.00155",
-            """1.	Clinical competence
-2.	Professional practice
-3.	Cultural competence
-4.	Accreditation
-5.	Interprofessional relations
-6.	Professional education
-7.	Professional licenses
-8.	Standards
-9.	Professional licensure examinations
-10.	Professional standards
-11.	Licenses
-12.	Professional --law & legislation
-13.	Professional --law & legislation (Search modes – SmartText searching Interface)
-14.	License agreement
-15.	Educational accreditation
-16.	Interdisciplinary education
-17.	National competency-based educational tests
-18.	Globalization
-19.	Certification
-20.	Mutual recognition agreement
-21.	Professional equivalenc*
-22.	Interchangeability
-23.	Internationally educated professionals
-24.	Internationally educated health professionals
-25.	(S1 OR S2 OR S3 OR S4 OR S5 OR S6 OR S7 OR S8 OR S9 OR S10 OR S11 OR S12 OR S13 OR S14 OR S15 OR S16 OR S17 OR S18 OR S19)
-26.	(S20 OR S21 OR S22 OR S23 OR S24)
-27.	(S25 AND S26)""",
-            """AND[OR[Clinical competence, Professional practice, Cultural competence, Accreditation, Interprofessional relations, Professional education, Professional licenses, Standards, Professional licensure examinations, Professional standards, Licenses, Professional --law & legislation, Professional --law & legislation (Search modes – SmartText searching Interface), License agreement, Educational accreditation, Interdisciplinary education, National competency-based educational tests, Globalization, Certification], OR[Mutual recognition agreement, Professional equivalenc*, Interchangeability, Internationally educated professionals, Internationally educated health professionals]]""",
-        )
-    ],
-)
-def test_cinahl_query_parser(source: str, query_string: str, expected: str) -> None:
-    """Test the translation of a search query to a CINAHL query"""
-
-    print("--------------------")
-    print(source)
-    print()
-    print(query_string)
-    print()
-    query = parse(query_string, query_type="cinahl")
     query_str = query.to_string()
     print(query_str)
 
