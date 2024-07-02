@@ -6,6 +6,7 @@ import typing
 
 from search_query.constants import Operators
 from search_query.query import Query
+from search_query.query import SearchField
 
 
 class AndQuery(Query):
@@ -15,7 +16,7 @@ class AndQuery(Query):
         self,
         children: typing.List[typing.Union[str, Query]],
         *,
-        search_field: str,
+        search_field: SearchField,
         position: typing.Optional[tuple] = None,
     ) -> None:
         """init method

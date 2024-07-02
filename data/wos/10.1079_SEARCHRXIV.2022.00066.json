@@ -1,0 +1,24 @@
+{
+    "record_info": {
+        "DOI": "10.1079/searchRxiv.2022.00066"
+    },
+    "authors": [
+        {
+            "name": "Aidan Huang"
+        }
+    ],
+    "platform": "Web of Science",
+    "database": [
+        "Web of Science Core Collection"
+    ],
+    "search_string": "TS=((trilateral or triangular or tripartite) NEAR/5 (cooperat* or collaborat* or assistance or aid)) OR TI=((trilateral OR triangular OR tripartite) AND (cooperat\\* OR collaborat\\* OR assistance OR aid))",
+    "date": {
+        "search_conducted": "2023.04.13"
+    },
+    "parsed": {
+        "search": "OR[NEAR(5)[OR[trilateral[ts], triangular[ts], tripartite[ts]], OR[cooperat*[ts], collaborat*[ts], assistance[ts], aid[ts]]], AND[OR[trilateral[ti], triangular[ti], tripartite[ti]], OR[cooperat[ti], collaborat[ti], assistance[ti], aid[ti]]]]",
+        "coder": "GW",
+        "timestamp": "2024-07-01 21:33",
+        "comment": ""
+    }
+}

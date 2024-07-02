@@ -26,10 +26,13 @@ include = ["LICENSE", "README.md"]
 python = "^3.8"
 pylint = { version = "3.0.1", optional = true }
 pytest = { version = "^7.4.2", optional = true }
+pydantic = "^2.8.0"
 
 [tool.poetry.extras]
 dev = ["pylint", "pytest"]
 
+[tool.pylint.MAIN]
+extension-pkg-whitelist = "lxml.etree"
 
 [tool.mypy]
 python_version = 3.8

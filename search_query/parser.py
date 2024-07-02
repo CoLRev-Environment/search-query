@@ -13,6 +13,8 @@ from search_query.query import Query
 def parse(query_str: str, query_type: str = "wos") -> Query:
     """Parse a query string."""
     if query_type == "wos":
+        if "1." in query_str[:10]:
+            return WOSListParser(query_str).parse()
         return WOSParser(query_str).parse()
 
     if query_type == "pubmed":

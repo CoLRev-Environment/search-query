@@ -22,6 +22,10 @@ class QueryStringParser(QueryParser):
 
     tokens: list
 
+    def __init__(self, query_str: str) -> None:
+        super().__init__(query_str)
+        self.tokens = []
+
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
 
@@ -90,7 +94,15 @@ class QueryStringParser(QueryParser):
 class QueryListParser(QueryParser):
     """QueryListParser"""
 
-    tokens: typing.Dict[str, str] = {}
+    tokens: typing.Dict[str, str]
+
+    def __init__(self, query_str: str) -> None:
+        super().__init__(query_str)
+        self.tokens = {}
+
+    def is_node_identifier(self, node_content: str) -> bool:
+        """Node content is identifier"""
+        raise NotImplementedError
 
     def is_or_node(self, node_content: str) -> bool:
         """Node content is OR node"""
@@ -110,6 +122,10 @@ class QueryListParser(QueryParser):
 
     def parse_term_node(self, term_str: str) -> Query:
         """Parse a term node."""
+        raise NotImplementedError
+
+    def translate_search_fields(self, node: Query) -> None:
+        """Translate search fields."""
         raise NotImplementedError
 
     def is_term(self, token: str) -> bool:
@@ -147,6 +163,9 @@ class QueryListParser(QueryParser):
     def parse_node(self, node_nr: str) -> Query:
         """Parse a node from the node list."""
 
+        if not self.is_node_identifier(node_nr):
+            return self.parse_term_node(node_nr)
+
         if self.is_or_node(self.tokens[node_nr]):
             node = Query(value="OR", operator=True)
             for child in self.get_children(self.tokens[node_nr]):
@@ -166,4 +185,5 @@ class QueryListParser(QueryParser):
 
         self.parse_list()
         node = self.parse_node(list(self.tokens.keys())[-1])
+        self.translate_search_fields(node)
         return node

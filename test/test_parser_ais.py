@@ -38,21 +38,42 @@ def test_tokenization_ais(query_string: str, tokens: tuple) -> None:
 
 
 @pytest.mark.parametrize(
+    "query_string, non_tokens",
+    [
+        (
+            "title:microsourcing OR abstract:microsourcing OR subject:microsourcing",
+            [],
+        ),
+        (
+            "`title:microsourcing OR abstract:microsourcing OR subject:microsourcing`",
+            [("`", (0, 1)), ("`", (71, 72))],
+        ),
+    ],
+)
+def test_non_tokenization_ais(query_string: str, non_tokens: tuple) -> None:
+    print(query_string)
+    print()
+    ais_parser = AISParser(query_string)
+    ais_parser.tokenize()
+    non_tokenized = ais_parser.get_non_tokenized()
+    # print(ais_parser.tokens)
+    # print(ais_parser.get_token_types(ais_parser.tokens, legend=True))
+    # print(tokens)
+    assert non_tokenized == non_tokens
+
+
+@pytest.mark.parametrize(
     "source, query_string, expected",
     [
         (
             "custom",
             """title:microsourcing OR abstract:microsourcing OR subject:microsourcing""",
-            """OR[microsourcing, microsourcing, microsourcing]""",
+            """OR[microsourcing[ti], microsourcing[ab], microsourcing[ts]]""",
         ),
     ],
 )
-def test_wos_query_parser(source: str, query_string: str, expected: str) -> None:
+def test_ais_query_parser(source: str, query_string: str, expected: str) -> None:
     """Test the translation of a search query to an AIS query"""
-
-    # STRATEGIE
-    # - Web-of-science und pubmed
-    # - list format: https://www.cabidigitallibrary.org/doi/10.1079/searchRxiv.2024.00492
 
     print("--------------------")
     print(source)

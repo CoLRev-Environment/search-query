@@ -5,17 +5,22 @@ from __future__ import annotations
 import re
 import typing
 
+import search_query.exception as search_query_exception
+from search_query.constants import Fields
 from search_query.constants import Operators
-from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
+from search_query.query import SearchField
 
 
 class AISParser(QueryStringParser):
     """Parser for AIS eLibrary queries."""
 
-    # TODO : check for other fields.
-    search_field_regex = r"(title|abstract|subject)\:"
+    # Note: all fields: implicitly set as the search_field
+    search_field_regex = (
+        r"(abstract|subject|author|institution|title|document_type|"
+        + r"publication_title|configured_field_t_issn)\:"
+    )
     boolean_operators_regex = r"\b(AND|OR|NOT)\b"
     parentheses_regex = r"\(|\)"
     quoted_string_regex = r"\"[^\"]*\""
@@ -34,26 +39,53 @@ class AISParser(QueryStringParser):
         ]
     )
 
+    def get_non_tokenized(self) -> list:
+        """Get the non-tokenized items (for debugging)"""
+        non_tokenized = []
+        cur_pos = 0
+        for token in self.tokens:
+            _, pos = token
+            pos_start, pos_end = pos
+            if pos_start > cur_pos:
+                non_tokenized_content = self.query_str[cur_pos:pos_start]
+                if non_tokenized_content != " ":
+                    non_tokenized.append((non_tokenized_content, (cur_pos, pos_start)))
+            cur_pos = pos_end
+        if pos_end < len(self.query_str):
+            non_tokenized.append(
+                (
+                    self.query_str[pos_end : len(self.query_str)],
+                    (pos_end, len(self.query_str)),
+                )
+            )
+        return non_tokenized
+
+    def _validate_tokens(self) -> None:
+        non_tokenized = self.get_non_tokenized()
+        assert not non_tokenized, non_tokenized
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
         query_str = self.query_str.replace("”", '"').replace("“", '"')
-
         tokens = [
             (m.group(0), (m.start(), m.end()))
             for m in re.finditer(self.pattern, query_str, re.IGNORECASE)
         ]
+
         self.tokens = [(token.strip(), pos) for token, pos in tokens if token.strip()]
 
     def is_search_field(self, token: str) -> bool:
-        # TODO : add ^ and $
-        return bool(re.search(self.search_field_regex, token))
+        return bool(re.search(f"^{self.search_field_regex}$", token))
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
         return bool(re.match(r"^(AND|OR|NOT|NEAR/\d+)$", token, re.IGNORECASE))
 
     def parse_node(
-        self, tokens: list, search_field: str = "", unary_not: bool = False
+        self,
+        tokens: list,
+        search_field: typing.Optional[SearchField] = None,
+        unary_not: bool = False,
     ) -> Query:
         """Parse a node from a list of tokens."""
 
@@ -66,7 +98,7 @@ class AISParser(QueryStringParser):
                 break
             next_item, pos = self._get_next_item(tokens)
             if self.is_search_field(next_item):
-                search_field = next_item
+                search_field = SearchField(next_item, position=pos)
                 next_item, pos = self._get_next_item(tokens)
             if next_item == ")":
                 # Make sure we dont' read "()" (empty parentheses)
@@ -109,7 +141,9 @@ class AISParser(QueryStringParser):
         # was created to the node (for debugging)
         return node
 
-    def _initialize_node(self, search_field: str, unary_not: bool) -> Query:
+    def _initialize_node(
+        self, search_field: typing.Optional[SearchField], unary_not: bool
+    ) -> Query:
         """Initialize a node."""
         node = Query(search_field=search_field, operator=True)
         if unary_not:
@@ -124,7 +158,7 @@ class AISParser(QueryStringParser):
         self,
         node: Query,
         next_item: str,
-        search_field: str,
+        search_field: typing.Optional[SearchField],
         pos: typing.Tuple[int, int],
     ) -> Query:
         """Handle term."""
@@ -176,7 +210,7 @@ class AISParser(QueryStringParser):
         self,
         node: Query,
         tokens: list,
-        search_field: str,
+        search_field: typing.Optional[SearchField],
         current_operator: str,
     ) -> Query:
         """Handle NOT operator."""
@@ -188,17 +222,27 @@ class AISParser(QueryStringParser):
     def translate_search_fields(self, node: Query) -> None:
         """Translate search fields."""
         if not node.children:
-            node.search_field = node.search_field.replace("AB=", "Abstract")
-            return
+            if str(node.search_field) == "title:":
+                node.search_field = SearchField(Fields.TITLE)
+            elif str(node.search_field) == "abstract:":
+                node.search_field = SearchField(Fields.ABSTRACT)
+            elif str(node.search_field) == "subject:":
+                node.search_field = SearchField(Fields.TOPIC)
+            else:
+                raise search_query_exception.QuerySyntaxError(
+                    msg=f"Invalid search field: {node.search_field}",
+                    query_string=self.query_str,
+                    pos=node.position or (0, 0),
+                )
 
+            return
         for child in node.children:
             self.translate_search_fields(child)
 
     def parse(self) -> Query:
         """Parse a query string."""
         self.tokenize()
+        self._validate_tokens()
         node = self.parse_node(self.tokens)
-        # self.translate_search_fields(node)
+        self.translate_search_fields(node)
         return node
-
-

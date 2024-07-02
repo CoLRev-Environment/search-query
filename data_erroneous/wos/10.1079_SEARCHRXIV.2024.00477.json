@@ -1,0 +1,25 @@
+{
+    "record_info": {
+        "DOI": "10.1079/searchRxiv.2024.00477",
+        "url": "https://www.cabidigitallibrary.org/doi/10.1079/SEARCHRXIV.2024.00477"
+    },
+    "authors": [
+        {
+            "name": "Elizabeth Morrow"
+        }
+    ],
+    "platform": "Web of Science",
+    "database": [
+        "Web of Science Core Collection"
+    ],
+    "search_string": "(\"Health emergency communication\" OR \"Emergency health communication\" OR \"Crisis communication\" OR \"Public health messaging\" OR \"Emergency information dissemination\" OR \"Health promotion during emergencies\" OR \"Disease prevention communication\" OR \"Health behaviour change communication\" OR \"Emergency preparedness communication\" OR \"Disaster preparedness communication\" OR \"Emergency response communication\") AND (\"Community resilience\" OR \"Community mobilization\" OR \"Community mobilisation\" OR \"Community efforts for resilience\" OR \"Community collaboration for resilience\" OR \"Self-support within communities\" OR \"Social infrastructure resilience\" OR \"Building community resilience\" OR \"Strengthening community resilience\" OR \"Promoting community resilience\" OR \"Enhancing community resilience\" OR \"Fostering community resilience\")",
+    "date": {
+        "search_conducted": "2024.03.08"
+    },
+    "parsed": {
+        "search": "AND[OR[\"land use\"[ts], \"land cover\"[ts], \"space use\"[ts], LULCC[ts], AND[planning[ts], OR[spati*[ts], region*[ts], area*[ts], conservation[ts], land*[ts], urban[ts]]], AND[conversion[ts], OR[land*[ts], habitat*[ts], area*[ts], ecosystem*[ts], natur*[ts]]], NEAR(3)[change*[ts], OR[land*[ts], area*[ts]]], \"national park*\"[ts], landscape*[ts], habitat*[ts], Husbandry[ts], \"land shar*\"[ts], \"land spar*\"[ts], NEAR(3)[Outdoor[ts], OR[life[ts], livin*[ts], recreat*[ts]]], AND[restoration[ts], OR[nature[ts], ecosystem*[ts]]], forestry[ts], NEAR(3)[reindeer[ts], OR[herd*[ts], husbandr*[ts]]], NEAR(3)[livestock[ts], graz*[ts]], \"holiday home*\"[ts], \"secondary home*\"[ts], NEAR(3)[recreation*[ts], OR[home*[ts], cottage*[ts], cabin*[ts], propert*[ts]]], tourism[ts], \"wind power\"[ts], \"Land manag*\"[ts], \"Nature conservation\"[ts], AND[OR[governance[ts], management[ts]], OR[spati*[ts], region*[ts], area*[ts], conservation[ts], land*[ts], urban[ts]]], aquaculture[ts], \"fish farm*\"[ts], hydropower[ts], \"green energy\"[ts], \"energy development\"[ts], herding[ts], agriculture[ts], transportation[ts], road*[ts], \"oil and gas\"[ts], petroleum[ts], mining[ts], windpower[ts], traffic[ts], road*[ts], railway*[ts], \"hydroelectric power\"[ts], \"solar power\"[ts], \"solar electricity\"[ts], \"power plant\"[ts], LULC[ts], LULUCF[ts], AFOLU[ts], FOLU[ts]], OR[sustainab*[ts], biodiversity[ts], \"Ecosystem service*\"[ts], NEAR(3)[carbon[ts], OR[stor*[ts], sequest*[ts]]], NEAR(3)[ecosystem*[ts], OR[impact*[ts], effect*[ts], provision*[ts], regulat*[ts], support*[ts], cultur*[ts]]], AND[OR[loss[ts], shrink*[ts], bisection*[ts], perforation[ts], fragmentation[ts]], OR[habitat[ts], land[ts]]], NEAR(3)[climate[ts], adapt*[ts]], ecodiversity[ts], \"ecosystem type*\"[ts], \"ecological process*\"[ts], anthropogenic[ts], conflict*[ts], NEAR(3)[diversity[ts], OR[ecological[ts], speci*[ts], population*[ts]]], red-list[ts], \"water purification\"[ts], \"soil retention\"[ts], spiritual[ts], cultural[ts], aesthetics[ts], \"climate mitigation\"[ts]], OR[Norway[ts], Norwegian[ts], Sweden[ts], Swedish[ts], Finland[ts], Finnish[ts]]]",
+        "coder": "GW",
+        "timestamp": "2024-07-02 09:48",
+        "comment": "QuerySyntaxError"
+    }
+}

@@ -27,6 +27,23 @@ def reindent(input_str: str, num_spaces: int) -> str:
     return "\n".join(lines)
 
 
+class SearchField:
+    """SearchField class."""
+
+    def __init__(
+        self,
+        value: str,
+        *,
+        position: typing.Optional[tuple] = None,
+    ) -> None:
+        """init method"""
+        self.value = value
+        self.position = position
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class Query(ABC):
     """Query class."""
 
@@ -37,7 +54,7 @@ class Query(ABC):
         value: str = "NOT_INITIALIZED",
         *,
         operator: bool = False,
-        search_field: str = "Abstract",
+        search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,
         color: str = "",
@@ -67,11 +84,20 @@ class Query(ABC):
         self.marked = False
         self.search_field = search_field
         if operator:
-            self.search_field = ""
+            self.search_field = None
         self.position = position
         self.color = color
 
         self._ensure_children_not_circular()
+
+    def get_nr_leaves(self) -> int:
+        """Returns the number of leaves in the query tree"""
+        return self._get_nr_leaves_from_node(self)
+
+    def _get_nr_leaves_from_node(self, node: Query) -> int:
+        return sum(
+            self._get_nr_leaves_from_node(n) if n.operator else 1 for n in node.children
+        )
 
     def _ensure_children_not_circular(
         self,
@@ -148,6 +174,9 @@ class Query(ABC):
 
         result = ""
         node_content = node.value
+        if node.search_field:
+            node_content += f"[{node.search_field}]"
+
         if hasattr(node, "near_param"):
             node_content += f"({node.near_param})"
         if node.color:
@@ -177,10 +206,19 @@ class Query(ABC):
         if not hasattr(node, "value"):
             return f"{indent} (?)"
 
+        search_field = ""
+        if not node.operator:
+            search_field = f"[{node.search_field}]"
+
+        node_value = node.value
+        if hasattr(node, "near_param"):
+            node_value += f"/{node.near_param}"
         if node.color:
-            result = reindent(f"{node.color}{node.value}{Colors.END}", level)
+            result = reindent(
+                f"{node.color}{node_value} {search_field}{Colors.END}", level
+            )
         else:
-            result = reindent(f"{node.value}", level)
+            result = reindent(f"{node_value} {search_field}", level)
 
         if node.children == []:
             return result
@@ -227,7 +265,7 @@ class Query(ABC):
                     # -->operator does not need to be appended again
                     result = (
                         f"{result}"
-                        f"{self._get_search_field_wos(child.search_field)}="
+                        f"{self._get_search_field_wos(str(child.search_field))}="
                         f"({child.value}"
                     )
 
@@ -273,6 +311,27 @@ class Query(ABC):
         with open(file_name, "w", encoding="utf-8") as file:
             file.write(json_object)
 
+    # https://ieeexplore.ieee.org/Xplorehelp/searching-ieee-xplore/command-search
+    def _translate_search_field_ieee(self, search_field: str) -> str:
+        """transform search field to IEEE Syntax"""
+        if search_field == Fields.AUTHOR_KEYWORDS:
+            result = "Author Keywords"
+        elif search_field == Fields.ABSTRACT:
+            result = "Abstract"
+        elif search_field == Fields.AUTHOR:
+            result = "Authors"
+        elif search_field == Fields.DOI:
+            result = "DOI"
+        elif search_field == Fields.ISBN_ISSN:
+            result = "ISBN"
+        elif search_field == Fields.PUBLISHER:
+            result = "Publisher"
+        elif search_field == Fields.TITLE:
+            result = "Title"
+        else:
+            raise ValueError(f"Search field not supported ({search_field})")
+        return result
+
     def _print_query_ieee(self, node: typing.Optional[Query] = None) -> str:
         """actual translation logic for IEEE"""
         # start node case
@@ -285,15 +344,18 @@ class Query(ABC):
                 # current element is first but not only child element
                 # --> operator does not need to be appended again
                 if (child == node.children[0]) & (child != node.children[-1]):
-                    result = f'{result}("{child.search_field}":{child.value}'
+                    result = (
+                        f'{result}("'
+                        f'{self._translate_search_field_ieee(str(child.search_field))}"'
+                        + f":{child.value}"
+                    )
                     if node.children[index + 1].operator:
                         result = f"({result})"
 
                 else:
+                    s_field = self._translate_search_field_ieee(str(child.search_field))
                     # current element is not first child
-                    result = (
-                        f'{result} {node.value} "{child.search_field}":{child.value}'
-                    )
+                    result = f'{result} {node.value} "{s_field}":{child.value}'
                     if child != node.children[-1]:
                         if node.children[index + 1].operator:
                             result = f"({result})"
@@ -314,6 +376,7 @@ class Query(ABC):
 
     # https://pubmed.ncbi.nlm.nih.gov/help/
     # https://images.webofknowledge.com/images/help/WOS/hs_advanced_fieldtags.html
+    # https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html
     def _get_search_field_wos(self, search_field: str) -> str:
         """transform search field to WoS Syntax"""
         if search_field == Fields.AUTHOR_KEYWORDS:
@@ -330,6 +393,10 @@ class Query(ABC):
             result = "PUBL"
         elif search_field == Fields.TITLE:
             result = "TI"
+        elif search_field == Fields.DOCUMENT_TYPE:
+            result = "DT"
+        else:
+            raise ValueError(f"Search field not supported ({search_field})")
         return result
 
     def _write_pubmed(self, file_name: Path) -> None:
@@ -366,14 +433,14 @@ class Query(ABC):
                     # -->operator does not need to be appended again
                     result = (
                         f"{result}({child.value}"
-                        f"[{self._get_search_field_pubmed(child.search_field)}]"
+                        f"[{self._get_search_field_pubmed(str(child.search_field))}]"
                     )
 
                 else:
                     # current element is not first child
                     result = (
                         f"{result} {node.value} {child.value}"
-                        f"[{self._get_search_field_pubmed(child.search_field)}]"
+                        f"[{self._get_search_field_pubmed(str(child.search_field))}]"
                     )
 
                 if child == node.children[-1]:

@@ -3,10 +3,11 @@
 import unittest
 
 from search_query.and_query import AndQuery
+from search_query.constants import Fields
 from search_query.not_query import NotQuery
 from search_query.or_query import OrQuery
 from search_query.query import Query
-
+from search_query.query import SearchField
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501
@@ -16,8 +17,12 @@ class TestQuery(unittest.TestCase):
     """Testing class for query translator"""
 
     def setUp(self) -> None:
-        self.test_node = Query("testvalue", search_field="Document Title")
-        self.query_robot = NotQuery(["robot*"], search_field="Author Keywords")
+        self.test_node = Query(
+            "testvalue", position=(1, 10), search_field=SearchField(Fields.TITLE)
+        )
+        self.query_robot = NotQuery(
+            ["robot*"], search_field=SearchField(Fields.AUTHOR_KEYWORDS)
+        )
         self.query_ai = OrQuery(
             [
                 '"AI"',
@@ -25,27 +30,36 @@ class TestQuery(unittest.TestCase):
                 '"Machine Learning"',
                 self.query_robot,
             ],
-            search_field="Author Keywords",
+            search_field=SearchField(
+                Fields.AUTHOR_KEYWORDS,
+            ),
         )
         self.query_health = OrQuery(
-            ['"health care"', "medicine"], search_field="Author Keywords"
+            ['"health care"', "medicine"],
+            search_field=SearchField(Fields.AUTHOR_KEYWORDS),
         )
-        self.query_ethics = OrQuery(["ethic*", "moral*"], search_field="Abstract")
+        self.query_ethics = OrQuery(
+            ["ethic*", "moral*"], search_field=SearchField(Fields.ABSTRACT)
+        )
         self.query_complete = AndQuery(
             [self.query_ai, self.query_health, self.query_ethics],
-            search_field="Author Keywords",
+            search_field=SearchField(Fields.AUTHOR_KEYWORDS),
         )
 
     def test_print_node(self) -> None:
-        expected = "value: testvalue operator: False search field: Document Title"
+        expected = "value: testvalue operator: False search field: ti"
         self.assertEqual(
             self.test_node.print_node(), expected, "Print Node Method does not work."
         )
 
     def test_append_children(self) -> None:
         """test whether the children are appended correctly"""
-        healthCareChild = Query('"health care"', search_field="Author Keywords")
-        medicineChild = Query("medicine", search_field="Author Keywords")
+        healthCareChild = Query(
+            '"health care"', search_field=SearchField(Fields.AUTHOR_KEYWORDS)
+        )
+        medicineChild = Query(
+            "medicine", search_field=SearchField(Fields.AUTHOR_KEYWORDS)
+        )
         expected = [healthCareChild, medicineChild]
         self.assertEqual(
             self.query_health.children[0].print_node(),
@@ -180,7 +194,7 @@ class TestQuery(unittest.TestCase):
         with self.assertRaises(ValueError):
             AndQuery(
                 ["invalid", self.query_complete, self.query_ai],
-                search_field="Author Keywords",
+                search_field=SearchField("Author Keywords"),
             )
 
 

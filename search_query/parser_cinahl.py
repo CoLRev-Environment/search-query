@@ -19,6 +19,10 @@ class CINAHLParser(QueryListParser):
         """Node content is AND node"""
         return bool(re.match(r"^\(?S\d+( AND S\d+)+\)?$", node_content))
 
+    def is_node_identifier(self, node_content: str) -> bool:
+        """Node content is node identifier"""
+        return bool(re.match(r"^S\d+$", node_content))
+
     def parse_list(self) -> None:
         """Tokenize the query_str."""
         query_str = self.query_str
@@ -37,3 +41,12 @@ class CINAHLParser(QueryListParser):
     def get_children(self, node_content: str) -> list:
         """Get the children of a node."""
         return re.findall(r"S\d+", node_content)
+
+    def translate_search_fields(self, node: Query) -> None:
+        """Translate search fields."""
+
+        if not node.children:
+            raise NotImplementedError
+
+        for child in node.children:
+            self.translate_search_fields(child)

@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 import re
+import typing
 
+import search_query.exception as search_query_exception
 from search_query.constants import Operators
+from search_query.constants import Syntax
+from search_query.constants import SYNTAX_FIELD_TRANSLATION_MAP
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
+from search_query.query import SearchField
 
 
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
+
+    FIELD_TRANSLATION_MAP = SYNTAX_FIELD_TRANSLATION_MAP[Syntax.PUBMED]
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -41,7 +48,10 @@ class PubmedParser(QueryStringParser):
         return "NOT_MATCHED"
 
     def parse_node(
-        self, tokens: list, search_field: str = "", unary_not: bool = False
+        self,
+        tokens: list,
+        search_field: typing.Optional[SearchField] = None,
+        unary_not: bool = False,
     ) -> Query:
         """Parse a node from a list of tokens."""
         # Assume that expressions start with "("
@@ -65,14 +75,16 @@ class PubmedParser(QueryStringParser):
             if self.is_term(next_item):
                 value = next_item.lstrip('"').rstrip('"')
                 term_node = Query(
-                    value=value, operator=False, search_field=search_field, position=pos
+                    value=value,
+                    operator=False,
+                    search_field=search_field,  # .strip()
+                    position=pos,
                 )
 
-                # print(next_item)
                 next_token, _ = tokens[0]
                 if self.is_search_field(next_token):
-                    search_field = next_item
                     next_item, pos = tokens.pop(0)
+                    search_field = SearchField(next_item.strip(), position=pos)
                     term_node.search_field = search_field
 
                 node.children.append(term_node)
@@ -82,10 +94,12 @@ class PubmedParser(QueryStringParser):
             if next_item in [Operators.AND, Operators.OR]:
                 assert expecting_operator, tokens
                 if current_operator not in [next_item, ""]:
-                    raise ValueError(
-                        f"Invalid Syntax (combining {current_operator} "
-                        f"with {next_item})"
+                    raise search_query_exception.QuerySyntaxError(
+                        msg=f"Attempt to combine {current_operator} with {next_item}",
+                        query_string=self.query_str,
+                        pos=pos,
                     )
+
                 node.operator = True
                 node.value = next_item
                 node.position = pos
@@ -118,18 +132,47 @@ class PubmedParser(QueryStringParser):
         # was created to the node (for debugging)
         return node
 
-    # def translate_search_fields(self, node: Query) -> None:
-    #     """Translate search fields."""
-    #     if not node.children:
-    #         node.search_field = node.search_field.replace("AB=", "Abstract")
-    #         return
+    def translate_search_fields(self, node: Query) -> None:
+        """Translate search fields."""
 
-    #     for child in node.children:
-    #         self.translate_search_fields(child)
+        if not node.children:
+            if not node.search_field:
+                return
+            # Search fields are not case sensitive
+            search_field_lc = node.search_field.value.lower()
+
+            if search_field_lc in self.FIELD_TRANSLATION_MAP:
+                node.search_field = SearchField(
+                    self.FIELD_TRANSLATION_MAP[search_field_lc]
+                )
+
+            # TODO : move to constants...
+            elif search_field_lc in ["[tiab]"]:
+                node.search_field = SearchField("tiab")
+
+            elif search_field_lc in ["[mj]"]:
+                replacement = {"[mj]": "[majr]"}
+                raise search_query_exception.QuerySyntaxError(
+                    msg=f"Invalid search field: {node.search_field} "
+                    + f"is deprecated (use {replacement[str(node.search_field)]})",
+                    query_string=self.query_str,
+                    pos=node.position or (0, 0),
+                )
+            else:
+                raise search_query_exception.QuerySyntaxError(
+                    msg=f"Invalid search field: {node.search_field}",
+                    query_string=self.query_str,
+                    pos=node.position or (0, 0),
+                )
+
+            return
+
+        for child in node.children:
+            self.translate_search_fields(child)
 
     def parse(self) -> Query:
         """Parse a query string."""
         self.tokenize()
         node = self.parse_node(self.tokens)
-        # self.translate_search_fields(node)
+        self.translate_search_fields(node)
         return node

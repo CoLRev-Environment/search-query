@@ -6,6 +6,7 @@ import typing
 
 from search_query.constants import Operators
 from search_query.query import Query
+from search_query.query import SearchField
 
 
 class NearQuery(Query):
@@ -16,7 +17,7 @@ class NearQuery(Query):
         children: typing.List[typing.Union[str, Query]],
         *,
         near_param: int,
-        search_field: str,
+        search_field: SearchField,
         position: typing.Optional[tuple] = None,
     ) -> None:
         """init method
