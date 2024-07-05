@@ -52,6 +52,12 @@ query.to_string(syntax="wos")
 The `write()` methods create a JSON file using the parameter file name
 The `to_string()` methods returns the translated string
 
+## How to install
+
+```
+pip install search-query
+```
+
 ## How to cite
 
 Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
