@@ -58,6 +58,12 @@ The `to_string()` methods returns the translated string
 pip install search-query
 ```
 
+To develop search-query, run
+
+```
+pip install -e .
+```
+
 ## How to cite
 
 Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
