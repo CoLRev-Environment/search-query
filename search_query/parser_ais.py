@@ -81,7 +81,7 @@ class AISParser(QueryStringParser):
         """Token is operator"""
         return bool(re.match(r"^(AND|OR|NOT|NEAR/\d+)$", token, re.IGNORECASE))
 
-    def parse_node(
+    def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
@@ -130,7 +130,7 @@ class AISParser(QueryStringParser):
                 continue
 
             if next_item == "(":
-                node.children.append(self.parse_node(tokens, search_field))
+                node.children.append(self.parse_query_tree(tokens, search_field))
                 expecting_operator = True
 
         # Single-element parenthesis
@@ -216,7 +216,9 @@ class AISParser(QueryStringParser):
         """Handle NOT operator."""
         if current_operator.upper() not in [Operators.AND, ""]:
             raise ValueError(f"Invalid Syntax (combining {current_operator} with NOT)")
-        node.children.append(self.parse_node(tokens, search_field, unary_not=True))
+        node.children.append(
+            self.parse_query_tree(tokens, search_field, unary_not=True)
+        )
         return node
 
     def translate_search_fields(self, node: Query) -> None:
@@ -243,6 +245,6 @@ class AISParser(QueryStringParser):
         """Parse a query string."""
         self.tokenize()
         self._validate_tokens()
-        node = self.parse_node(self.tokens)
+        node = self.parse_query_tree(self.tokens)
         self.translate_search_fields(node)
         return node

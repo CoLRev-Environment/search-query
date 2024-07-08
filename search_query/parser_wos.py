@@ -114,7 +114,7 @@ class WOSParser(WOSMixin, QueryStringParser):
 
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-statements
-    def parse_node(
+    def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
@@ -202,7 +202,9 @@ class WOSParser(WOSMixin, QueryStringParser):
                     next_item, pos = self._get_next_item(tokens)
 
                     if next_item == "(":
-                        near_node.children.append(self.parse_node(tokens, search_field))
+                        near_node.children.append(
+                            self.parse_query_tree(tokens, search_field)
+                        )
                     else:
                         self._handle_term(near_node, next_item, search_field, pos)
 
@@ -222,7 +224,7 @@ class WOSParser(WOSMixin, QueryStringParser):
                 continue
 
             if next_item == "(":
-                node.children.append(self.parse_node(tokens, search_field))
+                node.children.append(self.parse_query_tree(tokens, search_field))
                 expecting_operator = True
 
         if parent_node:
@@ -310,14 +312,16 @@ class WOSParser(WOSMixin, QueryStringParser):
         """Handle NOT operator."""
         if current_operator.upper() not in [Operators.AND, ""]:
             raise ValueError(f"Invalid Syntax (combining {current_operator} with NOT)")
-        node.children.append(self.parse_node(tokens, search_field, unary_not=True))
+        node.children.append(
+            self.parse_query_tree(tokens, search_field, unary_not=True)
+        )
         return node
 
     def parse(self) -> Query:
         """Parse a query string."""
         self.tokenize()
         # print(self.get_token_types(self.tokens))
-        node = self.parse_node(self.tokens)
+        node = self.parse_query_tree(self.tokens)
         self.translate_search_fields(node)
         return node
 
@@ -367,7 +371,7 @@ class WOSListParser(WOSMixin, QueryListParser):
         """Parse a term node."""
         node_parser = WOSParser(term_str)
         node_parser.tokenize()
-        return node_parser.parse_node(node_parser.tokens)
+        return node_parser.parse_query_tree(node_parser.tokens)
 
     def print_term_token_types(self, token_content: str) -> str:
         """Override with method to parse and print term node types."""

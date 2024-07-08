@@ -160,7 +160,7 @@ class QueryListParser(QueryParser):
         output += f"\n {Colors.RED}NOT-MATCHED{Colors.END}"
         return output
 
-    def parse_node(self, node_nr: str) -> Query:
+    def parse_query_tree(self, node_nr: str) -> Query:
         """Parse a node from the node list."""
 
         if not self.is_node_identifier(node_nr):
@@ -169,13 +169,13 @@ class QueryListParser(QueryParser):
         if self.is_or_node(self.tokens[node_nr]):
             node = Query(value="OR", operator=True)
             for child in self.get_children(self.tokens[node_nr]):
-                node.children.append(self.parse_node(child))
+                node.children.append(self.parse_query_tree(child))
             return node
 
         if self.is_and_node(self.tokens[node_nr]):
             node = Query(value="AND", operator=True)
             for child in self.get_children(self.tokens[node_nr]):
-                node.children.append(self.parse_node(child))
+                node.children.append(self.parse_query_tree(child))
             return node
 
         return self.parse_term_node(self.tokens[node_nr])
@@ -184,6 +184,6 @@ class QueryListParser(QueryParser):
         """Parse a query string."""
 
         self.parse_list()
-        node = self.parse_node(list(self.tokens.keys())[-1])
+        node = self.parse_query_tree(list(self.tokens.keys())[-1])
         self.translate_search_fields(node)
         return node

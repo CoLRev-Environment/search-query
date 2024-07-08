@@ -11,6 +11,7 @@ from pathlib import Path
 from search_query.constants import Colors
 from search_query.constants import Fields
 from search_query.constants import Operators
+from search_query.serializer_pubmed import to_string_pubmed
 
 # pylint: disable=too-few-public-methods
 
@@ -158,7 +159,7 @@ class Query(ABC):
         if syntax == "wos":
             return self._print_query_wos()
         if syntax == "pubmed":
-            return self._print_query_pubmed()
+            return to_string_pubmed(self)
         if syntax == "ieee":
             return self._print_query_ieee()
         raise ValueError(f"Syntax not supported ({syntax})")
@@ -418,65 +419,5 @@ class Query(ABC):
         with open(file_name, "w", encoding="utf-8") as file:
             file.write(json_object)
 
-    def _print_query_pubmed(self, node: typing.Optional[Query] = None) -> str:
-        """actual translation logic for PubMed"""
-        # start node case
-        if node is None:
-            node = self
 
-        result = ""
-        for child in node.children:
-            if not child.operator:
-                # node is not an operator
-                if (child == node.children[0]) & (child != node.children[-1]):
-                    # current element is first but not only child element
-                    # -->operator does not need to be appended again
-                    result = (
-                        f"{result}({child.value}"
-                        f"[{self._get_search_field_pubmed(str(child.search_field))}]"
-                    )
-
-                else:
-                    # current element is not first child
-                    result = (
-                        f"{result} {node.value} {child.value}"
-                        f"[{self._get_search_field_pubmed(str(child.search_field))}]"
-                    )
-
-                if child == node.children[-1]:
-                    # current Element is last Element -> closing parenthesis
-                    result = f"{result})"
-
-            else:
-                # node is operator node
-                if child.value == "NOT":
-                    # current element is NOT Operator -> no parenthesis in PubMed
-                    result = f"{result}{self._print_query_pubmed(child)}"
-
-                elif (child == node.children[0]) & (child != node.children[-1]):
-                    result = f"{result}({self._print_query_pubmed(child)}"
-                else:
-                    result = f"{result} {node.value} {self._print_query_pubmed(child)}"
-
-                if (child == node.children[-1]) & (child.value != "NOT"):
-                    result = f"{result})"
-        return f"{result}"
-
-    def _get_search_field_pubmed(self, search_field: str) -> str:
-        """transform search field to PubMed Syntax"""
-        result = "ti"
-        if search_field == Fields.AUTHOR_KEYWORDS:
-            result = "ot"
-        elif search_field == Fields.ABSTRACT:
-            result = "tiab"
-        elif search_field == Fields.AUTHOR:
-            result = "au"
-        elif search_field == Fields.DOI:
-            result = "aid"
-        elif search_field == Fields.ISBN_ISSN:
-            result = "isbn"
-        elif search_field == Fields.PUBLISHER:
-            result = "pubn"
-        elif search_field == Fields.TITLE:
-            result = "ti"
-        return result
+# TODO: extract to serializer

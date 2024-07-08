@@ -6,6 +6,7 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
+from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import Syntax
 from search_query.constants import SYNTAX_FIELD_TRANSLATION_MAP
@@ -47,7 +48,7 @@ class PubmedParser(QueryStringParser):
             return "term"
         return "NOT_MATCHED"
 
-    def parse_node(
+    def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
@@ -114,12 +115,12 @@ class PubmedParser(QueryStringParser):
                         f"Invalid Syntax (combining {current_operator} with NOT)"
                     )
                 node.children.append(
-                    self.parse_node(tokens, search_field, unary_not=True)
+                    self.parse_query_tree(tokens, search_field, unary_not=True)
                 )
                 continue
 
             if next_item == "(":
-                node.children.append(self.parse_node(tokens, search_field))
+                node.children.append(self.parse_query_tree(tokens, search_field))
                 # if tokens:
                 #     assert tokens.pop(0) == ')', tokens
                 expecting_operator = True
@@ -138,6 +139,7 @@ class PubmedParser(QueryStringParser):
         if not node.children:
             if not node.search_field:
                 return
+
             # Search fields are not case sensitive
             search_field_lc = node.search_field.value.lower()
 
@@ -146,9 +148,24 @@ class PubmedParser(QueryStringParser):
                     self.FIELD_TRANSLATION_MAP[search_field_lc]
                 )
 
+            # Deprecated field
+            elif search_field_lc == "[mesh]":
+                node.search_field = SearchField(Fields.MESH)
+
             # TODO : move to constants...
+            # INSTEAD: translate by adding sibling-nodes
+            # or even creating a new parent OR?!
             elif search_field_lc in ["[tiab]"]:
                 node.search_field = SearchField("tiab")
+                node.children.insert(
+                    0, Query(node.value, search_field=SearchField("ti"))
+                )
+                node.children.insert(
+                    1, Query(node.value, search_field=SearchField("ab"))
+                )
+                node.value = "OR"
+                node.operator = True
+                node.search_field = None
 
             elif search_field_lc in ["[mj]"]:
                 replacement = {"[mj]": "[majr]"}
@@ -173,6 +190,6 @@ class PubmedParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string."""
         self.tokenize()
-        node = self.parse_node(self.tokens)
+        node = self.parse_query_tree(self.tokens)
         self.translate_search_fields(node)
         return node

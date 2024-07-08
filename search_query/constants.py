@@ -3,23 +3,32 @@
 # pylint: disable=too-few-public-methods
 # https://pubmed.ncbi.nlm.nih.gov/help/
 # https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
+from enum import Enum
+
+
+class Operators:
+    """Operators"""
+
+    AND = "AND"
+    OR = "OR"
+    NOT = "NOT"
+    NEAR = "NEAR"
 
 
 class Fields:
     """Search fields"""
 
+    TITLE = "ti"
     ALL = "all"
+    TOPIC = "ts"
     TEXT_WORDS = "tw"
     ABSTRACT = "ab"
-    TITLE_ABSTRACT = "tiab"
     AUTHOR = "au"
     AUTHOR_KEYWORDS = "ak"
     WOS_KEYWORDS_PLUS = "kp"
     DOI = "doi"
     ISBN_ISSN = "isbn"
-    TITLE = "ti"
     YEAR = "py"
-    TOPIC = "ts"
     LANGUAGE = "la"
     PUBLISHER = "pubn"
     DOCUMENT_TYPE = "dt"
@@ -28,17 +37,35 @@ class Fields:
     RESEARCH_AREA = "su"
     WOS_CATEGORY = "wc"
     AFFILIATION = "affiliation"
+    PII = "pii"
+    BOOKACCESSION = "bookaccession"
 
     SUBSET = "sb"  # pubmed filter
 
+    @classmethod
+    def all(cls) -> list:
+        """Return all fields as a list."""
+        return [
+            value
+            for key, value in vars(cls).items()
+            if not key.startswith("_") and not callable(value) and key not in ["all"]
+        ]
 
-class Syntax:
+
+class Syntax(Enum):
     """Database syntax"""
 
     WOS = "wos"
     PUBMED = "pubmed"
 
 
+# The SYNTAX_FIELD_MAP contains the current mapping of standard Fields to the
+# syntax of the databases. If a field is not present in the map, it is assumed
+# that the field is not supported by the database.
+# If multiple options exist for valid database syntax, only the most common
+# option is included in the map. Less common options are replaced in the parser.
+# For instance, pubmed recommends [mh]. However, [mesh] is also valid and is replaced
+# in the parser.
 SYNTAX_FIELD_MAP = {
     # field tags from https://www.webofscience.com/wos/woscc/advanced-search
     Syntax.WOS: {
@@ -83,26 +110,25 @@ SYNTAX_FIELD_MAP = {
         # Fields.XXX: "EAY=",
         # Fields.XXX: "SDG=",
     },
+    # https://pubmed.ncbi.nlm.nih.gov/help/
     Syntax.PUBMED: {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
         Fields.AUTHOR: "[au]",
         Fields.AUTHOR_KEYWORDS: "[ot]",
-        Fields.DOI: "[aid]",  # TODO
         Fields.ISBN_ISSN: "[is]",
         Fields.YEAR: "[dp]",
-        Fields.TOPIC: "[mh]",  # TODO
+        Fields.MESH: "[mh]",
         Fields.LANGUAGE: "[la]",
         Fields.MESH_NO_EXP: "[mesh:noexp]",
-        Fields.MESH: "[mesh]",
         Fields.SUBSET: "[sb]",
         Fields.AFFILIATION: "[affiliation]",
         Fields.TEXT_WORDS: "[tw]",
     },
 }
 
-# For convenience, we can use the following to translate fields to syntax
+# For convenience, modules can use the following to translate fields to syntax
 SYNTAX_FIELD_TRANSLATION_MAP = {
     syntax: {v: k for k, v in fields.items()}
     for syntax, fields in SYNTAX_FIELD_MAP.items()
@@ -112,17 +138,9 @@ SYNTAX_FIELD_TRANSLATION_MAP = {
 SYNTAX_COMBINED_FIELDS_MAP = {
     Syntax.PUBMED: {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
+        "[aid]": [Fields.DOI, Fields.PII, Fields.BOOKACCESSION],
     }
 }
-
-
-class Operators:
-    """Operators"""
-
-    AND = "AND"
-    OR = "OR"
-    NOT = "NOT"
-    NEAR = "NEAR"
 
 
 class Colors:

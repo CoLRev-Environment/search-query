@@ -168,7 +168,7 @@ class TestQuery(unittest.TestCase):
         """test whether the translation of the tool is identical to the manually translated IEEE Query,
         testing the complete, multi-level Query"""
 
-        expected = '(("AI"[ot] OR "Artificial Intelligence"[ot] OR "Machine Learning"[ot] NOT robot*[ot]) AND ("health care"[ot] OR medicine[ot]) AND (ethic*[tiab] OR moral*[tiab]))'
+        expected = '(("AI"[ot] OR "Artificial Intelligence"[ot] OR "Machine Learning"[ot] NOT robot*[ot]) AND ("health care"[ot] OR medicine[ot]) AND (ethic*[ab] OR moral*[ab]))'
         self.assertEqual(
             self.query_complete.to_string(syntax="pubmed"),
             expected,
