@@ -175,20 +175,6 @@ class TestQuery(unittest.TestCase):
             "Query was not translated to PubMed Syntax",
         )
 
-    def test_json_files(self) -> None:
-        """test whether the json files are created correctly"""
-        self.query_complete.write(
-            "./translations/IEEE/ieeeTest.json", syntax="ieee", replace_existing=True
-        )
-        self.query_complete.write(
-            "./translations/PubMed/pubmedTest.json",
-            syntax="pubmed",
-            replace_existing=True,
-        )
-        self.query_complete.write(
-            "./translations/WoS/wosTest.json", syntax="wos", replace_existing=True
-        )
-
     def test_invalid_tree_structure(self) -> None:
         """test wheter an invalid Query (which includes a cycle), correctly raises an exception"""
         with self.assertRaises(ValueError):

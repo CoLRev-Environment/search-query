@@ -23,6 +23,7 @@ class Fields:
     TOPIC = "ts"
     TEXT_WORDS = "tw"
     ABSTRACT = "ab"
+    JOURNAL = "ta"
     AUTHOR = "au"
     AUTHOR_KEYWORDS = "ak"
     WOS_KEYWORDS_PLUS = "kp"
@@ -34,11 +35,18 @@ class Fields:
     DOCUMENT_TYPE = "dt"
     MESH_NO_EXP = "mesh_no_exp"
     MESH = "mesh"
+    MESH_MAJOR = "majr"
     RESEARCH_AREA = "su"
     WOS_CATEGORY = "wc"
     AFFILIATION = "affiliation"
     PII = "pii"
     BOOKACCESSION = "bookaccession"
+    SUBHEADING = "sh"
+    SUPPLEMENTARY_CONCEPT = "sc"
+    PUBLICATION_TYPE = "pt"
+    PHARMACOLOGICAL_ACTION = "pa"
+
+    EBSCO_UNQUALIFIED = "EBSCO_UNQUALIFIED"
 
     SUBSET = "sb"  # pubmed filter
 
@@ -57,6 +65,7 @@ class Syntax(Enum):
 
     WOS = "wos"
     PUBMED = "pubmed"
+    EBSCO = "ebsco"
 
 
 # The SYNTAX_FIELD_MAP contains the current mapping of standard Fields to the
@@ -119,12 +128,20 @@ SYNTAX_FIELD_MAP = {
         Fields.AUTHOR_KEYWORDS: "[ot]",
         Fields.ISBN_ISSN: "[is]",
         Fields.YEAR: "[dp]",
-        Fields.MESH: "[mh]",
         Fields.LANGUAGE: "[la]",
         Fields.MESH_NO_EXP: "[mesh:noexp]",
+        Fields.MESH: "[mh]",
+        Fields.MESH_MAJOR: "[majr]",
         Fields.SUBSET: "[sb]",
         Fields.AFFILIATION: "[affiliation]",
         Fields.TEXT_WORDS: "[tw]",
+        Fields.SUBHEADING: "[sh]",
+        Fields.PUBLICATION_TYPE: "[pt]",
+        Fields.PHARMACOLOGICAL_ACTION: "[pa]",
+        Fields.JOURNAL: "[ta]",
+    },
+    Syntax.EBSCO: {
+        Fields.TITLE: "TI ",
     },
 }
 
@@ -139,7 +156,16 @@ SYNTAX_COMBINED_FIELDS_MAP = {
     Syntax.PUBMED: {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
         "[aid]": [Fields.DOI, Fields.PII, Fields.BOOKACCESSION],
-    }
+    },
+    Syntax.EBSCO: {
+        # https://connect.ebsco.com/s/article/What-is-an-unqualified-search?language=en_US
+        "EBSCO_UNQUALIFIED": [
+            Fields.AUTHOR,
+            Fields.RESEARCH_AREA,
+            Fields.AUTHOR_KEYWORDS,
+            Fields.ABSTRACT,
+        ],
+    },
 }
 
 

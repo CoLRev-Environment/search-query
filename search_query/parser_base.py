@@ -3,27 +3,19 @@
 from __future__ import annotations
 
 import re
-import typing
 
+import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.query import Query
 
 
-# pylint: disable=too-few-public-methods
-class QueryParser:
-    """QueryParser class"""
-
-    def __init__(self, query_str: str) -> None:
-        self.query_str = query_str
-
-
-class QueryStringParser(QueryParser):
+class QueryStringParser:
     """QueryStringParser"""
 
     tokens: list
 
     def __init__(self, query_str: str) -> None:
-        super().__init__(query_str)
+        self.query_str = query_str
         self.tokens = []
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
@@ -89,101 +81,157 @@ class QueryStringParser(QueryParser):
             and not self.is_search_field(token)
         )
 
-
-# pylint: disable=too-few-public-methods
-class QueryListParser(QueryParser):
-    """QueryListParser"""
-
-    tokens: typing.Dict[str, str]
-
-    def __init__(self, query_str: str) -> None:
-        super().__init__(query_str)
-        self.tokens = {}
-
-    def is_node_identifier(self, node_content: str) -> bool:
-        """Node content is identifier"""
-        raise NotImplementedError
-
-    def is_or_node(self, node_content: str) -> bool:
-        """Node content is OR node"""
-        raise NotImplementedError
-
-    def is_and_node(self, node_content: str) -> bool:
-        """Node content is AND node"""
-        raise NotImplementedError
-
-    def parse_list(self) -> None:
-        """Tokenize the query_str."""
-        raise NotImplementedError
-
-    def get_children(self, node_content: str) -> list:
-        """Get the children of a node."""
-        raise NotImplementedError
-
-    def parse_term_node(self, term_str: str) -> Query:
-        """Parse a term node."""
-        raise NotImplementedError
-
-    def translate_search_fields(self, node: Query) -> None:
-        """Translate search fields."""
-        raise NotImplementedError
-
-    def is_term(self, token: str) -> bool:
-        """Check if a token is a term."""
-        return not self.is_or_node(token) and not self.is_and_node(token)
-
-    def print_term_token_types(self, token_content: str) -> str:
-        """Override with method to parse and print term node types."""
-        return token_content
-
-    def get_token_types(self, tokens: dict) -> str:
-        """Print the token types"""
-
-        output = ""
-        for token_nr, token_content in tokens.items():
-            output += f"{token_nr}: "
-            if self.is_term(token_content):
-                output += self.print_term_token_types(token_content)
-            # elif self.is_search_field(token_content):
-            #     output += f"{Colors.GREEN}{token_content}{Colors.END}"
-            elif self.is_or_node(token_content) or self.is_and_node(token_content):
-                output += f" {Colors.ORANGE}{token_content}{Colors.END} "
-            # elif self.is_parenthesis(token_content):
-            #     output += f"{Colors.BLUE}{token_content}{Colors.END}"
+    def combine_subsequent_terms(self) -> None:
+        """Combine subsequent terms in the list of tokens."""
+        # Combine subsequent terms (without quotes)
+        # This would be more challenging in the regex
+        combined_tokens = []
+        i = 0
+        while i < len(self.tokens):
+            if (
+                i + 1 < len(self.tokens)
+                and self.is_term(self.tokens[i][0])
+                and self.is_term(self.tokens[i + 1][0])
+            ):
+                combined_token = (
+                    self.tokens[i][0] + " " + self.tokens[i + 1][0],
+                    (self.tokens[i][1][0], self.tokens[i + 1][1][1]),
+                )
+                combined_tokens.append(combined_token)
+                i += 2
             else:
-                output += f"{Colors.RED}{token_content}{Colors.END}"
-            output += "\n"
+                combined_tokens.append(self.tokens[i])
+                i += 1
 
-        output += f"\n Term\n {Colors.BLUE}Parenthesis{Colors.END}"
-        output += f"\n {Colors.GREEN}Search field{Colors.END}"
-        output += f"\n {Colors.ORANGE}Operator {Colors.END}"
-        output += f"\n {Colors.RED}NOT-MATCHED{Colors.END}"
-        return output
-
-    def parse_query_tree(self, node_nr: str) -> Query:
-        """Parse a node from the node list."""
-
-        if not self.is_node_identifier(node_nr):
-            return self.parse_term_node(node_nr)
-
-        if self.is_or_node(self.tokens[node_nr]):
-            node = Query(value="OR", operator=True)
-            for child in self.get_children(self.tokens[node_nr]):
-                node.children.append(self.parse_query_tree(child))
-            return node
-
-        if self.is_and_node(self.tokens[node_nr]):
-            node = Query(value="AND", operator=True)
-            for child in self.get_children(self.tokens[node_nr]):
-                node.children.append(self.parse_query_tree(child))
-            return node
-
-        return self.parse_term_node(self.tokens[node_nr])
+        self.tokens = combined_tokens
 
     def parse(self) -> Query:
-        """Parse a query string."""
+        """Parse the query."""
+        raise NotImplementedError(
+            "parse method must be implemented by inheriting classes"
+        )
 
-        self.parse_list()
-        node = self.parse_query_tree(list(self.tokens.keys())[-1])
-        self.translate_search_fields(node)
-        return node
+
+class QueryListParser:
+    """QueryListParser"""
+
+    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+
+    def __init__(self, query_list: str, parser_class: type[QueryStringParser]) -> None:
+        self.query_list = query_list
+        self.parser_class = parser_class
+
+    def parse_dict(self) -> dict:
+        """Tokenize the query_list."""
+        query_list = self.query_list
+        tokens = {}
+        previous = 0
+        for line in query_list.split("\n"):
+            if line.strip() == "":
+                continue
+
+            match = re.match(self.LIST_ITEM_REGEX, line)
+            if not match:
+                raise ValueError(f"line not matching format: {line}")
+            node_nr, node_content = match.groups()
+            pos_start, pos_end = match.span(2)
+            pos_start += previous
+            pos_end += previous
+            len_node_nr = match.span(1)[1] - match.span(1)[0]
+            tokens[str(node_nr)] = {
+                "node_content": node_content,
+                "content_pos": (pos_start, pos_end),
+                "node_nr_len": len_node_nr,
+            }
+            previous += len(line) + 1
+        return tokens
+
+    def get_token_str(self, token_nr: str) -> str:
+        """Get the token string."""
+        raise NotImplementedError(
+            "get_token_str method must be implemented by inheriting classes"
+        )
+
+    def _replace_token_nr_by_query(
+        self, query_list: list, token_nr: str, token_content: dict
+    ) -> None:
+        for i, (content, pos) in enumerate(query_list):
+            token_str = self.get_token_str(token_nr)
+            if token_str in content:
+                query_list.pop(i)
+
+                content_before = content[: content.find(token_str)]
+                content_before_pos = (pos[0], pos[0] + len(content_before))
+                content_after = content[content.find(token_str) + len(token_str) :]
+                content_after_pos = (
+                    content_before_pos[1] + len(token_str),
+                    content_before_pos[1] + len(content_after) + len(token_str),
+                )
+
+                new_content = token_content["node_content"]
+                new_pos = token_content["content_pos"]
+
+                if content_after:
+                    query_list.insert(i, (content_after, content_after_pos))
+
+                # Insert the sub-query from the list with "artificial parentheses"
+                # (positions with length 0)
+                query_list.insert(i, (")", (-1, -1)))
+                query_list.insert(i, (new_content, new_pos))
+                query_list.insert(i, ("(", (-1, -1)))
+
+                if content_before:
+                    query_list.insert(i, (content_before, content_before_pos))
+
+                break
+
+    def dict_to_positioned_list(self, tokens: dict) -> list:
+        """Convert a node to a positioned list."""
+
+        root_node = list(tokens.values())[-1]
+        query_list = [(root_node["node_content"], root_node["content_pos"])]
+
+        for token_nr, token_content in reversed(tokens.items()):
+            # iterate over query_list if token_nr is in the content,
+            # split the content and insert the token_content, updating the content_pos
+            self._replace_token_nr_by_query(query_list, token_nr, token_content)
+
+        return query_list
+
+    def parse(self) -> Query:
+        """Parse the query in list format."""
+
+        tokens = self.parse_dict()
+
+        query_list = self.dict_to_positioned_list(tokens)
+        query_string = "".join([query[0] for query in query_list])
+
+        try:
+            query = self.parser_class(query_string).parse()
+
+        except search_query_exception.QuerySyntaxError as exc:
+            # Correct positions and query string
+            # to display the error for the original (list) query
+            new_pos = exc.pos
+            for content, pos in query_list:
+                # Note: artificial parentheses cannot be ignored here
+                # because they were counted in teh query_string
+                segment_length = len(content)
+
+                if new_pos[0] - segment_length >= 0:
+                    new_pos = (new_pos[0] - segment_length, new_pos[1] - segment_length)
+                    continue
+                segment_beginning = pos[0]
+                new_pos = (
+                    new_pos[0] + segment_beginning,
+                    new_pos[1] + segment_beginning,
+                )
+                exc.pos = new_pos
+                break
+
+            exc.query_string = self.query_list
+            raise search_query_exception.QuerySyntaxError(
+                msg="", query_string=self.query_list, pos=exc.pos
+            )
+
+        return query

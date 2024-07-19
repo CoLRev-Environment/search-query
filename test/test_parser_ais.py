@@ -80,7 +80,7 @@ def test_ais_query_parser(source: str, query_string: str, expected: str) -> None
     print()
     print(query_string)
     print()
-    query = parse(query_string, query_type="ais_library")
+    query = parse(query_string, syntax="ais_library")
     query_str = query.to_string()
     print(query_str)
 

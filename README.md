@@ -6,15 +6,26 @@
 [![GitHub Release](https://img.shields.io/github/v/release/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
 [![PyPI - Version](https://img.shields.io/pypi/v/search-query?color=blue)](https://pypi.org/project/search-query/)
 [![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
+
 </div>
 
-Search-query is a Python package to translate literature search queries across databases, such as PubMed and Web of Science.
-It can be used programmatically, has zero dependencies, and can therefore be integrated in a variety of environments.
-This package was developed as part of my Bachelor's thesis: Towards more efficient literature search: Design of an open source query translator.
+Search-query is a Python package for parsing, validating, simplifying, and serializing literature search queries.
+It currently supports PubMed and Web of Science, and can be extended to support other databases.
+As a default it relies on the JSON schema proposed by an expert panel (Haddaway et al., 2022).
+The package can be used programmatically or through the command line, has zero dependencies, and can therefore be integrated in a variety of environments.
+The heuristics, parsers, and linters are battle-tested on over 500 peer-reviewed queries registered at [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv).
 
-## How to use?
+## Installation
 
-To create queries, run:
+To install search-query, run:
+
+```
+pip install search-query
+```
+
+## Programmatic use
+
+To create a query programmatically, run:
 
 ```Python
 from search_query import OrQuery, AndQuery
@@ -23,46 +34,133 @@ from search_query import OrQuery, AndQuery
 digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="Abstract")
 work_synonyms = OrQuery(["work", "labor", "service"], search_field="Abstract")
 query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keywords")
-
-# Example combining queries and terms at the same level
-query = AndQuery([digital_synonyms, work_synonyms, "policy"], search_field="Author Keywords")
 ```
 
 Parameters:
 
-- search terms: strings which you want to include in the search query,
-- nested queries: queries whose roots are appended to the query,
-- search field: search field to which the query should be applied (available options: `Author Keywords`, `Abstract`, `Author`, `DOI`, `ISBN`, `Publisher` or `Title`)
+- list of strings or queries: strings which you want to include in the search query,
+- search field: search field to which the query should be applied (available options: TODO: GIVE EXAMPLES AND LINK TO DOCS)
 
-To write the translated queries to a JSON file or print them, run:
+**TODO : implement a user-friendly version of OrQuery / AndQuery, which accepts lists of strings/queries and search_fields as strings**
+
+To load a JSON query file, run the parser:
+
+```python
+from search_query.search_file import SearchFile
+from search_query.parser import parse
+
+search = SearchFile("search-file.json")
+query = parse(search.search_string, syntax=search.platform)
+```
+
+Available database syntax identifiers are listed [here](docs/readme.md).
+
+To validate a JSON query file, run the linter:
 
 ```Python
-query.write("translationIEEE.json", syntax="ieee")
-query.write("translationPubMed.json", syntax="pubmed")
-query.write("translationWebofScience.json", syntax="wos")
+from search_query.linter import lint
 
-    or
+messages = lint(search.search_string, syntax=search.platform)
+print(messages)
+```
 
+Linter messages are documented and explained [here](docs/readme.md).
+
+To simplify and format a query, run:
+
+```Python
+query.format(options to select/exclude rules) !??!?!?!?
+```
+To translate a query to a particular database syntax and print it, run:
+
+```Python
 query.to_string(syntax="ieee")
 query.to_string(syntax="pubmed")
 query.to_string(syntax="wos")
-
 ```
 
-The `write()` methods create a JSON file using the parameter file name
-The `to_string()` methods returns the translated string
+To write a query to a JSON file, run the serializer:
+
+```Python
+from search_query import save_file
+
+save_file(
+    filename="search-file.json",
+    query_str=query.to_string(syntax="ieee"),
+    syntax="ieee",
+    authors=[{"name": "Tom Brady"}],
+    record_info={},
+    date={}
+)
+```
+
+## CLI use
+
+Linters can be run on the CLI:
+
+```
+search-query lint search-file.json
+```
+
+## Pre-commit hooks
+
+Linters can be included as pre-commit hooks by adding the following to the `.pre-commit-config.yaml:
+
+```
+repos:
+-   repo: local
+    hooks:
+    -   id: search-query-linter
+        name: "Search-query: lint"
+        entry: search-query-linter
+        language: python
+        stages: [commit]
+        pass_filenames: false
+```
+
+TODO: the previous one should be for dev. Enable (based on [.pre-commit-hooks.yaml](https://github.com/pre-commit/pre-commit-hooks/blob/main/.pre-commit-hooks.yaml)):
+
+```
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0  # Use the ref you want to point at
+    hooks:
+    -   id: trailing-whitespace
+```
+
+To activate and run:
+
+```
+pre-commit install
+pre-commit run --all
+```
+
+## Documentation
+
+TODO : link to docs
+
+## Demo
+
+TODO : binder/colab?
 
 ## How to cite
 
-Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
+TODO: main citation
 
-## Not what you're looking for?
+The package was developed as part of Bachelor's theses:
+
+- Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
+
+## Not what you are looking for?
 
 This python package was developed with purpose of integrating it into other literature management tools. If that isn't your use case, it migth be useful for you to look at these related tools:
 
-- LitSonar: https://litsonar.com/
-- Polyglot: https://sr-accelerator.com/#/polyglot
+- [LitSonar](https://litsonar.com/)
+- [Polyglot](https://sr-accelerator.com/#/polyglot)
 
 ## License
 
 This project is distributed under the [MIT License](LICENSE).
+
+## References
+
+Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyhan, K., & Young, S. (2022). A suggested data structure for transparent and repeatable reporting of bibliographic searching. *Campbell Systematic Reviews*, 18(4), e1288. doi:[10.1002/cl2.1288](https://onlinelibrary.wiley.com/doi/full/10.1002/cl2.1288)

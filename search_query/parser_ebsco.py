@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""WOS query parser."""
+"""EBSCO query parser."""
 from __future__ import annotations
 
 import re
 import typing
 
 import search_query.exception as search_query_exception
-from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import Syntax
 from search_query.constants import SYNTAX_FIELD_TRANSLATION_MAP
@@ -16,27 +15,26 @@ from search_query.query import Query
 from search_query.query import SearchField
 
 
-class WOSParser(QueryStringParser):
-    """Parser for Web of Science queries."""
+class EBSCOParser(QueryStringParser):
+    """EBSCO Parser"""
 
-    FIELD_TRANSLATION_MAP = SYNTAX_FIELD_TRANSLATION_MAP[Syntax.WOS]
+    FIELD_TRANSLATION_MAP = SYNTAX_FIELD_TRANSLATION_MAP[Syntax.EBSCO]
 
-    # https://images.webofknowledge.com/images/help/WOS/hs_advanced_fieldtags.html
-    search_field_regex = r"[A-Z]+="
+    search_field_regex = r"[A-Z]+ "
     boolean_operators_regex = r"\b(AND|OR|NOT)\b"
-    proximity_search_regex = r"\bNEAR\/\d+"
+    # proximity_search_regex = r"\bNEAR\/\d+"
     parentheses_regex = r"\(|\)"
     quoted_string_regex = r"\"[^\"]*\""
     string_regex = (
-        r"\b(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+"
-        + r"(?:\s+(?!(?:AND|OR|NOT|NEAR)\b)[\w\?\$-]+)*\*?"
+        r"\b(?!(?:AND|OR|NOT)\b)[\w\?\$-]+"
+        + r"(?:\s+(?!(?:AND|OR|NOT)\b)[\w\?\$-]+)*\*?"
     )
 
     pattern = "|".join(
         [
             search_field_regex,
             boolean_operators_regex,
-            proximity_search_regex,
+            # proximity_search_regex,
             parentheses_regex,
             quoted_string_regex,
             string_regex,
@@ -52,13 +50,15 @@ class WOSParser(QueryStringParser):
             for m in re.finditer(self.pattern, query_str, re.IGNORECASE)
         ]
         self.tokens = [(token.strip(), pos) for token, pos in tokens if token.strip()]
+        self.combine_subsequent_terms()
 
     def is_search_field(self, token: str) -> bool:
-        return bool(re.search(r"^[A-Z]+=$", token))
+        # https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
+        return bool(re.search(r"^(TX|AU|TI|SU|SO|AB|IS|IB|LN)$", token))
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
-        return bool(re.match(r"^(AND|OR|NOT|NEAR/\d+)$", token, re.IGNORECASE))
+        return bool(re.match(r"^(AND|OR|NOT/\d+)$", token, re.IGNORECASE))
 
     def translate_search_fields(self, node: Query) -> None:
         """Translate search fields."""
@@ -70,26 +70,18 @@ class WOSParser(QueryStringParser):
             if not node.operator and not node.search_field:
                 # TODO : TBD: should we raise an exception here?
                 # or assume that "AllFields" was used as the default?
-                raise search_query_exception.WOSSyntaxMissingSearchField(
-                    # msg=f"Missing search field",
+                raise search_query_exception.QuerySyntaxError(
+                    msg="Missing search field",
                     query_string=self.query_str,
                     pos=node.position or (0, 0),
                 )
 
-            # https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
             if not node.children and not node.operator and node.search_field:
                 if str(node.search_field) in self.FIELD_TRANSLATION_MAP:
                     search_field_value = self.FIELD_TRANSLATION_MAP[
                         str(node.search_field)
                     ]
                     node.search_field = SearchField(search_field_value)
-                elif str(node.search_field) == "MHX=":
-                    replacement = {"MHX=": "SU="}
-                    print(
-                        f"Invalid search field: {node.search_field} "
-                        + f"is deprecated (use {replacement[str(node.search_field)]})"
-                    )
-                    node.search_field = SearchField(Fields.RESEARCH_AREA)
                 else:
                     raise search_query_exception.QuerySyntaxError(
                         msg=f"Invalid search field: {node.search_field}",
@@ -106,7 +98,7 @@ class WOSParser(QueryStringParser):
     def parse_query_tree(
         self,
         tokens: list,
-        search_field: typing.Optional[SearchField] = None,
+        search_field: SearchField = SearchField("EBSCO_UNQUALIFIED"),
         unary_not: bool = False,
     ) -> Query:
         """Parse a node from a list of tokens."""
@@ -132,8 +124,8 @@ class WOSParser(QueryStringParser):
 
             if self.is_term(next_item):
                 if str(search_field) == "":
-                    raise search_query_exception.WOSInvalidFieldTag(
-                        msg="WOS Search Error: No search field.",
+                    raise search_query_exception.QuerySyntaxError(
+                        msg="Search Error: No search field.",
                         query_string=self.query_str,
                         pos=pos,
                     )
@@ -295,7 +287,7 @@ class WOSParser(QueryStringParser):
         self,
         node: Query,
         tokens: list,
-        search_field: typing.Optional[SearchField],
+        search_field: SearchField,
         current_operator: str,
     ) -> Query:
         """Handle NOT operator."""
@@ -309,19 +301,20 @@ class WOSParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string."""
         self.tokenize()
-        # print(self.get_token_types(self.tokens))
+        print(self.tokens)
+        print(self.get_token_types(self.tokens))
         node = self.parse_query_tree(self.tokens)
-        self.translate_search_fields(node)
+        # self.translate_search_fields(node)
         return node
 
 
-class WOSListParser(QueryListParser):
-    """Parser for Web-of-Science (list format) queries."""
+class EBSCOListParser(QueryListParser):
+    """Parser for EBSCO queries."""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
 
     def __init__(self, query_list: str) -> None:
-        super().__init__(query_list, WOSParser)
+        super().__init__(query_list, EBSCOParser)
 
     def get_token_str(self, token_nr: str) -> str:
-        return f"#{token_nr}"
+        return f"S{token_nr}"

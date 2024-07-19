@@ -2,11 +2,9 @@
 """Query class."""
 from __future__ import annotations
 
-import json
 import textwrap
 import typing
 from abc import ABC
-from pathlib import Path
 
 from search_query.constants import Colors
 from search_query.constants import Fields
@@ -132,24 +130,6 @@ class Query(ABC):
             f"search field: {self.search_field}"
         )
 
-    def write(
-        self, file_name: str, *, syntax: str, replace_existing: bool = False
-    ) -> None:
-        """writes the query to a file"""
-
-        if Path(file_name).exists() and not replace_existing:
-            raise FileExistsError("File already exists")
-        Path(file_name).parent.mkdir(parents=True, exist_ok=True)
-
-        if syntax == "wos":
-            self._write_wos(Path(file_name))
-        elif syntax == "pubmed":
-            self._write_pubmed(Path(file_name))
-        elif syntax == "ieee":
-            self._write_ieee(Path(file_name))
-        else:
-            raise ValueError(f"Syntax not supported ({syntax})")
-
     def to_string(self, syntax: str = "pre_notation") -> str:
         """prints the query in the selected syntax"""
         if syntax == "pre_notation":
@@ -233,25 +213,6 @@ class Query(ABC):
 
         return result
 
-    def _write_wos(self, file_name: Path) -> None:
-        """translating method for Web of Science database
-        creates a JSON file with translation information
-        """
-        data = {
-            "database": "Web of Science - Core Collection",
-            "url": "https://www.webofscience.com/wos/woscc/advanced-search",
-            "translatedQuery": f"{self.to_string(syntax='wos')}",
-            "annotations": (
-                "Paste the translated string without quotation marks "
-                "into the advanced search free text field."
-            ),
-        }
-
-        json_object = json.dumps(data, indent=4)
-
-        with open(file_name, "w", encoding="utf-8") as file:
-            file.write(json_object)
-
     def _print_query_wos(self, node: typing.Optional[Query] = None) -> str:
         """actual translation logic for WoS"""
         # start node case
@@ -292,25 +253,6 @@ class Query(ABC):
                 if (child == node.children[-1]) & (child.value != "NOT"):
                     result = f"{result})"
         return f"{result}"
-
-    def _write_ieee(self, file_name: Path) -> None:
-        """translating method for IEEE Xplore database
-        creates a JSON file with translation information
-        """
-        data = {
-            "database": "IEEE Xplore",
-            "url": "https://ieeexplore.ieee.org/search/advanced/command",
-            "translatedQuery": f"{self.to_string(syntax='ieee')}",
-            "annotations": (
-                "Paste the translated string "
-                "without quotation marks into the command search free text field."
-            ),
-        }
-
-        json_object = json.dumps(data, indent=4)
-
-        with open(file_name, "w", encoding="utf-8") as file:
-            file.write(json_object)
 
     # https://ieeexplore.ieee.org/Xplorehelp/searching-ieee-xplore/command-search
     def _translate_search_field_ieee(self, search_field: str) -> str:
@@ -399,25 +341,6 @@ class Query(ABC):
         else:
             raise ValueError(f"Search field not supported ({search_field})")
         return result
-
-    def _write_pubmed(self, file_name: Path) -> None:
-        """translating method for PubMed database
-        creates a JSON file with translation information
-        """
-        data = {
-            "database": "PubMed",
-            "url": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
-            "translatedQuery": f"{self.to_string(syntax='pubmed')}",
-            "annotations": (
-                "Paste the translated string without quotation marks "
-                'into the "Query Box" free text field.'
-            ),
-        }
-
-        json_object = json.dumps(data, indent=4)
-
-        with open(file_name, "w", encoding="utf-8") as file:
-            file.write(json_object)
 
 
 # TODO: extract to serializer

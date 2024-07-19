@@ -10,6 +10,10 @@ TODO :
 - connection to standard JSON search-file
 - database syntax identifiers
 - Instructions on how to run queries
+- Debug regex: https://regex101.com/
+
+Explain the parser for string vs. list formats (simply replacing numbered subqueries?)
+TBD: how to preserve the positions of tokens?
 
 - Tests (all test data should be stored in standard JSON)
 

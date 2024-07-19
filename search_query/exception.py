@@ -21,6 +21,8 @@ class QuerySyntaxError(SearchQueryException):
             query_string, pos
         )
         self.message = f"{msg}\n{query_string_highlighted}"
+        self.pos = pos
+        self.query_string = query_string
         super().__init__(self.message)
 
 

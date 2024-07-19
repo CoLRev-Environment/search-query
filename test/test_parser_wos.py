@@ -7,6 +7,7 @@ import pytest
 
 from search_query.parser import WOSListParser
 from search_query.parser import WOSParser
+from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 
 # flake8: noqa: E501
@@ -200,21 +201,6 @@ def test_tokenization_wos(query_string: str, tokens: tuple) -> None:
     assert wos_parser.tokens == tokens
 
 
-@pytest.mark.parametrize(
-    "node_content, expected_type",
-    [
-        ("#6 AND PY=(2000-2022)", "AND_node"),
-    ],
-)
-def test_wos_node_content(node_content: str, expected_type: str) -> None:
-    """Test the content type of a node"""
-
-    parser = WOSListParser(node_content)
-
-    if expected_type == "AND_node":
-        assert parser.is_and_node(node_content)
-
-
 directory_path = Path("data/wos")
 file_list = list(directory_path.glob("*.json"))
 
@@ -226,7 +212,6 @@ def test_wos_query_parser(file_path: str) -> None:
 
     with open(file_path) as file:
         data = json.load(file)
-        source = file_path
         # TODO : use SearchHistoryFile to validate
         query_string = data["search_string"]
         expected = data["parsed"]["search"]
@@ -235,31 +220,34 @@ def test_wos_query_parser(file_path: str) -> None:
         query = parser.parse()
         query_str = query.to_string()
         assert query_str == expected, print_debug(  # type: ignore
-            parser, query, source, query_string, query_str
+            parser, query, query_string, query_str
         )
 
 
-def print_debug_list(
-    parser: WOSListParser, query: Query, source: str, query_string: str, query_str: str
-) -> None:
-    print("--------------------")
-    # print(source)
-    # print()
-    print(query_string)
-    print()
-    parser.parse_list()
-    print()
-    print(parser.get_token_types(parser.tokens))
-    print(query_str)
-    print(query.to_string("structured"))
+@pytest.mark.parametrize(
+    "query_string, expected",
+    [
+        (
+            """1. MHX="Implementation Science" OR MHX="Health Services Needs and Demand" OR TI=(demand generation) OR AB=(demand generation) OR TI=(demand side) OR AB=(demand side)
+2. MHX=(Family Planning Services) OR MHX=(contraception) OR TI=(contracept*) OR AB=(contracept*) OR TI=(family planning) OR AB=(family planning) OR TI=(birth control) OR AB=(birth control) OR TI=(birth spacing) OR AB=(birth spacing)
+3. #1 AND #2""",
+            """AND[OR["Implementation Science"[su], "Health Services Needs and Demand"[su], demand generation[ti], demand generation[ab], demand side[ti], demand side[ab]], OR[Family Planning Services[su], contraception[su], contracept*[ti], contracept*[ab], family planning[ti], family planning[ab], birth control[ti], birth control[ab], birth spacing[ti], birth spacing[ab]]]""",
+        )
+    ],
+)
+def test_wos_query_list_parser(query_string: str, expected: str) -> None:
+    """Test the translation of a search query to a Pubmed query"""
+
+    parser = WOSListParser(query_string)
+    query = parser.parse()
+    query_str = query.to_string()
+
+    assert query_str == expected
 
 
 def print_debug(
-    parser: WOSParser, query: Query, source: str, query_string: str, query_str: str
+    parser: QueryStringParser, query: Query, query_string: str, query_str: str
 ) -> None:
-    print("--------------------")
-    # print(source)
-    # print()
     print(query_string)
     print()
     print(parser.get_token_types(parser.tokens))
