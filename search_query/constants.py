@@ -1,9 +1,20 @@
 #!/usr/bin/env python
 """Constants for search-query"""
 # pylint: disable=too-few-public-methods
-# https://pubmed.ncbi.nlm.nih.gov/help/
-# https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
+# pylint: disable=line-too-long
 from enum import Enum
+
+# noqa: E501
+
+
+class PLATFORM(Enum):
+    """Database identifier"""
+
+    WOS = "wos"
+    PUBMED = "pubmed"
+    EBSCO = "ebsco"
+    STRUCTURED = "structured"
+    PRE_NOTATION = "pre_notation"
 
 
 class Operators:
@@ -60,24 +71,17 @@ class Fields:
         ]
 
 
-class DB(Enum):
-    """Database identifier"""
-
-    WOS = "wos"
-    PUBMED = "pubmed"
-    EBSCO = "ebsco"
-
-
-# The DB_FIELD_MAP contains the current mapping of standard Fields to the
+# The PLATFORM_FIELD_MAP contains the current mapping of standard Fields to the
 # syntax of the databases. If a field is not present in the map, it is assumed
 # that the field is not supported by the database.
 # If multiple options exist for valid database syntax, only the most common
 # option is included in the map. Less common options are replaced in the parser.
 # For instance, pubmed recommends [mh]. However, [mesh] is also valid and is replaced
 # in the parser.
-DB_FIELD_MAP = {
-    # field tags from https://www.webofscience.com/wos/woscc/advanced-search
-    DB.WOS: {
+PLATFORM_FIELD_MAP = {
+    # fields from
+    # https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
+    PLATFORM.WOS: {
         Fields.ALL: "ALL=",
         Fields.ABSTRACT: "AB=",
         Fields.AUTHOR: "AU=",
@@ -119,8 +123,8 @@ DB_FIELD_MAP = {
         # Fields.XXX: "EAY=",
         # Fields.XXX: "SDG=",
     },
-    # https://pubmed.ncbi.nlm.nih.gov/help/
-    DB.PUBMED: {
+    # fields from https://pubmed.ncbi.nlm.nih.gov/help/
+    PLATFORM.PUBMED: {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
@@ -140,23 +144,23 @@ DB_FIELD_MAP = {
         Fields.PHARMACOLOGICAL_ACTION: "[pa]",
         Fields.JOURNAL: "[ta]",
     },
-    DB.EBSCO: {
+    # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
+    PLATFORM.EBSCO: {
         Fields.TITLE: "TI ",
     },
 }
 
-# For convenience, modules can use the following to translate fields to a DB
-DB_FIELD_TRANSLATION_MAP = {
-    db: {v: k for k, v in fields.items()} for db, fields in DB_FIELD_MAP.items()
+# For convenience, modules can use the following to translate fields to a PLATFORM
+PLATFORM_FIELD_TRANSLATION_MAP = {
+    PLATFORM: {v: k for k, v in fields.items()} for PLATFORM, fields in PLATFORM_FIELD_MAP.items()
 }
 
-# TODO : implement combined fields
-DB_COMBINED_FIELDS_MAP = {
-    DB.PUBMED: {
+PLATFORM_COMBINED_FIELDS_MAP = {
+    PLATFORM.PUBMED: {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
         "[aid]": [Fields.DOI, Fields.PII, Fields.BOOKACCESSION],
     },
-    DB.EBSCO: {
+    PLATFORM.EBSCO: {
         # https://connect.ebsco.com/s/article/What-is-an-unqualified-search?language=en_US
         "EBSCO_UNQUALIFIED": [
             Fields.AUTHOR,
@@ -166,6 +170,13 @@ DB_COMBINED_FIELDS_MAP = {
         ],
     },
 }
+
+
+class ExitCodes:
+    """Exit codes"""
+
+    SUCCESS = 0
+    FAIL = 1
 
 
 class Colors:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from search_query.constants import DB
-from search_query.constants import DB_FIELD_MAP
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_MAP
 
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:  # pragma: no
 def to_string_pubmed(node: Query) -> str:
     """actual translation logic for PubMed"""
 
-    # TODO : combine nodes for SYNTAX_COMBINED_FIELDS_MAP
+    # to do combine nodes for SYNTAX_COMBINED_FIELDS_MAP
 
     result = ""
     for child in node.children:
@@ -55,7 +55,7 @@ def to_string_pubmed(node: Query) -> str:
     return f"{result}"
 
 
-PUBMED_FIELD_MAP = DB_FIELD_MAP[DB.PUBMED]
+PUBMED_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.PUBMED]
 
 
 def get_search_field_pubmed(search_field: str) -> str:

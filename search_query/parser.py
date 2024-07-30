@@ -2,13 +2,26 @@
 """Query parser."""
 from __future__ import annotations
 
-from search_query.parser_ais import AISParser
+from search_query.constants import PLATFORM
+from search_query.query import Query
+
 from search_query.parser_ebsco import EBSCOParser
 from search_query.parser_pubmed import PubmedListParser
 from search_query.parser_pubmed import PubmedParser
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
-from search_query.query import Query
+
+PARSERS = {
+    PLATFORM.WOS.value: WOSParser,
+    PLATFORM.PUBMED.value: PubmedParser,
+    PLATFORM.EBSCO.value: EBSCOParser,
+}
+
+LIST_PARSERS = {
+    PLATFORM.WOS.value: WOSListParser,
+    PLATFORM.PUBMED.value: PubmedListParser,
+    PLATFORM.EBSCO.value: EBSCOParser,
+}
 
 
 # pylint: disable=too-many-return-statements
@@ -17,22 +30,23 @@ def parse(query_str: str, *, syntax: str = "wos") -> Query:
 
     syntax = syntax.lower()
 
-    if syntax in ["wos", "web of science"]:
-        if "1." in query_str[:10]:
-            return WOSListParser(query_str).parse()
-        return WOSParser(query_str).parse()
-    if syntax in ["wos_list"]:
-        return WOSListParser(query_str).parse()
+    if "1." in query_str[:10]:
+        if syntax not in LIST_PARSERS:
+            raise ValueError(f"Invalid syntax: {syntax}")
 
-    if syntax in ["pubmed"]:
-        if "1." in query_str[:10]:
-            return PubmedListParser(query_str).parse()
-        return PubmedParser(query_str).parse()
+        return LIST_PARSERS[syntax](query_str).parse()
 
-    if syntax in ["cinahl"]:
-        return EBSCOParser(query_str).parse()
+    if syntax not in PARSERS:
+        raise ValueError(f"Invalid syntax: {syntax}")
 
-    if syntax in ["ais_library"]:
-        return AISParser(query_str).parse()
+    return PARSERS[syntax](query_str).parse()
 
-    raise ValueError(f"Invalid query type: {syntax}")
+
+def get_platform(platform_str: str) -> str:
+    """Get the platform from the platform string"""
+
+    platform_str = platform_str.lower().rstrip().lstrip()
+    if platform_str in ["web of science", "wos"]:
+        return PLATFORM.WOS.value
+
+    raise ValueError(f"Invalid platform: {platform_str}")

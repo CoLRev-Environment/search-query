@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import typing
 
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
@@ -13,10 +14,12 @@ class QueryStringParser:
     """QueryStringParser"""
 
     tokens: list
+    linter_messages: typing.List[dict] = []
 
-    def __init__(self, query_str: str) -> None:
+    def __init__(self, query_str: str, mode: str = "strict") -> None:
         self.query_str = query_str
         self.tokens = []
+        self.mode = mode
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""

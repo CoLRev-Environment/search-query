@@ -6,8 +6,8 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
-from search_query.constants import DB
-from search_query.constants import DB_FIELD_TRANSLATION_MAP
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.parser_base import QueryListParser
@@ -19,7 +19,7 @@ from search_query.query import SearchField
 class WOSParser(QueryStringParser):
     """Parser for Web of Science queries."""
 
-    FIELD_TRANSLATION_MAP = DB_FIELD_TRANSLATION_MAP[DB.WOS]
+    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
     # https://images.webofknowledge.com/images/help/WOS/hs_advanced_fieldtags.html
     search_field_regex = r"[A-Z]+="

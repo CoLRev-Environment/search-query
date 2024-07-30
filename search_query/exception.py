@@ -16,7 +16,7 @@ class QuerySyntaxError(SearchQueryException):
     """QuerySyntaxError Exception"""
 
     def __init__(self, msg: str, query_string: str, pos: tuple) -> None:
-        # print("Error position marked in orange")
+        # Error position marked in orange
         query_string_highlighted = search_query.utils.format_query_string_pos(
             query_string, pos
         )

@@ -6,8 +6,8 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
-from search_query.constants import DB
-from search_query.constants import DB_FIELD_TRANSLATION_MAP
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.parser_base import QueryListParser
@@ -19,7 +19,7 @@ from search_query.query import SearchField
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    FIELD_TRANSLATION_MAP = DB_FIELD_TRANSLATION_MAP[DB.PUBMED]
+    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
 
     search_field_regex = r"\[[A-Za-z: \/0-9~]+\]"
     boolean_operators_regex = r"\b(AND|OR|NOT)\b"

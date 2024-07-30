@@ -17,7 +17,7 @@ class SearchFile:
     date: dict
     platform: str
     database: typing.List[str]
-    search_string: str | dict
+    search_string: str
 
     # Optionals
     parsed: typing.Optional[dict] = None
@@ -95,9 +95,3 @@ class SearchFile:
                     raise TypeError("Email must be a string.")
                 if not re.match(r"^\S+@\S+\.\S+$", author["email"]):
                     raise ValueError("Invalid email.")
-
-    # TODO:
-    #     data_entry: typing.Optional[str] = Field(regex=r"^\d{4}\.\d{2}\.\d{2}$")
-    #     strategy_exported
-    #     search_conducted
-    #     search_updated_1
