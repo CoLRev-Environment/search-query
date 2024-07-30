@@ -36,7 +36,8 @@ repos:
     rev: 'v1.5.1'
     hooks:
     -   id: mypy
-        args: [--disallow-untyped-defs, --disallow-incomplete-defs, --disallow-untyped-calls]
+        args: [--exclude, docs, --disallow-untyped-defs, --disallow-incomplete-defs, --disallow-untyped-calls]
+        exclude: ^docs/
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.0.292
   hooks:

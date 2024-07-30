@@ -22,6 +22,9 @@ classifiers = [
 ]
 include = ["LICENSE", "README.md"]
 
+[tool.poetry.scripts]
+search-file-lint = "search_query.linter:main"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 pylint = { version = "3.0.1", optional = true }
@@ -30,6 +33,8 @@ pytest = { version = "^7.4.2", optional = true }
 [tool.poetry.extras]
 dev = ["pylint", "pytest"]
 
+[tool.pylint.MAIN]
+extension-pkg-whitelist = "lxml.etree"
 
 [tool.mypy]
 python_version = 3.8
@@ -41,6 +46,7 @@ module = [
     "requests.*",
     "yaml.*",
     "pkg_resources.*",
+    "tabulate.*",
 ]
 ignore_missing_imports = true
 
