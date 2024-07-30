@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from search_query.constants import Syntax
-from search_query.constants import SYNTAX_FIELD_MAP
+from search_query.constants import DB
+from search_query.constants import DB_FIELD_MAP
 
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
@@ -55,7 +55,7 @@ def to_string_pubmed(node: Query) -> str:
     return f"{result}"
 
 
-PUBMED_FIELD_MAP = SYNTAX_FIELD_MAP[Syntax.PUBMED]
+PUBMED_FIELD_MAP = DB_FIELD_MAP[DB.PUBMED]
 
 
 def get_search_field_pubmed(search_field: str) -> str:

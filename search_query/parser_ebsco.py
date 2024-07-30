@@ -6,9 +6,9 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
+from search_query.constants import DB
+from search_query.constants import DB_FIELD_TRANSLATION_MAP
 from search_query.constants import Operators
-from search_query.constants import Syntax
-from search_query.constants import SYNTAX_FIELD_TRANSLATION_MAP
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -18,7 +18,7 @@ from search_query.query import SearchField
 class EBSCOParser(QueryStringParser):
     """EBSCO Parser"""
 
-    FIELD_TRANSLATION_MAP = SYNTAX_FIELD_TRANSLATION_MAP[Syntax.EBSCO]
+    FIELD_TRANSLATION_MAP = DB_FIELD_TRANSLATION_MAP[DB.EBSCO]
 
     search_field_regex = r"[A-Z]+ "
     boolean_operators_regex = r"\b(AND|OR|NOT)\b"

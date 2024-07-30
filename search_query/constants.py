@@ -60,24 +60,24 @@ class Fields:
         ]
 
 
-class Syntax(Enum):
-    """Database syntax"""
+class DB(Enum):
+    """Database identifier"""
 
     WOS = "wos"
     PUBMED = "pubmed"
     EBSCO = "ebsco"
 
 
-# The SYNTAX_FIELD_MAP contains the current mapping of standard Fields to the
+# The DB_FIELD_MAP contains the current mapping of standard Fields to the
 # syntax of the databases. If a field is not present in the map, it is assumed
 # that the field is not supported by the database.
 # If multiple options exist for valid database syntax, only the most common
 # option is included in the map. Less common options are replaced in the parser.
 # For instance, pubmed recommends [mh]. However, [mesh] is also valid and is replaced
 # in the parser.
-SYNTAX_FIELD_MAP = {
+DB_FIELD_MAP = {
     # field tags from https://www.webofscience.com/wos/woscc/advanced-search
-    Syntax.WOS: {
+    DB.WOS: {
         Fields.ALL: "ALL=",
         Fields.ABSTRACT: "AB=",
         Fields.AUTHOR: "AU=",
@@ -120,7 +120,7 @@ SYNTAX_FIELD_MAP = {
         # Fields.XXX: "SDG=",
     },
     # https://pubmed.ncbi.nlm.nih.gov/help/
-    Syntax.PUBMED: {
+    DB.PUBMED: {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
@@ -140,24 +140,23 @@ SYNTAX_FIELD_MAP = {
         Fields.PHARMACOLOGICAL_ACTION: "[pa]",
         Fields.JOURNAL: "[ta]",
     },
-    Syntax.EBSCO: {
+    DB.EBSCO: {
         Fields.TITLE: "TI ",
     },
 }
 
-# For convenience, modules can use the following to translate fields to syntax
-SYNTAX_FIELD_TRANSLATION_MAP = {
-    syntax: {v: k for k, v in fields.items()}
-    for syntax, fields in SYNTAX_FIELD_MAP.items()
+# For convenience, modules can use the following to translate fields to a DB
+DB_FIELD_TRANSLATION_MAP = {
+    db: {v: k for k, v in fields.items()} for db, fields in DB_FIELD_MAP.items()
 }
 
 # TODO : implement combined fields
-SYNTAX_COMBINED_FIELDS_MAP = {
-    Syntax.PUBMED: {
+DB_COMBINED_FIELDS_MAP = {
+    DB.PUBMED: {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
         "[aid]": [Fields.DOI, Fields.PII, Fields.BOOKACCESSION],
     },
-    Syntax.EBSCO: {
+    DB.EBSCO: {
         # https://connect.ebsco.com/s/article/What-is-an-unqualified-search?language=en_US
         "EBSCO_UNQUALIFIED": [
             Fields.AUTHOR,
