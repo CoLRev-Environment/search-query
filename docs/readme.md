@@ -4,8 +4,6 @@
 
 TODO :
 
-- summarize the parser (https://en.wikipedia.org/wiki/Parsing) and distinguish from serializer
-- clarify processes (source string, ...different syntaxes, query object)
 - distinguish DB Syntax from "Standard syntax" (internal)
 - connection to standard JSON search-file
 - database syntax identifiers
