@@ -1,4 +1,7 @@
-# Developing a parser
+Parser development
+=====================
+
+Developing a parser
 
 A code skeleton is available for the [parser](parser_skeleton.py) and [tests](parser_skeleton_tests.py).
 

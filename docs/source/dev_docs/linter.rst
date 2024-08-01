@@ -1,4 +1,5 @@
-# Developing a linter
+Linter development
+=====================
 
 TBD: lenient: try to "fix" errors?, strict: only info are ok
 

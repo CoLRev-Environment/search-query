@@ -1,3 +1,4 @@
 docs/__pycache__/
 search_query/__pycache__/*
 test/__pycache__/*
+docs/build
