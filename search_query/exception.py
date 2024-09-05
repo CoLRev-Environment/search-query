@@ -54,3 +54,20 @@ class WOSSyntaxMissingSearchField(WOSError, QuerySyntaxError):
             + f"({Colors.RED}TODO: ADD ERROR CODE/EXPLAIN IN DOCS{Colors.END}):"
         )
         super().__init__(self.message, query_string, pos)
+
+
+class CrossrefError(SearchQueryException):
+    """Crossref Exception"""
+
+
+class CrossrefSyntaxMissingSearchField(CrossrefError, QuerySyntaxError):
+    """CrossrefSyntaxMissingSearchField Exception"""
+
+    def __init__(self, *, query_string: str, pos: tuple) -> None:
+        # print("Error position marked in orange")
+        # self.message = f"\n{query_string_highlighted}"
+        self.message = (
+            "Missing search field in Crossref query "
+            + f"({Colors.RED}TODO: ADD ERROR CODE/EXPLAIN IN DOCS{Colors.END}):"
+        )
+        super().__init__(self.message, query_string, pos)

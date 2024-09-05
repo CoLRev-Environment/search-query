@@ -1,0 +1,16 @@
+{
+    "record_info": {},
+    "authors": [],
+    "platform": "Crossref",
+    "database": [],
+    "search_string": "https://api.crossref.org/works?query=josiah+carberry&sort=published&order=asc",
+    "date": {
+        "search_conducted": "2024.01.01"
+    },
+    "parsed": {
+        "search": "josiah carberry[all]",
+        "coder": "GW",
+        "timestamp": "2024-08-21 18:25",
+        "comment": ""
+    }
+}

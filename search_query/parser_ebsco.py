@@ -6,9 +6,9 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
+from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
-from search_query.constants import Operators
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query

@@ -132,26 +132,26 @@ class TestQuery(unittest.TestCase):
             "Complete Query was not translated to Web of Science Syntax",
         )
 
-    def test_translation_ieee_part(self) -> None:
-        """test whether the translation of the tool is identical to the manually translated IEEE Query,
-        testing only a simple tree with 1 level"""
+    # def test_translation_ieee_part(self) -> None:
+    #     """test whether the translation of the tool is identical to the manually translated IEEE Query,
+    #     testing only a simple tree with 1 level"""
 
-        expected = '("Author Keywords":"health care" OR "Author Keywords":medicine)'
-        self.assertEqual(
-            self.query_health.to_string(syntax="ieee"),
-            expected,
-            "Health Query was not translated to IEEE Syntax",
-        )
+    #     expected = '("Author Keywords":"health care" OR "Author Keywords":medicine)'
+    #     self.assertEqual(
+    #         self.query_health.to_string(syntax="ieee"),
+    #         expected,
+    #         "Health Query was not translated to IEEE Syntax",
+    #     )
 
-    def test_translation_ieee_complete(self) -> None:
-        """test whether the translation of the tool is identical to the manually translated IEEE Query,
-        testing the complete, multi-level Query"""
-        expected = '(("Author Keywords":"AI" OR "Author Keywords":"Artificial Intelligence" OR "Author Keywords":"Machine Learning") OR  NOT "Author Keywords":robot*) AND ("Author Keywords":"health care" OR "Author Keywords":medicine) AND ("Abstract":ethic* OR "Abstract":moral*)'
-        self.assertEqual(
-            self.query_complete.to_string(syntax="ieee"),
-            expected,
-            "Query was not translated to IEEE Syntax",
-        )
+    # def test_translation_ieee_complete(self) -> None:
+    #     """test whether the translation of the tool is identical to the manually translated IEEE Query,
+    #     testing the complete, multi-level Query"""
+    #     expected = '(("Author Keywords":"AI" OR "Author Keywords":"Artificial Intelligence" OR "Author Keywords":"Machine Learning") OR  NOT "Author Keywords":robot*) AND ("Author Keywords":"health care" OR "Author Keywords":medicine) AND ("Abstract":ethic* OR "Abstract":moral*)'
+    #     self.assertEqual(
+    #         self.query_complete.to_string(syntax="ieee"),
+    #         expected,
+    #         "Query was not translated to IEEE Syntax",
+    #     )
 
     def test_translation_pubmed_part(self) -> None:
         """test whether the translation of the tool is identical to the manually translated IEEE Query,

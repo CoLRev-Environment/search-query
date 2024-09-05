@@ -10,9 +10,11 @@ from enum import Enum
 class PLATFORM(Enum):
     """Database identifier"""
 
+    CROSSREF = "crossref"
     WOS = "wos"
     PUBMED = "pubmed"
     EBSCO = "ebsco"
+    AISEL = "aisel"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
 
@@ -148,11 +150,17 @@ PLATFORM_FIELD_MAP = {
     PLATFORM.EBSCO: {
         Fields.TITLE: "TI ",
     },
+    PLATFORM.CROSSREF: {
+        Fields.ALL: "query",  # TODO : or query.bibliographic ??
+        Fields.TITLE: "query.title",
+        Fields.AUTHOR: "query.author",
+    },
 }
 
 # For convenience, modules can use the following to translate fields to a PLATFORM
 PLATFORM_FIELD_TRANSLATION_MAP = {
-    PLATFORM: {v: k for k, v in fields.items()} for PLATFORM, fields in PLATFORM_FIELD_MAP.items()
+    PLATFORM: {v: k for k, v in fields.items()}
+    for PLATFORM, fields in PLATFORM_FIELD_MAP.items()
 }
 
 PLATFORM_COMBINED_FIELDS_MAP = {

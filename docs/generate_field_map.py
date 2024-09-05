@@ -2,15 +2,15 @@
 """Generate field map for search-query"""
 from tabulate import tabulate
 
-from search_query.constants import DB
-from search_query.constants import DB_FIELD_MAP
 from search_query.constants import Fields
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_MAP
 
 
 table = []
-header = ["Fields"] + [db for db in DB]
+header = ["Fields"] + [pf for pf in PLATFORM]
 for field in Fields.all():
-    row = [field] + [DB_FIELD_MAP[syntax].get(field, "") for syntax in DB]
+    row = [field] + [PLATFORM_FIELD_MAP[syntax].get(field, "") for syntax in PLATFORM]
     table.append(row)
 
 print(tabulate(table, headers=header))

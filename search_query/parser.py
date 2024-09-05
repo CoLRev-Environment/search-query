@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from search_query.constants import PLATFORM
-from search_query.query import Query
-
+from search_query.parser_ais import AISParser
+from search_query.parser_crossref import CrossrefParser
 from search_query.parser_ebsco import EBSCOParser
 from search_query.parser_pubmed import PubmedListParser
 from search_query.parser_pubmed import PubmedParser
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
+from search_query.query import Query
 
 PARSERS = {
     PLATFORM.WOS.value: WOSParser,
     PLATFORM.PUBMED.value: PubmedParser,
     PLATFORM.EBSCO.value: EBSCOParser,
+    PLATFORM.CROSSREF.value: CrossrefParser,
+    PLATFORM.AISEL.value: AISParser,
 }
 
 LIST_PARSERS = {

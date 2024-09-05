@@ -63,4 +63,5 @@ def get_search_field_pubmed(search_field: str) -> str:
 
     if search_field in PUBMED_FIELD_MAP:
         return PUBMED_FIELD_MAP[search_field]
+
     raise ValueError(f"Field {search_field} not supported by PubMed")

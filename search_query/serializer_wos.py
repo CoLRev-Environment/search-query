@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from search_query.constants import Fields
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_MAP
 
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
@@ -22,7 +23,7 @@ def to_string_wos(node: Query) -> str:
                 # -->operator does not need to be appended again
                 result = (
                     f"{result}"
-                    f"{_get_search_field_wos(str(child.search_field))}="
+                    f"{_get_search_field_wos(str(child.search_field))}"
                     f"({child.value}"
                 )
 
@@ -55,10 +56,8 @@ def to_string_wos(node: Query) -> str:
 # https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html
 def _get_search_field_wos(search_field: str) -> str:
     """transform search field to WoS Syntax"""
-    if search_field == Fields.ABSTRACT:
-        result = "AB"
-    elif search_field == Fields.TITLE:
-        result = "TI"
-    else:
-        raise ValueError(f"Search field not supported ({search_field})")
-    return result
+
+    if search_field in PLATFORM_FIELD_MAP[PLATFORM.WOS]:
+        return PLATFORM_FIELD_MAP[PLATFORM.WOS][search_field]
+
+    raise ValueError(f"Search field not supported ({search_field})")
