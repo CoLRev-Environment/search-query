@@ -6,6 +6,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
 [![PyPI - Version](https://img.shields.io/pypi/v/search-query?color=blue)](https://pypi.org/project/search-query/)
 [![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
 
 </div>
 
@@ -141,7 +142,7 @@ pre-commit run --all
 
 ## Demo
 
-TODO : binder/colab?
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
 
 ## How to cite
 
