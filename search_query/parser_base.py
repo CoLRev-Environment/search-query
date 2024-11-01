@@ -6,6 +6,7 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
+from search_query import parser_wos
 from search_query.constants import Colors
 from search_query.query import Query
 
@@ -64,9 +65,10 @@ class QueryStringParser:
 
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        raise NotImplementedError(
-            "is_search_field method must be implemented by inheriting classes"
-        )
+        return parser_wos.WOSParser.is_search_field(token=token)
+        #raise NotImplementedError(
+        #    "is_search_field method must be implemented by inheriting classes"
+        #)
 
     def is_parenthesis(self, token: str) -> bool:
         """Token is parenthesis"""
@@ -203,7 +205,7 @@ class QueryListParser:
 
     def parse(self) -> Query:
         """Parse the query in list format."""
-
+        
         tokens = self.parse_dict()
 
         query_list = self.dict_to_positioned_list(tokens)
