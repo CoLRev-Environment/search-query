@@ -89,8 +89,8 @@ def create_search_file(
 
 if __name__ == "__main__":
     # These variable must be set before running the script
-    coder_initials = "GW"
-    parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
+    coder_initials = "PE"
+    parent_directory = "/home/peteer98/Desktop/ba_thes/rxiv/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -113,7 +113,11 @@ if __name__ == "__main__":
 
                 platform = data["content"]["Platform"].strip().lower()
                 if platform not in SYNTAX_MAP:
-                    # print(f"Platform not available: {platform}")
+                    print(f"Platform not available: {platform}")
+                    continue
+                    
+                if not platform == "web of science":
+                    print("Only search for wos. Platform " + platform + " is to be ignored.")
                     continue
 
                 syntax = SYNTAX_MAP[platform]
@@ -152,8 +156,10 @@ if __name__ == "__main__":
                     print(filepath)
                     print(query_string)
                     ret = parse(query_string, syntax=syntax)
+                    
                     # To select (start with) smaller queries:
-                    # # if ret.get_nr_leaves() > 20:
+                    # # if ret.get_nr_leaves() > 5:
+                    # #     print('Smaller queries only. >5')
                     # #     continue
 
                     # Print for validation
