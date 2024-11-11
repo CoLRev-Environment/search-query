@@ -66,9 +66,7 @@ PLATFORM_FIELD_MAP = {
         Fields.ABSTRACT: "[ab]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
-    PLATFORM.EBSCO: {
-        Fields.TITLE: "TI ",
-    },
+    PLATFORM.EBSCO: {Fields.TITLE: "TI", Fields.ABSTRACT: "AB", Fields.ALL: "TX"},
 }
 
 # For convenience, modules can use the following to translate fields to a DB

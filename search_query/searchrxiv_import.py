@@ -89,8 +89,10 @@ def create_search_file(
 
 if __name__ == "__main__":
     # These variable must be set before running the script
-    coder_initials = "GW"
-    parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
+    # coder_initials = "GW"
+    coder_initials = "TF"
+    # parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
+    parent_directory = "/home/ubuntu1/Thesis/example/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
