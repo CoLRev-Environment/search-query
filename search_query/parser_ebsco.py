@@ -50,15 +50,15 @@ class EBSCOParser(QueryStringParser):
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
             print(
-                f"Tokenized: {token} as {token_type} at position {start}-{end}"
-            )  # Debug line
+               f"Tokenized: {token} as {token_type} at position {start}-{end}"
+            )   # ->   Debug line
 
     def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
     ) -> Query:
-        """Parse a query tree from a list of tokens recursively."""
+        """Build a query tree from a list of tokens recursively."""
         if not tokens:
             raise ValueError("No tokens provided to parse.")
 
@@ -97,8 +97,11 @@ class EBSCOParser(QueryStringParser):
                         root = subtree
                 elif token == ")" and root:
                     return root
+
+        # check if root is None to always return Query
         if root is None:
             raise ValueError("Failed to construct a valid query tree.")
+
         return root
 
     def translate_search_fields(self, query: Query) -> None:
@@ -121,8 +124,8 @@ class EBSCOParser(QueryStringParser):
         self.translate_search_fields(query)
 
         # Check for strict mode and handle linter messages if any
-        if self.mode == "strict" and self.linter_messages:
-            raise ValueError("Linter messages indicate issues with query structure.")
+        # if self.mode == "strict" and self.linter_messages:
+        #     raise ValueError("Linter messages indicate issues with query structure.")
 
         return query
 
@@ -130,12 +133,28 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    LIST_ITEM_REGEX = r"..."
+    LIST_ITEM_REGEX = r"\d+\.\s|\n"
 
     def __init__(self, query_list: str) -> None:
+        """Initialize with a query list and use EBSCOParser for parsing each query."""
         super().__init__(query_list, EBSCOParser)
 
+    def parse(self) -> list[Query]:
+        """Parse the list of queries and return a list of parsed Query objects."""
+        queries = re.split(self.LIST_ITEM_REGEX, self.query_list)
+
+        # Parse each individual query and collect the results
+        parsed_queries = []
+        for i, query_str in enumerate(queries):
+            if query_str.strip():
+                parser = EBSCOParser(query_str.strip())
+                parsed_query = parser.parse()
+                parsed_queries.append(parsed_query)
+
+        return parsed_queries
+
     def get_token_str(self, token_nr: str) -> str:
+        """Format the token string for output or processing."""
         return f"#{token_nr}"
 
     # override and implement methods of parent class (as needed)

@@ -33,6 +33,10 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    SUBJECT_TERMS = "st"
+    SOURCE = "so"
+    ISSN = "is"
+    ISBN = "ib"
 
     @classmethod
     def all(cls) -> list:
@@ -66,7 +70,16 @@ PLATFORM_FIELD_MAP = {
         Fields.ABSTRACT: "[ab]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
-    PLATFORM.EBSCO: {Fields.TITLE: "TI", Fields.ABSTRACT: "AB", Fields.ALL: "TX"},
+    PLATFORM.EBSCO: {
+        Fields.TITLE: "TI",
+        Fields.ABSTRACT: "AB",
+        Fields.ALL: "TX",
+        Fields.AUTHOR_KEYWORDS: "AU",
+        Fields.SUBJECT_TERMS: "SU",
+        Fields.SOURCE: "SO",
+        Fields.ISSN: "IS",
+        Fields.ISBN: "IB",
+    },
 }
 
 # For convenience, modules can use the following to translate fields to a DB

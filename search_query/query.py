@@ -7,6 +7,7 @@ from abc import ABC
 
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
+from search_query.serializer_ebsco import to_string_ebsco
 from search_query.serializer_pre_notation import to_string_pre_notation
 from search_query.serializer_pubmed import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
@@ -128,5 +129,7 @@ class Query(ABC):
             return to_string_wos(self)
         if syntax == PLATFORM.PUBMED.value:
             return to_string_pubmed(self)
+        if syntax == PLATFORM.EBSCO.value:
+            return to_string_ebsco(self)
 
         raise ValueError(f"Syntax not supported ({syntax})")
