@@ -18,14 +18,48 @@ class EBSCOParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
-    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB)"
+    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)"
+    UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b|\b(?!OR\b)\b(?!S\d+\b)[A-Z]{1}\d+\b"
     OPERATOR_REGEX = r"^(AND|OR|NOT)$"
     PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_TERM_REGEX = r"\"[^\"]+\"|\b\S+\*?\b"
+    SEARCH_TERM_REGEX = r"\"[^\"]+\"|\b(?!S\d\b)\S+\*?\b"
+    FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
 
     pattern = "|".join(
-        [SEARCH_FIELD_REGEX, OPERATOR_REGEX, PARENTHESIS_REGEX, SEARCH_TERM_REGEX]
+        [SEARCH_FIELD_REGEX, 
+         OPERATOR_REGEX, 
+         PARENTHESIS_REGEX, 
+         SEARCH_TERM_REGEX]
     )
+
+    def check_operator(self) -> None:
+        # check if bool is capitals
+        for match in re.finditer(self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE):
+            operator = match.group()
+            start, end = match.span()
+            self.query_str = (
+                self.query_str[:start] +
+                operator.upper() +
+                self.query_str[end:]
+            )
+
+    def filter_search_field(self, strict: bool) -> None:
+        modified_query = self.query_str
+        unsupported_fields = []
+        supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB"}
+
+        for match in re.finditer(self.UNSUPPORTED_SEARCH_FIELD_REGEX, self.query_str):
+            field = match.group()
+            if field not in supported_fields:
+                unsupported_fields.append(field)
+                if strict:
+                    raise ValueError(f"Unsupported field found: {field}")
+                else:
+                    # Replace the unsupported field with "ABSTRACT"
+                    modified_query = re.sub(
+                        r'\b' + re.escape(field) + r'\b', 'AB', modified_query
+                    )
+                    print(f"Unsupported field '{field}' replaced with 'AB'.")
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -66,6 +100,7 @@ class EBSCOParser(QueryStringParser):
 
         while tokens:
             token, token_type, position = tokens.pop(0)
+            # print(f"Processing token: {token} (Type: {token_type}, Position: {position})")  # Debug line
 
             if token_type == "FIELD":
                 search_field = SearchField(token, position=position)
@@ -119,6 +154,11 @@ class EBSCOParser(QueryStringParser):
 
     def parse(self) -> Query:
         """Parse a query string."""
+
+        strict = False
+
+        self.filter_search_field(strict)
+        self.check_operator()
         self.tokenize()
         query = self.parse_query_tree(self.tokens)
         self.translate_search_fields(query)
@@ -133,29 +173,16 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    LIST_ITEM_REGEX = r"\d+\.\s|\n"
+    # LIST_ITEM_REGEX = r"\d+\.\s|\n"
+    # LIST_ITEM_REGEX = r"^\s*(\d+)\.\s+(.*)$"
 
     def __init__(self, query_list: str) -> None:
         """Initialize with a query list and use EBSCOParser for parsing each query."""
         super().__init__(query_list, EBSCOParser)
 
-    def parse(self) -> list[Query]:
-        """Parse the list of queries and return a list of parsed Query objects."""
-        queries = re.split(self.LIST_ITEM_REGEX, self.query_list)
-
-        # Parse each individual query and collect the results
-        parsed_queries = []
-        for i, query_str in enumerate(queries):
-            if query_str.strip():
-                parser = EBSCOParser(query_str.strip())
-                parsed_query = parser.parse()
-                parsed_queries.append(parsed_query)
-
-        return parsed_queries
-
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
-        return f"#{token_nr}"
+        return f"S{token_nr}"
 
     # override and implement methods of parent class (as needed)
 

@@ -122,6 +122,7 @@ class QueryListParser:
 
     def __init__(self, query_list: str, parser_class: type[QueryStringParser]) -> None:
         self.query_list = query_list
+        # print("query_list: " + self.query_list)       # Debug line
         self.parser_class = parser_class
 
     def parse_dict(self) -> dict:
@@ -130,11 +131,13 @@ class QueryListParser:
         tokens = {}
         previous = 0
         for line in query_list.split("\n"):
+            # print(f"Processing line: '{line}'")     # Debug line
             if line.strip() == "":
                 continue
 
             match = re.match(self.LIST_ITEM_REGEX, line)
             if not match:
+                # print(f"Line not matching format: '{line}'")    # Debug line
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()
             pos_start, pos_end = match.span(2)
@@ -160,6 +163,7 @@ class QueryListParser:
     ) -> None:
         for i, (content, pos) in enumerate(query_list):
             token_str = self.get_token_str(token_nr)
+            # print("token_string_super: " + token_str)       # Debug line
             if token_str in content:
                 query_list.pop(i)
 
@@ -208,6 +212,7 @@ class QueryListParser:
 
         query_list = self.dict_to_positioned_list(tokens)
         query_string = "".join([query[0] for query in query_list])
+        # print("query_string_complete " + query_string)      # Debug line
 
         try:
             query = self.parser_class(query_string).parse()

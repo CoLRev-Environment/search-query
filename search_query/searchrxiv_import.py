@@ -102,6 +102,7 @@ if __name__ == "__main__":
     DB = {}
 
     for filename in os.listdir(source_directory):
+        print(filename)     # Debug line
         if filename.endswith(".json"):
             filepath = os.path.join(source_directory, filename)
             with open(filepath, encoding="utf-8") as file:
@@ -115,7 +116,7 @@ if __name__ == "__main__":
 
                 platform = data["content"]["Platform"].strip().lower()
                 if platform not in SYNTAX_MAP:
-                    # print(f"Platform not available: {platform}")
+                    print(f"Platform not available: {platform}")
                     continue
 
                 syntax = SYNTAX_MAP[platform]
