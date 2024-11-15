@@ -33,6 +33,7 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    TOPIC = "ts"
 
     @classmethod
     def all(cls) -> list:
@@ -58,6 +59,7 @@ PLATFORM_FIELD_MAP = {
         Fields.ALL: "ALL=",
         Fields.ABSTRACT: "AB=",
         Fields.TITLE: "TI=",
+        Fields.TOPIC: "TS=",
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {

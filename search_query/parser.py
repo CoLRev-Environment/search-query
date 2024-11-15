@@ -26,7 +26,7 @@ LIST_PARSERS = {
 
 
 # pylint: disable=too-many-return-statements
-def parse(query_str: str, *, syntax: str = "wos") -> Query:
+def parse(query_str: str, search_fields:str, *, syntax: str = "wos") -> Query:
     """Parse a query string."""
     syntax = syntax.lower()
 
@@ -34,12 +34,12 @@ def parse(query_str: str, *, syntax: str = "wos") -> Query:
         if syntax not in LIST_PARSERS:
             raise ValueError(f"Invalid syntax: {syntax}")
 
-        return LIST_PARSERS[syntax](query_str).parse()
+        return LIST_PARSERS[syntax](query_str, search_fields).parse()
 
     if syntax not in PARSERS:
         raise ValueError(f"Invalid syntax: {syntax}")
 
-    return PARSERS[syntax](query_str).parse()
+    return PARSERS[syntax](query_str, search_fields).parse()
 
 
 def get_platform(platform_str: str) -> str:

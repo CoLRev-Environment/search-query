@@ -15,12 +15,14 @@ class QueryStringParser:
     """QueryStringParser"""
 
     tokens: list
+    search_fields: str
     linter_messages: typing.List[dict] = []
 
-    def __init__(self, query_str: str, mode: str = "strict") -> None:
+    def __init__(self, query_str: str, search_fields: str, mode: str = "strict") -> None:
         self.query_str = query_str
         self.tokens = []
         self.mode = mode
+        self.search_fields = search_fields
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""

@@ -91,6 +91,7 @@ if __name__ == "__main__":
     # These variable must be set before running the script
     coder_initials = "PE"
     parent_directory = "/home/peteer98/Desktop/ba_thes/rxiv/"
+    search_fields = ""
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -147,20 +148,23 @@ if __name__ == "__main__":
 
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
+                
+                if "Search Fields" in data["content"]:
+                    search_fields = data["content"]["Search Fields"]
 
                 try:
                     # Option: select only list queries
-                    if "1." not in query_string:
-                        continue
+                    # # if "1." not in query_string:
+                    # #     continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
-                    ret = parse(query_string, syntax=syntax)
+                    ret = parse(query_string, search_fields, syntax=syntax)
                     
                     # To select (start with) smaller queries:
-                    # # if ret.get_nr_leaves() > 5:
-                    # #     print('Smaller queries only. >5')
-                    # #     continue
+                    if ret.get_nr_leaves() > 10:
+                        print('Smaller queries only. > 10')
+                        continue
 
                     # Print for validation
                     print(ret.to_string("structured"))
