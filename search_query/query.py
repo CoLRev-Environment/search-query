@@ -40,6 +40,7 @@ class Query(ABC):
     def __init__(
         self,
         value: str = "NOT_INITIALIZED",
+        nearDistance: int = None,
         *,
         operator: bool = False,
         search_field: typing.Optional[SearchField] = None,
@@ -55,6 +56,7 @@ class Query(ABC):
                 Operators.AND,
                 Operators.OR,
                 Operators.NOT,
+                Operators.NEAR,
                 "NOT_INITIALIZED",
             ]
 
@@ -72,8 +74,10 @@ class Query(ABC):
         self.search_field = search_field
         if operator:
             self.search_field = None
+            if nearDistance:
+                self.nearDistance = nearDistance
         self.position = position
-
+        
         self._ensure_children_not_circular()
 
     def get_nr_leaves(self) -> int:
