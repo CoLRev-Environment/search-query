@@ -44,22 +44,37 @@ class EBSCOParser(QueryStringParser):
             )
 
     def filter_search_field(self, strict: bool) -> None:
-        modified_query = self.query_str
-        unsupported_fields = []
         supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB"}
+        modified_query_list = list(self.query_str)  # Convert to list for direct modification
+        unsupported_fields = []
 
         for match in re.finditer(self.UNSUPPORTED_SEARCH_FIELD_REGEX, self.query_str):
             field = match.group()
+            start, end = match.span()
+
             if field not in supported_fields:
                 unsupported_fields.append(field)
                 if strict:
-                    raise ValueError(f"Unsupported field found: {field}")
+                    while True:
+                        # Prompt the user to enter a replacement field
+                        replacement = input(f"Unsupported field '{field}' found. Please enter a replacement (e.g., 'AB'): ").strip()
+                        if replacement in supported_fields:
+                            # Replace directly in the modified query list
+                            modified_query_list[start:end] = list(replacement)
+                            print(f"Field '{field}' replaced with '{replacement}'.")
+                            break
+                        else:
+                            print(f"'{replacement}' is not a supported field. Please try again.")
                 else:
-                    # Replace the unsupported field with "ABSTRACT"
-                    modified_query = re.sub(
-                        r'\b' + re.escape(field) + r'\b', 'AB', modified_query
-                    )
-                    print(f"Unsupported field '{field}' replaced with 'AB'.")
+                    # Replace the unsupported field with 'AB' directly
+                    modified_query_list[start:end] = list('AB')
+                    print(f"Unsupported field '{field}' automatically replaced with 'AB'.")
+
+        # Convert the modified list back to a string
+        self.query_str = ''.join(modified_query_list)
+
+        # Print the modified query string for verification
+        # print("Modified query string:", self.query_str)
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -83,9 +98,9 @@ class EBSCOParser(QueryStringParser):
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
-            print(
-               f"Tokenized: {token} as {token_type} at position {start}-{end}"
-            )   # ->   Debug line
+            # print(
+            #    f"Tokenized: {token} as {token_type} at position {start}-{end}"
+            # )   # ->   Debug line
 
     def parse_query_tree(
         self,
