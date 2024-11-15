@@ -83,7 +83,7 @@ class WOSParser(QueryStringParser):
             # vielleicht sollte man hier funktion rausziehen
             # dann kann man sie vorlagern und pro search field ausführen
         if search_field:
-            search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
+            self.search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
         
         # Parse a query tree from tokens recursively
         def parse_expression(
@@ -132,12 +132,15 @@ class WOSParser(QueryStringParser):
                                 if children:
                                     if current_operator == child.value or (self.is_term(child.value) and self.is_operator(children[0].value)):
                                         children[-1].children.append(child)
+                                    else:
+                                        children.append(child)
                                 else:
                                     children.append(child)
                         else:
                             if children:
                                 if current_operator == sub_expr.value or (self.is_term(sub_expr.value) and self.is_operator(children[0].value)):
-                                    children[-1].children.append(sub_expr)
+                                    for child in sub_expr.children:
+                                        children[-1].children.append(child)
                                 else:
                                     children.append(sub_expr)
                             else:
@@ -212,30 +215,37 @@ class WOSParser(QueryStringParser):
                                 children[-1].value = children[-1].value + " " + token
                                 index += 1
                                 continue
-                            
-                        term_node = Query(
-                            value=token,
-                            operator=False,
-                            search_field=search_field,
-                            position=span
-                        )
+
+                        if self.search_fields_list and not search_field:    
+                            if not current_operator:
+                                current_operator= 'OR'
+                                
+                            for search_field_elem in self.search_fields_list:
+                                children = self.add_term_node(
+                                    value=token, 
+                                    operator=False, 
+                                    search_field=search_field_elem, 
+                                    position=span,
+                                    children=children,
+                                    current_operator=current_operator,
+                                    current_negation=current_negation,
+                                    nearDistance=nearDistance,
+                                )
+
+                        else:
+                            children = self.add_term_node(
+                                value=token, 
+                                operator=False, 
+                                search_field=search_field, 
+                                position=span,
+                                children=children,
+                                current_operator=current_operator,
+                                current_negation=current_negation,
+                                nearDistance=nearDistance,
+                            )
 
                         if current_operator:
-                            if not children or ((isinstance(children[-1], Query) and children[-1].value != current_operator) and not current_negation):
-                                
-                                children = [
-                                    Query(
-                                        value=current_operator,
-                                        nearDistance=nearDistance,
-                                        operator=True, 
-                                        children=[*children, term_node]
-                                    )
-                                ]
-                            else:
-                                children[-1].children.append(term_node)
                             current_operator = None
-                        else:
-                            children.append(term_node)
                         #   search_field = None
                 index += 1
 
@@ -281,10 +291,45 @@ class WOSParser(QueryStringParser):
                     index
                 )
 
-        root_query, _ = parse_expression(tokens, 0, self.search_fields)
+        root_query, _ = parse_expression(tokens=tokens, index=0, search_field=None)
         return root_query
         
         # Add messages to self.linter_messages
+
+    def add_term_node(
+            self,
+            value,
+            operator,
+            search_field: typing.Optional[SearchField] = None,
+            position: typing.Optional[tuple] = None,
+            current_operator: str = None,
+            children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
+            current_negation:bool = None,
+            nearDistance: int = None,
+    ) -> typing.Optional[typing.List[typing.Union[str, Query]]]:
+        term_node = Query(
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position
+        )
+
+        if current_operator:
+            if not children or ((isinstance(children[-1], Query) and children[-1].value != current_operator) and not current_negation):
+                
+                children = [
+                    Query(
+                        value=current_operator,
+                        nearDistance=nearDistance,
+                        operator=True, 
+                        children=[*children, term_node]
+                    )
+                ]
+            else:
+                children[-1].children.append(term_node)
+        else:
+            children.append(term_node)
+        return children
 
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields."""
