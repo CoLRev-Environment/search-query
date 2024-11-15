@@ -60,7 +60,7 @@ class WOSParser(QueryStringParser):
     
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
-        return bool(re.match(r"^(AND|OR|NOT)$", token, re.IGNORECASE))
+        return bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE))
     
     def is_term(self, token: str) -> bool:
         """Check if a token is a term."""
@@ -76,23 +76,28 @@ class WOSParser(QueryStringParser):
         search_field: typing.Optional[SearchField] = None,
     ) -> Query:
         """Parse a query from a list of tokens."""
-        
-        # Parse a query tree from tokens recursively
-        def parse_expression(
-                tokens, 
-                index, 
-                search_field: typing.Optional[SearchField] = None
-        ):
-            """Parse tokens starting at the given index, handling parentheses and operators recursively."""
-            children = []
-            current_operator = None
 
             # Iff there is the Search Fields point in data["content"]
             # we need to get all search fields, if there are more than one, we need to 
             # do a for loop to add the term with all search fields
             # vielleicht sollte man hier funktion rausziehen
             # dann kann man sie vorlagern und pro search field ausführen
+        if search_field:
             search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
+        
+        # Parse a query tree from tokens recursively
+        def parse_expression(
+                tokens, 
+                index, 
+                search_field: typing.Optional[SearchField] = None,
+                current_negation: bool = None,
+                nearDistance: int = None,
+        ):
+            """Parse tokens starting at the given index, handling parentheses and operators recursively."""
+            children = []
+            current_operator = None
+            if current_negation:
+                current_operator = 'NOT'
 
             while index < len(tokens):
                 token, span = tokens[index]
@@ -101,9 +106,11 @@ class WOSParser(QueryStringParser):
                 if token == '(':
                     # Parse the expression inside the parentheses
                     sub_expr, index = parse_expression(
-                        tokens, 
-                        index + 1, 
-                        search_field
+                        tokens=tokens, 
+                        index=index + 1, 
+                        search_field=search_field,
+                        current_negation=current_negation,
+                        nearDistance=nearDistance,
                     )
 
                     if None: # current_operator:
@@ -135,6 +142,8 @@ class WOSParser(QueryStringParser):
                                     children.append(sub_expr)
                             else:
                                 children.append(sub_expr)
+                    current_negation = False
+                    # nearDistance = None
 
                 elif token == ')':
                     # if current_operator and children:
@@ -157,6 +166,7 @@ class WOSParser(QueryStringParser):
                         return (
                             Query(
                                 value=current_operator, 
+                                nearDistance=nearDistance,
                                 operator=True, 
                                 children=children, 
                                 position=span
@@ -171,7 +181,20 @@ class WOSParser(QueryStringParser):
 
                 elif self.is_operator(token):
                     current_operator = token.upper()
-
+                    if current_operator == 'NEAR':
+                        nearDistance = str(tokens[index+1][0])
+                        #current_operator = 'AND'
+                        index += 1
+                    if current_operator =='NOT':
+                        current_negation = True
+                        current_operator = 'AND'
+                        parse_expression(
+                            tokens=tokens,
+                            index=index+1, 
+                            search_field=search_field, 
+                            current_negation=current_negation,
+                            nearDistance=nearDistance,
+                        )
                 else:
                     if self.is_search_field(token):
                         search_field = SearchField(
@@ -180,7 +203,11 @@ class WOSParser(QueryStringParser):
                         )
                     else:
                         if index:
-                            previousToken, preciousSpan = tokens[index-1]
+                            if current_operator == 'NEAR':
+                                previousToken, preciousSpan = tokens[index-2]
+                            else:
+                                previousToken, preciousSpan = tokens[index-1]
+                            
                             if self.is_term(previousToken):
                                 children[-1].value = children[-1].value + " " + token
                                 index += 1
@@ -194,11 +221,12 @@ class WOSParser(QueryStringParser):
                         )
 
                         if current_operator:
-                            if not children or isinstance(children[-1], Query) and children[-1].value != current_operator:
+                            if not children or ((isinstance(children[-1], Query) and children[-1].value != current_operator) and not current_negation):
                                 
                                 children = [
                                     Query(
-                                        value=current_operator, 
+                                        value=current_operator,
+                                        nearDistance=nearDistance,
                                         operator=True, 
                                         children=[*children, term_node]
                                     )

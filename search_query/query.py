@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+import re
 from abc import ABC
 
 from search_query.constants import Operators
@@ -52,7 +53,7 @@ class Query(ABC):
         self.value = value
         self.operator = operator
         if operator:
-            assert value in [
+            assert self.value in [
                 Operators.AND,
                 Operators.OR,
                 Operators.NOT,
@@ -74,8 +75,8 @@ class Query(ABC):
         self.search_field = search_field
         if operator:
             self.search_field = None
-            if nearDistance:
-                self.nearDistance = nearDistance
+            if self.value == 'NEAR':
+                self.value = value + "/" + nearDistance
         self.position = position
         
         self._ensure_children_not_circular()
