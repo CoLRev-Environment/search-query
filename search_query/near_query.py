@@ -21,6 +21,7 @@ class NEARQuery(Query):
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
+        nearDistance: distance of operator e.g. NEAR/2 --> nearDistance = 2
         search field: search field to which the query should be applied
         """
 
