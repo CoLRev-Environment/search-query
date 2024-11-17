@@ -12,7 +12,7 @@ from search_query.parser import parse
 if __name__ == "__main__":
     query_string = "(((\"digital\") OR \"work\" OR (singlesidedNEAR2deaf*)) AND (au=\"mnm\" OR \"Peter\") AND (au=\"xy\" OR au=\"yx\") AND au=\"testauth\") AND \"Thesis\""
     
-    # query_string = "TS=(((\"single sided\" NEAR/2 deaf*) OR (\"single sided\" NEAR/2 \"hearing loss*\") OR (\"single sided\" NEAR/2 \"loss of hearing\") OR (unilateral* NEAR/2 deaf*) OR (unilateral* NEAR/2 \"hearing loss\") OR (unilateral* NEAR/2 \"loss of hearing\") OR (asymmetric* NEAR/2 deaf*) OR (asymmetric* NEAR/2 \"hearing loss*\") OR (asymmetric* NEAR/2 \"loss of hearing\") OR \"deaf ear\" OR \"deaf side\") AND (locali* OR spatial* OR space OR direction*OR (sound NEAR/2 source*) OR (sound NEAR/2 test*) OR (sound NEAR/2 detect*) OR (noise NEAR/2 test*)))"
+    query_string = "TS=(((\"single sided\" NEAR/2 deaf*) OR (\"single sided\" NEAR/2 \"hearing loss*\") OR (\"single sided\" NEAR/2 \"loss of hearing\") OR (unilateral* NEAR/2 deaf*) OR (unilateral* NEAR/2 \"hearing loss\") OR (unilateral* NEAR/2 \"loss of hearing\") OR (asymmetric* NEAR/2 deaf*) OR (asymmetric* NEAR/2 \"hearing loss*\") OR (asymmetric* NEAR/2 \"loss of hearing\") OR \"deaf ear\" OR \"deaf side\") AND (locali* OR spatial* OR space OR direction*OR (sound NEAR/2 source*) OR (sound NEAR/2 test*) OR (sound NEAR/2 detect*) OR (noise NEAR/2 test*)))"
     
     # query_string = '"One Health" AND ("Veterinary" OR "Animal") AND ("Medicine" OR "Human") AND ("Environment" OR "Ecosystem")'
 

@@ -19,8 +19,7 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
-    #REGEX hier unvollständig 
-    TERM_REGEX = r'[\w\*]+(?:\*[\w]*)*|"[^"]+"'         # Matches quoted text or standalone words
+    TERM_REGEX = r'[\w\*-]+(?:\*[\w-]*)*|"[^"]+"'       # Matches quoted text or standalone words
     OPERATOR_REGEX = r'\b(AND|OR|NOT)\b'                # Matches operators as standalone words only
     SEARCH_FIELD_REGEX = r'\b\w{2}='                    # Matches (\[\w+\] [ab]) or ab= style search field
     PARENTHESIS_REGEX = r'[\(\)]'                       # Matches parentheses
@@ -84,6 +83,7 @@ class WOSParser(QueryStringParser):
             # dann kann man sie vorlagern und pro search field ausführen
         if search_field:
             self.search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
+            print('Search Fields given: ' + str(self.search_fields_list))
         
         # Parse a query tree from tokens recursively
         def parse_expression(
@@ -141,6 +141,8 @@ class WOSParser(QueryStringParser):
                                 if current_operator == sub_expr.value or (self.is_term(sub_expr.value) and self.is_operator(children[0].value)):
                                     for child in sub_expr.children:
                                         children[-1].children.append(child)
+                                elif self.is_operator(sub_expr.value) and current_operator == children[0].value:
+                                    children[-1].children.append(sub_expr)
                                 else:
                                     children.append(sub_expr)
                             else:
@@ -216,7 +218,7 @@ class WOSParser(QueryStringParser):
                                 index += 1
                                 continue
 
-                        if self.search_fields_list and not search_field:    
+                        if len(self.search_fields_list) > 1 and not search_field:    
                             if not current_operator:
                                 current_operator= 'OR'
                                 
@@ -233,6 +235,9 @@ class WOSParser(QueryStringParser):
                                 )
 
                         else:
+                            if len(self.search_fields_list) == 1 and not search_field:
+                                search_field = self.search_fields_list[0]
+                                
                             children = self.add_term_node(
                                 value=token, 
                                 operator=False, 

@@ -9,6 +9,7 @@ import inquirer
 
 import search_query.exception as search_query_exception
 from search_query.parser import parse
+from constants import LinterMode
 
 # pylint: disable=invalid-name
 
@@ -92,6 +93,7 @@ if __name__ == "__main__":
     coder_initials = "PE"
     parent_directory = "/home/peteer98/Desktop/ba_thes/rxiv/"
     search_fields = ""
+    linter_mode = LinterMode.MODERAT
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -154,17 +156,31 @@ if __name__ == "__main__":
 
                 try:
                     # Option: select only list queries
-                    # # if "1." not in query_string:
-                    # #     continue
+                    if "1." in query_string:
+                        continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
-                    ret = parse(query_string, search_fields, syntax=syntax)
-                    
+
+                    if linter_mode:
+                        print('Current linter mode: ' + linter_mode)
+                    else:
+                        print('No mode for the linter was selected.\nStrict linter mode assumed')
+
+                    if linter_mode == LinterMode.GUIDANCE:
+                        # Suggestion-Focused e.g. reducing the distance with NEAR
+                        ret = parse(query_string, search_fields, syntax=syntax)
+                    elif linter_mode == LinterMode.MODERAT:
+                        # Improve-Focused e.g. add missing parenthesis
+                        ret = parse(query_string, search_fields, syntax=syntax)
+                    else:
+                        # Error-Focused e.g. missed parenthesis 
+                        ret = parse(query_string, search_fields, syntax=syntax)
+
                     # To select (start with) smaller queries:
-                    if ret.get_nr_leaves() > 10:
-                        print('Smaller queries only. > 10')
-                        continue
+                    # if ret.get_nr_leaves() > 10:
+                    #     print('Smaller queries only. > 10')
+                    #     continue
 
                     # Print for validation
                     print(ret.to_string("structured"))
