@@ -21,7 +21,7 @@ class WOSParser(QueryStringParser):
 
     TERM_REGEX = r'[\w\*-]+(?:\*[\w-]*)*|"[^"]+"'       # Matches quoted text or standalone words
     OPERATOR_REGEX = r'\b(AND|OR|NOT)\b'                # Matches operators as standalone words only
-    SEARCH_FIELD_REGEX = r'\b\w{2}='                    # Matches (\[\w+\] [ab]) or ab= style search field
+    SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='                    # Matches (\[\w+\] [ab]) or ab= style search field
     PARENTHESIS_REGEX = r'[\(\)]'                       # Matches parentheses
     SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'    # Matches text add terms depending on search fields in data["content"]["Search Fields"]
     # ...
@@ -138,10 +138,10 @@ class WOSParser(QueryStringParser):
                                     children.append(child)
                         else:
                             if children:
-                                if current_operator == sub_expr.value or (self.is_term(sub_expr.value) and self.is_operator(children[0].value)):
+                                if current_operator == sub_expr.value or (self.is_term(sub_expr.value) and self.is_operator(children[0].value) and sub_expr.children):
                                     for child in sub_expr.children:
                                         children[-1].children.append(child)
-                                elif self.is_operator(sub_expr.value) and current_operator == children[0].value:
+                                elif (self.is_operator(sub_expr.value) or self.is_term(sub_expr.value)) and current_operator == children[0].value:
                                     children[-1].children.append(sub_expr)
                                 else:
                                     children.append(sub_expr)
@@ -214,7 +214,10 @@ class WOSParser(QueryStringParser):
                                 previousToken, preciousSpan = tokens[index-1]
                             
                             if self.is_term(previousToken):
-                                children[-1].value = children[-1].value + " " + token
+                                if self.is_term(children[-1].value):
+                                    children[-1].value = children[-1].value + " " + token
+                                else:
+                                    children[-1].children[(len(children[-1].children)-1)].value = children[-1].children[(len(children[-1].children)-1)].value + " " + token
                                 index += 1
                                 continue
 

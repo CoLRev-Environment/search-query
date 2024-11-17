@@ -100,3 +100,11 @@ class Colors:
     ORANGE = "\033[93m"
     BLUE = "\033[94m"
     END = "\033[0m"
+
+
+class LinterMode:
+    """Linter mode"""
+
+    STRICT = 'strict'
+    MODERAT = 'moderat'
+    GUIDANCE = 'guidance'
