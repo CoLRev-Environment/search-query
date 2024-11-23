@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import search_query.utils
+import typing
+from search_query.constants import Colors
 
 
 class SearchQueryException(Exception):
@@ -21,5 +23,22 @@ class QuerySyntaxError(SearchQueryException):
         )
         self.message = f"{msg}\n{query_string_highlighted}"
         self.pos = pos
+        self.query_string = query_string
+        super().__init__(self.message)
+
+class StrictLinterModeError(SearchQueryException):
+    """StrictLinterModeError Exception"""
+    def __init__(self, message: str, query_string: str, linter_messages: typing.List[dict]) -> None:
+        # Error positions marked in orange
+        query_string_highlighted = query_string
+
+        # need to sort the linter_messages
+        sorted_linter_messages = sorted(linter_messages, key=lambda x: x['position'][0], reverse=True)
+
+        for msg in sorted_linter_messages:
+            query_string_highlighted = search_query.utils.format_query_string_pos(
+            query_string_highlighted, msg['position'], color=Colors.RED
+        )
+        self.message = f"{message}\n{query_string_highlighted}"
         self.query_string = query_string
         super().__init__(self.message)

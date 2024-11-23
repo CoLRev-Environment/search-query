@@ -6,9 +6,9 @@ import re
 import typing
 
 import search_query.exception as search_query_exception
-from search_query import parser_wos
 from search_query.constants import Colors
 from search_query.query import Query
+from search_query.linter_wos import QueryLinter
 
 
 class QueryStringParser:
@@ -18,6 +18,8 @@ class QueryStringParser:
     search_fields: str
     search_fields_list: list
     linter_messages: typing.List[dict] = []
+    fatal_linter_err: bool
+    
 
     def __init__(self, query_str: str, search_fields: str, mode: str = "strict") -> None:
         self.query_str = query_str
@@ -25,6 +27,8 @@ class QueryStringParser:
         self.mode = mode
         self.search_fields = search_fields
         self.search_fields_list = []
+        self.query_linter = QueryLinter(search_str=query_str, linter_messages=self.linter_messages)
+        self.fatal_linter_err = False
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
@@ -69,10 +73,9 @@ class QueryStringParser:
 
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        return parser_wos.WOSParser.is_search_field(token=token)
-        #raise NotImplementedError(
-        #    "is_search_field method must be implemented by inheriting classes"
-        #)
+        raise NotImplementedError(
+            "is_search_field method must be implemented by inheriting classes"
+        )
 
     def is_parenthesis(self, token: str) -> bool:
         """Token is parenthesis"""

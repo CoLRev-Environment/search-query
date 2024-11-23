@@ -106,5 +106,4 @@ class LinterMode:
     """Linter mode"""
 
     STRICT = 'strict'
-    MODERAT = 'moderat'
-    GUIDANCE = 'guidance'
+    NONSTRICT = 'non-strict'

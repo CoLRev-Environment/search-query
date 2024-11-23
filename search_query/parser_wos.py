@@ -12,6 +12,8 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.linter_wos import QueryLinter
+from search_query.exception import StrictLinterModeError
 
 
 class WOSParser(QueryStringParser):
@@ -19,11 +21,11 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
-    TERM_REGEX = r'[\w\*-]+(?:\*[\w-]*)*|"[^"]+"'       # Matches quoted text or standalone words
-    OPERATOR_REGEX = r'\b(AND|OR|NOT)\b'                # Matches operators as standalone words only
-    SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='                    # Matches (\[\w+\] [ab]) or ab= style search field
-    PARENTHESIS_REGEX = r'[\(\)]'                       # Matches parentheses
-    SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'    # Matches text add terms depending on search fields in data["content"]["Search Fields"]
+    TERM_REGEX = r'[\w\*-]+(?:\*[\w-]*)*|"[^"]+"'                               # Matches quoted text or standalone words
+    OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'                                   # Matches operators as standalone words only
+    SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='                                   # Matches (\[\w+\] [ab]) or ab= style search field
+    PARENTHESIS_REGEX = r'[\(\)]'                                               # Matches parentheses
+    SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'      # Matches text add terms depending on search fields in data["content"]["Search Fields"]
     # ...
 
     pattern = "|".join(
@@ -76,11 +78,6 @@ class WOSParser(QueryStringParser):
     ) -> Query:
         """Parse a query from a list of tokens."""
 
-            # Iff there is the Search Fields point in data["content"]
-            # we need to get all search fields, if there are more than one, we need to 
-            # do a for loop to add the term with all search fields
-            # vielleicht sollte man hier funktion rausziehen
-            # dann kann man sie vorlagern und pro search field ausführen
         if search_field:
             self.search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
             print('Search Fields given: ' + str(self.search_fields_list))
@@ -106,8 +103,8 @@ class WOSParser(QueryStringParser):
                 if token == '(':
                     # Parse the expression inside the parentheses
                     sub_expr, index = parse_expression(
-                        tokens=tokens, 
-                        index=index + 1, 
+                        tokens=tokens,
+                        index=index + 1,
                         search_field=search_field,
                         current_negation=current_negation,
                         nearDistance=nearDistance,
@@ -185,7 +182,14 @@ class WOSParser(QueryStringParser):
                     )
 
                 elif self.is_operator(token):
-                    current_operator = token.upper()
+                    current_operator = token
+                    if token.islower():
+                        current_operator = token.upper()
+                        self.add_linter_message(rule='UppercaseOperator',
+                                                msg='Operators must be uppercase.',
+                                                posision=span
+                        )
+
                     if current_operator == 'NEAR':
                         nearDistance = str(tokens[index+1][0])
                         #current_operator = 'AND'
@@ -195,8 +199,8 @@ class WOSParser(QueryStringParser):
                         current_operator = 'AND'
                         parse_expression(
                             tokens=tokens,
-                            index=index+1, 
-                            search_field=search_field, 
+                            index=index+1,
+                            search_field=search_field,
                             current_negation=current_negation,
                             nearDistance=nearDistance,
                         )
@@ -242,9 +246,9 @@ class WOSParser(QueryStringParser):
                                 search_field = self.search_fields_list[0]
                                 
                             children = self.add_term_node(
-                                value=token, 
-                                operator=False, 
-                                search_field=search_field, 
+                                value=token,
+                                operator=False,
+                                search_field=search_field,
                                 position=span,
                                 children=children,
                                 current_operator=current_operator,
@@ -254,7 +258,9 @@ class WOSParser(QueryStringParser):
 
                         if current_operator:
                             current_operator = None
-                        #   search_field = None
+                        
+                        # TODO: irgendwas muss hier gemacht werden, search field muss zu bestimmten werten none werden siehe query string 1 in test
+                        # search_field = None
                 index += 1
 
             if len(children) == 1:
@@ -290,7 +296,7 @@ class WOSParser(QueryStringParser):
                     )
             
             # if we return here, we have an error in the code
-            # see line 221
+            # see line 281
             # we should combine all children with their operators (should only be one)
             return (
                     Query(
@@ -303,6 +309,18 @@ class WOSParser(QueryStringParser):
         return root_query
         
         # Add messages to self.linter_messages
+    
+    def add_linter_message(self,
+                           rule: str,
+                           msg: str,
+                           posision: typing.Optional[tuple] = None,
+    ):
+        """Adds a message to the self.linter_messages list"""
+        self.linter_messages.append({
+            "rule": rule,
+            "message": msg,
+            "position": posision,
+        })
 
     def add_term_node(
             self,
@@ -315,6 +333,7 @@ class WOSParser(QueryStringParser):
             current_negation:bool = None,
             nearDistance: int = None,
     ) -> typing.Optional[typing.List[typing.Union[str, Query]]]:
+        """Adds the term node to the Query"""
         term_node = Query(
             value=value,
             operator=operator,
@@ -341,19 +360,54 @@ class WOSParser(QueryStringParser):
 
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields."""
+        # original_field = None
+        # translated_field = None
+        # # If the current node has a search field, translate it
+        # # If the current node has a search field, translate it
+        # if query.search_field:
+        #     original_field = query.search_field
+        #     translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
+        #     if translated_field:  # Translate only if a mapping exists
+        #         query.search_field = translated_field
 
-        # Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
+        # # Recursively translate the search fields of child nodes
+        # for child in query.children:
+        #     self.translate_search_fields(child)
 
+        # # Add messages to self.linter_messages if needed
+        # if translated_field:
+        #     self.linter_messages.append({
+        #                 "rule": "TranslatedSearchField",
+        #                 "message": "Search_Field " + original_field + " has been updated to " + translated_field + ".",
+        #                 "position": query.position
+        #             })
 
-        # Add messages to self.linter_messages if needed
+    def pre_linting(self):
+        self.fatal_linter_err = self.query_linter.pre_linting()
 
     def parse(self) -> Query:
         """Parse a query string."""
-        self.tokenize()
-        query = self.parse_query_tree(self.tokens, search_field=self.search_fields)
-        self.translate_search_fields(query)
+        self.pre_linting()
+        if not self.fatal_linter_err:
+            self.tokenize()
+            query = self.parse_query_tree(self.tokens, search_field=self.search_fields)
+            self.translate_search_fields(query)
+        else:
+            print('\n[FATAL] Fatal error detected in pre-linting')
 
-        # If self.mode == "strict", raise exception if self.linter_messages is not empty
+        if self.linter_messages:
+            if self.mode != "strict" and not self.fatal_linter_err:
+                print('\n[INFO] The following errors have been corrected by the linter:')
+
+            for msg in self.linter_messages:
+                print('[Linter] ' + msg['rule'] + '\t' + msg['message'] + ' At position ' + str(msg['position']))
+
+            if (self.mode == "strict" or self.fatal_linter_err) and self.linter_messages:
+                print("\n")
+                raise StrictLinterModeError(message='LinterDetected',
+                                            query_string=self.query_str,
+                                            linter_messages=self.linter_messages
+                )
 
         return query
 

@@ -93,7 +93,7 @@ if __name__ == "__main__":
     coder_initials = "PE"
     parent_directory = "/home/peteer98/Desktop/ba_thes/rxiv/"
     search_fields = ""
-    linter_mode = LinterMode.MODERAT
+    linter_mode = LinterMode.NONSTRICT
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -165,17 +165,14 @@ if __name__ == "__main__":
                     if linter_mode:
                         print('Current linter mode: ' + linter_mode)
                     else:
-                        print('No mode for the linter was selected.\nStrict linter mode assumed')
+                        print('No mode for the linter was selected.\nStrict linter mode assumed.')
 
-                    if linter_mode == LinterMode.GUIDANCE:
-                        # Suggestion-Focused e.g. reducing the distance with NEAR
-                        ret = parse(query_string, search_fields, syntax=syntax)
-                    elif linter_mode == LinterMode.MODERAT:
+                    if linter_mode == LinterMode.NONSTRICT:
                         # Improve-Focused e.g. add missing parenthesis
-                        ret = parse(query_string, search_fields, syntax=syntax)
+                        ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.NONSTRICT)
                     else:
                         # Error-Focused e.g. missed parenthesis 
-                        ret = parse(query_string, search_fields, syntax=syntax)
+                        ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.STRICT)
 
                     # To select (start with) smaller queries:
                     # if ret.get_nr_leaves() > 10:
