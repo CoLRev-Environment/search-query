@@ -41,20 +41,65 @@ The parser/linter can add different messages (level: fatal, error, warning). Ini
 Search Field Validation in Strict vs. Non-Strict Modes
 ----------------------------------------------------------
 
-+----------------------------+------------------------+------------------------------+-----------------------------------------+-------------------------------------------------------------------------------+
-| **Search-Field required**  | **Search String**      | **Search-Field**             | **Mode: Strict**                        | **Mode: Non-Strict**                                                          |
-+----------------------------+------------------------+------------------------------+-----------------------------------------+-------------------------------------------------------------------------------+
-| Yes                        | With Search-Field      | Empty                        | ok                                      | ok                                                                            |
-| Yes                        | With Search-Field      | Equal to Search-String       | ok - search-field-redundant             | ok                                                                            |
-| Yes                        | With Search-Field      | Different from Search-String | error: search-field-contradiction       | ok - search-field-contradiction. Parser uses Search-String per default        |
-| Yes                        | Without Search-Field   | Empty                        | error: search-field-missing            | ok - search-field-missing. Parser adds `title` as the default                 |
-| Yes                        | Without Search-Field   | Given                        | ok - search-field-extracted            | ok                                                                            |
-| No                         | With Search-Field      | Empty                        | ok                                      | ok                                                                            |
-| No                         | With Search-Field      | Equal to Search-String       | ok - search-field-redundant             | ok                                                                            |
-| No                         | With Search-Field      | Different from Search-String | error: search-field-contradiction       | ok - search-field-contradiction. Parser uses Search-String per default        |
-| No                         | Without Search-Field   | Empty                        | ok - search-field-not-specified        | ok - Parser uses default of database                                          |
-| No                         | Without Search-Field   | Given                        | ok - search-field-extracted            | ok                                                                            |
-+----------------------------+------------------------+------------------------------+-----------------------------------------+-------------------------------------------------------------------------------+
+.. list-table:: Search Field Validation in Strict vs. Non-Strict Modes
+   :widths: 20 20 20 20 20
+   :header-rows: 1
+
+   * - **Search-Field required**
+     - **Search String**
+     - **Search-Field**
+     - **Mode: Strict**
+     - **Mode: Non-Strict**
+   * - Yes
+     - With Search-Field
+     - Empty
+     - ok
+     - ok
+   * - Yes
+     - With Search-Field
+     - Equal to Search-String
+     - ok - search-field-redundant
+     - ok
+   * - Yes
+     - With Search-Field
+     - Different from Search-String
+     - error: search-field-contradiction
+     - ok - search-field-contradiction. Parser uses Search-String per default
+   * - Yes
+     - Without Search-Field
+     - Empty
+     - error: search-field-missing
+     - ok - search-field-missing. Parser adds `title` as the default
+   * - Yes
+     - Without Search-Field
+     - Given
+     - ok - search-field-extracted
+     - ok
+   * - No
+     - With Search-Field
+     - Empty
+     - ok
+     - ok
+   * - No
+     - With Search-Field
+     - Equal to Search-String
+     - ok - search-field-redundant
+     - ok
+   * - No
+     - With Search-Field
+     - Different from Search-String
+     - error: search-field-contradiction
+     - ok - search-field-contradiction. Parser uses Search-String per default
+   * - No
+     - Without Search-Field
+     - Empty
+     - ok - search-field-not-specified
+     - ok - Parser uses default of database
+   * - No
+     - Without Search-Field
+     - Given
+     - ok - search-field-extracted
+     - ok
 
 
 Resources
