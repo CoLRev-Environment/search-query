@@ -49,5 +49,8 @@ def get_platform(platform_str: str) -> str:
     platform_str = platform_str.lower().rstrip().lstrip()
     if platform_str in ["web of science", "wos"]:
         return PLATFORM.WOS.value
+    
+    if platform_str in ["ebscohost", "ebsco"]:
+        return PLATFORM.EBSCO.value
 
     raise ValueError(f"Invalid platform: {platform_str}")

@@ -12,7 +12,7 @@ class PLATFORM(Enum):
 
     WOS = "wos"
     PUBMED = "pubmed"
-    EBSCO = "ebsco"
+    EBSCO = "ebscohost"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
 

@@ -11,6 +11,7 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.parser_validation import QueryStringValidator
 
 
 class EBSCOParser(QueryStringParser):
@@ -23,7 +24,7 @@ class EBSCOParser(QueryStringParser):
     OPERATOR_REGEX = r"^(AND|OR|NOT)$"
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_TERM_REGEX = r"\"[^\"]+\"|\b(?!S\d\b)\S+\*?\b"
-    FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
+    # FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
 
     pattern = "|".join(
         [SEARCH_FIELD_REGEX, 
@@ -32,18 +33,19 @@ class EBSCOParser(QueryStringParser):
          SEARCH_TERM_REGEX]
     )
 
-    def check_operator(self) -> None:
-        # check if bool is capitals
-        for match in re.finditer(self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE):
-            operator = match.group()
-            start, end = match.span()
-            self.query_str = (
-                self.query_str[:start] +
-                operator.upper() +
-                self.query_str[end:]
-            )
+    # def check_operator(self) -> None:
+    #     """Check for operators written in not all capital letter"""
+    #     for match in re.finditer(self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE):
+    #         operator = match.group()
+    #         start, end = match.span()
+    #         self.query_str = (
+    #             self.query_str[:start] +
+    #             operator.upper() +
+    #             self.query_str[end:]
+    #         )
 
     def filter_search_field(self, strict: bool) -> None:
+        """Filter out unsupported search_fields. Depending on strictness, automatically change or ask user"""
         supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB"}
         modified_query_list = list(self.query_str)  # Convert to list for direct modification
         unsupported_fields = []
@@ -80,6 +82,13 @@ class EBSCOParser(QueryStringParser):
         """Tokenize the query_str."""
         self.tokens = []
 
+        # if self is None:
+        #     self.linter_messages.append({
+        #         "level": "error",
+        #         "msg": f"Invalid token detected: '{token}'.",
+        #         "pos": (start, end),
+        #     })
+
         for match in re.finditer(self.pattern, self.query_str):
             token = match.group()
             start, end = match.span()
@@ -112,6 +121,7 @@ class EBSCOParser(QueryStringParser):
             raise ValueError("No tokens provided to parse.")
 
         root = None
+        current_operator = None
 
         while tokens:
             token, token_type, position = tokens.pop(0)
@@ -124,24 +134,30 @@ class EBSCOParser(QueryStringParser):
                 term_node = Query(
                     value=token, operator=False, search_field=search_field
                 )
-
-                if root is None:
+                if current_operator:
+                    current_operator.children.append(term_node)
+                elif root is None:
                     root = term_node
                 else:
                     root.children.append(term_node)
 
             elif token_type == "OPERATOR":
-                operator_node = Query(value=token, operator=True, position=position)
-
-                if root:
-                    operator_node.children.append(root)
-                root = operator_node
+                if current_operator and current_operator.value == token:
+                    pass
+                else:
+                    new_operator_node = Query(value=token, operator=True, position=position)
+                    if root:
+                        new_operator_node.children.append(root)
+                    root = new_operator_node
+                    current_operator = new_operator_node
 
             elif token_type == "PARENTHESIS":
                 if token == "(":
                     # Recursively parse the group inside parentheses
                     subtree = self.parse_query_tree(tokens, search_field)
-                    if root:
+                    if current_operator:
+                        current_operator.children.append(subtree)
+                    elif root:
                         root.children.append(subtree)
                     else:
                         root = subtree
@@ -173,9 +189,24 @@ class EBSCOParser(QueryStringParser):
         strict = False
 
         self.filter_search_field(strict)
-        self.check_operator()
+
+        # self.check_operator()
+
+        # Create an instance of QueryStringValidator
+        validator = QueryStringValidator()
+        validator.query_str = self.query_str  # Pass the query string to the validator
+
+        # Call validation methods
+        validator.check_operator()
+        validator.check_parenthesis()
+
+        # Update the query string after validation
+        self.query_str = validator.query_str
+
         self.tokenize()
+
         query = self.parse_query_tree(self.tokens)
+
         self.translate_search_fields(query)
 
         # Check for strict mode and handle linter messages if any
@@ -197,11 +228,10 @@ class EBSCOListParser(QueryListParser):
 
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
+
+        # strings can also be accumulated with #1 OR #2 ... instead of S1 OR S2 ... ->  To-Do
+
         return f"S{token_nr}"
-
-    # override and implement methods of parent class (as needed)
-
-    # the parse() method of QueryListParser is called to parse the list of queries
 
 
 # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
