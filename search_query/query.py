@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing
-import re
 from abc import ABC
 
 from search_query.constants import Operators
@@ -78,7 +77,7 @@ class Query(ABC):
             if self.value == 'NEAR':
                 self.value = value + "/" + near_distance
         self.position = position
-        
+
         self._ensure_children_not_circular()
 
     def get_nr_leaves(self) -> int:

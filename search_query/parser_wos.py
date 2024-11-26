@@ -134,7 +134,7 @@ class WOSParser(QueryStringParser):
                 if token == '(':
                     if self.is_search_field(tokens[index-1][0]):
                         superior_search_field = tokens[index-1][0]
-                    
+
                     # Parse the expression inside the parentheses
                     sub_expr, index = parse_expression(
                         tokens=tokens,
@@ -286,7 +286,7 @@ class WOSParser(QueryStringParser):
                         else:
                             if not search_field and not superior_search_field:
                                 search_field = Fields.ALL
-                            
+
                             if not search_field and superior_search_field:
                                 search_field = superior_search_field
 
@@ -304,16 +304,15 @@ class WOSParser(QueryStringParser):
                         if current_operator:
                             current_operator = None
 
-
-                        # TODO: irgendwas muss hier gemacht werden,
-                        # search field muss zu bestimmten werten none
-                        # werden siehe query string 1 in test
                         if isinstance(search_field, SearchField):
                             search_field_for_check = search_field.value
                         else:
                             search_field_for_check = search_field
 
-                        if not(superior_search_field and superior_search_field == search_field_for_check):
+                        if not(
+                            superior_search_field and
+                            superior_search_field == search_field_for_check
+                        ):
                             search_field = None
                 index += 1
 
