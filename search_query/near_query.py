@@ -27,7 +27,7 @@ class NEARQuery(Query):
 
         super().__init__(
             value=Operators.NEAR,
-            nearDistance=nearDistance,
+            near_distance=nearDistance,
             operator=True,
             children=children,
             search_field=search_field
