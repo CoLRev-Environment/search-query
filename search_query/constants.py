@@ -58,6 +58,7 @@ PLATFORM_FIELD_MAP = {
     PLATFORM.WOS: {
         Fields.ALL: "ALL=",
         Fields.ABSTRACT: "AB=",
+        Fields.AUTHOR_KEYWORDS: "AU=",
         Fields.TITLE: "TI=",
         Fields.TOPIC: "TS=",
     },
@@ -83,7 +84,6 @@ PLATFORM_COMBINED_FIELDS_MAP = {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
     },
 }
-
 
 class ExitCodes:
     """Exit codes"""
