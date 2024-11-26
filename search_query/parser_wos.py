@@ -116,6 +116,7 @@ class WOSParser(QueryStringParser):
                 tokens,
                 index,
                 search_field: typing.Optional[SearchField] = None,
+                superior_search_field: typing.Optional[SearchField] = None,
                 current_negation: bool = None,
                 near_distance: int = None,
         ):
@@ -131,11 +132,15 @@ class WOSParser(QueryStringParser):
 
                 # Handle nested expressions within parentheses
                 if token == '(':
+                    if self.is_search_field(tokens[index-1][0]):
+                        superior_search_field = tokens[index-1][0]
+                    
                     # Parse the expression inside the parentheses
                     sub_expr, index = parse_expression(
                         tokens=tokens,
                         index=index + 1,
                         search_field=search_field,
+                        superior_search_field=superior_search_field,
                         current_negation=current_negation,
                         near_distance=near_distance,
                     )
@@ -178,6 +183,7 @@ class WOSParser(QueryStringParser):
                     # nearDistance = None
 
                 elif token == ')':
+                    superior_search_field = None
                     if len(children) == 1:
                         return (children[0],
                                 index
@@ -219,6 +225,7 @@ class WOSParser(QueryStringParser):
                             tokens=tokens,
                             index=index+1,
                             search_field=search_field,
+                            superior_search_field=superior_search_field,
                             current_negation=current_negation,
                             near_distance=near_distance,
                         )
@@ -263,9 +270,25 @@ class WOSParser(QueryStringParser):
                                     near_distance=near_distance,
                                 )
 
+                        elif len(self.search_fields_list) == 1 and not search_field:
+                            search_field = self.search_fields_list[0]
+
+                            children = self.add_term_node(
+                                value=token,
+                                operator=False,
+                                search_field=search_field,
+                                position=span,
+                                children=children,
+                                current_operator=current_operator,
+                                current_negation=current_negation,
+                                near_distance=near_distance,
+                            )
                         else:
-                            if len(self.search_fields_list) == 1 and not search_field:
-                                search_field = self.search_fields_list[0]
+                            if not search_field and not superior_search_field:
+                                search_field = Fields.ALL
+                            
+                            if not search_field and superior_search_field:
+                                search_field = superior_search_field
 
                             children = self.add_term_node(
                                 value=token,
@@ -285,7 +308,13 @@ class WOSParser(QueryStringParser):
                         # TODO: irgendwas muss hier gemacht werden,
                         # search field muss zu bestimmten werten none
                         # werden siehe query string 1 in test
-                        # search_field = None
+                        if isinstance(search_field, SearchField):
+                            search_field_for_check = search_field.value
+                        else:
+                            search_field_for_check = search_field
+
+                        if not(superior_search_field and superior_search_field == search_field_for_check):
+                            search_field = None
                 index += 1
 
             if len(children) == 1:
@@ -330,7 +359,11 @@ class WOSParser(QueryStringParser):
                     index
                 )
 
-        root_query, _ = parse_expression(tokens=tokens, index=0, search_field=None)
+        root_query, _ = parse_expression(
+                            tokens=tokens,
+                            index=0,
+                            search_field=None
+                        )
         return root_query
 
         # Add messages to self.linter_messages
@@ -429,7 +462,7 @@ class WOSParser(QueryStringParser):
             "AB=" if search_field in self.abstract_list else \
             "AU=" if search_field in self.author_list else \
             "TS=" if search_field in self.topic_list else \
-            search_field
+            "ALL="
 
     def pre_linting(self):
         """Pre-linting of the query string."""
