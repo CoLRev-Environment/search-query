@@ -8,11 +8,11 @@ import re
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Fields
+from search_query.constants import LinterMode
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.linter_wos import QueryLinter
 from search_query.exception import StrictLinterModeError
 
 
@@ -26,22 +26,22 @@ class WOSParser(QueryStringParser):
     abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
     author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
     topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC"]
-    
+
     # Matches quoted text or standalone words, including leading wildcard
     TERM_REGEX = r'\*?[\w-]+(?:\*[\w-]*)*|"[^"]+"'
-    
+
     # Matches operators as standalone words only
     OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'
-    
+
     # Matches search fields in the format of 'ab=' or 'abc='
     SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='
-    
+
     # Matches parentheses
     PARENTHESIS_REGEX = r'[\(\)]'
-    
+
     # Matches text add terms depending on search fields in data["content"]["Search Fields"]
     SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
-    
+
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
         [
@@ -55,7 +55,7 @@ class WOSParser(QueryStringParser):
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
-        
+
         # Parse tokens and positions based on regex pattern
         compile_pattern = re.compile(pattern=self.pattern)
         matches = compile_pattern.finditer(self.query_str)
@@ -73,11 +73,11 @@ class WOSParser(QueryStringParser):
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
         return bool(re.match(self.SEARCH_FIELD_REGEX, token))
-    
+
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
         return bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE))
-    
+
     def is_term(self, token: str) -> bool:
         """Check if a token is a term."""
         return (
@@ -110,16 +110,17 @@ class WOSParser(QueryStringParser):
         if search_field:
             self.search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
             print('Search Fields given: ' + str(self.search_fields_list))
-        
+
         # Parse a query tree from tokens recursively
         def parse_expression(
-                tokens, 
-                index, 
+                tokens,
+                index,
                 search_field: typing.Optional[SearchField] = None,
                 current_negation: bool = None,
                 near_distance: int = None,
         ):
-            """Parse tokens starting at the given index, handling parentheses and operators recursively."""
+            """Parse tokens starting at the given index, 
+            handling parentheses and operators recursively."""
             children = []
             current_operator = None
             if current_negation:
@@ -143,7 +144,11 @@ class WOSParser(QueryStringParser):
                     if isinstance(sub_expr, list):
                         for child in sub_expr:
                             if children:
-                                if current_operator == child.value or (self.is_term(child.value) and self.is_operator(children[0].value)):
+                                if (
+                                    current_operator == child.value or
+                                        (self.is_term(child.value) and
+                                            self.is_operator(children[0].value))
+                                    ):
                                     children[-1].children.append(child)
                                 else:
                                     children.append(child)
@@ -151,10 +156,19 @@ class WOSParser(QueryStringParser):
                                 children.append(child)
                     else:
                         if children:
-                            if current_operator == sub_expr.value or (self.is_term(sub_expr.value) and self.is_operator(children[0].value) and sub_expr.children):
+                            if (
+                                current_operator == sub_expr.value or
+                                    (self.is_term(sub_expr.value) and
+                                        self.is_operator(children[0].value)
+                                            and sub_expr.children)
+                            ):
                                 for child in sub_expr.children:
                                     children[-1].children.append(child)
-                            elif (self.is_operator(sub_expr.value) or self.is_term(sub_expr.value)) and current_operator == children[0].value:
+                            elif ((
+                                self.is_operator(sub_expr.value) or
+                                    self.is_term(sub_expr.value)) and
+                                        current_operator == children[0].value
+                            ):
                                 children[-1].children.append(sub_expr)
                             else:
                                 children.append(sub_expr)
@@ -164,22 +178,11 @@ class WOSParser(QueryStringParser):
                     # nearDistance = None
 
                 elif token == ')':
-                    # if current_operator and children:
-                    #     return (
-                    #         Query(
-                    #             value=current_operator, 
-                    #             operator=True, 
-                    #             children=children, 
-                    #             position=span
-                    #         ), 
-                    #         index
-                    #     )
-
                     if len(children) == 1:
                         return (children[0],
                                 index
                         )
-                    
+
                     if current_operator:
                         return (
                             Query(
@@ -188,7 +191,7 @@ class WOSParser(QueryStringParser):
                                 operator=True,
                                 children=children,
                                 position=span
-                            ), 
+                            ),
                             index
                         )
 
@@ -222,33 +225,37 @@ class WOSParser(QueryStringParser):
                 else:
                     if self.is_search_field(token):
                         search_field = SearchField(
-                            value=token, 
+                            value=token,
                             position=span
                         )
                     else:
                         if index:
                             if current_operator == 'NEAR':
-                                previousToken, preciousSpan = tokens[index-2]
+                                # pylint: disable=unused-variable
+                                previous_token, precious_span = tokens[index-2]
                             else:
-                                previousToken, preciousSpan = tokens[index-1]
-                            
-                            if self.is_term(previousToken):
+                                # pylint: disable=unused-variable
+                                previous_token, precious_span = tokens[index-1]
+
+                            if self.is_term(previous_token):
                                 if self.is_term(children[-1].value):
                                     children[-1].value = children[-1].value + " " + token
                                 else:
-                                    children[-1].children[(len(children[-1].children)-1)].value = children[-1].children[(len(children[-1].children)-1)].value + " " + token
+                                    last_child_index = len(children[-1].children) - 1
+                                    last_child = children[-1].children[last_child_index]
+                                    last_child.value = last_child.value + " " + token
                                 index += 1
                                 continue
 
-                        if len(self.search_fields_list) > 1 and not search_field:    
+                        if len(self.search_fields_list) > 1 and not search_field:
                             if not current_operator:
                                 current_operator= 'OR'
-                                
+
                             for search_field_elem in self.search_fields_list:
                                 children = self.add_term_node(
-                                    value=token, 
-                                    operator=False, 
-                                    search_field=search_field_elem, 
+                                    value=token,
+                                    operator=False,
+                                    search_field=search_field_elem,
                                     position=span,
                                     children=children,
                                     current_operator=current_operator,
@@ -259,7 +266,7 @@ class WOSParser(QueryStringParser):
                         else:
                             if len(self.search_fields_list) == 1 and not search_field:
                                 search_field = self.search_fields_list[0]
-                                
+
                             children = self.add_term_node(
                                 value=token,
                                 operator=False,
@@ -275,57 +282,59 @@ class WOSParser(QueryStringParser):
                             current_operator = None
 
 
-                        # TODO: irgendwas muss hier gemacht werden, search field muss zu bestimmten werten none werden siehe query string 1 in test
+                        # TODO: irgendwas muss hier gemacht werden,
+                        # search field muss zu bestimmten werten none
+                        # werden siehe query string 1 in test
                         # search_field = None
                 index += 1
 
             if len(children) == 1:
                 return children[0], index
-            
+
             if current_operator:
                 return (
                     Query(
                     value=current_operator,
                     operator=True,
-                    children=children), 
+                    children=children),
                     index
                 )
-            
+
             if self.is_operator(children[0].value):
                 for child in children:
                     if not children[0].value == children[children.index(child)].value:
                         # raise error or implement linter
                         continue
-                
+
                 if children[0].value == children[1].value:
                     op_children = []
                     for child in children:
                         for grandchild in child.children:
-                            op_children.append(grandchild)                    
-                    
+                            op_children.append(grandchild)
+
                     return (
                         Query(
                         value=children[0].value,
                         operator=True,
-                        children=op_children), 
+                        children=op_children),
                         index
                     )
-            
+
             # if we return here, we have an error in the code
             # see line 281
             # we should combine all children with their operators (should only be one)
             return (
                     Query(
                     value="Fehler hier2",
-                    children=children), 
+                    children=children),
                     index
                 )
 
         root_query, _ = parse_expression(tokens=tokens, index=0, search_field=None)
         return root_query
-        
+
         # Add messages to self.linter_messages
-    
+
     def add_linter_message(self,
                            rule: str,
                            msg: str,
@@ -358,8 +367,13 @@ class WOSParser(QueryStringParser):
         )
 
         if current_operator:
-            if not children or ((isinstance(children[-1], Query) and children[-1].value != current_operator) and not current_negation):
-                
+            if (
+                not children or
+                    ((isinstance(children[-1], Query) and
+                        children[-1].value != current_operator) and
+                        not current_negation)
+            ):
+
                 children = [
                     Query(
                         value=current_operator,
@@ -388,7 +402,8 @@ class WOSParser(QueryStringParser):
 
                 # Add messages to self.linter_messages
                 self.add_linter_message(rule='TranslatedSearchField',
-                                        msg='Search Field has been updated to ' + translated_field + '.',
+                                        msg='Search Field has been updated to '
+                                            + translated_field + '.',
                                         posision=query.position
                 )
 
@@ -403,12 +418,13 @@ class WOSParser(QueryStringParser):
         # Recursively translate the search fields of child nodes
         for child in query.children:
             self.translate_search_fields(child)
-            
+
     def check_search_fields(self, search_field) -> str:
         """Translate a search field into base search field."""
         if isinstance(search_field, SearchField):
             search_field = search_field.value
-        
+
+        # Check if the given search field is in one of the lists of search fields
         return "TI=" if search_field in self.title_list else \
             "AB=" if search_field in self.abstract_list else \
             "AU=" if search_field in self.author_list else \
@@ -417,18 +433,19 @@ class WOSParser(QueryStringParser):
 
     def pre_linting(self):
         """Pre-linting of the query string."""
+        # Check if there is an unsolvable error in the query string
         self.fatal_linter_err = self.query_linter.pre_linting()
 
     def parse(self) -> Query:
         """Parse a query string."""
         # Remove all previous linter messages
         self.linter_messages.clear()
-        
+
         # Pre-linting of the query string
         self.pre_linting()
 
-        # Parse the query string, build the query tree and translate search fields
         if not self.fatal_linter_err:
+            # Parse the query string, build the query tree and translate search fields
             self.tokenize()
             query = self.parse_query_tree(self.tokens, search_field=self.search_fields)
             self.translate_search_fields(query)
@@ -437,11 +454,17 @@ class WOSParser(QueryStringParser):
 
         # Print linter messages
         if self.linter_messages:
-            if self.mode != "strict" and not self.fatal_linter_err:
+            if self.mode != LinterMode.STRICT and not self.fatal_linter_err:
                 print('\n[INFO] The following errors have been corrected by the linter:')
 
             for msg in self.linter_messages:
-                print('[Linter] ' + msg['rule'] + '\t' + msg['message'] + ' At position ' + str(msg['position']))
+                print(
+                    '[Linter] ' 
+                        + msg['rule'] + '\t'
+                        + msg['message']
+                        + ' At position '
+                        + str(msg['position'])
+                    )
 
             if (self.mode == "strict" or self.fatal_linter_err) and self.linter_messages:
                 print("\n")
@@ -468,5 +491,4 @@ class WOSListParser(QueryListParser):
 
     # the parse() method of QueryListParser is called to parse the list of queries
 
-
-# Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
+    # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)

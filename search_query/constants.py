@@ -107,3 +107,4 @@ class LinterMode:
 
     STRICT = 'strict'
     NONSTRICT = 'non-strict'
+    

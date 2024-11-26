@@ -1,10 +1,4 @@
 # test the parser because list is to much for me
-import datetime
-import json
-import os
-from pathlib import Path
-
-import inquirer
 
 
 from search_query.constants import LinterMode
@@ -19,7 +13,7 @@ if __name__ == "__main__":
 
     # query_string = 'TS=(self* NEAR/7 (massag* OR myofascial OR "manual therapy" OR reflexology)) NOT TS=("foam roller" OR "foam rolling" OR "roller massage" OR "rolling massage" OR "manual lymph drainage")'
 
-    # query_string = 'ALL=("abundance") AND All=(Asset-Based Approach OR Asset-Based Community Development OR Community assets OR Community asset mapping OR Cultural assets OR Research assets OR Strengths-Based Approach OR Resource-Based Approach OR Positive Deviance Approach OR Capability Approach OR Capacity-Building Approach OR Resilience-Based Approach OR Empowerment Approach OR Solution-Focused Approach OR Positive Psychology Approach OR Community Asset Mapping)'
+    query_string = 'ALL=("abundance") AND All=(Asset-Based Approach OR Asset-Based Community Development OR Community assets OR Community asset mapping OR Cultural assets OR Research assets OR Strengths-Based Approach OR Resource-Based Approach OR Positive Deviance Approach OR Capability Approach OR Capacity-Building Approach OR Resilience-Based Approach OR Empowerment Approach OR Solution-Focused Approach OR Positive Psychology Approach OR Community Asset Mapping)'
 
     syntax = 'wos'
     DB = {}

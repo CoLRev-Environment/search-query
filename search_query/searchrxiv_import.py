@@ -118,7 +118,7 @@ if __name__ == "__main__":
                 if platform not in SYNTAX_MAP:
                     print(f"Platform not available: {platform}")
                     continue
-                    
+
                 if not platform == "web of science":
                     print("Only search for wos. Platform " + platform + " is to be ignored.")
                     continue
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
-                
+
                 if "Search Fields" in data["content"]:
                     search_fields = data["content"]["Search Fields"]
 
@@ -169,10 +169,20 @@ if __name__ == "__main__":
 
                     if linter_mode == LinterMode.NONSTRICT:
                         # Improve-Focused e.g. missing fields
-                        ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.NONSTRICT)
+                        ret = parse(
+                                query_string,
+                                search_fields,
+                                syntax=syntax,
+                                mode=LinterMode.NONSTRICT
+                        )
                     else:
                         # Error-Focused e.g. missed parenthesis
-                        ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.STRICT)
+                        ret = parse(
+                                query_string,
+                                search_fields,
+                                syntax=syntax,
+                                mode=LinterMode.STRICT
+                        )
 
                     # To select (start with) smaller queries:
                     # if ret.get_nr_leaves() > 10:
