@@ -168,10 +168,10 @@ if __name__ == "__main__":
                         print('No mode for the linter was selected.\nStrict linter mode assumed.')
 
                     if linter_mode == LinterMode.NONSTRICT:
-                        # Improve-Focused e.g. add missing parenthesis
+                        # Improve-Focused e.g. missing fields
                         ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.NONSTRICT)
                     else:
-                        # Error-Focused e.g. missed parenthesis 
+                        # Error-Focused e.g. missed parenthesis
                         ret = parse(query_string, search_fields, syntax=syntax, mode=LinterMode.STRICT)
 
                     # To select (start with) smaller queries:

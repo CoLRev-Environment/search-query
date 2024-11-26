@@ -67,4 +67,4 @@ class QueryLinter:
                 "position": (unmatched_index, unmatched_index+1)
             })
         
-        return unmatched_parentheses
+            return unmatched_parentheses
