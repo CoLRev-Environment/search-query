@@ -26,6 +26,7 @@ class WOSParser(QueryStringParser):
     abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
     author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
     topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC"]
+    language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
 
     # Matches quoted text or standalone words, including leading wildcard
     TERM_REGEX = r'\*?[\w-]+(?:\*[\w-]*)*|"[^"]+"'
@@ -72,11 +73,11 @@ class WOSParser(QueryStringParser):
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        return bool(re.match(self.SEARCH_FIELD_REGEX, token))
+        return bool(re.match(self.SEARCH_FIELD_REGEX, token)) or token in self.language_list
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
-        return bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE))
+        return bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE)) or (re.match(r"^(NEAR/\d+)$", token))
 
     def is_term(self, token: str) -> bool:
         """Check if a token is a term."""
@@ -230,7 +231,10 @@ class WOSParser(QueryStringParser):
                             near_distance=near_distance,
                         )
                 else:
-                    if self.is_search_field(token):
+                    if (
+                        self.is_search_field(token) or
+                        token in self.language_list
+                    ):
                         search_field = SearchField(
                             value=token,
                             position=span
@@ -461,6 +465,7 @@ class WOSParser(QueryStringParser):
             "AB=" if search_field in self.abstract_list else \
             "AU=" if search_field in self.author_list else \
             "TS=" if search_field in self.topic_list else \
+            "LA=" if search_field in self.language_list else \
             "ALL="
 
     def pre_linting(self):

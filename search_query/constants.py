@@ -34,6 +34,7 @@ class Fields:
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
     TOPIC = "ts"
+    LANGUAGE = "la"
 
     @classmethod
     def all(cls) -> list:
@@ -61,6 +62,7 @@ PLATFORM_FIELD_MAP = {
         Fields.AUTHOR_KEYWORDS: "AU=",
         Fields.TITLE: "TI=",
         Fields.TOPIC: "TS=",
+        Fields.LANGUAGE: "LA=",
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {
@@ -107,4 +109,3 @@ class LinterMode:
 
     STRICT = 'strict'
     NONSTRICT = 'non-strict'
-    
