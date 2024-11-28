@@ -52,13 +52,14 @@ class Query(ABC):
         self.value = value
         self.operator = operator
         if operator:
-            assert self.value in [
-                Operators.AND,
-                Operators.OR,
-                Operators.NOT,
-                Operators.NEAR,
-                "NOT_INITIALIZED",
-            ]
+            if "NEAR" not in value:
+                assert self.value in [
+                    Operators.AND,
+                    Operators.OR,
+                    Operators.NOT,
+                    Operators.NEAR,
+                    "NOT_INITIALIZED",
+                ]
 
         self.children: typing.List[Query] = []
         if children:

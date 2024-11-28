@@ -156,8 +156,8 @@ if __name__ == "__main__":
 
                 try:
                     # Option: select only list queries
-                    if "1." in query_string:
-                        continue
+                    # if "1." in query_string:
+                    #     continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
@@ -167,22 +167,13 @@ if __name__ == "__main__":
                     else:
                         print('No mode for the linter was selected.\nStrict linter mode assumed.')
 
-                    if linter_mode == LinterMode.NONSTRICT:
-                        # Improve-Focused e.g. missing fields
-                        ret = parse(
-                                query_string,
-                                search_fields,
-                                syntax=syntax,
-                                mode=LinterMode.NONSTRICT
-                        )
-                    else:
-                        # Error-Focused e.g. missed parenthesis
-                        ret = parse(
-                                query_string,
-                                search_fields,
-                                syntax=syntax,
-                                mode=LinterMode.STRICT
-                        )
+                    ret = parse(
+                            query_string,
+                            search_fields,
+                            syntax=syntax,
+                            mode=linter_mode
+                    )
+
 
                     # To select (start with) smaller queries:
                     # if ret.get_nr_leaves() > 10:
@@ -199,11 +190,12 @@ if __name__ == "__main__":
                     print(exc)
                     status = "QuerySyntaxError"
                     DB[syntax]["fail"] += 1
+                    raise exc
                 # pylint: disable=broad-exception-caught
                 except Exception as exc:
                     print(exc)
                     DB[syntax]["fail"] += 1
-                    # raise exc
+                    raise exc
                     continue
 
                 # Uncomment the following to skip validation

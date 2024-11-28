@@ -77,7 +77,10 @@ class WOSParser(QueryStringParser):
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
-        return bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE)) or (re.match(r"^(NEAR/\d+)$", token))
+        return (
+                bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE)) or
+                re.match(r"^(NEAR/\d+)$", token)
+            )
 
     def is_term(self, token: str) -> bool:
         """Check if a token is a term."""
@@ -402,12 +405,17 @@ class WOSParser(QueryStringParser):
             position=position
         )
 
+        check_near_operator = False
+        if current_operator == 'NEAR' and near_distance:
+            check_near_operator = children[-1].value == (current_operator + "/" + near_distance)          
+
         if current_operator:
             if (
                 not children or
                     ((isinstance(children[-1], Query) and
-                        children[-1].value != current_operator) and
-                        not current_negation)
+                        (children[-1].value != current_operator)) and
+                        not current_negation) and
+                    not check_near_operator
             ):
 
                 children = [
@@ -516,13 +524,72 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    LIST_ITEM_REGEX = r"..."
+    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    LIST_COMBINE_REGEX = r"#\d+|AND|OR"
 
-    def __init__(self, query_list: str) -> None:
-        super().__init__(query_list, WOSParser)
+    def __init__(self, query_list: str, search_fields: str, linter_mode: LinterMode) -> None:
+        super().__init__(query_list, WOSParser, search_fields, linter_mode)
 
     def get_token_str(self, token_nr: str) -> str:
         return f"#{token_nr}"
+
+    def parse(self) -> Query:
+        """Parse the list of queries."""
+        query_dict = self.parse_dict()
+        queries = []
+        combine_queries = {}
+
+        # pylint: disable=unused-variable
+        for node_nr, node_content in query_dict.items():
+            if node_nr == '14':
+                print(node_content["node_content"])
+
+            if '#' in node_content["node_content"]:
+                combine_queries[node_nr] = node_content["node_content"]
+                queries.append("Filler for combine queries")
+            else:
+                query_parser = self.parser_class(
+                    query_str=node_content["node_content"],
+                    search_fields=self.search_fields,
+                    mode=self.linter_mode
+                )
+                query = query_parser.parse()
+                queries.append(query)
+
+        for index, query in combine_queries.items():
+            children = []
+            res_children = []
+            operator = None
+            tokens = self.tokenize_combining_list_elem(query)
+            for token in tokens:
+                if "#" in token:
+                    token = token.replace("#", "")
+                    children.append(queries[int(token) - 1])
+                else:
+                    if not operator or operator == token:
+                        operator = token
+                    else:
+                        raise ValueError("Fehler hier, weil zwei unterschiedliche Operatoren")
+
+            for child in children:
+                if child.value == operator:
+                    for grandchild in child.children:
+                        res_children.append(grandchild)
+                else:
+                    res_children.append(child)
+
+            queries[int(index) - 1] = Query(
+                    value=operator,
+                    operator=True,
+                    children=res_children
+                )
+
+        return queries[len(queries) - 1]
+
+    def tokenize_combining_list_elem(self, query_str: str) -> list:
+        """Tokenize the query_list."""
+        matches = re.findall(self.LIST_COMBINE_REGEX, query_str)
+        return matches
 
     # override and implement methods of parent class (as needed)
 

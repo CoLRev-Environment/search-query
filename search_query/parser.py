@@ -26,7 +26,13 @@ LIST_PARSERS = {
 
 
 # pylint: disable=too-many-return-statements
-def parse(query_str: str, search_fields:str, *, syntax: str = "wos", mode: LinterMode) -> Query:
+def parse(
+        query_str: str,
+        search_fields:str,
+        *,
+        syntax: str = "wos",
+        mode: LinterMode = LinterMode.STRICT
+    ) -> Query:
     """Parse a query string."""
     syntax = syntax.lower()
 

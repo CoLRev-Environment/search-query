@@ -7,6 +7,7 @@ import typing
 
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
+from search_query.constants import LinterMode
 from search_query.query import Query
 from search_query.linter_wos import QueryLinter
 
@@ -21,7 +22,12 @@ class QueryStringParser:
     fatal_linter_err: bool
     
 
-    def __init__(self, query_str: str, search_fields: str, mode: str = "strict") -> None:
+    def __init__(
+            self,
+            query_str: str,
+            search_fields: str,
+            mode: LinterMode = LinterMode.STRICT
+        ) -> None:
         self.query_str = query_str
         self.tokens = []
         self.mode = mode
@@ -129,9 +135,17 @@ class QueryListParser:
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
 
-    def __init__(self, query_list: str, parser_class: type[QueryStringParser]) -> None:
+    def __init__(
+            self,
+            query_list: str,
+            parser_class: type[QueryStringParser],
+            search_fields: str,
+            linter_mode: LinterMode = LinterMode.STRICT,
+    ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
+        self.search_fields = search_fields
+        self.linter_mode = linter_mode
 
     def parse_dict(self) -> dict:
         """Tokenize the query_list."""
