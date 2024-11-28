@@ -29,7 +29,8 @@ class WOSParser(QueryStringParser):
     language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
 
     # Matches quoted text or standalone words, including leading wildcard
-    TERM_REGEX = r'\*?[\w-]+(?:\*[\w-]*)*|"[^"]+"'
+    # TERM_REGEX = r'\*?[\w-]+(?:\*[\w-]*)*|"[^"]+"'
+    TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
 
     # Matches operators as standalone words only
     OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'
