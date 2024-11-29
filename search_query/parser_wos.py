@@ -135,6 +135,9 @@ class WOSParser(QueryStringParser):
             while index < len(tokens):
                 token, span = tokens[index]
 
+                if token == '"development* delay*"':
+                    print("development* delay*")
+
                 # Handle nested expressions within parentheses
                 if token == '(':
                     if self.is_search_field(tokens[index-1][0]):
@@ -166,14 +169,20 @@ class WOSParser(QueryStringParser):
                                 children.append(child)
                     else:
                         if children:
-                            if (
+                            # TODO: Current Operator could be NEAR and sub_expr.value is also NEAR
+                            # but with different distance
+                            if (current_operator == sub_expr.value and
+                                sub_expr.value == children[-1].value):
+                                for child in sub_expr.children:
+                                    children[-1].children.append(child)
+                            elif ((
                                 current_operator == sub_expr.value or
-                                    (self.is_term(sub_expr.value) and
+                                self.is_term(sub_expr.value) and
                                         self.is_operator(children[0].value)
                                             and sub_expr.children)
                             ):
                                 for child in sub_expr.children:
-                                    children[-1].children.append(child)
+                                    children.append(child)
                             elif ((
                                 self.is_operator(sub_expr.value) or
                                     self.is_term(sub_expr.value)) and
@@ -212,6 +221,14 @@ class WOSParser(QueryStringParser):
                     )
 
                 elif self.is_operator(token):
+                    if current_operator and current_operator != token.upper():
+                        children = (self.safe_children(
+                            children=children,
+                            current_operator=current_operator,
+                            near_distance=near_distance,
+                            )
+                        )
+
                     current_operator = token.upper()
                     if token.islower():
                         self.add_linter_message(rule='UppercaseOperator',
@@ -408,7 +425,7 @@ class WOSParser(QueryStringParser):
 
         check_near_operator = False
         if current_operator == 'NEAR' and near_distance:
-            check_near_operator = children[-1].value == (current_operator + "/" + near_distance)          
+            check_near_operator = children[-1].value == (current_operator + "/" + near_distance)
 
         if current_operator:
             if (
@@ -476,6 +493,20 @@ class WOSParser(QueryStringParser):
             "TS=" if search_field in self.topic_list else \
             "LA=" if search_field in self.language_list else \
             "ALL="
+
+    def safe_children(self, children: list, current_operator: str, near_distance: int) -> list:
+        """Safe children, when there is a change of operator within the current parentheses."""
+        safe_children = []
+        safe_children.append(
+            Query(
+                value=current_operator,
+                operator=True,
+                children=children,
+                near_distance=near_distance
+            )
+        )
+
+        return safe_children
 
     def pre_linting(self):
         """Pre-linting of the query string."""
