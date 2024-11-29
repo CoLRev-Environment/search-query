@@ -17,7 +17,7 @@ class QueryLinter:
         index = 0
         out_of_order = False
         near_operator_without_distance = False
-        
+
         while index < len(tokens) - 1:
             token, span = tokens[index]
             if self._check_order_of_tokens(tokens, token, span, index):

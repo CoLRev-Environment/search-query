@@ -433,7 +433,8 @@ class WOSParser(QueryStringParser):
 
         check_near_operator = False
         if current_operator == 'NEAR' and near_distance:
-            check_near_operator = children[-1].value == (current_operator + "/" + str(near_distance))
+            check_near_operator = (
+                children[-1].value == (current_operator + "/" + str(near_distance)))
 
         if current_operator:
             if (
