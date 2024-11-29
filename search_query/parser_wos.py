@@ -398,8 +398,6 @@ class WOSParser(QueryStringParser):
                         )
         return root_query
 
-        # Add messages to self.linter_messages
-
     def add_linter_message(self,
                            rule: str,
                            msg: str,
@@ -554,6 +552,7 @@ class WOSParser(QueryStringParser):
                         + str(msg['position'])
                     )
 
+            # Raise an exception if the linter is in strict mode or if a fatal error has occurred
             if (self.mode == "strict" or self.fatal_linter_err) and self.linter_messages:
                 print("\n")
                 raise StrictLinterModeError(message='LinterDetected',

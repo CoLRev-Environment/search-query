@@ -8,6 +8,9 @@ from search_query.constants import WOSRegex
 
 class QueryLinter:
     """Linter for wos query"""
+
+    language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
+
     def __init__(self, search_str: str, linter_messages: dict):
         self.search_str = search_str
         self.linter_messages = linter_messages
@@ -111,6 +114,7 @@ class QueryLinter:
                     not re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0]) and
                     not re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0].upper()) and
                     not re.match(WOSRegex.PARENTHESIS_REGEX, tokens[index+1][0]) and
+                    not tokens[index+1][0] in self.language_list and
                     re.match(WOSRegex.TERM_REGEX, tokens[index+1][0])
                 )
             ):
@@ -118,6 +122,18 @@ class QueryLinter:
                 "rule": "ParenthesisBeforeTerm",
                 "message": "Missing Operator between term and parenthesis.",
                 "position": tokens[index+1][1]
+            })
+            missplaced_order = True
+
+        # Check for opening parenthesis after closing parenthesis
+        if (
+            (token == ")") and
+                (tokens[index+1][0] == "(")
+            ):
+            self.linter_messages.append({
+                "rule": "ParenthesisAfterParenthesis",
+                "message": "Missing Operator between closing and opening parenthesis.",
+                "position": span
             })
             missplaced_order = True
 
