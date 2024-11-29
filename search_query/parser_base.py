@@ -20,7 +20,6 @@ class QueryStringParser:
     search_fields_list: list
     linter_messages: typing.List[dict] = []
     fatal_linter_err: bool
-    
 
     def __init__(
             self,
@@ -226,7 +225,7 @@ class QueryListParser:
 
     def parse(self) -> Query:
         """Parse the query in list format."""
-        
+
         tokens = self.parse_dict()
 
         query_list = self.dict_to_positioned_list(tokens)

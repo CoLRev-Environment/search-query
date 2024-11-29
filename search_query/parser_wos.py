@@ -9,6 +9,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Fields
 from search_query.constants import LinterMode
+from search_query.constants import WOSRegex
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -30,28 +31,28 @@ class WOSParser(QueryStringParser):
 
     # Matches quoted text or standalone words, including leading wildcard
     # TERM_REGEX = r'\*?[\w-]+(?:\*[\w-]*)*|"[^"]+"'
-    TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
+    # TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
 
     # Matches operators as standalone words only
-    OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'
+    # OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'
 
     # Matches search fields in the format of 'ab=' or 'abc='
-    SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='
+    # SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='
 
     # Matches parentheses
-    PARENTHESIS_REGEX = r'[\(\)]'
+    # PARENTHESIS_REGEX = r'[\(\)]'
 
     # Matches text add terms depending on search fields in data["content"]["Search Fields"]
-    SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
+    # SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
 
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
         [
-            SEARCH_FIELD_REGEX,
-            TERM_REGEX,
-            OPERATOR_REGEX,
-            PARENTHESIS_REGEX,
-            SEARCH_FIELDS_REGEX,
+            WOSRegex.SEARCH_FIELD_REGEX,
+            WOSRegex.TERM_REGEX,
+            WOSRegex.OPERATOR_REGEX,
+            WOSRegex.PARENTHESIS_REGEX,
+            WOSRegex.SEARCH_FIELDS_REGEX,
         ]
     )
 
@@ -74,7 +75,7 @@ class WOSParser(QueryStringParser):
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        return bool(re.match(self.SEARCH_FIELD_REGEX, token)) or token in self.language_list
+        return bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token)) or token in self.language_list
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
@@ -113,7 +114,7 @@ class WOSParser(QueryStringParser):
         """Parse a query from a list of tokens."""
 
         if search_field:
-            self.search_fields_list = re.findall(self.SEARCH_FIELDS_REGEX, search_field)
+            self.search_fields_list = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, search_field)
             print('Search Fields given: ' + str(self.search_fields_list))
 
         # Parse a query tree from tokens recursively
@@ -511,19 +512,21 @@ class WOSParser(QueryStringParser):
     def pre_linting(self):
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
-        self.fatal_linter_err = self.query_linter.pre_linting()
+        self.fatal_linter_err = self.query_linter.pre_linting(self.tokens)
 
     def parse(self) -> Query:
         """Parse a query string."""
         # Remove all previous linter messages
         self.linter_messages.clear()
 
+        # Tokenize the query string
+        self.tokenize()
+
         # Pre-linting of the query string
         self.pre_linting()
 
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
-            self.tokenize()
             query = self.parse_query_tree(self.tokens, search_field=self.search_fields)
             self.translate_search_fields(query)
         else:
