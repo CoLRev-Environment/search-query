@@ -14,8 +14,22 @@ class QueryLinter:
 
     def pre_linting(self, tokens: list) -> bool:
         """Performs a pre-linting"""
+        index = 0
+        out_of_order = False
+        near_operator_without_distance = False
+        
+        while index < len(tokens) - 1:
+            token, span = tokens[index]
+            if self._check_order_of_tokens(tokens, token, span, index):
+                out_of_order = True
+            if token == "NEAR":
+                if self._check_near_operator_format(tokens, index):
+                    near_operator_without_distance = True
+            index += 1
+
         return (self._check_unmatched_parentheses() or
-                self._check_order_of_tokens(tokens))
+                out_of_order or
+                near_operator_without_distance)
 
     def _check_unmatched_parentheses(self) -> bool:
         """Check for unmatched parentheses in the query."""
@@ -45,77 +59,80 @@ class QueryLinter:
 
         return unmatched_parentheses
 
-    def _check_order_of_tokens(self, tokens: list) -> bool:
+    def _check_order_of_tokens(self, tokens, token, span, index) -> bool:
         missplaced_order = False
-        index = 0
-        while index < len(tokens) - 1:
-            token, span = tokens[index]
-            # Check for two operators in a row
-            if (
-                re.match(WOSRegex.OPERATOR_REGEX, token) and
-                re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0])
-            ):
-                self.linter_messages.append({
-                    "rule": "TwoOperatorInRow",
-                    "message": "Two operators in a row.",
-                    "position": tokens[index+1][1]
-                })
-                missplaced_order = True
+        # Check for two operators in a row
+        if (
+            re.match(WOSRegex.OPERATOR_REGEX, token) and
+            re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0])
+        ):
+            self.linter_messages.append({
+                "rule": "TwoOperatorInRow",
+                "message": "Two operators in a row.",
+                "position": tokens[index+1][1]
+            })
+            missplaced_order = True
 
-            #Check for two search fields in a row
-            if (
-                re.match(WOSRegex.SEARCH_FIELD_REGEX, token) and
-                re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0])
-            ):
-                self.linter_messages.append({
-                    "rule": "TwoSearchFieldsInRow",
-                    "message": "Two Search Fields in a row.",
-                    "position": tokens[index+1][1]
-                })
-                missplaced_order = True
+        #Check for two search fields in a row
+        if (
+            re.match(WOSRegex.SEARCH_FIELD_REGEX, token) and
+            re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0])
+        ):
+            self.linter_messages.append({
+                "rule": "TwoSearchFieldsInRow",
+                "message": "Two Search Fields in a row.",
+                "position": tokens[index+1][1]
+            })
+            missplaced_order = True
 
-            # Check for opening parenthesis after term
-            if (
+        # Check for opening parenthesis after term
+        if (
+            (
+                not re.match(WOSRegex.SEARCH_FIELD_REGEX, token) and
+                not re.match(WOSRegex.OPERATOR_REGEX, token.upper()) and
+                not re.match(WOSRegex.PARENTHESIS_REGEX, token) and
+                re.match(WOSRegex.TERM_REGEX, token)
+            ) and
+                (tokens[index+1][0] == "("
+            ) and
+                not (tokens[index-1][0].upper() == "NEAR")
+        ):
+            self.linter_messages.append({
+                "rule": "ParenthesisAfterTerm",
+                "message": "Missing Operator between term and parenthesis.",
+                "position": span
+            })
+            missplaced_order = True
+
+        # Check for closing parenthesis after term
+        if (
+            (token == ")") and
                 (
-                    not re.match(WOSRegex.SEARCH_FIELD_REGEX, token) and
-                    not re.match(WOSRegex.OPERATOR_REGEX, token) and
-                    not re.match(WOSRegex.PARENTHESIS_REGEX, token) and
-                    re.match(WOSRegex.TERM_REGEX, token)
-                ) and
-                    (tokens[index+1][0] == "(")
+                    not re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0]) and
+                    not re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0].upper()) and
+                    not re.match(WOSRegex.PARENTHESIS_REGEX, tokens[index+1][0]) and
+                    re.match(WOSRegex.TERM_REGEX, tokens[index+1][0])
+                )
             ):
-                self.linter_messages.append({
-                    "rule": "ParenthesisAfterTerm",
-                    "message": "Missing Operator between term and parenthesis.",
-                    "position": span
-                })
-                missplaced_order = True
-
-            # Check for closing parenthesis after term
-            if (
-                (token == ")") and
-                    (
-                        not re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0]) and
-                        not re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0]) and
-                        not re.match(WOSRegex.PARENTHESIS_REGEX, tokens[index+1][0]) and
-                        re.match(WOSRegex.TERM_REGEX, tokens[index+1][0])
-                    )
-                ):
-                self.linter_messages.append({
-                    "rule": "ParenthesisBeforeTerm",
-                    "message": "Missing Operator between term and parenthesis.",
-                    "position": tokens[index+1][1]
-                })
-                missplaced_order = True
-            index += 1
+            self.linter_messages.append({
+                "rule": "ParenthesisBeforeTerm",
+                "message": "Missing Operator between term and parenthesis.",
+                "position": tokens[index+1][1]
+            })
+            missplaced_order = True
 
         return missplaced_order
 
-    def _check_near_operator_format(self, query):
+    def _check_near_operator_format(self, tokens: list, index: int) -> bool:
         """Check for NEAR without a specified distance."""
-        # if "NEAR" in query and not any(x in query for x in ["NEAR/", "NEAR /"]):
-        #     self.linter_messages.append({
-        #         "rule": "MissingDistance",
-        #         "message": "NEAR operator is missing a specified distance (e.g., NEAR/5).",
-        #         "position": query.find("NEAR")
-        #     })
+        near_has_distance = tokens[index+1][0].isdigit()
+        near_distance_out_of_range = False
+        if near_has_distance and int(tokens[index+1][0]) > 15:
+            near_distance_out_of_range = True
+            self.linter_messages.append({
+                "rule": "NearDistanceOutOfRange",
+                "message": "NEAR operator distance out of range (max. 15).",
+                "position": tokens[index+1][1]
+            })
+
+        return near_distance_out_of_range

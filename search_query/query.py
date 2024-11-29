@@ -76,7 +76,7 @@ class Query(ABC):
         if operator:
             self.search_field = None
             if self.value == 'NEAR':
-                self.value = value + "/" + near_distance
+                self.value = value + "/" + str(near_distance)
         self.position = position
 
         self._ensure_children_not_circular()

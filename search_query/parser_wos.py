@@ -130,14 +130,12 @@ class WOSParser(QueryStringParser):
             handling parentheses and operators recursively."""
             children = []
             current_operator = None
+            default_near_distance = False
             if current_negation:
                 current_operator = 'NOT'
 
             while index < len(tokens):
                 token, span = tokens[index]
-
-                if token == '"development* delay*"':
-                    print("development* delay*")
 
                 # Handle nested expressions within parentheses
                 if token == '(':
@@ -170,10 +168,10 @@ class WOSParser(QueryStringParser):
                                 children.append(child)
                     else:
                         if children:
-                            # TODO: Current Operator could be NEAR and sub_expr.value is also NEAR
-                            # but with different distance
-                            if (current_operator == sub_expr.value and
-                                sub_expr.value == children[-1].value):
+                            if (
+                                current_operator == sub_expr.value and
+                                sub_expr.value == children[-1].value
+                            ):
                                 for child in sub_expr.children:
                                     children[-1].children.append(child)
                             elif ((
@@ -237,10 +235,19 @@ class WOSParser(QueryStringParser):
                                                 posision=span
                         )
 
+                    # NEAR operator without distance has default distance of 15
                     if current_operator == 'NEAR':
-                        near_distance = str(tokens[index+1][0])
-                        #current_operator = 'AND'
-                        index += 1
+                        if tokens[index+1][0].isdigit():
+                            near_distance = str(tokens[index+1][0])
+                            index += 1
+                        else:
+                            self.add_linter_message(rule='NearWithoutDistance',
+                                                    msg='Default distance is 15.',
+                                                    posision=span
+                            )
+                            default_near_distance = True
+                            near_distance = 15
+
                     if current_operator =='NOT':
                         current_negation = True
                         current_operator = 'AND'
@@ -263,7 +270,7 @@ class WOSParser(QueryStringParser):
                         )
                     else:
                         if index:
-                            if current_operator == 'NEAR':
+                            if current_operator == 'NEAR' and not default_near_distance:
                                 # pylint: disable=unused-variable
                                 previous_token, precious_span = tokens[index-2]
                             else:
@@ -426,7 +433,7 @@ class WOSParser(QueryStringParser):
 
         check_near_operator = False
         if current_operator == 'NEAR' and near_distance:
-            check_near_operator = children[-1].value == (current_operator + "/" + near_distance)
+            check_near_operator = children[-1].value == (current_operator + "/" + str(near_distance))
 
         if current_operator:
             if (
