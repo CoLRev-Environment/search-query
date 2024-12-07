@@ -33,8 +33,8 @@ class WOSParser(QueryStringParser):
     pattern = "|".join(
         [
             WOSRegex.SEARCH_FIELD_REGEX,
-            WOSRegex.TERM_REGEX,
             WOSRegex.OPERATOR_REGEX,
+            WOSRegex.TERM_REGEX,
             WOSRegex.PARENTHESIS_REGEX,
             # WOSRegex.SEARCH_FIELDS_REGEX,
         ]
@@ -64,8 +64,7 @@ class WOSParser(QueryStringParser):
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
         return (
-                bool(re.match(r"^(AND|OR|NOT|NEAR)$", token, re.IGNORECASE)) or
-                re.match(r"^(NEAR/\d+)$", token)
+                bool(re.match(WOSRegex.OPERATOR_REGEX, token, re.IGNORECASE))
             )
 
     def is_term(self, token: str) -> bool:
@@ -122,12 +121,21 @@ class WOSParser(QueryStringParser):
                         near_distance=near_distance,
                     )
 
-                    # Add the parsed expression to the list of children
-                    children = self.append_children(
-                        children=children,
-                        sub_expr=sub_expr,
-                        current_operator=current_operator,
-                    )
+                    if isinstance(sub_expr, list):
+                        # Add all children from the parsed expression to the list of children
+                        for child in sub_expr:
+                            children = self.append_children(
+                                children=children,
+                                sub_expr=child,
+                                current_operator=current_operator,
+                            )
+                    else:
+                        # Add the parsed expression to the list of children
+                        children = self.append_children(
+                            children=children,
+                            sub_expr=sub_expr,
+                            current_operator=current_operator,
+                        )
                     current_negation = False
 
                 # Handle closing parentheses
@@ -194,10 +202,14 @@ class WOSParser(QueryStringParser):
 
                         # Handle terms
                     else:
-                        if len(self.search_fields_list) > 1 and not search_field:
-                            if not current_operator:
+                        # Check if search fields are given and search field is not set
+                        if self.search_fields_list and not search_field:
+                            
+                            # Set unsetted operator
+                            if not current_operator and len(self.search_fields_list) > 1:
                                 current_operator= 'OR'
 
+                            # Add term nodes for all search fields
                             for search_field_elem in self.search_fields_list:
                                 children = self.add_term_node(
                                     value=token,
@@ -210,26 +222,16 @@ class WOSParser(QueryStringParser):
                                     near_distance=near_distance,
                                 )
 
-                        elif len(self.search_fields_list) == 1 and not search_field:
-                            search_field = self.search_fields_list[0]
-
-                            children = self.add_term_node(
-                                value=token,
-                                operator=False,
-                                search_field=search_field,
-                                position=span,
-                                children=children,
-                                current_operator=current_operator,
-                                current_negation=current_negation,
-                                near_distance=near_distance,
-                            )
                         else:
-                            if not search_field and not superior_search_field:
-                                search_field = Fields.ALL
-
+                            # Set search field to superior search field if no search field is given
                             if not search_field and superior_search_field:
                                 search_field = superior_search_field
 
+                            # Set search field to ALL if no search field is given
+                            if not search_field:
+                                search_field = Fields.ALL
+
+                            # Add term nodes
                             children = self.add_term_node(
                                 value=token,
                                 operator=False,
@@ -241,8 +243,7 @@ class WOSParser(QueryStringParser):
                                 near_distance=near_distance,
                             )
 
-                        if current_operator:
-                            current_operator = None
+                        current_operator = None
 
                         if isinstance(search_field, SearchField):
                             search_field_for_check = search_field.value
@@ -273,7 +274,8 @@ class WOSParser(QueryStringParser):
                     for child in children:
                         if not children[0].value == children[children.index(child)].value:
                             if (
-                                children[children.index(child)].search_field.value in
+                                children[children.index(child)].search_field.value
+                                and children[children.index(child)].search_field.value in
                                 self.language_list):
                                 children[0].children.append(child)
                                 children.pop(children.index(child))
@@ -443,20 +445,20 @@ class WOSParser(QueryStringParser):
             # Check if the last child is an operator and the sub expression is a term
             # and the current operator is the same as the last child
             elif ((
-                current_operator == sub_expr.value or
-                self.is_term(sub_expr.value) and
-                        self.is_operator(children[0].value)
-                            and sub_expr.children)
+                current_operator == sub_expr.value 
+                    or self.is_term(sub_expr.value) 
+                    and self.is_operator(children[0].value)
+                    and sub_expr.children)
             ):
                 # Append the sub expression to the last child
                 for child in sub_expr.children:
                     children.append(child)
-            # Check if the last child is an operator and the sub expression is an operator
+            # Check if the sub_expr is an operator or the sub expression is a term
             # and the current operator is the same as the last child
             elif ((
-                self.is_operator(sub_expr.value) or
-                    self.is_term(sub_expr.value)) and
-                        current_operator == children[0].value
+                self.is_operator(sub_expr.value)
+                    or self.is_term(sub_expr.value))
+                    and current_operator == children[0].value
             ):
                 # Append the sub expression to the last child
                 children[-1].children.append(sub_expr)
