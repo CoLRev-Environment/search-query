@@ -26,8 +26,9 @@ class WOSParser(QueryStringParser):
     title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
     abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
     author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
-    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC"]
+    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
     language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
+    year_list = ["PY=", "Publication Year", "py=", "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
 
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
@@ -83,8 +84,18 @@ class WOSParser(QueryStringParser):
 
         # Search fields are given in the search_fields string
         if self.search_fields:
-            self.search_fields_list = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, self.search_fields)
-            print('Search Fields given: ' + str(self.search_fields_list))
+            matches = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, self.search_fields)
+
+            for match in matches:
+                self.search_fields_list.append(
+                    SearchField(
+                            value=match,
+                            position=None
+                        )
+                )
+                print('[Info] Search Field given: ' + match)
+                # TODO: Check if one search field occurs multiple times or more than one ar not recognized
+                # TODO: List for Search Fields from Prof. Dr. G. Wagner
 
         # Parse a query tree from tokens recursively
         def parse_expression(
@@ -93,7 +104,6 @@ class WOSParser(QueryStringParser):
                 search_field: typing.Optional[SearchField] = None,
                 superior_search_field: typing.Optional[SearchField] = None,
                 current_negation: bool = None,
-                near_distance: int = None,
         ):
             """Parse tokens starting at the given index, 
             handling parentheses, operators, search fields and terms recursively."""
@@ -118,7 +128,6 @@ class WOSParser(QueryStringParser):
                         search_field=search_field,
                         superior_search_field=superior_search_field,
                         current_negation=current_negation,
-                        near_distance=near_distance,
                     )
 
                     if isinstance(sub_expr, list):
@@ -145,7 +154,6 @@ class WOSParser(QueryStringParser):
                         self.handle_closing_parenthesis(
                             children=children,
                             current_operator=current_operator,
-                            near_distance=near_distance,
                         ),
                         index
                     )
@@ -159,151 +167,155 @@ class WOSParser(QueryStringParser):
                         children = (self.safe_children(
                             children=children,
                             current_operator=current_operator,
-                            near_distance=near_distance,
                             )
                         )
 
                     # Handle the operator and update all changes within the handler
-                    current_operator, current_negation, near_distance, default_near_distance = (
+                    current_operator, current_negation, default_near_distance = (
                         self.handle_operator(
-                            tokens=tokens,
                             token=token,
                             span=span,
                             current_operator=current_operator,
                             current_negation=current_negation,
-                            near_distance=near_distance,
                             default_near_distance=default_near_distance,
-                            index=index,
                         )
                     )
 
                     # Parse the expression after the operator
-                    parse_expression(
-                        tokens=tokens,
-                        index=index+1,
-                        search_field=search_field,
-                        superior_search_field=superior_search_field,
-                        current_negation=current_negation,
-                        near_distance=near_distance,
-                    )
+                    # parse_expression(
+                    #     tokens=tokens,
+                    #     index=index+1,
+                    #     search_field=search_field,
+                    #     superior_search_field=superior_search_field,
+                    #     current_negation=current_negation,
+                    # )
 
-                # Handle search fields and terms
-                else:
-                    # Check if the token is a search field
-                    if (
+                # Handle search fields
+                elif (
                         (self.is_search_field(token)) or
                         (token in self.language_list)
-                    ):
-                        # Create a new search field with the token as value
-                        search_field = SearchField(
-                            value=token,
-                            position=span
-                        )
+                ):
+                    # Create a new search field with the token as value
+                    search_field = SearchField(
+                        value=token,
+                        position=span
+                    )
 
-                        # Handle terms
-                    else:
-                        # Check if search fields are given and search field is not set
-                        if self.search_fields_list and not search_field:
-                            
-                            # Set unsetted operator
-                            if not current_operator and len(self.search_fields_list) > 1:
-                                current_operator= 'OR'
+                    #TODO: Handle the year search field. 
+                    # Check year format
+                    # Check if year 1990-2021 is max 5 years (from wos)
+                    # is added with an and to the query but that is already fine
 
-                            # Add term nodes for all search fields
-                            for search_field_elem in self.search_fields_list:
-                                children = self.add_term_node(
-                                    value=token,
-                                    operator=False,
-                                    search_field=search_field_elem,
-                                    position=span,
-                                    children=children,
-                                    current_operator=current_operator,
-                                    current_negation=current_negation,
-                                    near_distance=near_distance,
-                                )
+                # Handle terms
+                else:
+                    # Check if search fields are given from JSON and search field is not set
+                    if self.search_fields_list and not search_field:
 
-                        else:
-                            # Set search field to superior search field if no search field is given
-                            if not search_field and superior_search_field:
-                                search_field = superior_search_field
+                        # Set unsetted operator
+                        if not current_operator and len(self.search_fields_list) > 1:
+                            current_operator= 'OR'
 
-                            # Set search field to ALL if no search field is given
-                            if not search_field:
-                                search_field = Fields.ALL
-
-                            # Add term nodes
+                        # Add term nodes for all search fields
+                        for search_field_elem in self.search_fields_list:
                             children = self.add_term_node(
                                 value=token,
                                 operator=False,
-                                search_field=search_field,
+                                search_field=search_field_elem,
                                 position=span,
                                 children=children,
                                 current_operator=current_operator,
                                 current_negation=current_negation,
-                                near_distance=near_distance,
                             )
 
-                        current_operator = None
+                    else:
+                        # Set search field to superior search field if no search field is given
+                        if not search_field and superior_search_field:
+                            search_field = superior_search_field
 
-                        if isinstance(search_field, SearchField):
-                            search_field_for_check = search_field.value
-                        else:
-                            search_field_for_check = search_field
+                        # Set search field to ALL if no search field is given
+                        if not search_field:
+                            search_field = Fields.ALL
 
-                        if not(
-                            superior_search_field and
-                            superior_search_field == search_field_for_check
-                        ):
-                            search_field = None
+                        # Add term nodes
+                        children = self.add_term_node(
+                            value=token,
+                            operator=False,
+                            search_field=search_field,
+                            position=span,
+                            children=children,
+                            current_operator=current_operator,
+                            current_negation=current_negation,
+                        )
+
+                    current_operator = None
+                    search_field_for_check = None
+
+                    if isinstance(search_field, SearchField):
+                        search_field_for_check = search_field.value
+                    else:
+                        search_field_for_check = search_field
+
+                    if not(
+                        superior_search_field and
+                        superior_search_field == search_field_for_check
+                    ):
+                        search_field = None
+
                 index += 1
 
+            # Return options if there are no more tokens
+
+            # Return the children if there is only one child
             if len(children) == 1:
                 return children[0], index
 
+            # Return the operator and children if there is an operator
             if current_operator:
                 return (
                     Query(
-                    value=current_operator,
-                    operator=True,
-                    children=children),
+                        value=current_operator,
+                        operator=True,
+                        children=children
+                    ),
                     index
                 )
 
+            # Return the children if there are multiple children
             if self.is_operator(children[0].value):
+                # Check if the operator of the first child is not the same as the second child
                 if children[0].value != children[1].value:
                     for child in children:
                         if not children[0].value == children[children.index(child)].value:
+                            # Check if the search field is in the language list
                             if (
                                 children[children.index(child)].search_field.value
                                 and children[children.index(child)].search_field.value in
-                                self.language_list):
+                                self.language_list
+                            ):
                                 children[0].children.append(child)
                                 children.pop(children.index(child))
                     return children[0], index
 
+                # Check if the operator of the first child is the same as the second child
                 if children[0].value == children[1].value:
-                    op_children = []
+                    operator_children = []
                     for child in children:
                         for grandchild in child.children:
-                            op_children.append(grandchild)
+                            operator_children.append(grandchild)
 
                     return (
                         Query(
-                        value=children[0].value,
-                        operator=True,
-                        children=op_children),
+                            value=children[0].value,
+                            operator=True,
+                            children=operator_children
+                        ),
                         index
                     )
 
-            # if we return here, we have an error in the code
-            # see line 281
-            # we should combine all children with their operators (should only be one)
-            return (
-                    Query(
-                    value="Fehler hier2",
-                    children=children),
-                    index
-                )
+            # Raise an error if the code gets here
+            raise NotImplementedError(
+                "Error in parsing the query tree"
+            )
 
         root_query, _ = parse_expression(
                             tokens=tokens,
@@ -316,7 +328,6 @@ class WOSParser(QueryStringParser):
             self,
             children: list,
             current_operator: str,
-            near_distance: int
     ):
         """Handle closing parentheses."""
         # Return the children if there is only one child
@@ -330,7 +341,6 @@ class WOSParser(QueryStringParser):
                     value=current_operator,
                     operator=True,
                     children=children,
-                    near_distance=near_distance
                 )
             )
         else:
@@ -340,14 +350,11 @@ class WOSParser(QueryStringParser):
 
     def handle_operator(
             self,
-            tokens: list,
             token: str,
             span: tuple,
             current_operator: str,
             current_negation: bool,
-            near_distance: int,
             default_near_distance: bool,
-            index: int,
     ):
         """Handle operators."""
         # Set the current operator to the token
@@ -357,28 +364,25 @@ class WOSParser(QueryStringParser):
         if token.islower():
             self.add_linter_message(rule='UppercaseOperator',
                                     msg='Operators must be uppercase.',
-                                    posision=span
+                                    position=span
             )
 
-        # Set near_distance if the current operator is NEAR
+        # Set default near_distance if not set in the search string
         if current_operator == 'NEAR':
-            if tokens[index+1][0].isdigit():
-                near_distance = str(tokens[index+1][0])
-                index += 1
-            else:
-                # Add linter message for NEAR operator without distance
-                self.add_linter_message(rule='NearWithoutDistance',
-                                        msg='Default distance is 15.',
-                                        posision=span
-                )
-                default_near_distance = True
-                near_distance = 15
+            # Add linter message for NEAR operator without distance
+            self.add_linter_message(rule='NearWithoutDistance',
+                                    msg='Default distance is 15.',
+                                    position=span
+            )
+            default_near_distance = True
+            current_operator = 'NEAR/15'
 
+        # Set a flag if the token is NOT and change to AND
         if current_operator =='NOT':
             current_negation = True
             current_operator = 'AND'
 
-        return current_operator, current_negation, near_distance, default_near_distance
+        return current_operator, current_negation, default_near_distance
 
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
@@ -389,7 +393,7 @@ class WOSParser(QueryStringParser):
         i = 0
         j = 0
         while i < len(self.tokens):
-            if len(combined_tokens) > 2:
+            if len(combined_tokens) > 1:
                 if (
                     i + 1 < len(self.tokens)
                     and self.is_term(self.tokens[i][0])
@@ -445,8 +449,8 @@ class WOSParser(QueryStringParser):
             # Check if the last child is an operator and the sub expression is a term
             # and the current operator is the same as the last child
             elif ((
-                current_operator == sub_expr.value 
-                    or self.is_term(sub_expr.value) 
+                current_operator == sub_expr.value
+                    or self.is_term(sub_expr.value)
                     and self.is_operator(children[0].value)
                     and sub_expr.children)
             ):
@@ -474,13 +478,21 @@ class WOSParser(QueryStringParser):
     def add_linter_message(self,
                            rule: str,
                            msg: str,
-                           posision: typing.Optional[tuple] = None,
+                           position: typing.Optional[tuple] = None,
     ):
         """Adds a message to the self.linter_messages list"""
+        
+        # check if linter message is already in the list
+        for message in self.linter_messages:
+            if (message['rule'] == rule 
+                and message['message'] == msg 
+                and message['position'] == position):
+                return
+        
         self.linter_messages.append({
             "rule": rule,
             "message": msg,
-            "position": posision,
+            "position": position,
         })
 
     def add_term_node(
@@ -492,9 +504,10 @@ class WOSParser(QueryStringParser):
             current_operator: str = None,
             children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
             current_negation:bool = None,
-            near_distance: int = None,
     ) -> typing.Optional[typing.List[typing.Union[str, Query]]]:
         """Adds the term node to the Query"""
+
+        # Create a new term node
         term_node = Query(
             value=value,
             operator=operator,
@@ -502,24 +515,23 @@ class WOSParser(QueryStringParser):
             position=position
         )
 
+        # Check if the current operator is NEAR and the distance is not set
         check_near_operator = False
-        if current_operator == 'NEAR' and near_distance:
-            check_near_operator = (
-                children[-1].value == (current_operator + "/" + str(near_distance)))
+        if current_operator == 'NEAR':
+            check_near_operator = children[-1].value == current_operator
 
+        # Append the term node to the list of children
         if current_operator:
             if (
-                not children or
-                    ((isinstance(children[-1], Query) and
-                        (children[-1].value != current_operator)) and
-                        not current_negation) and
-                    not check_near_operator
+                not children
+                or ((isinstance(children[-1], Query)
+                and (children[-1].value != current_operator))
+                and not current_negation)
+                and not check_near_operator
             ):
-
                 children = [
                     Query(
                         value=current_operator,
-                        near_distance=near_distance,
                         operator=True,
                         children=[*children, term_node]
                     )
@@ -528,6 +540,7 @@ class WOSParser(QueryStringParser):
                 children[-1].children.append(term_node)
         else:
             children.append(term_node)
+
         return children
 
     def translate_search_fields(self, query: Query) -> None:
@@ -546,7 +559,7 @@ class WOSParser(QueryStringParser):
                 self.add_linter_message(rule='TranslatedSearchField',
                                         msg='Search Field has been updated to '
                                             + translated_field + '.',
-                                        posision=query.position
+                                        position=query.position
                 )
 
         if not query.search_field and not translated_field and not query.operator:
@@ -554,7 +567,7 @@ class WOSParser(QueryStringParser):
             # Add messages to self.linter_messages
             self.add_linter_message(rule='AllSearchField',
                                     msg='Search Field must be set. Set to "ALL=".',
-                                    posision=query.position
+                                    position=query.position
             )
 
         # Recursively translate the search fields of child nodes
@@ -572,17 +585,22 @@ class WOSParser(QueryStringParser):
             "AU=" if search_field in self.author_list else \
             "TS=" if search_field in self.topic_list else \
             "LA=" if search_field in self.language_list else \
+            "PY=" if search_field in self.year_list else \
             "ALL="
 
-    def safe_children(self, children: list, current_operator: str, near_distance: int) -> list:
-        """Safe children, when there is a change of operator within the current parentheses."""
+    def safe_children(
+            self,
+            children: list,
+            current_operator: str
+        ) -> list:
+        """Safe children, when there is a change of 
+        operator within the current parentheses."""
         safe_children = []
         safe_children.append(
             Query(
                 value=current_operator,
                 operator=True,
                 children=children,
-                near_distance=near_distance
             )
         )
 
@@ -654,7 +672,6 @@ class WOSListParser(QueryListParser):
         queries = []
         combine_queries = {}
 
-        # pylint: disable=unused-variable
         for node_nr, node_content in query_dict.items():
             if node_nr == '14':
                 print(node_content["node_content"])
@@ -671,11 +688,43 @@ class WOSListParser(QueryListParser):
                 query = query_parser.parse()
                 queries.append(query)
 
+        # If there is no combining list item, raise a linter exception
+        # Individual list items can not be connected
+        if not combine_queries:
+            raise FatalLintingException(
+                message='NoCombiningListItem',
+                query_string=self.query_list,
+                linter_messages=[{
+                    "rule": "NoCombiningListItem",
+                    "message": "[Linter] No combining list item found.",
+                    "position": None
+                }]
+            )
+        
+        if not (combine_queries[len(combine_queries)-1] 
+                == query_dict[len(query_dict)]["node_content"]):
+            raise FatalLintingException(
+                message='LastListItemMustBeCombiningString',
+                query_string=self.query_list,
+                linter_messages=[{
+                    "rule": "LastListItemMustBeCombiningString",
+                    "message": "[Linter] The last item of the list must be a combining string.",
+                    "position": None
+                }]
+            )
+
         for index, query in combine_queries.items():
             children = []
             res_children = []
             operator = None
             tokens = self.tokenize_combining_list_elem(query)
+
+            # Check if the last token is a number
+            if not "#" in tokens[len(tokens)-1]:
+                raise ValueError(
+                    "[ERROR] The last token of a combining list item must be a number."
+                    )
+
             for token in tokens:
                 if "#" in token:
                     token = token.replace("#", "")

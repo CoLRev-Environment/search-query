@@ -35,6 +35,7 @@ class Fields:
     AUTHOR_KEYWORDS = "au"
     TOPIC = "ts"
     LANGUAGE = "la"
+    YEAR = "py"
 
     @classmethod
     def all(cls) -> list:
@@ -63,6 +64,7 @@ PLATFORM_FIELD_MAP = {
         Fields.TITLE: "TI=",
         Fields.TOPIC: "TS=",
         Fields.LANGUAGE: "LA=",
+        Fields.YEAR: "PY=",
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {
@@ -106,14 +108,13 @@ class Colors:
 
 class LinterMode:
     """Linter mode"""
-
     STRICT = 'strict'
     NONSTRICT = 'non-strict'
 
 class WOSRegex:
     """Regex for WOS"""
     TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
-    OPERATOR_REGEX = r'\b(AND|OR|NOT|NEAR)\b'
+    OPERATOR_REGEX = r'\b(AND|and|OR|or|NOT|not|NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b'
     SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='
     PARENTHESIS_REGEX = r'[\(\)]'
     SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
