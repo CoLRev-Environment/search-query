@@ -201,13 +201,14 @@ class WOSParser(QueryStringParser):
                         position=span
                     )
 
-                    #TODO: Handle the year search field. 
-                    # Check year format
-                    # Check if year 1990-2021 is max 5 years (from wos)
-                    # is added with an and to the query but that is already fine
-
                 # Handle terms
                 else:
+                    # Check if the token is a year
+                    if re.findall(WOSRegex.YEAR_REGEX, token):
+                        children = self.handle_year_search(token, span, children, current_operator)
+                        index += 1
+                        continue
+                    
                     # Check if search fields are given from JSON and search field is not set
                     if self.search_fields_list and not search_field:
 
@@ -285,12 +286,16 @@ class WOSParser(QueryStringParser):
                 # Check if the operator of the first child is not the same as the second child
                 if children[0].value != children[1].value:
                     for child in children:
-                        if not children[0].value == children[children.index(child)].value:
-                            # Check if the search field is in the language list
+                        if not children.index(child) == 0:
+                            # Check if the search field is in the language/year list
                             if (
                                 children[children.index(child)].search_field.value
-                                and children[children.index(child)].search_field.value in
-                                self.language_list
+                                and (
+                                    children[children.index(child)].search_field.value
+                                    in self.language_list
+                                    or children[children.index(child)].search_field.value
+                                    in self.year_list
+                                )
                             ):
                                 children[0].children.append(child)
                                 children.pop(children.index(child))
@@ -495,6 +500,41 @@ class WOSParser(QueryStringParser):
             "position": position,
         })
 
+    def handle_year_search(
+            self,
+            token: str,
+            span: tuple,
+            children: list,
+            current_operator: str
+    ) -> list:
+        """Handle the year search field."""
+        # Check if the yearspan is not more than 5 years
+        if len(token) > 4:
+            if int(token[5:9]) - int(token[0:4]) > 5:
+                # Change the year span to five years
+                token = str(int(token[5:9]) - 5) + '-' + token[5:9]
+
+                # Add messages to self.linter_messages
+                self.add_linter_message(rule='YearSpan',
+                                        msg='Year span must be five or less.',
+                                        position=span
+                )
+
+        search_field = SearchField(
+            value=Fields.YEAR,
+            position=span,
+        )
+
+        # Add the year search field to the list of children
+        return self.add_term_node(
+            value=token,
+            operator=False,
+            search_field=search_field,
+            position=span,
+            children=children,
+            current_operator=current_operator
+        )
+
     def add_term_node(
             self,
             value,
@@ -645,11 +685,10 @@ class WOSParser(QueryStringParser):
 
             # Raise an exception if the linter is in strict mode or if a fatal error has occurred
             if (self.mode == "strict" or self.fatal_linter_err) and self.linter_messages:
-                print("\nSearch Field format accaptable: 'xx=' or 'xxx='\n")
-                # raise FatalLintingException(message='LinterDetected',
-                #                             query_string=self.query_str,
-                #                             linter_messages=self.linter_messages
-                # )
+                raise FatalLintingException(message='LinterDetected',
+                                            query_string=self.query_str,
+                                            linter_messages=self.linter_messages
+                )
 
         return query
 

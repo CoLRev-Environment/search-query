@@ -26,10 +26,11 @@ class QueryLinter:
             if self._check_order_of_tokens(tokens, token, span, index):
                 out_of_order = True
             if token == "NEAR":
-                if self._check_near_operator_format(tokens, index):
+                if self._check_near_distance_in_range(tokens, index):
                     near_operator_without_distance = True
             index += 1
 
+        # return True if any of the checks failed
         return (self._check_unmatched_parentheses() or
                 out_of_order or
                 near_operator_without_distance)
@@ -131,15 +132,32 @@ class QueryLinter:
                 (tokens[index+1][0] == "(")
             ):
             self.linter_messages.append({
-                "rule": "ParenthesisAfterParenthesis",
+                "rule": "MissingOperatorBetweenParenthesis",
                 "message": "Missing Operator between closing and opening parenthesis.",
+                "position": span
+            })
+            missplaced_order = True
+
+        # Check for search field after term
+        if (
+            (
+                not re.match(WOSRegex.SEARCH_FIELD_REGEX, token) and
+                not re.match(WOSRegex.OPERATOR_REGEX, token.upper()) and
+                not re.match(WOSRegex.PARENTHESIS_REGEX, token) and
+                re.match(WOSRegex.TERM_REGEX, token)
+            ) and
+                re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0])
+            ):
+            self.linter_messages.append({
+                "rule": "SearchFieldAfterTerm",
+                "message": "Missing Operator between term and search field.",
                 "position": span
             })
             missplaced_order = True
 
         return missplaced_order
 
-    def _check_near_operator_format(self, tokens: list, index: int) -> bool:
+    def _check_near_distance_in_range(self, tokens: list, index: int) -> bool:
         """Check for NEAR without a specified distance."""
         near_has_distance = tokens[index+1][0].isdigit()
         near_distance_out_of_range = False
@@ -152,3 +170,4 @@ class QueryLinter:
             })
 
         return near_distance_out_of_range
+
