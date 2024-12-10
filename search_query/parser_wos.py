@@ -26,9 +26,11 @@ class WOSParser(QueryStringParser):
     title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
     abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
     author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
-    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
+    topic_list = ["TS=", "Topic", "ts=", "topic=",
+                  "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
     language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
-    year_list = ["PY=", "Publication Year", "py=", "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
+    year_list = ["PY=", "Publication Year", "py=",
+                 "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
 
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
@@ -84,18 +86,24 @@ class WOSParser(QueryStringParser):
 
         # Search fields are given in the search_fields string
         if self.search_fields:
+            found_list = []
+            print('\n[Info:] Search Fields given: ' + self.search_fields)
             matches = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, self.search_fields)
 
             for match in matches:
-                self.search_fields_list.append(
-                    SearchField(
-                            value=match,
-                            position=None
-                        )
-                )
-                print('[Info] Search Field given: ' + match)
-                # TODO: Check if one search field occurs multiple times or more than one ar not recognized
-                # TODO: List for Search Fields from Prof. Dr. G. Wagner
+                match = self.check_search_fields(match)
+
+                # Check if the search field is not in the list of search fields
+                if not match in found_list:
+                    self.search_fields_list.append(
+                        SearchField(
+                                value=match,
+                                position=None
+                            )
+                    )
+                    found_list.append(match)
+                    print('[Info:] Search Field accepted: ' + match)
+            # TODO: List for Search Fields from Prof. Dr. G. Wagner
 
         # Parse a query tree from tokens recursively
         def parse_expression(
@@ -204,11 +212,23 @@ class WOSParser(QueryStringParser):
                 # Handle terms
                 else:
                     # Check if the token is a year
-                    if re.findall(WOSRegex.YEAR_REGEX, token):
-                        children = self.handle_year_search(token, span, children, current_operator)
-                        index += 1
-                        continue
-                    
+                    if re.findall(WOSRegex.YEAR_REGEX, token):                     
+                        if search_field.value in self.year_list:
+                            children = self.handle_year_search(
+                                token,
+                                span,
+                                children,
+                                current_operator
+                            )
+                            index += 1
+                            continue
+                        else:
+                            # Year detected without search field
+                            print(
+                                '[INFO:] Year detected without search field at position ' 
+                                + str(span)
+                            )
+
                     # Check if search fields are given from JSON and search field is not set
                     if self.search_fields_list and not search_field:
 
@@ -486,14 +506,14 @@ class WOSParser(QueryStringParser):
                            position: typing.Optional[tuple] = None,
     ):
         """Adds a message to the self.linter_messages list"""
-        
+
         # check if linter message is already in the list
         for message in self.linter_messages:
-            if (message['rule'] == rule 
-                and message['message'] == msg 
+            if (message['rule'] == rule
+                and message['message'] == msg
                 and message['position'] == position):
                 return
-        
+
         self.linter_messages.append({
             "rule": rule,
             "message": msg,
@@ -667,16 +687,16 @@ class WOSParser(QueryStringParser):
             query = self.parse_query_tree(self.tokens)
             self.translate_search_fields(query)
         else:
-            print('\n[FATAL] Fatal error detected in pre-linting')
+            print('\n[FATAL:] Fatal error detected in pre-linting')
 
         # Print linter messages
         if self.linter_messages:
             if self.mode != LinterMode.STRICT and not self.fatal_linter_err:
-                print('\n[INFO] The following errors have been corrected by the linter:')
+                print('\n[INFO:] The following errors have been corrected by the linter:')
 
             for msg in self.linter_messages:
                 print(
-                    '[Linter] ' 
+                    '[Linter:] ' 
                         + msg['rule'] + '\t'
                         + msg['message']
                         + ' At position '
@@ -739,8 +759,8 @@ class WOSListParser(QueryListParser):
                     "position": None
                 }]
             )
-        
-        if not (combine_queries[len(combine_queries)-1] 
+
+        if not (combine_queries[len(combine_queries)-1]
                 == query_dict[len(query_dict)]["node_content"]):
             raise FatalLintingException(
                 message='LastListItemMustBeCombiningString',
@@ -762,6 +782,7 @@ class WOSListParser(QueryListParser):
             if not "#" in tokens[len(tokens)-1]:
                 raise ValueError(
                     "[ERROR] The last token of a combining list item must be a number."
+                    + "\nFound: " + tokens[len(tokens)-1]
                     )
 
             for token in tokens:

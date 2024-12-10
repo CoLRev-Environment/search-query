@@ -20,20 +20,41 @@ class QueryLinter:
         index = 0
         out_of_order = False
         near_operator_without_distance = False
+        year_without_other_search_fields = False
+        year_search_field_detected = False
+        count_search_fields = 0
 
         while index < len(tokens) - 1:
             token, span = tokens[index]
             if self._check_order_of_tokens(tokens, token, span, index):
                 out_of_order = True
+
             if token == "NEAR":
                 if self._check_near_distance_in_range(tokens, index):
                     near_operator_without_distance = True
+
+            if re.match(WOSRegex.YEAR_REGEX, token):
+                year_search_field_detected = True
+
+            if re.match(WOSRegex.SEARCH_FIELD_REGEX, token):
+                count_search_fields += 1
+
             index += 1
 
+        if year_search_field_detected and count_search_fields < 2:
+            # Year detected without other search fields
+            year_without_other_search_fields = True
+            self.linter_messages.append({
+                "rule": "YearWithoutSearchField",
+                "message": "Year detected without other search parameter.",
+                "position": span,
+            })
+
         # return True if any of the checks failed
-        return (self._check_unmatched_parentheses() or
-                out_of_order or
-                near_operator_without_distance)
+        return (self._check_unmatched_parentheses()
+                or out_of_order
+                or near_operator_without_distance
+                or year_without_other_search_fields)
 
     def _check_unmatched_parentheses(self) -> bool:
         """Check for unmatched parentheses in the query."""
@@ -170,4 +191,3 @@ class QueryLinter:
             })
 
         return near_distance_out_of_range
-
