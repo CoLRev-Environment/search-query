@@ -671,11 +671,12 @@ class WOSParser(QueryStringParser):
                         search_field=query.search_field,
                     ))
 
-                query = Query(
-                    value=Operators.OR,
-                    operator=True,
-                    children=query_search_field_list
-                )
+                if len(query_search_field_list) > 1:
+                    query = Query(
+                        value=Operators.OR,
+                        operator=True,
+                        children=query_search_field_list
+                    )
 
                 # Add messages to self.linter_messages
                 self.add_linter_message(rule='SearchFieldFromJSON',
