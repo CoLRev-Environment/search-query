@@ -40,7 +40,6 @@ class Query(ABC):
     def __init__(
         self,
         value: str = "NOT_INITIALIZED",
-        near_distance: int = None,
         *,
         operator: bool = False,
         search_field: typing.Optional[SearchField] = None,
@@ -62,6 +61,7 @@ class Query(ABC):
                 ]
 
         self.children: typing.List[Query] = []
+
         if children:
             for child in children:
                 if isinstance(child, str):
@@ -75,8 +75,6 @@ class Query(ABC):
         self.search_field = search_field
         if operator:
             self.search_field = None
-            if self.value == 'NEAR':
-                self.value = value + "/" + str(near_distance)
         self.position = position
 
         self._ensure_children_not_circular()

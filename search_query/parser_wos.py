@@ -8,6 +8,7 @@ import re
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Fields
+from search_query.constants import Operators
 from search_query.constants import LinterMode
 from search_query.constants import WOSRegex
 from search_query.parser_base import QueryListParser
@@ -91,7 +92,7 @@ class WOSParser(QueryStringParser):
             matches = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, self.search_fields)
 
             for match in matches:
-                match = self.check_search_fields(match)
+                match = self.check_search_fields(match,)
 
                 # Check if the search field is not in the list of search fields
                 if not match in found_list:
@@ -189,15 +190,6 @@ class WOSParser(QueryStringParser):
                         )
                     )
 
-                    # Parse the expression after the operator
-                    # parse_expression(
-                    #     tokens=tokens,
-                    #     index=index+1,
-                    #     search_field=search_field,
-                    #     superior_search_field=superior_search_field,
-                    #     current_negation=current_negation,
-                    # )
-
                 # Handle search fields
                 elif (
                         (self.is_search_field(token)) or
@@ -230,43 +222,68 @@ class WOSParser(QueryStringParser):
                             )
 
                     # Check if search fields are given from JSON and search field is not set
-                    if self.search_fields_list and not search_field:
+                    # if self.search_fields_list and not search_field:
+                    #     terms = []
 
-                        # Set unsetted operator
-                        if not current_operator and len(self.search_fields_list) > 1:
-                            current_operator= 'OR'
+                    #     # Set unsetted operator
+                    #     if not current_operator and len(self.search_fields_list) > 1:
+                    #         current_operator= Operators.OR
 
-                        # Add term nodes for all search fields
-                        for search_field_elem in self.search_fields_list:
-                            children = self.add_term_node(
-                                value=token,
-                                operator=False,
-                                search_field=search_field_elem,
-                                position=span,
-                                children=children,
-                                current_operator=current_operator,
-                                current_negation=current_negation,
-                            )
+                    #     # Add term nodes for all search fields
+                    #     for search_field_elem in self.search_fields_list:
+                    #         terms = (self.add_term_node(
+                    #             tokens=tokens,
+                    #             index=index,
+                    #             value=token,
+                    #             operator=False,
+                    #             search_field=search_field_elem,
+                    #             position=span,
+                    #             children=[*terms],
+                    #             current_operator=current_operator,
+                    #             current_negation=current_negation,
+                    #         ))
 
-                    else:
-                        # Set search field to superior search field if no search field is given
-                        if not search_field and superior_search_field:
-                            search_field = superior_search_field
+                    #     if (terms and terms[0].value != Operators.OR):
+                    #         for term in terms:
+                    #             term.value = Operators.OR
+                    #             children.append(term)
+                            
+                    #         children = [Query(
+                    #             value=current_operator,
+                    #             operator=True,
+                    #             children=children
+                    #         )]
+                    #     else:
+                    #         if children:
+                    #             for term in terms:
+                    #                 if children[0].value == term.value:
+                    #                     for child in term.children:
+                    #                         children[0].children.append(child)
+                    #                 else:
+                    #                     children.append(term)
+                    #         else:
+                    #             children = terms
+                    # else:
+                    # Set search field to superior search field if no search field is given
+                    if not search_field and superior_search_field:
+                        search_field = superior_search_field
 
-                        # Set search field to ALL if no search field is given
-                        if not search_field:
-                            search_field = Fields.ALL
+                    # Set search field to ALL if no search field is given
+                    if not search_field:
+                        search_field = SearchField('Misc', position=None) # Fields.ALL
 
-                        # Add term nodes
-                        children = self.add_term_node(
-                            value=token,
-                            operator=False,
-                            search_field=search_field,
-                            position=span,
-                            children=children,
-                            current_operator=current_operator,
-                            current_negation=current_negation,
-                        )
+                    # Add term nodes
+                    children = self.add_term_node(
+                        tokens=tokens,
+                        index=index,
+                        value=token,
+                        operator=False,
+                        search_field=search_field,
+                        position=span,
+                        children=children,
+                        current_operator=current_operator,
+                        current_negation=current_negation,
+                    )
 
                     current_operator = None
                     search_field_for_check = None
@@ -396,7 +413,7 @@ class WOSParser(QueryStringParser):
         if current_operator == 'NEAR':
             # Add linter message for NEAR operator without distance
             self.add_linter_message(rule='NearWithoutDistance',
-                                    msg='Default distance is 15.',
+                                    msg='Default distance set to 15.',
                                     position=span
             )
             default_near_distance = True
@@ -547,6 +564,8 @@ class WOSParser(QueryStringParser):
 
         # Add the year search field to the list of children
         return self.add_term_node(
+            tokens=[],
+            index=0,
             value=token,
             operator=False,
             search_field=search_field,
@@ -557,6 +576,8 @@ class WOSParser(QueryStringParser):
 
     def add_term_node(
             self,
+            tokens: list,
+            index: int,
             value,
             operator,
             search_field: typing.Optional[SearchField] = None,
@@ -573,12 +594,7 @@ class WOSParser(QueryStringParser):
             operator=operator,
             search_field=search_field,
             position=position
-        )
-
-        # Check if the current operator is NEAR and the distance is not set
-        check_near_operator = False
-        if current_operator == 'NEAR':
-            check_near_operator = children[-1].value == current_operator
+    )
 
         # Append the term node to the list of children
         if current_operator:
@@ -587,15 +603,42 @@ class WOSParser(QueryStringParser):
                 or ((isinstance(children[-1], Query)
                 and (children[-1].value != current_operator))
                 and not current_negation)
-                and not check_near_operator
+                or 'NEAR' in current_operator
             ):
-                children = [
-                    Query(
-                        value=current_operator,
-                        operator=True,
-                        children=[*children, term_node]
-                    )
-                ]
+                if 'NEAR' in current_operator and 'NEAR' in children[0].value:
+                    # Get previous term to append
+                    while index > 0:
+                        if self.is_term(tokens[index-1][0]):
+                            term_node = Query(
+                                value=current_operator,
+                                operator=True,
+                                children=[
+                                    Query(
+                                        value=tokens[index-1][0],
+                                        operator=False,
+                                        search_field=search_field
+                                    ),
+                                    term_node
+                                ]
+                            )
+                            break
+                        index -= 1
+
+                    children = [
+                        Query(
+                            value=Operators.AND,
+                            operator=True,
+                            children=[*children, term_node]
+                        )
+                    ]
+                else:
+                    children = [
+                        Query(
+                            value=current_operator,
+                            operator=True,
+                            children=[*children, term_node]
+                        )
+                    ]
             else:
                 children[-1].children.append(term_node)
         else:
@@ -603,24 +646,60 @@ class WOSParser(QueryStringParser):
 
         return children
 
-    def translate_search_fields(self, query: Query) -> None:
+    def translate_search_fields(self, query: Query) -> Query:
         """Translate search fields."""
-        translated_field = None
-        if query.search_field:
-            original_field = self.check_search_fields(query.search_field)
-            if isinstance(original_field, str):
-                translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
 
-            # Translate only if a mapping exists else use default search field [ALL=]
-            if translated_field:
-                query.search_field = translated_field
+        children = []
+
+        # Recursively translate the search fields of child nodes
+        if query.children:
+            for child in query.children:
+                children.append(self.translate_search_fields(child))
+            query.children = children
+
+        translated_field = None
+        query_search_field_list = []
+        if query.search_field:
+        # TODO: Implement Search Fields from JSON
+            if query.search_field.value == 'Misc' and self.search_fields_list:
+                for search_field_item in self.search_fields_list:
+                    query.search_field = search_field_item
+                    query_search_field_list.append(Query(
+                        value= query.value,
+                        operator=False,
+                        position=query.position,
+                        search_field=query.search_field,
+                    ))
+
+                query = Query(
+                    value=Operators.OR,
+                    operator=True,
+                    children=query_search_field_list
+                )
 
                 # Add messages to self.linter_messages
-                self.add_linter_message(rule='TranslatedSearchField',
-                                        msg='Search Field has been updated to '
-                                            + translated_field + '.',
+                self.add_linter_message(rule='SearchFieldFromJSON',
+                                        msg='Search Fields have been extracted from JSON. ',
                                         position=query.position
                 )
+            else:
+                query.search_field.value = Fields.ALL
+
+
+                original_field = self.check_search_fields(query.search_field)
+                if isinstance(original_field, str):
+                    translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
+
+                # Translate only if a mapping exists else use default search field [ALL=]
+                if translated_field:
+                    query.search_field = translated_field
+
+                    # Add messages to self.linter_messages
+                    self.add_linter_message(rule='TranslatedSearchField',
+                                            msg='Search Field has been updated to '
+                                                + translated_field + '.',
+                                            position=query.position
+                    )
 
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
@@ -630,9 +709,9 @@ class WOSParser(QueryStringParser):
                                     position=query.position
             )
 
-        # Recursively translate the search fields of child nodes
-        for child in query.children:
-            self.translate_search_fields(child)
+        return query
+
+
 
     def check_search_fields(self, search_field) -> str:
         """Translate a search field into base search field."""
@@ -646,7 +725,7 @@ class WOSParser(QueryStringParser):
             "TS=" if search_field in self.topic_list else \
             "LA=" if search_field in self.language_list else \
             "PY=" if search_field in self.year_list else \
-            "ALL="
+            'Misc'
 
     def safe_children(
             self,
@@ -685,7 +764,7 @@ class WOSParser(QueryStringParser):
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
             query = self.parse_query_tree(self.tokens)
-            self.translate_search_fields(query)
+            query = self.translate_search_fields(query)
         else:
             print('\n[FATAL:] Fatal error detected in pre-linting')
 
