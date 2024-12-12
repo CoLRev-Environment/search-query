@@ -104,7 +104,6 @@ class WOSParser(QueryStringParser):
                     )
                     found_list.append(match)
                     print('[Info:] Search Field accepted: ' + match)
-            # TODO: List for Search Fields from Prof. Dr. G. Wagner
 
         # Parse a query tree from tokens recursively
         def parse_expression(
@@ -204,7 +203,7 @@ class WOSParser(QueryStringParser):
                 # Handle terms
                 else:
                     # Check if the token is a year
-                    if re.findall(WOSRegex.YEAR_REGEX, token):                     
+                    if re.findall(WOSRegex.YEAR_REGEX, token):
                         if search_field.value in self.year_list:
                             children = self.handle_year_search(
                                 token,
@@ -221,49 +220,6 @@ class WOSParser(QueryStringParser):
                                 + str(span)
                             )
 
-                    # Check if search fields are given from JSON and search field is not set
-                    # if self.search_fields_list and not search_field:
-                    #     terms = []
-
-                    #     # Set unsetted operator
-                    #     if not current_operator and len(self.search_fields_list) > 1:
-                    #         current_operator= Operators.OR
-
-                    #     # Add term nodes for all search fields
-                    #     for search_field_elem in self.search_fields_list:
-                    #         terms = (self.add_term_node(
-                    #             tokens=tokens,
-                    #             index=index,
-                    #             value=token,
-                    #             operator=False,
-                    #             search_field=search_field_elem,
-                    #             position=span,
-                    #             children=[*terms],
-                    #             current_operator=current_operator,
-                    #             current_negation=current_negation,
-                    #         ))
-
-                    #     if (terms and terms[0].value != Operators.OR):
-                    #         for term in terms:
-                    #             term.value = Operators.OR
-                    #             children.append(term)
-                            
-                    #         children = [Query(
-                    #             value=current_operator,
-                    #             operator=True,
-                    #             children=children
-                    #         )]
-                    #     else:
-                    #         if children:
-                    #             for term in terms:
-                    #                 if children[0].value == term.value:
-                    #                     for child in term.children:
-                    #                         children[0].children.append(child)
-                    #                 else:
-                    #                     children.append(term)
-                    #         else:
-                    #             children = terms
-                    # else:
                     # Set search field to superior search field if no search field is given
                     if not search_field and superior_search_field:
                         search_field = superior_search_field
@@ -669,7 +625,33 @@ class WOSParser(QueryStringParser):
 
                 if query.search_field.value == 'Misc' and self.search_fields_list:
                     for search_field_item in self.search_fields_list:
+                        if search_field_item.value == 'Misc':
+                            search_field_item.value = Fields.ALL
+                            # Add messages to self.linter_messages
+                            self.add_linter_message(
+                                rule='AllSearchField',
+                                msg='Search Field from JSON not supported. Set to "ALL=".',
+                                position=query.position
+                            )
+
                         query.search_field = search_field_item
+
+                        if isinstance(search_field_item.value, str):
+                            translated_field = self.FIELD_TRANSLATION_MAP.get(
+                                search_field_item.value, None
+                            )
+
+                        # Translate only if a mapping exists else use default search field [ALL=]
+                        if translated_field:
+                            query.search_field = translated_field
+
+                            # Add messages to self.linter_messages
+                            self.add_linter_message(rule='TranslatedSearchField',
+                                                    msg='Search Field has been updated to '
+                                                        + translated_field + '.',
+                                                    position=query.position
+                            )
+
                         query_search_field_list.append(Query(
                             value= query.value,
                             operator=False,
@@ -689,43 +671,37 @@ class WOSParser(QueryStringParser):
                             operator=True,
                             children=query_search_field_list
                         )
-            else:
-                if query.search_field.value == 'Misc':
-                    query.search_field.value = Fields.ALL
+            #else:
+                # if query.search_field.value == 'Misc':
+                #     query.search_field.value = Fields.ALL
+                #     # Add messages to self.linter_messages
+                #     self.add_linter_message(rule='AllSearchField',
+                #                             msg='Search Field must be set. Set to "ALL=".',
+                #                             position=query.position
+                #     )
+
+            if not query.operator:
+                original_field = self.check_search_fields(query.search_field)
+                if isinstance(original_field, str):
+                    translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
+
+                # Translate only if a mapping exists else use default search field [ALL=]
+                if translated_field:
+                    query.search_field = translated_field
+
                     # Add messages to self.linter_messages
-                    self.add_linter_message(rule='AllSearchField',
-                                            msg='Search Field must be set. Set to "ALL=".',
-                                            position=query.position
-                    )
-
-            original_field = self.check_search_fields(query.search_field)
-            if isinstance(original_field, str):
-                translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
-
-            # Translate only if a mapping exists else use default search field [ALL=]
-            if translated_field:
-                query.search_field = translated_field
-
-                # Add messages to self.linter_messages
-                self.add_linter_message(rule='TranslatedSearchField',
-                                        msg='Search Field has been updated to '
-                                            + translated_field + '.',
-                                        position=query.position
-                )
-            else:
-                if query.search_field:
-                    # Add messages to self.linter_messages
-                    self.add_linter_message(rule='AllSearchField',
-                                            msg='Unsupported Search Field. Set to "ALL=".',
+                    self.add_linter_message(rule='TranslatedSearchField',
+                                            msg='Search Field has been updated to '
+                                                + translated_field + '.',
                                             position=query.position
                     )
                 else:
                     # Add messages to self.linter_messages
                     self.add_linter_message(rule='AllSearchField',
-                                            msg='Search Field must be set. Set to "ALL=".',
+                                            msg='Search Field not set or not supported. Set to "ALL=".',
                                             position=query.position
                     )
-                query.search_field = Fields.ALL
+                    query.search_field = Fields.ALL
 
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
@@ -737,22 +713,20 @@ class WOSParser(QueryStringParser):
 
         return query
 
-
-
     def check_search_fields(self, search_field) -> str:
         """Translate a search field into base search field."""
         if isinstance(search_field, SearchField):
             search_field = search_field.value
 
         # Check if the given search field is in one of the lists of search fields
-        return "ti" if search_field in self.title_list else \
-            "ab" if search_field in self.abstract_list else \
-            "au" if search_field in self.author_list else \
-            "ts" if search_field in self.topic_list else \
-            "la" if search_field in self.language_list else \
-            "py" if search_field in self.year_list else \
+        return "TI=" if search_field in self.title_list else \
+            "AB=" if search_field in self.abstract_list else \
+            "AU=" if search_field in self.author_list else \
+            "TS=" if search_field in self.topic_list else \
+            "LA=" if search_field in self.language_list else \
+            "PY=" if search_field in self.year_list else \
             'Misc'
-    
+
     def check_search_fields_from_json(
             self,
             search_field,
@@ -760,14 +734,14 @@ class WOSParser(QueryStringParser):
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
         if isinstance(search_field, SearchField):
-                search_field = search_field.value
+            search_field = search_field.value
 
         if not search_field == 'Misc':
             diffrent_search_field = []
             for search_field_item in self.search_fields_list:
                 if search_field == search_field_item.value:
                     print(
-                        '[INFO:] Data redudancy. Search Field in Search and Search Fields.'
+                        '[INFO:] Data redudancy. Same Search Field in Search and Search Fields.'
                     )
 
                 if (
