@@ -163,9 +163,9 @@ if __name__ == "__main__":
                     print(query_string)
 
                     if linter_mode:
-                        print('Current linter mode: ' + linter_mode)
+                        print('[INFO:] Current linter mode: ' + linter_mode)
                     else:
-                        print('No mode for the linter was selected.\nStrict linter mode assumed.')
+                        print('[INFO:] No mode for the linter was selected.\nStrict linter mode assumed.')
 
                     ret = parse(
                             query_string,
@@ -195,7 +195,7 @@ if __name__ == "__main__":
                 except Exception as exc:
                     print(exc)
                     DB[syntax]["fail"] += 1
-                    raise exc
+                    #raise exc
                     continue
 
                 # Uncomment the following to skip validation

@@ -12,7 +12,7 @@ class NEARQuery(Query):
 
     def __init__(
         self,
-        nearDistance: int,
+        near_distance: int,
         children: typing.List[typing.Union[str, Query]],
         *,
         search_field: typing.Union[SearchField, str],
@@ -21,13 +21,12 @@ class NEARQuery(Query):
         """init method
         search terms: strings which you want to include in the search query
         nested queries: queries whose roots are appended to the query
-        nearDistance: distance of operator e.g. NEAR/2 --> nearDistance = 2
+        nearDistance: distance of operator e.g. NEAR/2 --> near_distance = 2
         search field: search field to which the query should be applied
         """
 
         super().__init__(
-            value=Operators.NEAR,
-            near_distance=nearDistance,
+            value=(Operators.NEAR + "/" + str(near_distance)),
             operator=True,
             children=children,
             search_field=search_field

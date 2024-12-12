@@ -26,8 +26,8 @@ class QuerySyntaxError(SearchQueryException):
         self.query_string = query_string
         super().__init__(self.message)
 
-class StrictLinterModeError(SearchQueryException):
-    """StrictLinterModeError Exception"""
+class FatalLintingException(SearchQueryException):
+    """FatalLintingException Exception"""
     def __init__(self, message: str, query_string: str, linter_messages: typing.List[dict]) -> None:
         # Error positions marked in orange
         query_string_highlighted = query_string

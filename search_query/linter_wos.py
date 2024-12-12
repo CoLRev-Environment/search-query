@@ -29,7 +29,7 @@ class QueryLinter:
             if self._check_order_of_tokens(tokens, token, span, index):
                 out_of_order = True
 
-            if token == "NEAR":
+            if "NEAR" in token:
                 if self._check_near_distance_in_range(tokens, index):
                     near_operator_without_distance = True
 
@@ -179,15 +179,15 @@ class QueryLinter:
         return missplaced_order
 
     def _check_near_distance_in_range(self, tokens: list, index: int) -> bool:
-        """Check for NEAR without a specified distance."""
-        near_has_distance = tokens[index+1][0].isdigit()
+        """Check for NEAR with a specified distance out of range."""
+        near_distance = re.findall(r'\d{1,2}', tokens[index][0])
         near_distance_out_of_range = False
-        if near_has_distance and int(tokens[index+1][0]) > 15:
+        if near_distance and int(near_distance[0]) > 15:
             near_distance_out_of_range = True
             self.linter_messages.append({
                 "rule": "NearDistanceOutOfRange",
                 "message": "NEAR operator distance out of range (max. 15).",
-                "position": tokens[index+1][1]
+                "position": tokens[index][1]
             })
 
         return near_distance_out_of_range
