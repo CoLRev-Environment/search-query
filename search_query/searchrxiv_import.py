@@ -165,7 +165,10 @@ if __name__ == "__main__":
                     if linter_mode:
                         print('[INFO:] Current linter mode: ' + linter_mode)
                     else:
-                        print('[INFO:] No mode for the linter was selected.\nStrict linter mode assumed.')
+                        print(
+                            '[INFO:] No mode for the linter was selected'
+                            + '\nStrict linter mode assumed.'
+                            )
 
                     ret = parse(
                             query_string,
