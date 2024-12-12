@@ -391,10 +391,9 @@ class WOSParser(QueryStringParser):
         i = 0
         j = 0
         while i < len(self.tokens):
-            if len(combined_tokens) > 1:
+            if len(combined_tokens) > 0:
                 if (
-                    i + 1 < len(self.tokens)
-                    and self.is_term(self.tokens[i][0])
+                    self.is_term(self.tokens[i][0])
                     and self.is_term(combined_tokens[j-1][0])
                 ):
                     combined_token = (
@@ -698,7 +697,8 @@ class WOSParser(QueryStringParser):
                 else:
                     # Add messages to self.linter_messages
                     self.add_linter_message(rule='AllSearchField',
-                                            msg='Search Field not set or not supported. Set to "ALL=".',
+                                            msg='Search Field not set or '
+                                            + 'not supported. Set to "ALL=".',
                                             position=query.position
                     )
                     query.search_field = Fields.ALL
@@ -862,27 +862,17 @@ class WOSListParser(QueryListParser):
         # If there is no combining list item, raise a linter exception
         # Individual list items can not be connected
         if not combine_queries:
-            raise FatalLintingException(
-                message='NoCombiningListItem',
-                query_string=self.query_list,
-                linter_messages=[{
-                    "rule": "NoCombiningListItem",
-                    "message": "[Linter] No combining list item found.",
-                    "position": None
-                }]
-            )
+            raise ValueError(
+                "[ERROR] No combining list item found."
+                )
 
-        if not (combine_queries[len(combine_queries)-1]
-                == query_dict[len(query_dict)]["node_content"]):
-            raise FatalLintingException(
-                message='LastListItemMustBeCombiningString',
-                query_string=self.query_list,
-                linter_messages=[{
-                    "rule": "LastListItemMustBeCombiningString",
-                    "message": "[Linter] The last item of the list must be a combining string.",
-                    "position": None
-                }]
-            )
+        # Raise an error if the last item of the list is not the last combining string
+        if not (combine_queries[str(len(query_dict))]
+                == query_dict[str(len(query_dict))]["node_content"]):
+            raise ValueError(
+                    "[ERROR] The last item of the list must be a combining string."
+                    + "\nFound: " + query
+                    )
 
         for index, query in combine_queries.items():
             children = []
@@ -890,12 +880,21 @@ class WOSListParser(QueryListParser):
             operator = None
             tokens = self.tokenize_combining_list_elem(query)
 
-            # Check if the last token is a number
-            if not "#" in tokens[len(tokens)-1]:
+            # Check if the last token is a operator
+            if (tokens[len(tokens)-1] in ["AND", "OR"]):
                 raise ValueError(
                     "[ERROR] The last token of a combining list item must be a number."
-                    + "\nFound: " + tokens[len(tokens)-1]
+                    + "\nFound: " + query
                     )
+
+            # Check if the last token is a number
+            # This error is never raised because the regex only matches numbers and operators
+            if not "#" in tokens[len(tokens)-1]:
+                raise ValueError(
+                    '[ERROR] LastTokenMustBeNumber\t'
+                    + 'Combining list item must be a number. No term, language or year.'
+                    + "\nFound: " + tokens[len(tokens)-1]
+                )
 
             for token in tokens:
                 if "#" in token:
