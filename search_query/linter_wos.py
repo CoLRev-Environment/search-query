@@ -22,7 +22,26 @@ class QueryLinter:
         near_operator_without_distance = False
         year_without_other_search_fields = False
         year_search_field_detected = False
+        only_one_quoted_string = False
+        platform_identifier = False
         count_search_fields = 0
+
+        if len(tokens) < 2:
+            if '"' in tokens[0][0]:
+                self.linter_messages.append({
+                    "rule": "SearchStringInQuotes",
+                    "message": "The whole Search string is in quotes.",
+                    "position": tokens[0][1]
+                })
+                only_one_quoted_string = True
+
+        if tokens[0][0] == "Web of Science":
+            self.linter_messages.append({
+                "rule": "PlatformInQuery",
+                "message": "Platform identifier at the beginning detected in query.",
+                "position": tokens[0][1]
+            })
+            platform_identifier = True
 
         while index < len(tokens) - 1:
             token, span = tokens[index]
@@ -52,6 +71,8 @@ class QueryLinter:
 
         # return True if any of the checks failed
         return (self._check_unmatched_parentheses()
+                or only_one_quoted_string
+                or platform_identifier
                 or out_of_order
                 or near_operator_without_distance
                 or year_without_other_search_fields)
