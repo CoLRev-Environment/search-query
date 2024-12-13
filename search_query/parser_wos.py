@@ -258,7 +258,6 @@ class WOSParser(QueryStringParser):
                 index += 1
 
             # Return options if there are no more tokens
-
             # Return the children if there is only one child
             if len(children) == 1:
                 return children[0], index
@@ -697,8 +696,8 @@ class WOSParser(QueryStringParser):
                 else:
                     # Add messages to self.linter_messages
                     self.add_linter_message(rule='AllSearchField',
-                                            msg='Search Field not set or '
-                                            + 'not supported. Set to "ALL=".',
+                                            msg='Search Field not set or not supported.'
+                                            + ' Using default of the database (ALL)".',
                                             position=query.position
                     )
                     query.search_field = Fields.ALL
