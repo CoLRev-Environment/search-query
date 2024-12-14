@@ -15,7 +15,7 @@ class QueryLinter:
         self.search_str = search_str
         self.linter_messages = linter_messages
 
-    def pre_linting(self, tokens: list) -> bool:
+    def pre_linting(self, tokens: list, search_str: str) -> bool:
         """Performs a pre-linting"""
         index = 0
         out_of_order = False
@@ -24,6 +24,8 @@ class QueryLinter:
         year_search_field_detected = False
         only_one_quoted_string = False
         platform_identifier = False
+        check_unsupported_wildcards = False
+        check_used_wildcards = False
         count_search_fields = 0
 
         if len(tokens) < 2:
@@ -49,7 +51,7 @@ class QueryLinter:
                 out_of_order = True
 
             if "NEAR" in token:
-                if self._check_near_distance_in_range(tokens, index):
+                if self._check_near_distance_in_range(tokens=tokens, index=index):
                     near_operator_without_distance = True
 
             if re.match(WOSRegex.YEAR_REGEX, token):
@@ -58,7 +60,15 @@ class QueryLinter:
             if re.match(WOSRegex.SEARCH_FIELD_REGEX, token):
                 count_search_fields += 1
 
+            # Check for used wildcards
+            if self.check_wildcards(token=token, span=span):
+                check_used_wildcards = True
+
             index += 1
+
+        # Check for unsupported wildcards
+        if self.check_unsupported_wildcards(search_str=search_str):
+            check_unsupported_wildcards = True
 
         if year_search_field_detected and count_search_fields < 2:
             # Year detected without other search fields
@@ -75,7 +85,9 @@ class QueryLinter:
                 or platform_identifier
                 or out_of_order
                 or near_operator_without_distance
-                or year_without_other_search_fields)
+                or check_used_wildcards
+                or year_without_other_search_fields
+                or check_unsupported_wildcards)
 
     def _check_unmatched_parentheses(self) -> bool:
         """Check for unmatched parentheses in the query."""
@@ -212,3 +224,124 @@ class QueryLinter:
             })
 
         return near_distance_out_of_range
+
+    def check_unsupported_wildcards(self, search_str: str) -> bool:
+        """Check for unsupported characters in the search string."""
+        unsupported_wildcards = False
+        matches = re.findall(WOSRegex.UNSUPPORTED_WILDCARD_REGEX, search_str)
+        if matches:
+            for unsupported_wildcard in matches:
+                unsupported_wildcards = True
+                self.linter_messages.append({
+                            "rule": "UnsupportedWildcard",
+                            "message": ("Unsupported wildcard in search string: "
+                                        + unsupported_wildcard),
+                            "position": (
+                                search_str.find(unsupported_wildcard),
+                                search_str.find(unsupported_wildcard) +1
+                                )
+                        })
+
+        # Check if a wildcard is used as standalone
+        for index, charachter in enumerate(search_str):
+            if charachter in ["?", "$", "*"]:
+                # Check if wildcard is left or right-handed or standalone
+                if ((search_str[index - 1] == ""
+                     or search_str[index - 1] == '"')
+                     and (search_str[index + 1] == ""
+                          or search_str[index + 1] == '"')):
+                    # Standalone wildcard usage
+                    unsupported_wildcards = True
+                    self.linter_messages.append({
+                        "rule": "StandaloneWildcard",
+                        "message": "Wildcard " + charachter + " should not be used as standalone.",
+                        "position": (index, index + 1)
+                    })
+                    break
+
+
+        return unsupported_wildcards
+
+    def check_wildcards(self, token: str, span: tuple) -> bool:
+        """Check for the usage of wildcards in the search string."""
+        unsupported_wildcards = False
+        unsupported_right_hand_wildcard = False
+        wrong_left_hand_wildcard_usage = False
+
+        token = token.replace('"', '')
+
+        # Implement constrains from Web of Science for Wildcards
+        for index, charachter in enumerate(token):
+            if charachter in ["?", "$", "*"]:
+                # Check if wildcard is left or right-handed or standalone
+                if index == 0 and len(token) == 1:
+                    unsupported_wildcards = True
+
+                elif len(token) == index + 1:
+                    # Right-hand wildcard
+                    if(
+                        self.check_unsupported_right_hand_wildcards(
+                            token=token,
+                            index=index,
+                            span=span
+                        )
+                    ):
+                        unsupported_right_hand_wildcard = True
+
+                elif index == 0 and len(token) > 1:
+                    # Left-hand wildcard
+                    if (
+                        self.check_format_left_hand_wildcards(
+                            token=token,
+                            span=span
+                        )
+                    ):
+                        wrong_left_hand_wildcard_usage = True
+                else:
+                    # Wildcard in the middle of the term
+                    if (token[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]):
+                        unsupported_right_hand_wildcard = True
+                        self.linter_messages.append({
+                            "rule": "UnsupportedWildcardUsage",
+                            "message": "Do not use wildcard after a special character.",
+                            "position": span
+                        })
+
+        return (unsupported_wildcards
+                or unsupported_right_hand_wildcard
+                or wrong_left_hand_wildcard_usage
+                )
+
+    def check_unsupported_right_hand_wildcards(self, token: str, index: int, span: tuple) -> bool:
+        """Check for unsupported right-hand wildcards in the search string."""
+        unsupported_right_hand_wildcards = False
+        if token[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
+            unsupported_right_hand_wildcards = True
+            self.linter_messages.append({
+                "rule": "UnsupportedWildcardUsage",
+                "message": "Do not use wildcard after a special character.",
+                "position": span
+            })
+
+        if len(token) < 4:
+            unsupported_right_hand_wildcards = True
+            self.linter_messages.append({
+                "rule": "RightHandWildcardLessThanThreeChars",
+                "message": "Right-hand wildcard must preceded by at least three characters.",
+                "position": span
+            })
+
+        return unsupported_right_hand_wildcards
+
+    def check_format_left_hand_wildcards(self, token: str, span: tuple) -> bool:
+        """Check for wrong usage among left-hand wildcards in the search string."""
+        wrong_left_hand_wildcard_usage = False
+
+        if len(token) < 4:
+            wrong_left_hand_wildcard_usage = True
+            self.linter_messages.append({
+                "rule": "LeftHandWildcardLessThanThreeChars",
+                "message": "Left-hand wildcard must be followed by at least three characters.",
+                "position": span
+            })
+        return wrong_left_hand_wildcard_usage

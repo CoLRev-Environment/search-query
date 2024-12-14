@@ -119,3 +119,4 @@ class WOSRegex:
     PARENTHESIS_REGEX = r'[\(\)]'
     SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
+    UNSUPPORTED_WILDCARD_REGEX = r"\!+"

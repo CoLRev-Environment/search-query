@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 #!/usr/bin/env python3
 """Web-of-Science query parser."""
 from __future__ import annotations
@@ -499,6 +500,15 @@ class WOSParser(QueryStringParser):
             current_operator: str
     ) -> list:
         """Handle the year search field."""
+        # Check if a wildcard is used in the year search field
+        if any(char in token for char in ['*', '?', "$"]):
+            # Add messages to self.linter_messages
+            self.add_linter_message(rule='YearWithWildcard',
+                                    msg='Wildcard characters not supported in year search.',
+                                    position=span
+            )
+            self.fatal_linter_err = True
+
         # Check if the yearspan is not more than 5 years
         if len(token) > 4:
             if int(token[5:9]) - int(token[0:4]) > 5:
@@ -777,10 +787,63 @@ class WOSParser(QueryStringParser):
 
         return safe_children
 
+    def check_nested_operators(
+            self,
+            query: Query
+        ) -> Query:
+        """Check if there are double nested operators."""
+        # """
+        # Check if there are double nested operators in the query and flatten them.
+        # This function traverses the query tree and checks if there are any nested
+        # operators with the same value as their parent. If such nested operators are
+        # found, their children are promoted one level up to the parent, effectively
+        # flattening the nested structure.
+        # Args:
+        #     query (Query): The query object to be checked and modified.
+        # Returns:
+        #     Query: The modified query object with flattened nested operators.
+        # """
+        del_children = []
+
+        if query.operator:
+            for child in query.children:
+                if child.operator:
+                    if child.value == query.value:
+                        # Get the child one level up
+                        for grandchild in child.children:
+                            query.children.append(grandchild)
+                        del_children.append(query.children.index(child))
+
+            # Delete the child
+            if del_children:
+                del_children.reverse()
+                for index in del_children:
+                    query.children.pop(index)
+
+        if query.children:
+            for child in query.children:
+                self.check_nested_operators(child)
+        return query
+
     def pre_linting(self):
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
-        self.fatal_linter_err = self.query_linter.pre_linting(self.tokens)
+        self.fatal_linter_err = self.query_linter.pre_linting(
+            tokens=self.tokens,
+            search_str=self.query_str
+        )
+
+    def handle_multiple_same_level_operators(self):
+        """Handle multiple same level operators."""
+        # This function introduces additional parantheses to the query tree
+        # based on the precedence of the operators.
+        # Precedence: NEAR > SAME > NOT > AND > OR
+        #TODO: Implement this function
+        operator_list = []
+        if self.tokens:
+            for token, span in self.tokens:
+                if token in ["NEAR", "NOT", "AND", "OR"]:
+                    operator_list.append(tuple([token, span]))
 
     def parse(self) -> Query:
         """Parse a query string."""
@@ -790,19 +853,27 @@ class WOSParser(QueryStringParser):
         # Tokenize the query string
         self.tokenize()
 
+        # Check string for unsupported characters
+        #unsupported_characters = self.query_linter.check_unsupported_wildcards(self.query_str)
+
         # Pre-linting of the query string
         self.pre_linting()
 
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
+            self.handle_multiple_same_level_operators()
             query = self.parse_query_tree(self.tokens)
             query = self.translate_search_fields(query)
+            query = self.check_nested_operators(query)
         else:
             print('\n[FATAL:] Fatal error detected in pre-linting')
 
         # Print linter messages
         if self.linter_messages:
-            if self.mode != LinterMode.STRICT and not self.fatal_linter_err:
+            if (
+                self.mode != LinterMode.STRICT
+                and not self.fatal_linter_err
+            ):
                 print('\n[INFO:] The following errors have been corrected by the linter:')
 
             for msg in self.linter_messages:
@@ -815,7 +886,10 @@ class WOSParser(QueryStringParser):
                     )
 
             # Raise an exception if the linter is in strict mode or if a fatal error has occurred
-            if (self.mode == "strict" or self.fatal_linter_err) and self.linter_messages:
+            if (self.mode == "strict"
+                or self.fatal_linter_err
+                and self.linter_messages
+            ):
                 raise FatalLintingException(message='LinterDetected',
                                             query_string=self.query_str,
                                             linter_messages=self.linter_messages
