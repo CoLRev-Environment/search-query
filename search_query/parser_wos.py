@@ -12,6 +12,7 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import LinterMode
 from search_query.constants import WOSRegex
+from search_query.constants import SearchFieldList
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -25,14 +26,14 @@ class WOSParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
     # Lists for different spelling of the search fields
-    title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
-    abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
-    author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
-    topic_list = ["TS=", "Topic", "ts=", "topic=",
-                  "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
-    language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
-    year_list = ["PY=", "Publication Year", "py=",
-                 "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
+    # title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
+    # abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
+    # author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
+    # topic_list = ["TS=", "Topic", "ts=", "topic=",
+    #               "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
+    # language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
+    # year_list = ["PY=", "Publication Year", "py=",
+    #              "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
 
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
@@ -64,7 +65,7 @@ class WOSParser(QueryStringParser):
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        return bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token)) or token in self.language_list
+        return bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token)) or token in SearchFieldList.language_list
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
@@ -193,7 +194,7 @@ class WOSParser(QueryStringParser):
                 # Handle search fields
                 elif (
                         (self.is_search_field(token)) or
-                        (token in self.language_list)
+                        (token in SearchFieldList.language_list)
                 ):
                     # Create a new search field with the token as value
                     search_field = SearchField(
@@ -205,7 +206,7 @@ class WOSParser(QueryStringParser):
                 else:
                     # Check if the token is a year
                     if re.findall(WOSRegex.YEAR_REGEX, token):
-                        if search_field.value in self.year_list:
+                        if search_field.value in SearchFieldList.year_published_list:
                             children = self.handle_year_search(
                                 token,
                                 span,
@@ -285,9 +286,9 @@ class WOSParser(QueryStringParser):
                                 children[children.index(child)].search_field.value
                                 and (
                                     children[children.index(child)].search_field.value
-                                    in self.language_list
+                                    in SearchFieldList.language_list
                                     or children[children.index(child)].search_field.value
-                                    in self.year_list
+                                    in SearchFieldList.year_published_list
                                 )
                             ):
                                 children[0].children.append(child)
@@ -728,13 +729,21 @@ class WOSParser(QueryStringParser):
             search_field = search_field.value
 
         # Check if the given search field is in one of the lists of search fields
-        return "TI=" if search_field in self.title_list else \
-            "AB=" if search_field in self.abstract_list else \
-            "AU=" if search_field in self.author_list else \
-            "TS=" if search_field in self.topic_list else \
-            "LA=" if search_field in self.language_list else \
-            "PY=" if search_field in self.year_list else \
-            'Misc'
+        # return "TI=" if search_field in self.title_list else \
+        #     "AB=" if search_field in self.abstract_list else \
+        #     "AU=" if search_field in self.author_list else \
+        #     "TS=" if search_field in self.topic_list else \
+        #     "LA=" if search_field in self.language_list else \
+        #     "PY=" if search_field in self.year_list else \
+        #     'Misc'
+        return self.get_search_field_key(search_field=search_field)
+
+    def get_search_field_key(self, search_field: str) -> str:
+        """Get the key of the search field."""
+        for key, value_list in SearchFieldList.search_field_dict.items():
+            if search_field in value_list:
+                return key
+        return "Misc"
 
     def check_search_fields_from_json(
             self,
@@ -852,9 +861,6 @@ class WOSParser(QueryStringParser):
 
         # Tokenize the query string
         self.tokenize()
-
-        # Check string for unsupported characters
-        #unsupported_characters = self.query_linter.check_unsupported_wildcards(self.query_str)
 
         # Pre-linting of the query string
         self.pre_linting()
