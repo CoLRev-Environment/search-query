@@ -172,6 +172,9 @@ class WOSRegex:
     SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
     UNSUPPORTED_WILDCARD_REGEX = r"\!+"
+    ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
+    ISBN_REGEX = r"^\d{1,5}-\d{1,7}-\d{1,7}-\d{1,7}[\dX]$"
+    DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
 class SearchFieldList:
     """List of search fields"""
