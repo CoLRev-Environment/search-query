@@ -25,16 +25,6 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
-    # Lists for different spelling of the search fields
-    # title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
-    # abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
-    # author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
-    # topic_list = ["TS=", "Topic", "ts=", "topic=",
-    #               "ts", "topic", "TS", "TOPIC", "Topic Search","Topic TS"]
-    # language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
-    # year_list = ["PY=", "Publication Year", "py=",
-    #              "publication year=", "py", "publication year", "PY", "PUBLICATION YEAR"]
-
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
         [
@@ -65,7 +55,10 @@ class WOSParser(QueryStringParser):
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        return bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token)) or token in SearchFieldList.language_list
+        return (
+            bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token))
+            or token in SearchFieldList.language_list
+        )
 
     def is_operator(self, token: str) -> bool:
         """Token is operator"""
@@ -196,7 +189,6 @@ class WOSParser(QueryStringParser):
                         (self.is_search_field(token)) or
                         (token in SearchFieldList.language_list)
                 ):
-                    # Create a new search field with the token as value
                     search_field = SearchField(
                         value=token,
                         position=span
@@ -204,6 +196,7 @@ class WOSParser(QueryStringParser):
 
                 # Handle terms
                 else:
+                    # Check if the token is a search field which has constraints
                     # Check if the token is a year
                     if re.findall(WOSRegex.YEAR_REGEX, token):
                         if search_field.value in SearchFieldList.year_published_list:
@@ -228,7 +221,23 @@ class WOSParser(QueryStringParser):
 
                     # Set search field to ALL if no search field is given
                     if not search_field:
-                        search_field = SearchField('Misc', position=None) # Fields.ALL
+                        search_field = SearchField('Misc', position=None)
+
+                    # Check if the token is ISSN or ISBN
+                    if search_field.value in SearchFieldList.issn_isbn_list:
+                        if self.query_linter.check_issn_isbn_format(
+                            search_field=search_field,
+                            token=token
+                        ):
+                            self.fatal_linter_err = True
+
+                    # Check if the token is a doi
+                    if search_field.value in SearchFieldList.doi_list:
+                        if self.query_linter.check_doi_format(
+                            search_field=search_field,
+                            token=token
+                        ):
+                            self.fatal_linter_err = True
 
                     # Add term nodes
                     children = self.add_term_node(
@@ -654,12 +663,14 @@ class WOSParser(QueryStringParser):
                         if translated_field:
                             query.search_field = translated_field
 
-                            # Add messages to self.linter_messages
-                            self.add_linter_message(rule='TranslatedSearchField',
-                                                    msg='Search Field has been updated to '
-                                                        + translated_field + '.',
-                                                    position=query.position
-                            )
+                            # Just print the message because search fields
+                            # in "xx" format are not supported
+                            print("[INFO:] Search Field "
+                                    + translated_field
+                                    + " has been detected."
+                                    + " At the position "
+                                    + str(query.position)
+                                )
 
                         query_search_field_list.append(Query(
                             value= query.value,
@@ -680,14 +691,6 @@ class WOSParser(QueryStringParser):
                             operator=True,
                             children=query_search_field_list
                         )
-            #else:
-                # if query.search_field.value == 'Misc':
-                #     query.search_field.value = Fields.ALL
-                #     # Add messages to self.linter_messages
-                #     self.add_linter_message(rule='AllSearchField',
-                #                             msg='Search Field must be set. Set to "ALL=".',
-                #                             position=query.position
-                #     )
 
             if not query.operator:
                 original_field = self.check_search_fields(query.search_field)
@@ -698,17 +701,19 @@ class WOSParser(QueryStringParser):
                 if translated_field:
                     query.search_field = translated_field
 
-                    # Add messages to self.linter_messages
-                    self.add_linter_message(rule='TranslatedSearchField',
-                                            msg='Search Field has been updated to '
-                                                + translated_field + '.',
-                                            position=query.position
-                    )
+                    # Just print the message because search fields
+                    # in "xx" format are not supported
+                    print("[INFO:] Search Field "
+                            + translated_field
+                            + " has been detected."
+                            + " At the position "
+                            + str(query.position)
+                        )
                 else:
                     # Add messages to self.linter_messages
                     self.add_linter_message(rule='AllSearchField',
                                             msg='Search Field not set or not supported.'
-                                            + ' Using default of the database (ALL)".',
+                                            + '\n\t\t\t\tUsing default of the database (ALL)".',
                                             position=query.position
                     )
                     query.search_field = Fields.ALL
@@ -729,13 +734,6 @@ class WOSParser(QueryStringParser):
             search_field = search_field.value
 
         # Check if the given search field is in one of the lists of search fields
-        # return "TI=" if search_field in self.title_list else \
-        #     "AB=" if search_field in self.abstract_list else \
-        #     "AU=" if search_field in self.author_list else \
-        #     "TS=" if search_field in self.topic_list else \
-        #     "LA=" if search_field in self.language_list else \
-        #     "PY=" if search_field in self.year_list else \
-        #     'Misc'
         return self.get_search_field_key(search_field=search_field)
 
     def get_search_field_key(self, search_field: str) -> str:
@@ -801,17 +799,6 @@ class WOSParser(QueryStringParser):
             query: Query
         ) -> Query:
         """Check if there are double nested operators."""
-        # """
-        # Check if there are double nested operators in the query and flatten them.
-        # This function traverses the query tree and checks if there are any nested
-        # operators with the same value as their parent. If such nested operators are
-        # found, their children are promoted one level up to the parent, effectively
-        # flattening the nested structure.
-        # Args:
-        #     query (Query): The query object to be checked and modified.
-        # Returns:
-        #     Query: The modified query object with flattened nested operators.
-        # """
         del_children = []
 
         if query.operator:
@@ -842,17 +829,88 @@ class WOSParser(QueryStringParser):
             search_str=self.query_str
         )
 
-    def handle_multiple_same_level_operators(self):
-        """Handle multiple same level operators."""
-        # This function introduces additional parantheses to the query tree
-        # based on the precedence of the operators.
-        # Precedence: NEAR > SAME > NOT > AND > OR
-        #TODO: Implement this function
-        operator_list = []
-        if self.tokens:
-            for token, span in self.tokens:
-                if token in ["NEAR", "NOT", "AND", "OR"]:
-                    operator_list.append(tuple([token, span]))
+    # def handle_multiple_same_level_operators(self, tokens: list, index: int):
+    #     """Handle multiple same level operators."""
+    #     # This function introduces additional parantheses to the query tree
+    #     # based on the precedence of the operators.
+    #     # Precedence: NEAR > SAME > NOT > AND > OR
+    #     # TODO: Implement this function
+    #     operator_list = []
+    #     clear_list = False
+    #     while index < len(tokens):
+    #         token, span = tokens[index]
+
+    #         if token == "(":
+    #             index = self.handle_multiple_same_level_operators(tokens=tokens, index=index+1)
+
+    #         if token == ")":
+    #             return index
+
+    #         # Higher precedence operator after lower precedence operator
+    #         if operator_list and self.is_operator(token) and token not in operator_list:
+    #             self.add_linter_message(rule='ChangeOfOperator',
+    #                     msg='The operator changed at the same level.'
+    #                         + 'Please introduce parentheses.',
+    #                     position=span
+    #             )
+    #             clear_list = True
+
+    #             # if "NEAR" in token.upper():
+    #                 # self.insert_parentheses(tokens, index, span)
+    #                 # clear_list = True
+    #             # elif (token.upper() == "NOT" and "NEAR" not in operator_list):
+    #                 # self.insert_parentheses(tokens, index, span)
+    #                 # clear_list = True
+    #             # elif (token.upper() == "AND"
+    #             #         and "NEAR" not in operator_list
+    #             #         and "NOT" not in operator_list):
+    #                 # self.insert_parentheses(tokens, index, span)
+    #                 # clear_list = True
+
+    #         # Lower precedence operator after higher precedence operator
+
+    #         # Clear the operator list after inserting parentheses
+    #         if clear_list:
+    #             operator_list.clear()
+    #             clear_list = False
+
+    #         if self.is_operator(token):
+    #             operator_list.append(token.upper())
+    #         index += 1
+    #     return index
+
+    def insert_parentheses(self, tokens, index, span) -> None:
+        """Insert parentheses in the query string."""
+        first_parenthesis_inserted = False
+        last_parenthesis_inserted = False
+        # Find previous operator
+        for i in range(index-1, 0, -1):
+            if self.is_operator(tokens[i][0]):
+                self.tokens.insert(
+                    i+1,
+                    ("(", (tokens[i][1][1] + 1, tokens[i][1][1] + 2))
+                )
+                first_parenthesis_inserted = True
+                break
+        # Find next operator
+        for i in range(index+2, len(tokens)):
+            if self.is_operator(tokens[i][0]):
+                self.tokens.insert(
+                    i-1,
+                    (")", (tokens[i][1][1] - 2, tokens[i][1][1] - 1))
+                )
+                last_parenthesis_inserted = True
+                break
+
+        if not first_parenthesis_inserted:
+            self.tokens.insert(
+                (0, ("(", (0, 1)))
+            )
+
+        if not last_parenthesis_inserted:
+            self.tokens.append(
+                (")", (span[1] + 1, span[1] + 2))
+            )
 
     def parse(self) -> Query:
         """Parse a query string."""
@@ -867,7 +925,7 @@ class WOSParser(QueryStringParser):
 
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
-            self.handle_multiple_same_level_operators()
+            # self.handle_multiple_same_level_operators(self.tokens, index=0)
             query = self.parse_query_tree(self.tokens)
             query = self.translate_search_fields(query)
             query = self.check_nested_operators(query)
@@ -918,6 +976,7 @@ class WOSListParser(QueryListParser):
 
     def parse(self) -> Query:
         """Parse the list of queries."""
+        # the parse() method of QueryListParser is called to parse the list of queries
         query_dict = self.parse_dict()
         queries = []
         combine_queries = {}
@@ -1006,9 +1065,3 @@ class WOSListParser(QueryListParser):
         """Tokenize the query_list."""
         matches = re.findall(self.LIST_COMBINE_REGEX, query_str)
         return matches
-
-    # override and implement methods of parent class (as needed)
-
-    # the parse() method of QueryListParser is called to parse the list of queries
-
-    # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)

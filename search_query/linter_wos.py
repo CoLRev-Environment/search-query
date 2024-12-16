@@ -4,12 +4,13 @@
 import re
 
 from search_query.constants import WOSRegex
-# vielleichtr regex in constants.py packen und dann jeweil importieren?
+from search_query.query import SearchField
 
 class QueryLinter:
     """Linter for wos query"""
 
     language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
+    multiple_same_level_operators = False
 
     def __init__(self, search_str: str, linter_messages: dict):
         self.search_str = search_str
@@ -70,6 +71,9 @@ class QueryLinter:
         if self.check_unsupported_wildcards(search_str=search_str):
             check_unsupported_wildcards = True
 
+        # Check for multiple operators on the same level
+        self.handle_multiple_same_level_operators(tokens=tokens, index=0)
+
         if year_search_field_detected and count_search_fields < 2:
             # Year detected without other search fields
             year_without_other_search_fields = True
@@ -87,7 +91,8 @@ class QueryLinter:
                 or near_operator_without_distance
                 or check_used_wildcards
                 or year_without_other_search_fields
-                or check_unsupported_wildcards)
+                or check_unsupported_wildcards
+                or self.multiple_same_level_operators)
 
     def _check_unmatched_parentheses(self) -> bool:
         """Check for unmatched parentheses in the query."""
@@ -345,3 +350,76 @@ class QueryLinter:
                 "position": span
             })
         return wrong_left_hand_wildcard_usage
+
+    def check_issn_isbn_format(self, token: str, search_field: SearchField) -> bool:
+        """Check for the correct format of ISSN and ISBN."""
+        token = token.replace('"', '')
+        if (not re.match(WOSRegex.ISSN_REGEX, token)
+            and not re.match(WOSRegex.ISBN_REGEX, token)
+        ):
+            # Add messages to self.linter_messages
+            self.linter_messages.append({"rule": 'ISSN_ISBNIncorrect',
+                                    "message":'ISSN/ISBN format is incorrect.',
+                                    "position": search_field.position
+            })
+            return True
+        return False
+
+    def check_doi_format(self, token: str, search_field: SearchField) -> bool:
+        """Check for the correct format of DOI."""
+        print(repr(token))
+        token = token.replace('"', '')
+        if not re.match(WOSRegex.DOI_REGEX, token):
+            # Add messages to self.linter_messages
+            self.linter_messages.append({"rule": 'DOIFormatIncorrect',
+                                    "message": 'DOI format is incorrect.',
+                                    "position": search_field.position
+            })
+            return True
+        return False
+
+    def handle_multiple_same_level_operators(self, tokens: list, index: int):
+        """Handle multiple same level operators."""
+        # This function introduces additional parantheses to the query tree
+        # based on the precedence of the operators.
+        # Precedence: NEAR > SAME > NOT > AND > OR
+        operator_list = []
+        clear_list = False
+        while index < len(tokens):
+            token, span = tokens[index]
+
+            if token == "(":
+                index = self.handle_multiple_same_level_operators(tokens=tokens, index=index+1)
+
+            if token == ")":
+                return index
+
+            # Higher precedence operator after lower precedence operator
+            if (operator_list
+                and re.match(WOSRegex.OPERATOR_REGEX, token.upper())
+                and token.upper() not in operator_list
+                and token.upper() != "NOT"
+            ):
+                self.linter_messages.append({
+                    "rule": 'ChangeOfOperator',
+                    "message": 'The operator changed at the same level.' 
+                        + ' Please introduce parentheses.',
+                    "position": span
+                })
+
+                self.multiple_same_level_operators = True
+                clear_list = True
+
+            # Lower precedence operator after higher precedence operator
+
+            # Clear the operator list after inserting parentheses
+            if clear_list:
+                operator_list.clear()
+                clear_list = False
+
+            if (token.upper() in ["NEAR", "AND", "OR", "NOT"]
+                or "NEAR" in token.upper()
+            ):
+                operator_list.append(token.upper())
+            index += 1
+        return index
