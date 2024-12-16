@@ -829,56 +829,6 @@ class WOSParser(QueryStringParser):
             search_str=self.query_str
         )
 
-    # def handle_multiple_same_level_operators(self, tokens: list, index: int):
-    #     """Handle multiple same level operators."""
-    #     # This function introduces additional parantheses to the query tree
-    #     # based on the precedence of the operators.
-    #     # Precedence: NEAR > SAME > NOT > AND > OR
-    #     # TODO: Implement this function
-    #     operator_list = []
-    #     clear_list = False
-    #     while index < len(tokens):
-    #         token, span = tokens[index]
-
-    #         if token == "(":
-    #             index = self.handle_multiple_same_level_operators(tokens=tokens, index=index+1)
-
-    #         if token == ")":
-    #             return index
-
-    #         # Higher precedence operator after lower precedence operator
-    #         if operator_list and self.is_operator(token) and token not in operator_list:
-    #             self.add_linter_message(rule='ChangeOfOperator',
-    #                     msg='The operator changed at the same level.'
-    #                         + 'Please introduce parentheses.',
-    #                     position=span
-    #             )
-    #             clear_list = True
-
-    #             # if "NEAR" in token.upper():
-    #                 # self.insert_parentheses(tokens, index, span)
-    #                 # clear_list = True
-    #             # elif (token.upper() == "NOT" and "NEAR" not in operator_list):
-    #                 # self.insert_parentheses(tokens, index, span)
-    #                 # clear_list = True
-    #             # elif (token.upper() == "AND"
-    #             #         and "NEAR" not in operator_list
-    #             #         and "NOT" not in operator_list):
-    #                 # self.insert_parentheses(tokens, index, span)
-    #                 # clear_list = True
-
-    #         # Lower precedence operator after higher precedence operator
-
-    #         # Clear the operator list after inserting parentheses
-    #         if clear_list:
-    #             operator_list.clear()
-    #             clear_list = False
-
-    #         if self.is_operator(token):
-    #             operator_list.append(token.upper())
-    #         index += 1
-    #     return index
-
     def insert_parentheses(self, tokens, index, span) -> None:
         """Insert parentheses in the query string."""
         first_parenthesis_inserted = False
