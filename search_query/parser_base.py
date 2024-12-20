@@ -119,6 +119,7 @@ class QueryListParser:
     """QueryListParser"""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    linter_messages: typing.List[dict] = []
 
     def __init__(self, query_list: str, parser_class: type[QueryStringParser]) -> None:
         self.query_list = query_list

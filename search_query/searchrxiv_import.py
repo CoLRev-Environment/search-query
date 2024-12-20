@@ -27,6 +27,8 @@ SYNTAX_MAP = {
     "ebsco": "ebscohost",
     "ebsco host": "ebscohost",
     "ebscohost research databases": "ebscohost",
+    "EBSCO": "ebscohost",
+    "EBSCOhost": "ebscohost",
     "ovid": "ovid",
     "ovid sp": "ovid",
     "psycinfo": "psycinfo",
@@ -92,7 +94,7 @@ if __name__ == "__main__":
     # coder_initials = "GW"
     coder_initials = "TF"
     # parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
-    parent_directory = "/home/ubuntu1/Thesis/example/"
+    parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"

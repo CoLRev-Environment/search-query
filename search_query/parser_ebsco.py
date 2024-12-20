@@ -11,7 +11,7 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.parser_validation import QueryStringValidator
+from search_query.parser_validation import QueryListValidator, QueryStringValidator
 
 
 class EBSCOParser(QueryStringParser):
@@ -24,7 +24,6 @@ class EBSCOParser(QueryStringParser):
     OPERATOR_REGEX = r"^(AND|OR|NOT)$"
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_TERM_REGEX = r"\"[^\"]+\"|\b(?!S\d\b)\S+\*?\b"
-    # FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
 
     pattern = "|".join(
         [SEARCH_FIELD_REGEX, 
@@ -32,17 +31,6 @@ class EBSCOParser(QueryStringParser):
          PARENTHESIS_REGEX, 
          SEARCH_TERM_REGEX]
     )
-
-    # def check_operator(self) -> None:
-    #     """Check for operators written in not all capital letter"""
-    #     for match in re.finditer(self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE):
-    #         operator = match.group()
-    #         start, end = match.span()
-    #         self.query_str = (
-    #             self.query_str[:start] +
-    #             operator.upper() +
-    #             self.query_str[end:]
-    #         )
 
     def filter_search_field(self, strict: bool) -> None:
         """Filter out unsupported search_fields. Depending on strictness, automatically change or ask user"""
@@ -70,7 +58,11 @@ class EBSCOParser(QueryStringParser):
                 else:
                     # Replace the unsupported field with 'AB' directly
                     modified_query_list[start:end] = list('AB')
-                    print(f"Unsupported field '{field}' automatically replaced with 'AB'.")
+                    self.linter_messages.append({
+                        "level": "Error",
+                        "msg": f"search-field-unsupported: '{unsupported_fields}' automatically changed to Abstract AB.",
+                        "pos": (start, end),
+                    })
 
         # Convert the modified list back to a string
         self.query_str = ''.join(modified_query_list)
@@ -82,12 +74,13 @@ class EBSCOParser(QueryStringParser):
         """Tokenize the query_str."""
         self.tokens = []
 
-        # if self is None:
-        #     self.linter_messages.append({
-        #         "level": "error",
-        #         "msg": f"Invalid token detected: '{token}'.",
-        #         "pos": (start, end),
-        #     })
+        if self.query_str is None:
+            self.linter_messages.append({
+                "level": "Fatal",
+                "msg": f"tokenizing-failed: empty string",
+                "pos": None,
+            })
+            raise ValueError("No string provided to parse.")
 
         for match in re.finditer(self.pattern, self.query_str):
             token = match.group()
@@ -103,6 +96,11 @@ class EBSCOParser(QueryStringParser):
             elif re.fullmatch(self.SEARCH_TERM_REGEX, token):
                 token_type = "SEARCH_TERM"
             else:
+                self.linter_messages.append({
+                    "level": "Fatal",
+                    "msg": f"tokenizing-failed: '{token}' not supported",
+                    "pos": (start, end),
+                })
                 continue
 
             # Append token with its type and position to self.tokens
@@ -115,10 +113,16 @@ class EBSCOParser(QueryStringParser):
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
+        search_fields_communal: typing.Optional[SearchField] = None,
     ) -> Query:
         """Build a query tree from a list of tokens recursively."""
         if not tokens:
-            raise ValueError("No tokens provided to parse.")
+            self.linter_messages.append({
+                "level": "Fatal",
+                "msg": f"parsing-failed: empty tokens",
+                "pos": None,
+            })
+            raise ValueError("Parsing failed: No tokens provided to parse.")
 
         root = None
         current_operator = None
@@ -173,6 +177,10 @@ class EBSCOParser(QueryStringParser):
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields to standard names using self.FIELD_TRANSLATION_MAP"""
 
+        # Error not included in linting, mainly for programming purposes
+        if not hasattr(self, "FIELD_TRANSLATION_MAP") or not isinstance(self.FIELD_TRANSLATION_MAP, dict):
+            raise AttributeError("FIELD_TRANSLATION_MAP is not defined or is not a dictionary.")
+
         if query.search_field:
             original_value = query.search_field.value
             translated_value = self.FIELD_TRANSLATION_MAP.get(
@@ -183,44 +191,54 @@ class EBSCOParser(QueryStringParser):
         for child in query.children:
             self.translate_search_fields(child)
 
+    # def check_fatal_errors(self):
+    #     """
+    #     Traverse the linter messages and return the first 'Fatal' error if it exists.
+    #     """
+    #     for message in self.linter_messages:
+    #         if isinstance(message, dict):  # Ensure the item is a dictionary
+    #             if message.get("level") == "Fatal":  # Check for 'Fatal' level
+    #                 return message
+    #     return None  # Return None if no fatal errors are found
+
     def parse(self) -> Query:
         """Parse a query string."""
+
+        self.linter_messages.clear() 
 
         strict = False
 
         self.filter_search_field(strict)
 
-        # self.check_operator()
-
         # Create an instance of QueryStringValidator
-        validator = QueryStringValidator()
-        validator.query_str = self.query_str  # Pass the query string to the validator
+        validator = QueryStringValidator(self.query_str, self.linter_messages)
 
         # Call validation methods
         validator.check_operator()
         validator.check_parenthesis()
 
-        # Update the query string after validation
+        # Update the query string and messages after validation
         self.query_str = validator.query_str
+        self.linter_messages.append(validator.linter_messages)
+
+        # fatal_error = self.check_fatal_errors()
+
+        # if fatal_error != None:
+        #     print("Fatal Error Found:", fatal_error)
+        # else:
+        # Tokenize the search string
 
         self.tokenize()
-
+        # Parse query on basis of tokens and recursively build a query-tree
         query = self.parse_query_tree(self.tokens)
-
+        # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
-
-        # Check for strict mode and handle linter messages if any
-        # if self.mode == "strict" and self.linter_messages:
-        #     raise ValueError("Linter messages indicate issues with query structure.")
 
         return query
 
 
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
-
-    # LIST_ITEM_REGEX = r"\d+\.\s|\n"
-    # LIST_ITEM_REGEX = r"^\s*(\d+)\.\s+(.*)$"
 
     def __init__(self, query_list: str) -> None:
         """Initialize with a query list and use EBSCOParser for parsing each query."""
@@ -229,9 +247,23 @@ class EBSCOListParser(QueryListParser):
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
 
-        # strings can also be accumulated with #1 OR #2 ... instead of S1 OR S2 ... ->  To-Do
+        pattern = rf"(S|#){token_nr}"
 
-        return f"S{token_nr}"
+        match = re.search(pattern, self.query_list)
+
+        if match:
+            # Return the preceding character if found
+            return f"{match.group(1)}{token_nr}"
+        else:
+            # Log a linter message and return the token number
+            self.linter_messages.append({
+                "level": "Warning",
+                "msg": f"Connecting lines possibly failed. Please use this format for connection: S1 OR S2 OR S3 / #1 OR #2 OR #3",
+                "pos": None,
+            })
+            return token_nr
 
 
 # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
+
+        
