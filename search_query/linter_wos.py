@@ -32,15 +32,15 @@ class QueryLinter:
         if len(tokens) < 2:
             if '"' in tokens[0][0]:
                 self.linter_messages.append({
-                    "rule": "SearchStringInQuotes",
+                    "rule": "F0001",
                     "message": "The whole Search string is in quotes.",
                     "position": tokens[0][1]
                 })
                 only_one_quoted_string = True
 
-        if tokens[0][0] == "Web of Science":
+        if tokens[0][0] in ["Web of Science", "wos", "WoS", "WOS", "WOS:", "WoS:", "WOS=", "WoS="]:
             self.linter_messages.append({
-                "rule": "PlatformInQuery",
+                "rule": "F0004",
                 "message": "Platform identifier at the beginning detected in query.",
                 "position": tokens[0][1]
             })
@@ -48,11 +48,11 @@ class QueryLinter:
 
         while index < len(tokens) - 1:
             token, span = tokens[index]
-            if self._check_order_of_tokens(tokens, token, span, index):
+            if self.check_order_of_tokens(tokens, token, span, index):
                 out_of_order = True
 
             if "NEAR" in token:
-                if self._check_near_distance_in_range(tokens=tokens, index=index):
+                if self.check_near_distance_in_range(tokens=tokens, index=index):
                     near_operator_without_distance = True
 
             if re.match(WOSRegex.YEAR_REGEX, token):
@@ -78,13 +78,13 @@ class QueryLinter:
             # Year detected without other search fields
             year_without_other_search_fields = True
             self.linter_messages.append({
-                "rule": "YearWithoutSearchField",
-                "message": "Year detected without other search parameter.",
+                "rule": "E0002",
+                "message": "Year detected without specified search field.",
                 "position": span,
             })
 
         # return True if any of the checks failed
-        return (self._check_unmatched_parentheses()
+        return (self.check_unmatched_parentheses()
                 or only_one_quoted_string
                 or platform_identifier
                 or out_of_order
@@ -94,7 +94,7 @@ class QueryLinter:
                 or check_unsupported_wildcards
                 or self.multiple_same_level_operators)
 
-    def _check_unmatched_parentheses(self) -> bool:
+    def check_unmatched_parentheses(self) -> bool:
         """Check for unmatched parentheses in the query."""
         unmatched_parentheses  = False
         stack = []
@@ -107,7 +107,7 @@ class QueryLinter:
                 else:
                     unmatched_parentheses = True
                     self.linter_messages.append({
-                        "rule": "UnmatchedParenthesis",
+                        "rule": "F0002",
                         "message": "Unmatched closing parenthesis ')'.",
                         "position": (i, i+1)
                     })
@@ -115,14 +115,15 @@ class QueryLinter:
         for unmatched_index in stack:
             unmatched_parentheses = True
             self.linter_messages.append({
-                "rule": "UnmatchedParenthesis",
+                "rule": "F0002",
                 "message": "Unmatched opening parenthesis '('.",
                 "position": (unmatched_index, unmatched_index+1)
             })
 
         return unmatched_parentheses
 
-    def _check_order_of_tokens(self, tokens, token, span, index) -> bool:
+    def check_order_of_tokens(self, tokens, token, span, index) -> bool:
+        """Check for the correct order of tokens in the query."""
         missplaced_order = False
         # Check for two operators in a row
         if (
@@ -130,7 +131,7 @@ class QueryLinter:
             re.match(WOSRegex.OPERATOR_REGEX, tokens[index+1][0])
         ):
             self.linter_messages.append({
-                "rule": "TwoOperatorInRow",
+                "rule": "F0005",
                 "message": "Two operators in a row.",
                 "position": tokens[index+1][1]
             })
@@ -142,7 +143,7 @@ class QueryLinter:
             re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0])
         ):
             self.linter_messages.append({
-                "rule": "TwoSearchFieldsInRow",
+                "rule": "F0003",
                 "message": "Two Search Fields in a row.",
                 "position": tokens[index+1][1]
             })
@@ -161,7 +162,7 @@ class QueryLinter:
                 not (tokens[index-1][0].upper() == "NEAR")
         ):
             self.linter_messages.append({
-                "rule": "ParenthesisAfterTerm",
+                "rule": "F0003",
                 "message": "Missing Operator between term and parenthesis.",
                 "position": span
             })
@@ -179,7 +180,7 @@ class QueryLinter:
                 )
             ):
             self.linter_messages.append({
-                "rule": "ParenthesisBeforeTerm",
+                "rule": "F0003",
                 "message": "Missing Operator between term and parenthesis.",
                 "position": tokens[index+1][1]
             })
@@ -191,7 +192,7 @@ class QueryLinter:
                 (tokens[index+1][0] == "(")
             ):
             self.linter_messages.append({
-                "rule": "MissingOperatorBetweenParenthesis",
+                "rule": "F0003",
                 "message": "Missing Operator between closing and opening parenthesis.",
                 "position": span
             })
@@ -208,7 +209,7 @@ class QueryLinter:
                 re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index+1][0])
             ):
             self.linter_messages.append({
-                "rule": "SearchFieldAfterTerm",
+                "rule": "F0003",
                 "message": "Missing Operator between term and search field.",
                 "position": span
             })
@@ -216,14 +217,14 @@ class QueryLinter:
 
         return missplaced_order
 
-    def _check_near_distance_in_range(self, tokens: list, index: int) -> bool:
+    def check_near_distance_in_range(self, tokens: list, index: int) -> bool:
         """Check for NEAR with a specified distance out of range."""
         near_distance = re.findall(r'\d{1,2}', tokens[index][0])
         near_distance_out_of_range = False
         if near_distance and int(near_distance[0]) > 15:
             near_distance_out_of_range = True
             self.linter_messages.append({
-                "rule": "NearDistanceOutOfRange",
+                "rule": "F0006",
                 "message": "NEAR operator distance out of range (max. 15).",
                 "position": tokens[index][1]
             })
@@ -238,7 +239,7 @@ class QueryLinter:
             for unsupported_wildcard in matches:
                 unsupported_wildcards = True
                 self.linter_messages.append({
-                            "rule": "UnsupportedWildcard",
+                            "rule": "F1001",
                             "message": ("Unsupported wildcard in search string: "
                                         + unsupported_wildcard),
                             "position": (
@@ -258,7 +259,7 @@ class QueryLinter:
                     # Standalone wildcard usage
                     unsupported_wildcards = True
                     self.linter_messages.append({
-                        "rule": "StandaloneWildcard",
+                        "rule": "F1002",
                         "message": "Wildcard " + charachter + " should not be used as standalone.",
                         "position": (index, index + 1)
                     })
@@ -307,7 +308,7 @@ class QueryLinter:
                     if (token[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]):
                         unsupported_right_hand_wildcard = True
                         self.linter_messages.append({
-                            "rule": "UnsupportedWildcardUsage",
+                            "rule": "F1001",
                             "message": "Do not use wildcard after a special character.",
                             "position": span
                         })
@@ -323,7 +324,7 @@ class QueryLinter:
         if token[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
             unsupported_right_hand_wildcards = True
             self.linter_messages.append({
-                "rule": "UnsupportedWildcardUsage",
+                "rule": "F1001",
                 "message": "Do not use wildcard after a special character.",
                 "position": span
             })
@@ -331,7 +332,7 @@ class QueryLinter:
         if len(token) < 4:
             unsupported_right_hand_wildcards = True
             self.linter_messages.append({
-                "rule": "RightHandWildcardLessThanThreeChars",
+                "rule": "F1001",
                 "message": "Right-hand wildcard must preceded by at least three characters.",
                 "position": span
             })
@@ -345,7 +346,7 @@ class QueryLinter:
         if len(token) < 4:
             wrong_left_hand_wildcard_usage = True
             self.linter_messages.append({
-                "rule": "LeftHandWildcardLessThanThreeChars",
+                "rule": "F1001",
                 "message": "Left-hand wildcard must be followed by at least three characters.",
                 "position": span
             })
@@ -358,7 +359,7 @@ class QueryLinter:
             and not re.match(WOSRegex.ISBN_REGEX, token)
         ):
             # Add messages to self.linter_messages
-            self.linter_messages.append({"rule": 'ISSN_ISBNIncorrect',
+            self.linter_messages.append({"rule": 'F0008',
                                     "message":'ISSN/ISBN format is incorrect.',
                                     "position": search_field.position
             })
@@ -367,11 +368,10 @@ class QueryLinter:
 
     def check_doi_format(self, token: str, search_field: SearchField) -> bool:
         """Check for the correct format of DOI."""
-        print(repr(token))
-        token = token.replace('"', '')
+        token = token.replace('"', '').upper()
         if not re.match(WOSRegex.DOI_REGEX, token):
             # Add messages to self.linter_messages
-            self.linter_messages.append({"rule": 'DOIFormatIncorrect',
+            self.linter_messages.append({"rule": 'F0008',
                                     "message": 'DOI format is incorrect.',
                                     "position": search_field.position
             })
@@ -394,14 +394,14 @@ class QueryLinter:
             if token == ")":
                 return index
 
-            # Higher precedence operator after lower precedence operator
+            # Operator change
             if (operator_list
                 and re.match(WOSRegex.OPERATOR_REGEX, token.upper())
                 and token.upper() not in operator_list
                 and token.upper() != "NOT"
             ):
                 self.linter_messages.append({
-                    "rule": 'ChangeOfOperator',
+                    "rule": 'F0007',
                     "message": 'The operator changed at the same level.' 
                         + ' Please introduce parentheses.',
                     "position": span
@@ -409,8 +409,6 @@ class QueryLinter:
 
                 self.multiple_same_level_operators = True
                 clear_list = True
-
-            # Lower precedence operator after higher precedence operator
 
             # Clear the operator list after inserting parentheses
             if clear_list:
