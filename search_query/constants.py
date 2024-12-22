@@ -239,8 +239,8 @@ class SearchFieldList:
         "ps", "province/state", "PS", "PROVINCE/STATE"
     ]
     year_published_list = [
-        "PY=", "Year Published", "py=", "year published=",
-        "py", "year published", "PY", "YEAR PUBLISHED"
+        "PY=", "Year Published", "py=", "year published=", "py", "year published",
+        "PY", "YEAR PUBLISHED", "Publication Year", "publication year", "PUBLICATION YEAR"
     ]
     street_address_list = [
         "SA=", "Street Address", "sa=", "street address=", 
