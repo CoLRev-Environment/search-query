@@ -875,7 +875,6 @@ class WOSParser(QueryStringParser):
 
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
-            # self.handle_multiple_same_level_operators(self.tokens, index=0)
             query = self.parse_query_tree(self.tokens)
             query = self.translate_search_fields(query)
             query = self.check_nested_operators(query)
@@ -973,6 +972,11 @@ class WOSListParser(QueryListParser):
                 raise ValueError(
                     "[ERROR] The last token of a combining list item must be a number."
                     + "\nFound: " + query
+                    + "\nFor combinations like this '#4 AND DT=(Article)'"
+                    + " split the query into two seperate list items and"
+                    + " add them together in the next list item:"
+                    + "\n 5. DT=(Article)"
+                    + "\n 6. #4 AND #5"
                     )
 
             # Check if the last token is a number
