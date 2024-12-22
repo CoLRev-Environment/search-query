@@ -173,7 +173,7 @@ class WOSRegex:
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
     UNSUPPORTED_WILDCARD_REGEX = r"\!+"
     ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
-    ISBN_REGEX = r"^\d{1,5}-\d{1,7}-\d{1,7}-\d{1,7}[\dX]$"
+    ISBN_REGEX = r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
     DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
 class SearchFieldList:
