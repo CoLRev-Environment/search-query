@@ -370,7 +370,7 @@ class WOSParser(QueryStringParser):
 
         # Add linter messages for operators that are not uppercase
         if token.islower():
-            self.add_linter_message(rule='UppercaseOperator',
+            self.add_linter_message(rule='W0005',
                                     msg='Operators must be uppercase.',
                                     position=span
             )
@@ -378,7 +378,7 @@ class WOSParser(QueryStringParser):
         # Set default near_distance if not set in the search string
         if current_operator == 'NEAR':
             # Add linter message for NEAR operator without distance
-            self.add_linter_message(rule='NearWithoutDistance',
+            self.add_linter_message(rule='W1001',
                                     msg='Default distance set to 15.',
                                     position=span
             )
@@ -513,7 +513,7 @@ class WOSParser(QueryStringParser):
         # Check if a wildcard is used in the year search field
         if any(char in token for char in ['*', '?', "$"]):
             # Add messages to self.linter_messages
-            self.add_linter_message(rule='YearWithWildcard',
+            self.add_linter_message(rule='W1002',
                                     msg='Wildcard characters not supported in year search.',
                                     position=span
             )
@@ -526,7 +526,7 @@ class WOSParser(QueryStringParser):
                 token = str(int(token[5:9]) - 5) + '-' + token[5:9]
 
                 # Add messages to self.linter_messages
-                self.add_linter_message(rule='YearSpan',
+                self.add_linter_message(rule='W1003',
                                         msg='Year span must be five or less.',
                                         position=span
                 )
@@ -647,7 +647,7 @@ class WOSParser(QueryStringParser):
                             search_field_item.value = Fields.ALL
                             # Add messages to self.linter_messages
                             self.add_linter_message(
-                                rule='AllSearchField',
+                                rule='W0003',
                                 msg='Search Field from JSON not supported. Set to "ALL=".',
                                 position=query.position
                             )
@@ -680,7 +680,7 @@ class WOSParser(QueryStringParser):
                         ))
 
                         # Add messages to self.linter_messages
-                        self.add_linter_message(rule='SearchFieldFromJSON',
+                        self.add_linter_message(rule='W0006',
                                                 msg='Search Fields have been extracted from JSON. ',
                                                 position=query.position
                         )
@@ -711,7 +711,7 @@ class WOSParser(QueryStringParser):
                         )
                 else:
                     # Add messages to self.linter_messages
-                    self.add_linter_message(rule='AllSearchField',
+                    self.add_linter_message(rule='W0003',
                                             msg='Search Field not set or not supported.'
                                             + '\n\t\t\t\tUsing default of the database (ALL)".',
                                             position=query.position
@@ -721,7 +721,7 @@ class WOSParser(QueryStringParser):
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
             # Add messages to self.linter_messages
-            self.add_linter_message(rule='AllSearchField',
+            self.add_linter_message(rule='W0003',
                                     msg='Search Field must be set. Set to "ALL=".',
                                     position=query.position
             )
@@ -771,7 +771,7 @@ class WOSParser(QueryStringParser):
             if 'False' not in diffrent_search_field:
                 # Add messages to self.linter_messages
                 self.add_linter_message(
-                    rule='SearchFieldFromJSON',
+                    rule='W0006',
                     msg='Search Field specified was not found in Search Fields from JSON.',
                     position=position
                 )
