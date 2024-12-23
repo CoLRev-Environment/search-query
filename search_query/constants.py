@@ -240,7 +240,7 @@ class SearchFieldList:
     ]
     year_published_list = [
         "PY=", "Year Published", "py=", "year published=", "py", "year published",
-        "PY", "YEAR PUBLISHED", "Publication Year", "publication year", "PUBLICATION YEAR"
+        "PY", "YEAR PUBLISHED", "Publication Year", "publication year", "PUBLICATION YEAR", "PUBLICATION YEAR"
     ]
     street_address_list = [
         "SA=", "Street Address", "sa=", "street address=", 
@@ -259,7 +259,7 @@ class SearchFieldList:
         "su", "research area", "SU", "RESEARCH AREA"
     ]
     title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
-    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC"]
+    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC", "Topic Search", "Topic TS"]
     accession_number_list = [
         "UT=", "Accession Number", "ut=", "accession number=",
         "ut", "accession number", "UT", "ACCESSION NUMBER"

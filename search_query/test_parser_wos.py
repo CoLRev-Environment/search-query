@@ -337,7 +337,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertFalse(result_near_distance)
         self.assertIn(
             {
-                "rule": "UppercaseOperator",
+                "rule": "W0005",
                 "message": "Operators must be uppercase.",
                 "position": span,
             },
@@ -366,7 +366,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertTrue(result_near_distance)
         self.assertIn(
             {
-                "rule": "NearWithoutDistance",
+                "rule": "W1001",
                 "message": "Default distance set to 15.",
                 "position": span,
             },
@@ -737,6 +737,7 @@ class TestWOSParser(unittest.TestCase):
         span = (0, 9)
         children = []
         current_operator = "AND"
+        self.parser.linter_messages.clear()
 
         result = self.parser.handle_year_search(token, span, children, current_operator)
         expected_result = [
@@ -766,7 +767,7 @@ class TestWOSParser(unittest.TestCase):
         )
         self.assertIn(
             {
-                "rule": "YearSpan",
+                "rule": "W1003",
                 "message": "Year span must be five or less.",
                 "position": span,
             },
@@ -816,35 +817,6 @@ class TestWOSParser(unittest.TestCase):
             result[0].children[0].position,
             expected_result[0].children[0].position
         )
-
-    # def test_handle_year_search_with_existing_children(self):
-    #     """
-    #     Test the `handle_year_search` method with existing children.
-
-    #     This test verifies that the `handle_year_search` method correctly handles
-    #     a year span and adds the year search field to the existing list of children.
-    #     """
-    #     token = "2015-2019"
-    #     span = (0, 9)
-    #     children = [Query(value="example", operator=False)]
-    #     current_operator = "AND"
-
-    #     result = self.parser.handle_year_search(token, span, children, current_operator)
-    #     expected_result = [
-    #         Query(value="example", operator=False),
-    #         Query(
-    #             value=token,
-    #             operator=False,
-    #             search_field=SearchField(value=Fields.YEAR, position=span),
-    #             position=span
-    #         )
-    #     ]
-    #     self.assertEqual(result[0].value, expected_result[0].value)
-    #     self.assertEqual(result[0].operator, expected_result[0].operator)
-    #     self.assertEqual(result[1].value, expected_result[1].value)
-    #     self.assertEqual(result[1].operator, expected_result[1].operator)
-    #     self.assertEqual(result[1].search_field.value, expected_result[1].search_field.value)
-    #     self.assertEqual(result[1].position, expected_result[1].position)
 
     def test_add_term_node_without_current_operator(self):
         """
@@ -1188,8 +1160,7 @@ class TestWOSParser(unittest.TestCase):
         year search fields into the base search field "PY=".
         """
         year_fields = [
-            "PY=", "Publication Year", "py=", "publication year=",
-            "py", "publication year", "PY", "PUBLICATION YEAR"
+            "PY=", "Publication Year", "py=", "py", "publication year", "PY", "PUBLICATION YEAR"
         ]
         for field in year_fields:
             result = self.parser.check_search_fields(field)
@@ -1207,29 +1178,6 @@ class TestWOSParser(unittest.TestCase):
             result = self.parser.check_search_fields(field)
             self.assertEqual(result, "Misc")
 
-    # Unit test does not work, because isinstant(search_field, SearchField)
-    # is not working. It is returning False.
-    # def test_check_search_fields_from_json_with_matching_field(self):
-    #     """
-    #     Test the `check_search_fields_from_json` method with a matching search field.
-
-    #     This test verifies that the `check_search_fields_from_json` method correctly identifies
-    #     a search field that matches one of the search fields
-    #     from JSON and does not add a linter message.
-    #     """
-    #     search_field = SearchField(value="TI=", position=(0, 3))
-    #     search_field_json = SearchField(value="TI=", position=None)
-    #     self.parser.search_fields_list = [search_field_json]
-    #     self.parser.check_search_fields_from_json(search_field, position=(0, 3))
-    #     self.assertNotIn(
-    #         {
-    #             "rule": "SearchFieldFromJSON",
-    #             "message": "Search Field specified was not found in Search Fields from JSON.",
-    #             "position": (0, 3),
-    #         },
-    #         self.parser.linter_messages,
-    #     )
-
     def test_check_search_fields_from_json_with_non_matching_field(self):
         """
         Test the `check_search_fields_from_json` method with a non-matching search field.
@@ -1243,52 +1191,12 @@ class TestWOSParser(unittest.TestCase):
         self.parser.check_search_fields_from_json(search_field, position=(0, 3))
         self.assertIn(
             {
-                "rule": "SearchFieldFromJSON",
+                "rule": "W0006",
                 "message": "Search Field specified was not found in Search Fields from JSON.",
                 "position": (0, 3),
             },
             self.parser.linter_messages,
         )
-
-    # Unit test does not work, because isinstant(search_field, SearchField)
-    # is not working. It is returning False.
-    # def test_check_search_fields_from_json_with_redundant_field(self):
-    #     """
-    #     Test the `check_search_fields_from_json` method with a redundant search field.
-
-    #     This test verifies that the `check_search_fields_from_json` method correctly identifies
-    #     a redundant search field that matches one of the
-    #     search fields from JSON and prints an info message.
-    #     """
-    #     search_field = SearchField(value="TI=", position=(0, 3))
-    #     self.parser.search_fields_list = [SearchField(value="TI=", position=(0, 3))]
-    #     with self.assertLogs(level='INFO') as log:
-    #         self.parser.check_search_fields_from_json(search_field, position=(0, 3))
-    #         self.assertIn(
-    #             '[INFO:] Data redudancy. Same Search Field in Search and Search Fields.',
-    #             log.output
-    #         )
-
-    # Unit test does not work, because isinstant(search_field, SearchField)
-    # is not working. It is returning False.
-    # def test_check_search_fields_from_json_with_misc_field(self):
-    #     """
-    #     Test the `check_search_fields_from_json` method with a miscellaneous search field.
-
-    #     This test verifies that the `check_search_fields_from_json` method correctly handles
-    #     a miscellaneous search field and does not add a linter message.
-    #     """
-    #     search_field = SearchField(value="Misc", position=(0, 3))
-    #     self.parser.search_fields_list = [SearchField(value="TI=", position=(0, 3))]
-    #     self.parser.check_search_fields_from_json(search_field, position=(0, 3))
-    #     self.assertNotIn(
-    #         {
-    #             "rule": "SearchFieldFromJSON",
-    #             "message": "Search Field specified was not found in Search Fields from JSON.",
-    #             "position": (0, 3),
-    #         },
-    #         self.parser.linter_messages,
-    #     )
 
     def test_safe_children_with_single_child(self):
         """
