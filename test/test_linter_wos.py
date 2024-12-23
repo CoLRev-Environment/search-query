@@ -1,5 +1,6 @@
 """Web-of-Science linter unit tests."""
 import unittest
+
 from search_query.linter_wos import QueryLinter
 from search_query.query import SearchField
 

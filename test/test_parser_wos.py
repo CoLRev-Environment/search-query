@@ -6,7 +6,8 @@ import unittest
 from search_query.parser_wos import WOSParser
 
 from search_query.constants import Fields
-from search_query.query import Query, SearchField
+from search_query.query import Query
+from search_query.query import SearchField
 
 class TestWOSParser(unittest.TestCase):
     """
@@ -337,7 +338,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertFalse(result_near_distance)
         self.assertIn(
             {
-                "rule": "UppercaseOperator",
+                "rule": "W0005",
                 "message": "Operators must be uppercase.",
                 "position": span,
             },
@@ -366,7 +367,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertTrue(result_near_distance)
         self.assertIn(
             {
-                "rule": "NearWithoutDistance",
+                "rule": "W1001",
                 "message": "Default distance set to 15.",
                 "position": span,
             },
@@ -737,6 +738,7 @@ class TestWOSParser(unittest.TestCase):
         span = (0, 9)
         children = []
         current_operator = "AND"
+        self.parser.linter_messages.clear()
 
         result = self.parser.handle_year_search(token, span, children, current_operator)
         expected_result = [
@@ -766,7 +768,7 @@ class TestWOSParser(unittest.TestCase):
         )
         self.assertIn(
             {
-                "rule": "YearSpan",
+                "rule": "W1003",
                 "message": "Year span must be five or less.",
                 "position": span,
             },
@@ -816,35 +818,6 @@ class TestWOSParser(unittest.TestCase):
             result[0].children[0].position,
             expected_result[0].children[0].position
         )
-
-    # def test_handle_year_search_with_existing_children(self):
-    #     """
-    #     Test the `handle_year_search` method with existing children.
-
-    #     This test verifies that the `handle_year_search` method correctly handles
-    #     a year span and adds the year search field to the existing list of children.
-    #     """
-    #     token = "2015-2019"
-    #     span = (0, 9)
-    #     children = [Query(value="example", operator=False)]
-    #     current_operator = "AND"
-
-    #     result = self.parser.handle_year_search(token, span, children, current_operator)
-    #     expected_result = [
-    #         Query(value="example", operator=False),
-    #         Query(
-    #             value=token,
-    #             operator=False,
-    #             search_field=SearchField(value=Fields.YEAR, position=span),
-    #             position=span
-    #         )
-    #     ]
-    #     self.assertEqual(result[0].value, expected_result[0].value)
-    #     self.assertEqual(result[0].operator, expected_result[0].operator)
-    #     self.assertEqual(result[1].value, expected_result[1].value)
-    #     self.assertEqual(result[1].operator, expected_result[1].operator)
-    #     self.assertEqual(result[1].search_field.value, expected_result[1].search_field.value)
-    #     self.assertEqual(result[1].position, expected_result[1].position)
 
     def test_add_term_node_without_current_operator(self):
         """
@@ -1160,7 +1133,7 @@ class TestWOSParser(unittest.TestCase):
         """
         topic_fields = [
             "TS=", "Topic", "ts=", "topic=", "ts", "topic",
-            "TS", "TOPIC"
+            "TS", "TOPIC", "Topic Search", "Topic TS"
         ]
         for field in topic_fields:
             result = self.parser.check_search_fields(field)
@@ -1188,8 +1161,7 @@ class TestWOSParser(unittest.TestCase):
         year search fields into the base search field "PY=".
         """
         year_fields = [
-            "PY=", "py=", "Publication Year",
-            "py", "publication year", "PY", "PUBLICATION YEAR"
+            "PY=", "Publication Year", "py=", "py", "publication year", "PY", "PUBLICATION YEAR"
         ]
         for field in year_fields:
             result = self.parser.check_search_fields(field)
@@ -1220,7 +1192,7 @@ class TestWOSParser(unittest.TestCase):
         self.parser.check_search_fields_from_json(search_field, position=(0, 3))
         self.assertIn(
             {
-                "rule": "SearchFieldFromJSON",
+                "rule": "W0006",
                 "message": "Search Field specified was not found in Search Fields from JSON.",
                 "position": (0, 3),
             },
