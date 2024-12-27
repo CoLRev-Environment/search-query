@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import typing
-from abc import ABC
 
 from search_query.constants import Fields
 from search_query.constants import Operators
@@ -34,11 +33,10 @@ class SearchField:
         return self.value
 
 
-class Query(ABC):
+class Query:
     """Query class."""
 
     # pylint: disable=too-many-arguments
-    # @abstractmethod
     def __init__(
         self,
         value: str = "NOT_INITIALIZED",
