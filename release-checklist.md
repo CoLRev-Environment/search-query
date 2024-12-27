@@ -1,6 +1,7 @@
 # Release checklist
 
 - Run [poetry update on GitHub](https://github.com/CoLRev-Environment/search-query/actions/workflows/poetry_update.yml).
+- Use constants.
 - Collect release notes and update the `CHANGELOG.md`.
 - Update **version** and **date**  and date in `CITATION.cff`.
 - Update the version in `pyproject.toml`.
