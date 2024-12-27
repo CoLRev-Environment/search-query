@@ -79,13 +79,13 @@ class Query:
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""
 
-        if self.value == "NOT":
+        if self.value == Operators.NOT:
             return not self.children[0].selects(record_dict=record_dict)
 
-        if self.value == "AND":
+        if self.value == Operators.AND:
             return all(x.selects(record_dict=record_dict) for x in self.children)
 
-        if self.value == "OR":
+        if self.value == Operators.OR:
             return any(x.selects(record_dict=record_dict) for x in self.children)
 
         assert not self.operator
