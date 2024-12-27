@@ -111,7 +111,6 @@ class Query:
         # Match exact word
         return value.lower() in field_value
 
-
     def is_operator(self) -> bool:
         """Check whether the SearchQuery is an operator."""
         return self.operator
