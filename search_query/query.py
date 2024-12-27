@@ -111,6 +111,15 @@ class Query:
         # Match exact word
         return value.lower() in field_value
 
+
+    def is_operator(self) -> bool:
+        """Check whether the SearchQuery is an operator."""
+        return self.operator
+
+    def is_term(self) -> bool:
+        """Check whether the SearchQuery is a term."""
+        return not self.is_operator()
+
     def get_nr_leaves(self) -> int:
         """Returns the number of leaves in the query tree"""
         return self._get_nr_leaves_from_node(self)
