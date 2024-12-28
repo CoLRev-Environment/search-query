@@ -9,7 +9,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_validation import QueryStringValidator
+from search_query.parser_validation import EBSCOQueryStringValidator, QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
 
@@ -31,140 +31,12 @@ class EBSCOParser(QueryStringParser):
         [SEARCH_FIELD_REGEX, OPERATOR_REGEX, PARENTHESIS_REGEX, SEARCH_TERM_REGEX]
     )
 
-    def filter_search_field(self, strict: bool) -> None:
-        """
-        Filter out unsupported search_fields.
-        Depending on strictness, automatically change or ask user
-        """
-        supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB"}
-        modified_query_list = list(
-            self.query_str
-        )  # Convert to list for direct modification
-        unsupported_fields = []
-
-        for match in re.finditer(self.UNSUPPORTED_SEARCH_FIELD_REGEX, self.query_str):
-            field = match.group()
-            start, end = match.span()
-
-            if field not in supported_fields:
-                unsupported_fields.append(field)
-                if strict:
-                    while True:
-                        # Prompt the user to enter a replacement field
-                        replacement = input(
-                            f"Unsupported field '{field}' found. Please enter a replacement (e.g., 'AB'): "
-                        ).strip()
-                        if replacement in supported_fields:
-                            # Replace directly in the modified query list
-                            modified_query_list[start:end] = list(replacement)
-                            print(f"Field '{field}' replaced with '{replacement}'.")
-                            break
-                        print(
-                            f"'{replacement}' is not a supported field. Please try again."
-                        )
-                else:
-                    # Replace the unsupported field with 'AB' directly
-                    modified_query_list[start:end] = list("AB")
-                    self.linter_messages.append(
-                        {
-                            "level": "Error",
-                            "msg": f"search-field-unsupported: '{unsupported_fields}' automatically changed to Abstract AB.",
-                            "pos": (start, end),
-                        }
-                    )
-
-        # Convert the modified list back to a string
-        self.query_str = "".join(modified_query_list)
-
-        # Print the modified query string for verification
-        # print("Modified query string:", self.query_str)
-
-    # def validate_token_sequence(self, tokens: list) -> None:
-    #     """Perform forward parsing to validate the token sequence."""
-    #     stack = []  # To validate parentheses pairing
-    #     previous_token_type = None
-
-    #     for token, token_type, position in tokens:
-    #         # Validate transitions
-    #         self.validate_token_position(token_type, previous_token_type, position)
-
-    #         # Handle parentheses pairing
-    #         if token_type == "PARENTHESIS_OPEN":
-    #             stack.append(position)  # Track the position of the opening parenthesis
-    #         elif token_type == "PARENTHESIS_CLOSED":
-    #             if not stack:
-    #                 self.linter_messages.append({
-    #                     "level": "Error",
-    #                     "msg": f"Unmatched closing parenthesis at position {position}.",
-    #                     "pos": position,
-    #                 })
-    #                 raise ValueError(f"Unmatched closing parenthesis at position {position}.")
-    #             stack.pop()  # Remove the matching opening parenthesis
-
-    #         # Update the previous token type
-    #         previous_token_type = token_type
-
-    #     # Check for unmatched opening parentheses
-    #     if stack:
-    #         self.linter_messages.append({
-    #             "level": "Error",
-    #             "msg": f"Unmatched opening parenthesis at positions {stack}",
-    #             "pos": None,
-    #         })
-    #         raise ValueError(f"Unmatched opening parenthesis at positions {stack}.")
-
-    def validate_token_position(
-        self,
-        token_type: str,
-        previous_token_type: typing.Optional[str],
-        position: typing.Optional[tuple[int, int]],
-    ) -> None:
-        """Validate the position of the current token based on its type and the previous token type."""
-
-        if previous_token_type is None:
-            # First token, no validation required
-            return
-
-        valid_transitions = {
-            "FIELD": [
-                "OPERATOR",
-                "PARENTHESIS_OPEN",
-            ],  # FIELD can follow an operator or open parenthesis
-            "SEARCH_TERM": [
-                "FIELD",
-                "OPERATOR",
-                "PARENTHESIS_OPEN",
-            ],  # SEARCH_TERM can follow FIELD or OPERATOR
-            "OPERATOR": [
-                "SEARCH_TERM",
-                "PARENTHESIS_CLOSED",
-            ],  # OPERATOR must follow SEARCH_TERM or closing parenthesis
-            "PARENTHESIS_OPEN": [
-                "FIELD",
-                "OPERATOR",
-                "PARENTHESIS_OPEN",
-            ],  # Handles open/close parentheses
-            "PARENTHESIS_CLOSED": [
-                "SEARCH_TERM",
-                "PARENTHESIS_CLOSED",
-            ],  # Handles open/close parentheses
-        }
-
-        if previous_token_type not in valid_transitions.get(token_type, []):
-            print(
-                f"\nInvalid token sequence: '{previous_token_type}' followed by '{token_type}' at position '{position}'"
-            )
-            self.linter_messages.append(
-                {
-                    "level": "Error",
-                    "msg": f"Invalid token sequence: '{previous_token_type}' followed by '{token_type}'",
-                    "pos": position,
-                }
-            )
-
     def tokenize(self) -> None:
         """Tokenize the query_str."""
         self.tokens = []
+
+        validator = EBSCOQueryStringValidator(self.query_str, self.linter_messages)
+        validator.filter_search_field(strict=False) # strict should be changed to strict.mode
 
         if self.query_str is None:
             self.linter_messages.append(
@@ -205,7 +77,7 @@ class EBSCOParser(QueryStringParser):
                 )
                 continue
 
-            self.validate_token_position(token_type, previous_token_type, (start, end))
+            validator.validate_token_position(token_type, previous_token_type, (start, end))
             previous_token_type = token_type
 
             # Append token with its type and position to self.tokens
@@ -311,10 +183,6 @@ class EBSCOParser(QueryStringParser):
 
         self.linter_messages.clear()
 
-        strict = False
-
-        self.filter_search_field(strict)
-
         # Create an instance of QueryStringValidator
         validator = QueryStringValidator(self.query_str, self.linter_messages)
 
@@ -370,3 +238,39 @@ class EBSCOListParser(QueryListParser):
 
 
 # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
+
+
+
+    # def validate_token_sequence(self, tokens: list) -> None:
+    #     """Perform forward parsing to validate the token sequence."""
+    #     stack = []  # To validate parentheses pairing
+    #     previous_token_type = None
+
+    #     for token, token_type, position in tokens:
+    #         # Validate transitions
+    #         self.validate_token_position(token_type, previous_token_type, position)
+
+    #         # Handle parentheses pairing
+    #         if token_type == "PARENTHESIS_OPEN":
+    #             stack.append(position)  # Track the position of the opening parenthesis
+    #         elif token_type == "PARENTHESIS_CLOSED":
+    #             if not stack:
+    #                 self.linter_messages.append({
+    #                     "level": "Error",
+    #                     "msg": f"Unmatched closing parenthesis at position {position}.",
+    #                     "pos": position,
+    #                 })
+    #                 raise ValueError(f"Unmatched closing parenthesis at position {position}.")
+    #             stack.pop()  # Remove the matching opening parenthesis
+
+    #         # Update the previous token type
+    #         previous_token_type = token_type
+
+    #     # Check for unmatched opening parentheses
+    #     if stack:
+    #         self.linter_messages.append({
+    #             "level": "Error",
+    #             "msg": f"Unmatched opening parenthesis at positions {stack}",
+    #             "pos": None,
+    #         })
+    #         raise ValueError(f"Unmatched opening parenthesis at positions {stack}.")
