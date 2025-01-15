@@ -9,7 +9,8 @@ from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_validation import EBSCOQueryStringValidator, QueryStringValidator
+from search_query.parser_validation import EBSCOQueryStringValidator
+from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
 
@@ -36,7 +37,10 @@ class EBSCOParser(QueryStringParser):
         self.tokens = []
 
         validator = EBSCOQueryStringValidator(self.query_str, self.linter_messages)
-        validator.filter_search_field(strict=False) # strict should be changed to strict.mode
+        validator.filter_search_field(
+            strict=False
+        )  # strict should be changed to strict.mode
+        self.query_str = validator.query_str
 
         if self.query_str is None:
             self.linter_messages.append(
@@ -77,7 +81,9 @@ class EBSCOParser(QueryStringParser):
                 )
                 continue
 
-            validator.validate_token_position(token_type, previous_token_type, (start, end))
+            validator.validate_token_position(
+                token_type, previous_token_type, (start, end)
+            )
             previous_token_type = token_type
 
             # Append token with its type and position to self.tokens
@@ -240,37 +246,36 @@ class EBSCOListParser(QueryListParser):
 # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
 
 
+# def validate_token_sequence(self, tokens: list) -> None:
+#     """Perform forward parsing to validate the token sequence."""
+#     stack = []  # To validate parentheses pairing
+#     previous_token_type = None
 
-    # def validate_token_sequence(self, tokens: list) -> None:
-    #     """Perform forward parsing to validate the token sequence."""
-    #     stack = []  # To validate parentheses pairing
-    #     previous_token_type = None
+#     for token, token_type, position in tokens:
+#         # Validate transitions
+#         self.validate_token_position(token_type, previous_token_type, position)
 
-    #     for token, token_type, position in tokens:
-    #         # Validate transitions
-    #         self.validate_token_position(token_type, previous_token_type, position)
+#         # Handle parentheses pairing
+#         if token_type == "PARENTHESIS_OPEN":
+#             stack.append(position)  # Track the position of the opening parenthesis
+#         elif token_type == "PARENTHESIS_CLOSED":
+#             if not stack:
+#                 self.linter_messages.append({
+#                     "level": "Error",
+#                     "msg": f"Unmatched closing parenthesis at position {position}.",
+#                     "pos": position,
+#                 })
+#                 raise ValueError(f"Unmatched closing parenthesis at position {position}.")
+#             stack.pop()  # Remove the matching opening parenthesis
 
-    #         # Handle parentheses pairing
-    #         if token_type == "PARENTHESIS_OPEN":
-    #             stack.append(position)  # Track the position of the opening parenthesis
-    #         elif token_type == "PARENTHESIS_CLOSED":
-    #             if not stack:
-    #                 self.linter_messages.append({
-    #                     "level": "Error",
-    #                     "msg": f"Unmatched closing parenthesis at position {position}.",
-    #                     "pos": position,
-    #                 })
-    #                 raise ValueError(f"Unmatched closing parenthesis at position {position}.")
-    #             stack.pop()  # Remove the matching opening parenthesis
+#         # Update the previous token type
+#         previous_token_type = token_type
 
-    #         # Update the previous token type
-    #         previous_token_type = token_type
-
-    #     # Check for unmatched opening parentheses
-    #     if stack:
-    #         self.linter_messages.append({
-    #             "level": "Error",
-    #             "msg": f"Unmatched opening parenthesis at positions {stack}",
-    #             "pos": None,
-    #         })
-    #         raise ValueError(f"Unmatched opening parenthesis at positions {stack}.")
+#     # Check for unmatched opening parentheses
+#     if stack:
+#         self.linter_messages.append({
+#             "level": "Error",
+#             "msg": f"Unmatched opening parenthesis at positions {stack}",
+#             "pos": None,
+#         })
+#         raise ValueError(f"Unmatched opening parenthesis at positions {stack}.")

@@ -91,9 +91,7 @@ def create_search_file(
 
 if __name__ == "__main__":
     # These variable must be set before running the script
-    # coder_initials = "GW"
     coder_initials = "TF"
-    # parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
     parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
 
     # These variables are set automatically
@@ -104,7 +102,7 @@ if __name__ == "__main__":
     DB = {}
 
     for filename in os.listdir(source_directory):
-        print(filename)     # Debug line
+        print(filename)  # Debug line
         if filename.endswith(".json"):
             filepath = os.path.join(source_directory, filename)
             with open(filepath, encoding="utf-8") as file:

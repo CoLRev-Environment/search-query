@@ -65,9 +65,7 @@ class QueryStringValidator:
 class EBSCOQueryStringValidator:
     """Class for EBSCO Query String Validation"""
 
-    UNSUPPORTED_SEARCH_FIELD_REGEX = (
-        r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b|\b(?!OR\b)\b(?!S\d+\b)[A-Z]{1}\d+\b"
-    )
+    UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
 
     def __init__(self, query_str: str, linter_messages: typing.List[dict] = []):
         self.query_str = query_str
@@ -119,7 +117,7 @@ class EBSCOQueryStringValidator:
         self.query_str = "".join(modified_query_list)
 
         # Print the modified query string for verification
-        # print("Modified query string:", self.query_str)
+        print("Modified query string:", self.query_str)
 
     def validate_token_position(
         self,
