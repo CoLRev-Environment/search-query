@@ -29,41 +29,41 @@ class EBSCOParser(QueryStringParser):
         [PARENTHESIS_REGEX, OPERATOR_REGEX, SEARCH_FIELD_REGEX, SEARCH_TERM_REGEX]
     )
 
-    # def combine_subsequent_tokens(self) -> None:
-    #     """Combine subsequent tokens based on specific conditions."""
-    #     if not self.tokens:
-    #         return
+    def combine_subsequent_tokens(self) -> None:
+        """Combine subsequent tokens based on specific conditions."""
+        if not self.tokens:
+            return
 
-    #     combined_tokens = []
-    #     i = 0
+        combined_tokens = []
+        i = 0
 
-    #     while i < len(self.tokens):
-    #         token, token_type, position = self.tokens[i]
+        while i < len(self.tokens):
+            current_token, current_token_type, position = self.tokens[i]
 
-    #         # Example condition: Combine consecutive SEARCH_TERM tokens
-    #         if token_type == "SEARCH_TERM":
-    #             start_pos = position[0]
-    #             combined_value = token
+            if current_token_type == "SEARCH_TERM":
+                start_pos = position[0]
+                end_position = position[1]
+                combined_value = current_token
 
-    #             # Look ahead to combine subsequent SEARCH_TERM tokens
-    #             while i + 1 < len(self.tokens) and self.tokens[i + 1][1] == "SEARCH_TERM":
-    #                 next_token, _, next_position = self.tokens[i + 1]
-    #                 combined_value += f" {next_token}"  # Combine with a space
-    #                 end_pos = next_position[1]
-    #                 i += 1
-    #             else:
-    #                 end_pos = position[1]
+                while (
+                    i + 1 < len(self.tokens) and self.tokens[i + 1][1] == "SEARCH_TERM"
+                ):
+                    next_token, _, next_position = self.tokens[i + 1]
+                    combined_value += f" {next_token}"
+                    print("This is the combined value: " + combined_value)
+                    end_position = next_position[1]
+                    i += 1
 
-    #             # Append the combined token
-    #             combined_tokens.append((combined_value, "SEARCH_TERM", (start_pos, end_pos)))
+                combined_tokens.append(
+                    (combined_value, current_token_type, (start_pos, end_position))
+                )
 
-    #         else:
-    #             # Append token as-is for other types
-    #             combined_tokens.append((token, token_type, position))
+            else:
+                combined_tokens.append((current_token, current_token_type, position))
 
-    #         i += 1
+            i += 1
 
-    #     self.tokens = combined_tokens
+        self.tokens = combined_tokens
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -123,14 +123,18 @@ class EBSCOParser(QueryStringParser):
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
-
             # print(
             #    f"Tokenized: {token} as {token_type} at position {start}-{end}"
             # )   # ->   Debug line
+        self.combine_subsequent_tokens()
 
-        # self.combine_subsequent_terms
-
-    def create_operator_node(self, token, operator, position, search_field):
+    def create_operator_node(
+        self,
+        token: str,
+        operator: bool,
+        position: tuple[int, int],
+        search_field: typing.Optional[SearchField],
+    ) -> Query:
         return Query(
             value=token, operator=operator, position=position, search_field=search_field
         )
@@ -217,15 +221,14 @@ class EBSCOParser(QueryStringParser):
                     root = subtree
 
             elif token_type == "PARENTHESIS_CLOSED":
+                if root is None:
+                    raise ValueError("Parsing failed: Unmatched closing parenthesis.")
                 return root
 
         if root is None:
             raise ValueError("Failed to construct a valid query tree.")
 
         return root
-
-    def construct_tree(tokens):
-        return tokens
 
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields to standard names using self.FIELD_TRANSLATION_MAP"""
