@@ -18,26 +18,28 @@ class QueryStringValidator:
 
     def check_operator(self) -> None:
         """Check for operators written in not all capital letters."""
+
+        operator_changed = False
+
         for match in re.finditer(
             self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE
         ):
             operator = match.group()
             start, end = match.span()
-            operator_changed = False
             if operator != operator.upper():
                 self.query_str = (
                     self.query_str[:start] + operator.upper() + self.query_str[end:]
                 )
                 operator_changed = True
 
-            if operator_changed is True:
-                self.linter_messages.append(
-                    {
-                        "level": "Warning",
-                        "msg": f"Operator '{operator}' automatically capitalized",
-                        "pos": (start, end),
-                    }
-                )
+        if operator_changed is True:
+            self.linter_messages.append(
+                {
+                    "level": "Warning",
+                    "msg": f"Operator '{operator}' automatically capitalized",
+                    "pos": "",
+                }
+            )
 
     def check_parenthesis(self) -> None:
         """Check if the string has the same amount of "(" as well as ")"."""
@@ -52,7 +54,7 @@ class QueryStringValidator:
                 close_count += 1
 
         if open_count != close_count:
-            print("Unbalanced parenthesis")
+            # print("Unbalanced parenthesis")
             self.linter_messages.append(
                 {
                     "level": "Fatal",
@@ -108,7 +110,7 @@ class EBSCOQueryStringValidator:
                     self.linter_messages.append(
                         {
                             "level": "Error",
-                            "msg": f"search-field-unsupported: '{unsupported_fields}' automatically changed to Abstract AB.",
+                            "msg": f"search-field-unsupported: '{field}' automatically changed to Abstract AB.",
                             "pos": (start, end),
                         }
                     )
@@ -117,7 +119,7 @@ class EBSCOQueryStringValidator:
         self.query_str = "".join(modified_query_list)
 
         # Print the modified query string for verification
-        print("Modified query string:", self.query_str)
+        # print("Modified query string:", self.query_str) # -> Debug line
 
     def validate_token_position(
         self,
@@ -140,6 +142,7 @@ class EBSCOQueryStringValidator:
                 "FIELD",
                 "OPERATOR",
                 "PARENTHESIS_OPEN",
+                "SEARCH_TERM",
             ],  # SEARCH_TERM can follow FIELD or OPERATOR
             "OPERATOR": [
                 "SEARCH_TERM",
@@ -157,9 +160,9 @@ class EBSCOQueryStringValidator:
         }
 
         if previous_token_type not in valid_transitions.get(token_type, []):
-            print(
-                f"\nInvalid token sequence: '{previous_token_type}' followed by '{token_type}' at position '{position}'"
-            )
+            # print(
+            #     f"\nInvalid token sequence: '{previous_token_type}' followed by '{token_type}' at position '{position}'"
+            # )
             self.linter_messages.append(
                 {
                     "level": "Error",
@@ -178,9 +181,7 @@ class QueryListValidator:
 
     def check_string_connector(self) -> None:
         """Check string combination, e.g., replace #1 OR #2 -> S1 OR S2."""
-        raise NotImplementedError(
-            "parse method must be implemented by inheriting classes"
-        )
+        raise NotImplementedError("not yet implemented")
 
     def check_comments(self) -> None:
         """Check last string for possible commentary -> add to file commentary"""

@@ -20,17 +20,50 @@ class EBSCOParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
-    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)"
-    UNSUPPORTED_SEARCH_FIELD_REGEX = (
-        r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b|\b(?!OR\b)\b(?!S\d+\b)[A-Z]{1}\d+\b"
-    )
-    OPERATOR_REGEX = r"^(AND|OR|NOT)$"
+    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)\b"
+    OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_TERM_REGEX = r"\"[^\"]+\"|\b(?!S\d\b)\S+\*?\b"
+    SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d\b)\S+\*?\b"
 
     pattern = "|".join(
-        [SEARCH_FIELD_REGEX, OPERATOR_REGEX, PARENTHESIS_REGEX, SEARCH_TERM_REGEX]
+        [PARENTHESIS_REGEX, OPERATOR_REGEX, SEARCH_FIELD_REGEX, SEARCH_TERM_REGEX]
     )
+
+    # def combine_subsequent_tokens(self) -> None:
+    #     """Combine subsequent tokens based on specific conditions."""
+    #     if not self.tokens:
+    #         return
+
+    #     combined_tokens = []
+    #     i = 0
+
+    #     while i < len(self.tokens):
+    #         token, token_type, position = self.tokens[i]
+
+    #         # Example condition: Combine consecutive SEARCH_TERM tokens
+    #         if token_type == "SEARCH_TERM":
+    #             start_pos = position[0]
+    #             combined_value = token
+
+    #             # Look ahead to combine subsequent SEARCH_TERM tokens
+    #             while i + 1 < len(self.tokens) and self.tokens[i + 1][1] == "SEARCH_TERM":
+    #                 next_token, _, next_position = self.tokens[i + 1]
+    #                 combined_value += f" {next_token}"  # Combine with a space
+    #                 end_pos = next_position[1]
+    #                 i += 1
+    #             else:
+    #                 end_pos = position[1]
+
+    #             # Append the combined token
+    #             combined_tokens.append((combined_value, "SEARCH_TERM", (start_pos, end_pos)))
+
+    #         else:
+    #             # Append token as-is for other types
+    #             combined_tokens.append((token, token_type, position))
+
+    #         i += 1
+
+    #     self.tokens = combined_tokens
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -57,6 +90,8 @@ class EBSCOParser(QueryStringParser):
 
         for match in re.finditer(self.pattern, self.query_str):
             token = match.group()
+            token = token.strip()
+            # print("This token is being processed: " + token)   # -> Debug line
             start, end = match.span()
 
             # Determine token type
@@ -88,17 +123,24 @@ class EBSCOParser(QueryStringParser):
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
+
             # print(
             #    f"Tokenized: {token} as {token_type} at position {start}-{end}"
             # )   # ->   Debug line
+
+        # self.combine_subsequent_terms
+
+    def create_operator_node(self, token, operator, position, search_field):
+        return Query(
+            value=token, operator=operator, position=position, search_field=search_field
+        )
 
     def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
     ) -> Query:
-        """Build a query tree from a list of tokens recursively."""
-
+        """Build a query tree from a list of tokens with dynamic tree restructuring for precedence."""
         if not tokens:
             self.linter_messages.append(
                 {
@@ -107,9 +149,9 @@ class EBSCOParser(QueryStringParser):
                     "pos": None,
                 }
             )
-            # Build exception for this case
             raise ValueError("Parsing failed: No tokens provided to parse.")
 
+        precedence = {"NOT": 3, "AND": 2, "OR": 1}  # Higher number = higher precedence
         root = None
         current_operator = None
 
@@ -121,8 +163,8 @@ class EBSCOParser(QueryStringParser):
                 search_field = SearchField(token, position=position)
 
             elif token_type == "SEARCH_TERM":
-                term_node = Query(
-                    value=token, operator=False, search_field=search_field
+                term_node = self.create_operator_node(
+                    token, False, position, search_field
                 )
                 if current_operator:
                     current_operator.children.append(term_node)
@@ -133,15 +175,36 @@ class EBSCOParser(QueryStringParser):
 
             elif token_type == "OPERATOR":
                 if current_operator and current_operator.value == token:
-                    pass
-                else:
-                    new_operator_node = Query(
-                        value=token, operator=True, position=position
-                    )
+                    # Same operator: Append subsequent operands directly
+                    continue
+
+                new_operator_node = self.create_operator_node(
+                    token, True, position, search_field
+                )
+
+                if not current_operator:
+                    # No current operator; initialize root
                     if root:
                         new_operator_node.children.append(root)
                     root = new_operator_node
                     current_operator = new_operator_node
+                elif precedence[token] > precedence[current_operator.value]:
+                    # Higher precedence:
+                    #   pop child from previous operator
+                    #   append to new operator and new operator takes place of child
+                    #   functions then as current operator
+                    new_operator_node.children.append(current_operator.children.pop())
+                    current_operator.children.append(new_operator_node)
+                    current_operator = new_operator_node
+                else:
+                    # Lower precedence: if operator is same as token, sets tree depth back one layer
+                    # ensures correct logical nesting
+                    if root.value == token:
+                        current_operator = root
+                    else:
+                        # if not same, still sets back one layer, however, creates new node element
+                        root.children.append(new_operator_node)
+                        current_operator = new_operator_node
 
             elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
@@ -153,15 +216,16 @@ class EBSCOParser(QueryStringParser):
                 else:
                     root = subtree
 
-            elif token_type == "PARENTHESIS_CLOSED" and root:
+            elif token_type == "PARENTHESIS_CLOSED":
                 return root
 
-        # check if root is None to always return Query
         if root is None:
-            # Build exception for this case
             raise ValueError("Failed to construct a valid query tree.")
 
         return root
+
+    def construct_tree(tokens):
+        return tokens
 
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields to standard names using self.FIELD_TRANSLATION_MAP"""
@@ -206,6 +270,15 @@ class EBSCOParser(QueryStringParser):
         query = self.parse_query_tree(self.tokens)
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
+
+        # for message in self.linter_messages:
+        #     print(f"Level: {message['level']}")
+        #     print(f"Message: {message['msg']}")
+        #     if message['pos'] is not None:
+        #         print(f"Position: {message['pos']}")
+        #     else:
+        #         print("Position: Not specified")
+        #     print("-" * 50)  # Separator for readability
 
         return query
 
