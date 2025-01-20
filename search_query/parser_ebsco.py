@@ -60,7 +60,6 @@ class EBSCOParser(QueryStringParser):
                     # Iterate over subsequent search_terms and combine
                     next_token, _, next_position = self.tokens[i + 1]
                     combined_value += f" {next_token}"
-                    # print("This is the combined value: " + combined_value) -> Debug line
                     end_position = next_position[1]
                     i += 1
 
@@ -78,7 +77,7 @@ class EBSCOParser(QueryStringParser):
     def convert_proximity_operators(
         self, token: str, token_type: str
     ) -> tuple[str, int]:
-        """Convert a proximity operator token into its operator and distance components"""
+        """Convert proximity operator token into operator and distance components"""
         if token_type != "PROXIMITY_OPERATOR":
             raise ValueError(
                 f"Invalid token type: {token_type}. Expected 'PROXIMITY_OPERATOR'."
@@ -97,7 +96,8 @@ class EBSCOParser(QueryStringParser):
         # Validate and convert the distance
         if not distance_string.isdigit():
             raise ValueError(
-                f"Invalid proximity operator format: '{token}'. Expected a number after the operator."
+                f"Invalid proximity operator format: '{token}'. "
+                "Expected a number after the operator."
             )
 
         distance = int(distance_string)
@@ -195,7 +195,10 @@ class EBSCOParser(QueryStringParser):
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
     ) -> Query:
-        """Build a query tree from a list of tokens with dynamic tree restructuring for precedence."""
+        """
+        Build a query tree from a list of tokens
+        dynamic tree restructuring for precedence (NOT -> AND -> OR).
+        """
         if not tokens:
             self.linter_messages.append(
                 {
@@ -206,13 +209,12 @@ class EBSCOParser(QueryStringParser):
             )
             raise ValueError("Parsing failed: No tokens provided to parse.")
 
-        precedence = {"NOT": 3, "AND": 2, "OR": 1}  # Higher number = higher precedence
+        precedence = {"NOT": 3, "AND": 2, "OR": 1}  # Higher number=higher precedence
         root = None
         current_operator = None
 
         while tokens:
             token, token_type, position = tokens.pop(0)
-            # print(f"Processing token: {token} (Type: {token_type}, Position: {position})")  # Debug line
 
             if token_type == "FIELD":
                 # Create new search_field used by following search_terms
@@ -272,14 +274,20 @@ class EBSCOParser(QueryStringParser):
                     current_operator.children.append(new_operator_node)
                     current_operator = new_operator_node
                 else:
-                    # Lower precedence: if operator is same as token, sets tree depth back one layer
+                    # Lower precedence:
+                    # if operator is same as token, sets tree depth back one layer
                     # ensures correct logical nesting
-                    if root.value == token:
+                    if root and root.value == token:
                         current_operator = root
                     else:
-                        # if not same, still sets back one layer, however, creates new node element
-                        root.children.append(new_operator_node)
-                        current_operator = new_operator_node
+                        # if not same, still sets back one layer,
+                        # however, creates new node element
+                        if root:
+                            root.children.append(new_operator_node)
+                            current_operator = new_operator_node
+                        else:
+                            root = new_operator_node
+                            current_operator = new_operator_node
 
             elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
@@ -302,7 +310,9 @@ class EBSCOParser(QueryStringParser):
         return root
 
     def translate_search_fields(self, query: Query) -> None:
-        """Translate search fields to standard names using self.FIELD_TRANSLATION_MAP"""
+        """
+        Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
+        """
 
         # Error not included in linting, mainly for programming purposes
         if not hasattr(self, "FIELD_TRANSLATION_MAP") or not isinstance(
@@ -312,7 +322,7 @@ class EBSCOParser(QueryStringParser):
                 "FIELD_TRANSLATION_MAP is not defined or is not a dictionary."
             )
 
-        # Filter out search_fields and translate based on FIELD_TRANSLATION_MAP in constants
+        # Filter out search_fields and translate based on FIELD_TRANSLATION_MAP
         if query.search_field:
             original_value = query.search_field.value
             translated_value = self.FIELD_TRANSLATION_MAP.get(
@@ -401,11 +411,16 @@ class EBSCOListParser(QueryListParser):
             return f"{match.group(1)}{token_nr}"
 
         # Log a linter message and return the token number
-        # 1 AND 2 ... are still possible, however for standardization purposes it should be S/#
+        # 1 AND 2 ... are still possible,
+        # however for standardization purposes it should be S/#
         self.linter_messages.append(
             {
                 "level": "Warning",
-                "msg": "Connecting lines possibly failed. Please use this format for connection: S1 OR S2 OR S3 / #1 OR #2 OR #3",
+                "msg": (
+                    "Connecting lines possibly failed."
+                    "Please use this format for connection:"
+                    "S1 OR S2 OR S3 / #1 OR #2 OR #3"
+                ),
                 "pos": None,
             }
         )
@@ -436,7 +451,9 @@ class EBSCOListParser(QueryListParser):
 #                     "msg": f"Unmatched closing parenthesis at position {position}.",
 #                     "pos": position,
 #                 })
-#                 raise ValueError(f"Unmatched closing parenthesis at position {position}.")
+#                 raise ValueError(
+#                   f"Unmatched closing parenthesis at position {position}."
+# )
 #             stack.pop()  # Remove the matching opening parenthesis
 
 #         # Update the previous token type
