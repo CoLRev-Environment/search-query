@@ -105,23 +105,23 @@ class EBSCOParser(QueryStringParser):
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
+
+        if self.query_str is None:
+            raise ValueError("No string provided to parse.")
+
         self.tokens = []
 
-        validator = EBSCOQueryStringValidator(self.query_str, self.linter_messages)
+        validator = EBSCOQueryStringValidator(
+            self.query_str, self.search_fields_general
+        )
         validator.filter_search_field(
             strict=False
         )  # strict should be changed to strict.mode
         self.query_str = validator.query_str
+        self.linter_messages.extend(validator.linter_messages)
 
-        if self.query_str is None:
-            self.linter_messages.append(
-                {
-                    "level": "Fatal",
-                    "msg": "tokenizing-failed: empty string",
-                    "pos": None,
-                }
-            )
-            raise ValueError("No string provided to parse.")
+        validator.check_search_fields_general(strict=True)
+        self.linter_messages.extend(validator.linter_messages)
 
         previous_token_type = None
         token_type = None
@@ -162,6 +162,7 @@ class EBSCOParser(QueryStringParser):
             )
             # Set token_type for continoued validation
             previous_token_type = token_type
+            self.linter_messages.extend(validator.linter_messages)
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
@@ -323,15 +324,40 @@ class EBSCOParser(QueryStringParser):
         for child in query.children:
             self.translate_search_fields(child)
 
+    def print_linter_messages(self, linter_messages: list[dict]) -> None:
+        """
+        Print linter messages in a readable format.
+
+        :param linter_messages: List of linter message dictionaries.
+        """
+        if not linter_messages:
+            print("No linter messages to display.")
+            return
+
+        print("Linter Messages:")
+        print("-" * 50)
+
+        for message in linter_messages:
+            if not isinstance(message, dict):
+                print(f"Invalid message format: {message}")
+                continue
+
+            level = message.get("level", "Unknown Level")
+            msg = message.get("msg", "No message provided")
+            pos = message.get("pos", "Position not specified")
+
+            print(f"Level: {level}")
+            print(f"Message: {msg}")
+            print(f"Position: {pos}")
+            print("-" * 50)
+
     def parse(self) -> Query:
         """Parse a query string."""
 
         self.linter_messages.clear()
 
         # Create an instance of QueryStringValidator
-        validator = QueryStringValidator(
-            self.query_str, self.search_fields_general, self.linter_messages
-        )
+        validator = QueryStringValidator(self.query_str, self.search_fields_general)
 
         # Call validation methods
         validator.check_operator()
@@ -348,14 +374,9 @@ class EBSCOParser(QueryStringParser):
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
-        for message in self.linter_messages:
-            print(f"Level: {message['level']}")
-            print(f"Message: {message['msg']}")
-            if message["pos"] is not None:
-                print(f"Position: {message['pos']}")
-            else:
-                print("Position: Not specified")
-            print("-" * 50)  # Separator for readability
+        self.print_linter_messages(self.linter_messages)
+
+        print("fine until here")
 
         return query
 
