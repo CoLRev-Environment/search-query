@@ -24,6 +24,7 @@ class Operators:
     OR = "OR"
     NOT = "NOT"
     NEAR = "NEAR"
+    WITHIN = "WITHIN"
 
 
 class Fields:

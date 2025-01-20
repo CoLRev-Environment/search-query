@@ -21,12 +21,19 @@ class EBSCOParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
     SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)\b"
-    OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
+    LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d\b)\S+\*?\b"
+    PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
 
     pattern = "|".join(
-        [PARENTHESIS_REGEX, OPERATOR_REGEX, SEARCH_FIELD_REGEX, SEARCH_TERM_REGEX]
+        [
+            PARENTHESIS_REGEX,
+            LOGIC_OPERATOR_REGEX,
+            SEARCH_FIELD_REGEX,
+            SEARCH_TERM_REGEX,
+            PROXIMITY_OPERATOR_REGEX,
+        ]
     )
 
     def combine_subsequent_tokens(self) -> None:
@@ -38,9 +45,11 @@ class EBSCOParser(QueryStringParser):
         i = 0
 
         while i < len(self.tokens):
+            # Iterate through token list
             current_token, current_token_type, position = self.tokens[i]
 
             if current_token_type == "SEARCH_TERM":
+                # Filter out search_term
                 start_pos = position[0]
                 end_position = position[1]
                 combined_value = current_token
@@ -48,9 +57,10 @@ class EBSCOParser(QueryStringParser):
                 while (
                     i + 1 < len(self.tokens) and self.tokens[i + 1][1] == "SEARCH_TERM"
                 ):
+                    # Iterate over subsequent search_terms and combine
                     next_token, _, next_position = self.tokens[i + 1]
                     combined_value += f" {next_token}"
-                    print("This is the combined value: " + combined_value)
+                    # print("This is the combined value: " + combined_value) -> Debug line
                     end_position = next_position[1]
                     i += 1
 
@@ -64,6 +74,34 @@ class EBSCOParser(QueryStringParser):
             i += 1
 
         self.tokens = combined_tokens
+
+    def convert_proximity_operators(
+        self, token: str, token_type: str
+    ) -> tuple[str, int]:
+        """Convert a proximity operator token into its operator and distance components"""
+        if token_type != "PROXIMITY_OPERATOR":
+            raise ValueError(
+                f"Invalid token type: {token_type}. Expected 'PROXIMITY_OPERATOR'."
+            )
+
+        # Extract the operator (first character) and distance (rest of the string)
+        operator = token[:1]
+        distance_string = token[1:]
+
+        # Change value of operator to fit construction of operator query
+        if operator == "N":
+            operator = "NEAR"
+        else:
+            operator = "WITHIN"
+
+        # Validate and convert the distance
+        if not distance_string.isdigit():
+            raise ValueError(
+                f"Invalid proximity operator format: '{token}'. Expected a number after the operator."
+            )
+
+        distance = int(distance_string)
+        return operator, distance
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -97,8 +135,10 @@ class EBSCOParser(QueryStringParser):
             # Determine token type
             if re.fullmatch(self.SEARCH_FIELD_REGEX, token):
                 token_type = "FIELD"
-            elif re.fullmatch(self.OPERATOR_REGEX, token):
-                token_type = "OPERATOR"
+            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, token):
+                token_type = "LOGIC_OPERATOR"
+            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, token):
+                token_type = "PROXIMITY_OPERATOR"
             elif re.fullmatch(self.PARENTHESIS_REGEX, token):
                 if token == "(":
                     token_type = "PARENTHESIS_OPEN"
@@ -116,9 +156,11 @@ class EBSCOParser(QueryStringParser):
                 )
                 continue
 
+            # Validate token positioning to ensure logical structure
             validator.validate_token_position(
                 token_type, previous_token_type, (start, end)
             )
+            # Set token_type for continoued validation
             previous_token_type = token_type
 
             # Append token with its type and position to self.tokens
@@ -126,6 +168,8 @@ class EBSCOParser(QueryStringParser):
             # print(
             #    f"Tokenized: {token} as {token_type} at position {start}-{end}"
             # )   # ->   Debug line
+
+        # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
 
     def create_operator_node(
@@ -134,9 +178,15 @@ class EBSCOParser(QueryStringParser):
         operator: bool,
         position: tuple[int, int],
         search_field: typing.Optional[SearchField],
+        distance: typing.Optional[int],
     ) -> Query:
+        """Create new Query node"""
         return Query(
-            value=token, operator=operator, position=position, search_field=search_field
+            value=token,
+            operator=operator,
+            position=position,
+            search_field=search_field,
+            distance=distance,
         )
 
     def parse_query_tree(
@@ -164,11 +214,13 @@ class EBSCOParser(QueryStringParser):
             # print(f"Processing token: {token} (Type: {token_type}, Position: {position})")  # Debug line
 
             if token_type == "FIELD":
+                # Create new search_field used by following search_terms
                 search_field = SearchField(token, position=position)
 
             elif token_type == "SEARCH_TERM":
+                # Create new search_term and in case tree is empty, sets first root
                 term_node = self.create_operator_node(
-                    token, False, position, search_field
+                    token, False, position, search_field, None
                 )
                 if current_operator:
                     current_operator.children.append(term_node)
@@ -177,13 +229,31 @@ class EBSCOParser(QueryStringParser):
                 else:
                     root.children.append(term_node)
 
-            elif token_type == "OPERATOR":
+            elif token_type == "PROXIMITY_OPERATOR":
+                # Split token into NEAR/WITHIN and distance
+                operater_value = self.convert_proximity_operators(token, token_type)
+                token = operater_value[0]
+                distance = operater_value[1]
+
+                # Create new proximity_operator from token (N3, W1, N13, ...)
+                proximity_node = self.create_operator_node(
+                    token, True, position, search_field, distance
+                )
+
+                # Set proximity_operator as tree node
+                if root:
+                    proximity_node.children.append(root)
+                root = proximity_node
+                current_operator = proximity_node
+
+            elif token_type == "LOGIC_OPERATOR":
+                # Same operator: Append subsequent operands directly
                 if current_operator and current_operator.value == token:
-                    # Same operator: Append subsequent operands directly
                     continue
 
+                # Create new operator node
                 new_operator_node = self.create_operator_node(
-                    token, True, position, search_field
+                    token, True, position, search_field, None
                 )
 
                 if not current_operator:
@@ -241,6 +311,7 @@ class EBSCOParser(QueryStringParser):
                 "FIELD_TRANSLATION_MAP is not defined or is not a dictionary."
             )
 
+        # Filter out search_fields and translate based on FIELD_TRANSLATION_MAP in constants
         if query.search_field:
             original_value = query.search_field.value
             translated_value = self.FIELD_TRANSLATION_MAP.get(
@@ -248,6 +319,7 @@ class EBSCOParser(QueryStringParser):
             )
             query.search_field.value = translated_value
 
+        # Iterate through queries
         for child in query.children:
             self.translate_search_fields(child)
 
@@ -296,6 +368,7 @@ class EBSCOListParser(QueryListParser):
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
 
+        # Match string combinators such as S1 AND S2 ... ; #1 AND #2 ; ...
         pattern = rf"(S|#){token_nr}"
 
         match = re.search(pattern, self.query_list)
@@ -305,6 +378,7 @@ class EBSCOListParser(QueryListParser):
             return f"{match.group(1)}{token_nr}"
 
         # Log a linter message and return the token number
+        # 1 AND 2 ... are still possible, however for standardization purposes it should be S/#
         self.linter_messages.append(
             {
                 "level": "Warning",
@@ -313,8 +387,6 @@ class EBSCOListParser(QueryListParser):
             }
         )
         return token_nr
-
-    # override and implement methods of parent class (as needed)
 
     # the parse() method of QueryListParser is called to parse the list of queries
 

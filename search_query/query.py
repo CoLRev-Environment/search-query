@@ -46,18 +46,26 @@ class Query(ABC):
         search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,
+        distance: typing.Optional[int] = None,
     ) -> None:
         """init method - abstract"""
 
         self.value = value
         self.operator = operator
+        self.distance = distance
         if operator:
             assert value in [
                 Operators.AND,
                 Operators.OR,
                 Operators.NOT,
+                Operators.NEAR,
+                Operators.WITHIN,
                 "NOT_INITIALIZED",
             ]
+            if value in {Operators.NEAR, Operators.WITHIN}:
+                assert distance is not None, f"{value} operator requires a distance."
+            else:
+                assert distance is None, f"{value} operator cannot have a distance."
 
         self.children: typing.List[Query] = []
         if children:
