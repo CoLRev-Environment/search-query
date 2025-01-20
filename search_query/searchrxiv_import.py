@@ -70,6 +70,8 @@ def create_search_file(
     s_file["platform"] = loaded_data["content"]["Platform"]
     s_file["database"] = [loaded_data["content"]["Database Searched"]]  # type: ignore
     s_file["search_string"] = loaded_data["content"]["Search"]
+    if "Search Fields" in loaded_data["content"]:
+        s_file["search_field_general"] = loaded_data["content"]["Search Fields"]
     s_file["date"] = {}
     if "Search Conducted Date" in loaded_data["content"]:
         s_file["date"]["search_conducted"] = loaded_data["content"][
@@ -147,6 +149,9 @@ if __name__ == "__main__":
 
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
+                search_field_general = None
+                if "Search Fields" in data["content"]:
+                    search_field_general = data["content"]["Search Fields"]
 
                 try:
                     # Option: select only list queries
@@ -155,7 +160,7 @@ if __name__ == "__main__":
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
-                    ret = parse(query_string, syntax=syntax)
+                    ret = parse(query_string, search_field_general, syntax=syntax)
                     # To select (start with) smaller queries:
                     # # if ret.get_nr_leaves() > 20:
                     # #     continue

@@ -12,8 +12,14 @@ class QueryStringValidator:
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
 
-    def __init__(self, query_str: str, linter_messages: typing.List[dict] = []):
+    def __init__(
+        self,
+        query_str: str,
+        search_fields_general: str,
+        linter_messages: typing.List[dict] = [],
+    ):
         self.query_str = query_str
+        self.search_fields_general = search_fields_general
         self.linter_messages = linter_messages
 
     def check_operator(self) -> None:
@@ -69,9 +75,30 @@ class EBSCOQueryStringValidator:
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
 
-    def __init__(self, query_str: str, linter_messages: typing.List[dict] = []):
+    def __init__(
+        self,
+        query_str: str,
+        search_fields_general: str,
+        linter_messages: typing.List[dict] = [],
+    ):
         self.query_str = query_str
+        self.search_fields_general = search_fields_general
         self.linter_messages = linter_messages
+
+    def check_search_fields_general(self, strict: bool) -> None:
+        """Check field 'Search Fields' in content."""
+        if strict:
+            self.linter_messages.append(
+                {
+                    "level": "Warning",
+                    "msg": (
+                        f"Content in Search Fields found: '{self.search_fields_general}'\n"
+                        "If content is applicable in search, please add to search_terms "
+                        "in the search-string"
+                    ),
+                    "pos": "",
+                }
+            )
 
     def filter_search_field(self, strict: bool) -> None:
         """
@@ -110,7 +137,9 @@ class EBSCOQueryStringValidator:
                     self.linter_messages.append(
                         {
                             "level": "Error",
-                            "msg": f"search-field-unsupported: '{field}' automatically changed to Abstract AB.",
+                            "msg": (
+                                f"search-field-unsupported: '{field}' automatically changed to Abstract AB."
+                            ),
                             "pos": (start, end),
                         }
                     )
@@ -118,7 +147,6 @@ class EBSCOQueryStringValidator:
         # Convert the modified list back to a string
         self.query_str = "".join(modified_query_list)
 
-        # Print the modified query string for verification
         # print("Modified query string:", self.query_str) # -> Debug line
 
     def validate_token_position(
@@ -144,10 +172,14 @@ class EBSCOQueryStringValidator:
                 "PARENTHESIS_OPEN",
                 "SEARCH_TERM",
             ],  # SEARCH_TERM can follow FIELD or OPERATOR
-            "OPERATOR": [
+            "LOGIC_OPERATOR": [
                 "SEARCH_TERM",
                 "PARENTHESIS_CLOSED",
-            ],  # OPERATOR must follow SEARCH_TERM or closing parenthesis
+            ],  # LOGIC_OPERATOR must follow SEARCH_TERM or closing parenthesis
+            "PROXIMITY_OPERATOR": [
+                "SEARCH_TERM",
+                "PARENTHESIS_CLOSED",
+            ],  # PROXIMITY_OPERATOR must follow SEARCH_TERM or closing parenthesis
             "PARENTHESIS_OPEN": [
                 "FIELD",
                 "OPERATOR",
@@ -162,7 +194,7 @@ class EBSCOQueryStringValidator:
         if previous_token_type not in valid_transitions.get(token_type, []):
             # print(
             #     f"\nInvalid token sequence: '{previous_token_type}' followed by '{token_type}' at position '{position}'"
-            # )
+            # ) -> Debug line
             self.linter_messages.append(
                 {
                     "level": "Error",
@@ -185,6 +217,4 @@ class QueryListValidator:
 
     def check_comments(self) -> None:
         """Check last string for possible commentary -> add to file commentary"""
-        raise NotImplementedError(
-            "parse method must be implemented by inheriting classes"
-        )
+        raise NotImplementedError("not yet implemented")

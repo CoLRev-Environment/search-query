@@ -329,7 +329,9 @@ class EBSCOParser(QueryStringParser):
         self.linter_messages.clear()
 
         # Create an instance of QueryStringValidator
-        validator = QueryStringValidator(self.query_str, self.linter_messages)
+        validator = QueryStringValidator(
+            self.query_str, self.search_fields_general, self.linter_messages
+        )
 
         # Call validation methods
         validator.check_operator()
@@ -346,14 +348,14 @@ class EBSCOParser(QueryStringParser):
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
-        # for message in self.linter_messages:
-        #     print(f"Level: {message['level']}")
-        #     print(f"Message: {message['msg']}")
-        #     if message['pos'] is not None:
-        #         print(f"Position: {message['pos']}")
-        #     else:
-        #         print("Position: Not specified")
-        #     print("-" * 50)  # Separator for readability
+        for message in self.linter_messages:
+            print(f"Level: {message['level']}")
+            print(f"Message: {message['msg']}")
+            if message["pos"] is not None:
+                print(f"Position: {message['pos']}")
+            else:
+                print("Position: Not specified")
+            print("-" * 50)  # Separator for readability
 
         return query
 
@@ -361,9 +363,9 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    def __init__(self, query_list: str) -> None:
+    def __init__(self, query_list: str, search_fields_general: str) -> None:
         """Initialize with a query list and use EBSCOParser for parsing each query."""
-        super().__init__(query_list, EBSCOParser)
+        super().__init__(query_list, search_fields_general, EBSCOParser)
 
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from search_query.constants import PLATFORM
-from search_query.parser_ebsco import EBSCOParser
 from search_query.parser_ebsco import EBSCOListParser
+from search_query.parser_ebsco import EBSCOParser
 from search_query.query import Query
 
 # from search_query.parser_pubmed import PubmedListParser
@@ -26,7 +26,7 @@ LIST_PARSERS = {
 
 
 # pylint: disable=too-many-return-statements
-def parse(query_str: str, *, syntax: str = "wos") -> Query:
+def parse(query_str: str, search_fields_general: str, *, syntax: str = "wos") -> Query:
     """Parse a query string."""
 
     syntax = syntax.lower()
@@ -34,13 +34,13 @@ def parse(query_str: str, *, syntax: str = "wos") -> Query:
     if "1." in query_str[:10]:
         if syntax not in LIST_PARSERS:
             raise ValueError(f"Invalid syntax: {syntax}")
-
-        return LIST_PARSERS[syntax](query_str).parse()
+        # print("This is the content of the Search Fields: " + search_fields_general) # -> Debug line
+        return LIST_PARSERS[syntax](query_str, search_fields_general).parse()
 
     if syntax not in PARSERS:
         raise ValueError(f"Invalid syntax: {syntax}")
 
-    return PARSERS[syntax](query_str).parse()
+    return PARSERS[syntax](query_str, search_fields_general).parse()
 
 
 def get_platform(platform_str: str) -> str:
@@ -49,7 +49,7 @@ def get_platform(platform_str: str) -> str:
     platform_str = platform_str.lower().rstrip().lstrip()
     if platform_str in ["web of science", "wos"]:
         return PLATFORM.WOS.value
-    
+
     if platform_str in ["ebscohost", "ebsco"]:
         return PLATFORM.EBSCO.value
 
