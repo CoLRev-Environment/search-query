@@ -6,20 +6,20 @@ from search_query.constants import PLATFORM
 from search_query.query import Query
 
 # from search_query.parser_ebsco import EBSCOParser
-# from search_query.parser_pubmed import PubmedListParser
-# from search_query.parser_pubmed import PubmedParser
+from search_query.parser_pubmed import PubmedListParser
+from search_query.parser_pubmed import PubmedParser
 # from search_query.parser_wos import WOSListParser
 # from search_query.parser_wos import WOSParser
 
 PARSERS = {
     # PLATFORM.WOS.value: WOSParser,
-    # PLATFORM.PUBMED.value: PubmedParser,
+    PLATFORM.PUBMED.value: PubmedParser,
     # PLATFORM.EBSCO.value: EBSCOParser,
 }
 
 LIST_PARSERS = {
     # PLATFORM.WOS.value: WOSListParser,
-    # PLATFORM.PUBMED.value: PubmedListParser,
+    PLATFORM.PUBMED.value: PubmedListParser,
     # PLATFORM.EBSCO.value: EBSCOParser,
 }
 

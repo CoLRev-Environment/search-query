@@ -33,6 +33,7 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    MESH_TERM = "mh"
 
     @classmethod
     def all(cls) -> list:
@@ -64,6 +65,8 @@ PLATFORM_FIELD_MAP = {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
+        Fields.AUTHOR_KEYWORDS: "[au]",
+        Fields.MESH_TERM: "[mh]"
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
@@ -81,6 +84,30 @@ PLATFORM_COMBINED_FIELDS_MAP = {
         "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
     },
 }
+
+
+class PubmedErrorCodes:
+    """Error codes used by the Pubmed parser"""
+
+    UNBALANCED_PARENTHESES = "F0002"
+    MISSING_OPERATOR = "F0003"
+    INVALID_BRACKET_USE = "F0004"
+    INVALID_OPERATOR_POSITION = "F0005"
+    INVALID_FIELD_POSITION = "F0006"
+    EMPTY_PARENTHESES = "F0007"
+    NESTED_NOT_QUERY = "F0008"
+
+    FIELD_CONTRADICTION = "E0001"
+    UNSUPPORTED_FIELD = "E0003"
+    MISSING_QUERY_FIELD = "E0004"
+    INVALID_PROXIMITY_DISTANCE = "E0005"
+    INVALID_PROXIMITY_USE = "E0006"
+    INVALID_PROXIMITY_SYNTAX = "E0007"
+    INVALID_CHARACTER = "E0008"
+
+    FIELD_REDUNDANT = "W0001"
+    FIELD_NOT_SPECIFIED = "W0002"
+    TERM_REDUNDANT = "W0003"
 
 
 class ExitCodes:
