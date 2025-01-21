@@ -20,19 +20,19 @@ class EBSCOParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
-    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)\b"
-    LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d\b)\S+\*?\b"
+    LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
+    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)\b"
+    SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
 
     pattern = "|".join(
         [
             PARENTHESIS_REGEX,
             LOGIC_OPERATOR_REGEX,
+            PROXIMITY_OPERATOR_REGEX,
             SEARCH_FIELD_REGEX,
             SEARCH_TERM_REGEX,
-            PROXIMITY_OPERATOR_REGEX,
         ]
     )
 
@@ -133,17 +133,17 @@ class EBSCOParser(QueryStringParser):
             start, end = match.span()
 
             # Determine token type
-            if re.fullmatch(self.SEARCH_FIELD_REGEX, token):
-                token_type = "FIELD"
-            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, token):
-                token_type = "LOGIC_OPERATOR"
-            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, token):
-                token_type = "PROXIMITY_OPERATOR"
-            elif re.fullmatch(self.PARENTHESIS_REGEX, token):
+            if re.fullmatch(self.PARENTHESIS_REGEX, token):
                 if token == "(":
                     token_type = "PARENTHESIS_OPEN"
                 else:
                     token_type = "PARENTHESIS_CLOSED"
+            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, token):
+                token_type = "LOGIC_OPERATOR"
+            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, token):
+                token_type = "PROXIMITY_OPERATOR"
+            elif re.fullmatch(self.SEARCH_FIELD_REGEX, token):
+                token_type = "FIELD"
             elif re.fullmatch(self.SEARCH_TERM_REGEX, token):
                 token_type = "SEARCH_TERM"
             else:
@@ -371,6 +371,8 @@ class EBSCOParser(QueryStringParser):
 
         # Call validation methods
         validator.check_operator()
+        self.linter_messages.extend(validator.linter_messages)
+
         validator.check_parenthesis()
 
         # Update the query string and messages after validation
@@ -385,8 +387,6 @@ class EBSCOParser(QueryStringParser):
         self.translate_search_fields(query)
 
         self.print_linter_messages(self.linter_messages)
-
-        print("fine until here")
 
         return query
 

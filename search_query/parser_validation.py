@@ -24,7 +24,6 @@ class QueryStringValidator:
     def check_operator(self) -> None:
         """Check for operators written in not all capital letters."""
         self.linter_messages.clear()
-        operator_changed = False
 
         for match in re.finditer(
             self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE
@@ -35,27 +34,28 @@ class QueryStringValidator:
                 self.query_str = (
                     self.query_str[:start] + operator.upper() + self.query_str[end:]
                 )
-                operator_changed = True
 
-        if operator_changed is True:
-            self.linter_messages.append(
-                {
-                    "level": "Warning",
-                    "msg": f"Operator '{operator}' automatically capitalized",
-                    "pos": "",
-                }
-            )
+                # self.linter_messages.append(
+                # {
+                #     "level": "Warning",
+                #     "msg": f"Operator '{operator}' automatically capitalized",
+                #     "pos": (start, end),
+                # }
+            # )            
 
     def check_parenthesis(self) -> None:
-        """Check if the string has the same amount of "(" as well as ")"."""
+        """Check if the string has the same amount of '(' as well as ')'."""
         self.linter_messages.clear()
-        # stack = []  # To validate parentheses pairing
+
         open_count = 0
         close_count = 0
+
         for match in re.finditer(self.PARENTHESIS_REGEX, self.query_str):
             parenthesis = match.group()
+
             if parenthesis == "(":
                 open_count += 1
+
             if parenthesis == ")":
                 close_count += 1
 
@@ -88,7 +88,7 @@ class EBSCOQueryStringValidator:
         """Check field 'Search Fields' in content."""
         self.linter_messages.clear()
 
-        if strict:
+        if self.search_fields_general and strict:
             self.linter_messages.append(
                 {
                     "level": "Warning",
