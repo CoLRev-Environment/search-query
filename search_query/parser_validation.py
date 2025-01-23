@@ -16,10 +16,10 @@ class QueryStringValidator:
     def __init__(
         self,
         query_str: str,
-        search_fields_general: str,
+        search_field_general: str,
     ):
         self.query_str = query_str
-        self.search_fields_general = search_fields_general
+        self.search_field_general = search_field_general
 
     def check_operator(self) -> None:
         """Check for operators written in not all capital letters."""
@@ -35,13 +35,13 @@ class QueryStringValidator:
                     self.query_str[:start] + operator.upper() + self.query_str[end:]
                 )
 
-                # self.linter_messages.append(
-                # {
-                #     "level": "Warning",
-                #     "msg": f"Operator '{operator}' automatically capitalized",
-                #     "pos": (start, end),
-                # }
-            # )            
+                self.linter_messages.append(
+                    {
+                        "level": "Warning",
+                        "msg": f"Operator '{operator}' automatically capitalized",
+                        "pos": (start, end),
+                    }
+                )
 
     def check_parenthesis(self) -> None:
         """Check if the string has the same amount of '(' as well as ')'."""
@@ -64,7 +64,10 @@ class QueryStringValidator:
             self.linter_messages.append(
                 {
                     "level": "Fatal",
-                    "msg": f"Unbalanced parentheses: open = {open_count}, close = {close_count}",
+                    "msg": (
+                        f"Unbalanced parentheses: open = {open_count},"
+                        f" close =  {close_count}"
+                    ),
                     "pos": "",
                 }
             )
@@ -79,22 +82,24 @@ class EBSCOQueryStringValidator:
     def __init__(
         self,
         query_str: str,
-        search_fields_general: str,
+        search_field_general: str,
     ):
         self.query_str = query_str
-        self.search_fields_general = search_fields_general
+        self.search_field_general = search_field_general
 
-    def check_search_fields_general(self, strict: bool) -> None:
+    def check_search_field_general(self, strict: bool) -> None:
         """Check field 'Search Fields' in content."""
         self.linter_messages.clear()
 
-        if self.search_fields_general and strict:
+        if strict:
             self.linter_messages.append(
                 {
                     "level": "Warning",
                     "msg": (
-                        f"Content in Search Fields found: '{self.search_fields_general}'\n"
-                        "If content is applicable in search, please add to search_terms "
+                        "Content in Search Fields: "
+                        f"'{self.search_field_general}'\n"
+                        "If content is applicable in search, "
+                        "please add to search_terms "
                         "in the search-string"
                     ),
                     "pos": "",
@@ -125,7 +130,8 @@ class EBSCOQueryStringValidator:
                     while True:
                         # Prompt the user to enter a replacement field
                         replacement = input(
-                            f"Unsupported field '{field}' found. Please enter a replacement (e.g., 'AB'): "
+                            f"Unsupported field '{field}' found. "
+                            "Please enter a replacement (e.g., 'AB'): "
                         ).strip()
                         if replacement in supported_fields:
                             # Replace directly in the modified query list
@@ -133,7 +139,8 @@ class EBSCOQueryStringValidator:
                             print(f"Field '{field}' replaced with '{replacement}'.")
                             break
                         print(
-                            f"'{replacement}' is not a supported field. Please try again."
+                            f"'{replacement}' is not a supported field. "
+                            "Please try again."
                         )
                 else:
                     # Replace the unsupported field with 'AB' directly
@@ -142,7 +149,8 @@ class EBSCOQueryStringValidator:
                         {
                             "level": "Error",
                             "msg": (
-                                f"search-field-unsupported: '{field}' automatically changed to Abstract AB."
+                                f"search-field-unsupported: '{field}' "
+                                "automatically changed to Abstract AB."
                             ),
                             "pos": (start, end),
                         }
@@ -159,7 +167,10 @@ class EBSCOQueryStringValidator:
         previous_token_type: typing.Optional[str],
         position: typing.Optional[tuple[int, int]],
     ) -> None:
-        """Validate the position of the current token based on its type and the previous token type."""
+        """
+        Validate the position of the current token
+        based on its type and the previous token type.
+        """
         self.linter_messages.clear()
 
         if previous_token_type is None:
@@ -176,7 +187,8 @@ class EBSCOQueryStringValidator:
                 "LOGIC_OPERATOR",
                 "PROXIMITY_OPERATOR",
                 "PARENTHESIS_CLOSED",
-            ],  # After SEARCH_TERM can be SEARCH_TERM (will get connected anyway); LOGIC_OPERATOR; PROXIMITY_OPERATOR; PARENTHESIS_CLOSED
+            ],  # After SEARCH_TERM can be SEARCH_TERM (will get connected anyway);
+            # LOGIC_OPERATOR; PROXIMITY_OPERATOR; PARENTHESIS_CLOSED
             "LOGIC_OPERATOR": [
                 "SEARCH_TERM",
                 "FIELD",
@@ -196,17 +208,18 @@ class EBSCOQueryStringValidator:
                 "PARENTHESIS_CLOSED",
                 "LOGIC_OPERATOR",
                 "PROXIMITY_OPERATOR",
-            ],  # After PARENTHESIS_CLOSED can be PARENTHESIS_CLOSED; LOGIC_OPERATOR; PROXIMITY_OPERATOR
+            ],  # After PARENTHESIS_CLOSED can be PARENTHESIS_CLOSED;
+            # LOGIC_OPERATOR; PROXIMITY_OPERATOR
         }
 
         if token_type not in valid_transitions.get(previous_token_type, []):
-            # print(
-            #     f"\nInvalid token sequence: '{previous_token_type}' followed by '{token_type}' at position '{position}'"
-            # ) -> Debug line
             self.linter_messages.append(
                 {
                     "level": "Error",
-                    "msg": f"Invalid token sequence: '{previous_token_type}' followed by '{token_type}'",
+                    "msg": (
+                        f"Invalid token sequence: '{previous_token_type}' "
+                        f"followed by '{token_type}'"
+                    ),
                     "pos": position,
                 }
             )
@@ -217,9 +230,9 @@ class QueryListValidator:
 
     linter_messages: typing.List[dict] = []
 
-    def __init__(self, query_list: str, search_fields_general: str):
+    def __init__(self, query_list: str, search_field_general: str):
         self.query_list = query_list
-        self.search_fields_general = search_fields_general
+        self.search_field_general = search_field_general
 
     def check_string_connector(self) -> None:
         """Check string combination, e.g., replace #1 OR #2 -> S1 OR S2."""

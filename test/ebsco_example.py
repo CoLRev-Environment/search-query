@@ -8,10 +8,12 @@ search = SearchFile(
 )
 
 # parse loaded file, depending on platform syntax written in File
-query = parse(search.search_string, syntax=search.platform)
+query = parse(search.search_string, search.search_field_general, syntax=search.platform)
 
 # while parsing is done, linter messages will be collected and printed here
-messages = run_linter(search.search_string, syntax=search.platform)
+messages = run_linter(
+    search.search_string, search.search_field_general, syntax=search.platform
+)
 print(messages)
 
 # Debug line

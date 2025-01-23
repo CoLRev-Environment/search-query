@@ -11,10 +11,10 @@ from search_query.search_file import SearchFile
 from search_query.utils import format_query_string_pos
 
 
-def run_linter(search_string: str, syntax: str) -> list:
+def run_linter(search_string: str, search_field_general: str, syntax: str) -> list:
     """Run the linter on the search string"""
 
-    parser = search_query.parser.PARSERS[syntax](search_string)
+    parser = search_query.parser.PARSERS[syntax](search_string, search_field_general)
     try:
         parser.parse()
     except Exception:  # pylint: disable=broad-except
@@ -34,7 +34,11 @@ def pre_commit_hook() -> int:
         print(e)
         return ExitCodes.FAIL
 
-    linter_messages = run_linter(search_file.search_string, search_file.search_string)
+    linter_messages = run_linter(
+        search_file.search_string,
+        search_file.search_string,
+        search_file.search_field_general,
+    )
 
     if linter_messages:
         for message in linter_messages:

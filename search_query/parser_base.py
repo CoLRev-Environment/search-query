@@ -17,12 +17,12 @@ class QueryStringParser:
     linter_messages: typing.List[dict] = []
 
     def __init__(
-        self, query_str: str, search_fields_general: str, mode: str = "strict"
+        self, query_str: str, search_field_general: str, mode: str = "strict"
     ) -> None:
         self.query_str = query_str
         self.tokens = []
         self.mode = mode
-        self.search_fields_general = search_fields_general
+        self.search_field_general = search_field_general
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
@@ -127,13 +127,12 @@ class QueryListParser:
     def __init__(
         self,
         query_list: str,
-        search_fields_general: str,
+        search_field_general: str,
         parser_class: type[QueryStringParser],
     ) -> None:
         self.query_list = query_list
-        # print("query_list: " + self.query_list)       # Debug line
         self.parser_class = parser_class
-        self.search_fields_general = search_fields_general
+        self.search_field_general = search_field_general
 
     def parse_dict(self) -> dict:
         """Tokenize the query_list."""
@@ -141,13 +140,11 @@ class QueryListParser:
         tokens = {}
         previous = 0
         for line in query_list.split("\n"):
-            # print(f"Processing line: '{line}'")     # Debug line
             if line.strip() == "":
                 continue
 
             match = re.match(self.LIST_ITEM_REGEX, line)
             if not match:
-                # print(f"Line not matching format: '{line}'")    # Debug line
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()
             pos_start, pos_end = match.span(2)
@@ -173,7 +170,6 @@ class QueryListParser:
     ) -> None:
         for i, (content, pos) in enumerate(query_list):
             token_str = self.get_token_str(token_nr)
-            # print("token_string_super: " + token_str)       # Debug line
             if token_str in content:
                 query_list.pop(i)
 
@@ -222,11 +218,10 @@ class QueryListParser:
 
         query_list = self.dict_to_positioned_list(tokens)
         query_string = "".join([query[0] for query in query_list])
-        # print("query_string_complete " + query_string)      # Debug line
-        search_fields_general = self.search_fields_general
+        search_field_general = self.search_field_general
 
         try:
-            query = self.parser_class(query_string, search_fields_general).parse()
+            query = self.parser_class(query_string, search_field_general).parse()
 
         except search_query_exception.QuerySyntaxError as exc:
             # Correct positions and query string

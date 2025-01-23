@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-import inquirer
+import inquirer  # type: ignore
 
 import search_query.exception as search_query_exception
 from search_query.parser import parse
@@ -94,8 +94,8 @@ def create_search_file(
 if __name__ == "__main__":
     # These variable must be set before running the script
     coder_initials = "TF"
-    parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
-    # parent_directory = "/home/ubuntu1/Thesis/example_ebsco/"
+    # parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
+    parent_directory = "/home/ubuntu1/Thesis/sorted-examples/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
-                search_field_general = None
+                search_field_general = "No general search-field"
                 if "Search Fields" in data["content"]:
                     search_field_general = data["content"]["Search Fields"]
 

@@ -36,6 +36,7 @@ class SearchFile:
     review_type: typing.Optional[str] = None
     linked_protocol: typing.Optional[str] = None
     linked_report: typing.Optional[str] = None
+    search_field_general: str = ""
 
     def __init__(self, filepath: str) -> None:
         with open(filepath, encoding="utf-8") as file:
