@@ -103,6 +103,10 @@ class EBSCOParser(QueryStringParser):
         distance = int(distance_string)
         return operator, distance
 
+    def is_search_field(self, token: str) -> bool:
+        """Check if the token is a valid search field."""
+        return re.fullmatch(self.SEARCH_FIELD_REGEX, token) is not None
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
@@ -171,13 +175,14 @@ class EBSCOParser(QueryStringParser):
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
 
+    # pylint: disable=too-many-arguments
     def create_operator_node(
         self,
         token: str,
-        operator: bool,
-        position: tuple[int, int],
-        search_field: typing.Optional[SearchField],
-        distance: typing.Optional[int],
+        operator: bool = False,
+        position: typing.Optional[tuple] = None,
+        search_field: typing.Optional[SearchField] = None,
+        distance: typing.Optional[int] = None,
     ) -> Query:
         """Create new Query node"""
         return Query(
@@ -188,6 +193,57 @@ class EBSCOParser(QueryStringParser):
             distance=distance,
         )
 
+    def append_node(
+        self,
+        root: typing.Optional[Query],
+        current_operator: typing.Optional[Query],
+        node: Query,
+    ) -> tuple[typing.Optional[Query], typing.Optional[Query]]:
+        """Append new Query node"""
+        if current_operator:
+            current_operator.children.append(node)
+        elif root is None:
+            root = node
+        else:
+            root.children.append(node)
+        return root, current_operator
+
+    def append_operator(
+        self,
+        root: typing.Optional[Query],
+        operator_node: Query,
+    ) -> tuple[Query, Query]:
+        """Append new Operator node"""
+        if root:
+            operator_node.children.append(root)
+        return operator_node, operator_node
+
+    def handle_higher_precedence(
+        self,
+        current_operator: Query,
+        new_operator_node: Query,
+    ) -> Query:
+        """Handle logic operators of higher precedence"""
+        new_operator_node.children.append(current_operator.children.pop())
+        current_operator.children.append(new_operator_node)
+        return new_operator_node
+
+    def handle_lower_precedence(
+        self,
+        token: str,
+        root: typing.Optional[Query],
+        new_operator_node: Query,
+    ) -> tuple[Query, Query]:
+        """Handle logic operators of lower precedence"""
+        if root and root.value == token:
+            return root, root
+        # if not same, still sets back one layer,
+        # however, creates new node element
+        if root:
+            root.children.append(new_operator_node)
+            return root, new_operator_node
+        return new_operator_node, new_operator_node
+
     def parse_query_tree(
         self,
         tokens: list,
@@ -195,21 +251,12 @@ class EBSCOParser(QueryStringParser):
     ) -> Query:
         """
         Build a query tree from a list of tokens
-        dynamic tree restructuring for precedence (NOT -> AND -> OR).
+        dynamic tree restructuring for precedence (NOT > AND > OR).
         """
-        if not tokens:
-            self.linter_messages.append(
-                {
-                    "level": "Fatal",
-                    "msg": "parsing-failed: empty tokens",
-                    "pos": None,
-                }
-            )
-            raise ValueError("Parsing failed: No tokens provided to parse.")
 
         precedence = {"NOT": 3, "AND": 2, "OR": 1}  # Higher number=higher precedence
-        root = None
-        current_operator = None
+        root: typing.Optional[Query] = None
+        current_operator: typing.Optional[Query] = None
 
         while tokens:
             token, token_type, position = tokens.pop(0)
@@ -223,18 +270,14 @@ class EBSCOParser(QueryStringParser):
                 term_node = self.create_operator_node(
                     token, False, position, search_field, None
                 )
-                if current_operator:
-                    current_operator.children.append(term_node)
-                elif root is None:
-                    root = term_node
-                else:
-                    root.children.append(term_node)
+                # Append search_term to tree
+                root, current_operator = self.append_node(
+                    root, current_operator, term_node
+                )
 
             elif token_type == "PROXIMITY_OPERATOR":
                 # Split token into NEAR/WITHIN and distance
-                operater_value = self.convert_proximity_operators(token, token_type)
-                token = operater_value[0]
-                distance = operater_value[1]
+                token, distance = self.convert_proximity_operators(token, token_type)
 
                 # Create new proximity_operator from token (N3, W1, N13, ...)
                 proximity_node = self.create_operator_node(
@@ -242,15 +285,12 @@ class EBSCOParser(QueryStringParser):
                 )
 
                 # Set proximity_operator as tree node
-                if root:
-                    proximity_node.children.append(root)
-                root = proximity_node
-                current_operator = proximity_node
+                root, current_operator = self.append_operator(root, proximity_node)
 
             elif token_type == "LOGIC_OPERATOR":
                 # Same operator: Append subsequent operands directly
-                if current_operator and current_operator.value == token:
-                    continue
+                # if current_operator and current_operator.value == token:
+                #     continue
 
                 # Create new operator node
                 new_operator_node = self.create_operator_node(
@@ -259,43 +299,31 @@ class EBSCOParser(QueryStringParser):
 
                 if not current_operator:
                     # No current operator; initialize root
-                    if root:
-                        new_operator_node.children.append(root)
-                    root = new_operator_node
-                    current_operator = new_operator_node
+                    root, current_operator = self.append_operator(
+                        root, new_operator_node
+                    )
                 elif precedence[token] > precedence[current_operator.value]:
                     # Higher precedence:
                     #   pop child from previous operator
                     #   append to new operator and new operator takes place of child
                     #   functions then as current operator
-                    new_operator_node.children.append(current_operator.children.pop())
-                    current_operator.children.append(new_operator_node)
-                    current_operator = new_operator_node
+                    current_operator = self.handle_higher_precedence(
+                        current_operator, new_operator_node
+                    )
                 else:
                     # Lower precedence:
                     # if operator is same as token, sets tree depth back one layer
                     # ensures correct logical nesting
-                    if root and root.value == token:
-                        current_operator = root
-                    else:
-                        # if not same, still sets back one layer,
-                        # however, creates new node element
-                        if root:
-                            root.children.append(new_operator_node)
-                            current_operator = new_operator_node
-                        else:
-                            root = new_operator_node
-                            current_operator = new_operator_node
+                    root, current_operator = self.handle_lower_precedence(
+                        token, root, new_operator_node
+                    )
 
             elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
                 subtree = self.parse_query_tree(tokens, search_field)
-                if current_operator:
-                    current_operator.children.append(subtree)
-                elif root:
-                    root.children.append(subtree)
-                else:
-                    root = subtree
+                root, current_operator = self.append_node(
+                    root, current_operator, subtree
+                )
 
             elif token_type == "PARENTHESIS_CLOSED":
                 if root is None:
@@ -380,7 +408,7 @@ class EBSCOParser(QueryStringParser):
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
-        self.print_linter_messages(self.linter_messages)
+        # self.print_linter_messages(self.linter_messages)
 
         return query
 
@@ -424,40 +452,3 @@ class EBSCOListParser(QueryListParser):
 
 
 # Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)
-
-
-# def validate_token_sequence(self, tokens: list) -> None:
-#     """Perform forward parsing to validate the token sequence."""
-#     stack = []  # To validate parentheses pairing
-#     previous_token_type = None
-
-#     for token, token_type, position in tokens:
-#         # Validate transitions
-#         self.validate_token_position(token_type, previous_token_type, position)
-
-#         # Handle parentheses pairing
-#         if token_type == "PARENTHESIS_OPEN":
-#             stack.append(position)  # Track the position of the opening parenthesis
-#         elif token_type == "PARENTHESIS_CLOSED":
-#             if not stack:
-#                 self.linter_messages.append({
-#                     "level": "Error",
-#                     "msg": f"Unmatched closing parenthesis at position {position}.",
-#                     "pos": position,
-#                 })
-#                 raise ValueError(
-#                   f"Unmatched closing parenthesis at position {position}."
-# )
-#             stack.pop()  # Remove the matching opening parenthesis
-
-#         # Update the previous token type
-#         previous_token_type = token_type
-
-#     # Check for unmatched opening parentheses
-#     if stack:
-#         self.linter_messages.append({
-#             "level": "Error",
-#             "msg": f"Unmatched opening parenthesis at positions {stack}",
-#             "pos": None,
-#         })
-#         raise ValueError(f"Unmatched opening parenthesis at positions {stack}.")

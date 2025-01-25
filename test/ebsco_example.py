@@ -16,8 +16,8 @@ messages = run_linter(
 )
 print(messages)
 
-# Debug line
-print(query)
-
 # translates query string to syntax from ebsco host
-# query.to_string(syntax="ebsco")
+pubmed_query = query.to_string(syntax="pubmed")
+ebsco_query = query.to_string(syntax="ebsco")
+print(pubmed_query)
+print(ebsco_query)
