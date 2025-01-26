@@ -176,15 +176,21 @@ class EBSCOParser(QueryStringParser):
         self.combine_subsequent_tokens()
 
     # pylint: disable=too-many-arguments
-    def create_operator_node(
+    def create_query_node(
         self,
         token: str,
         operator: bool = False,
         position: typing.Optional[tuple] = None,
         search_field: typing.Optional[SearchField] = None,
         distance: typing.Optional[int] = None,
+        search_field_par: typing.Optional[SearchField] = None,
     ) -> Query:
         """Create new Query node"""
+
+        # Handles case if search_field was created for entire parentheses
+        if search_field is None and search_field_par is not None:
+            search_field = search_field_par
+
         return Query(
             value=token,
             operator=operator,
@@ -224,8 +230,13 @@ class EBSCOParser(QueryStringParser):
         new_operator_node: Query,
     ) -> Query:
         """Handle logic operators of higher precedence"""
+
+        # pop child from previous operator
+        # append to new operator and new operator takes place of child
+        # functions then as current operator
         new_operator_node.children.append(current_operator.children.pop())
         current_operator.children.append(new_operator_node)
+
         return new_operator_node
 
     def handle_lower_precedence(
@@ -235,19 +246,26 @@ class EBSCOParser(QueryStringParser):
         new_operator_node: Query,
     ) -> tuple[Query, Query]:
         """Handle logic operators of lower precedence"""
+
+        # if operator is same as token, sets tree depth back one layer
+        # ensures correct logical nesting
         if root and root.value == token:
             return root, root
+
         # if not same, still sets back one layer,
         # however, creates new node element
         if root:
             root.children.append(new_operator_node)
             return root, new_operator_node
+
         return new_operator_node, new_operator_node
 
     def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
+        search_field_par: typing.Optional[SearchField] = None,
+        # previous_token_type: typing.Optional[str] = None,
     ) -> Query:
         """
         Build a query tree from a list of tokens
@@ -267,20 +285,22 @@ class EBSCOParser(QueryStringParser):
 
             elif token_type == "SEARCH_TERM":
                 # Create new search_term and in case tree is empty, sets first root
-                term_node = self.create_operator_node(
-                    token, False, position, search_field, None
+                term_node = self.create_query_node(
+                    token, False, position, search_field, None, search_field_par
                 )
+
                 # Append search_term to tree
                 root, current_operator = self.append_node(
                     root, current_operator, term_node
                 )
+                search_field = None
 
             elif token_type == "PROXIMITY_OPERATOR":
                 # Split token into NEAR/WITHIN and distance
                 token, distance = self.convert_proximity_operators(token, token_type)
 
                 # Create new proximity_operator from token (N3, W1, N13, ...)
-                proximity_node = self.create_operator_node(
+                proximity_node = self.create_query_node(
                     token, True, position, search_field, distance
                 )
 
@@ -288,12 +308,8 @@ class EBSCOParser(QueryStringParser):
                 root, current_operator = self.append_operator(root, proximity_node)
 
             elif token_type == "LOGIC_OPERATOR":
-                # Same operator: Append subsequent operands directly
-                # if current_operator and current_operator.value == token:
-                #     continue
-
                 # Create new operator node
-                new_operator_node = self.create_operator_node(
+                new_operator_node = self.create_query_node(
                     token, True, position, search_field, None
                 )
 
@@ -303,29 +319,26 @@ class EBSCOParser(QueryStringParser):
                         root, new_operator_node
                     )
                 elif precedence[token] > precedence[current_operator.value]:
-                    # Higher precedence:
-                    #   pop child from previous operator
-                    #   append to new operator and new operator takes place of child
-                    #   functions then as current operator
+                    # Higher precedence
                     current_operator = self.handle_higher_precedence(
                         current_operator, new_operator_node
                     )
                 else:
                     # Lower precedence:
-                    # if operator is same as token, sets tree depth back one layer
-                    # ensures correct logical nesting
                     root, current_operator = self.handle_lower_precedence(
                         token, root, new_operator_node
                     )
 
             elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
-                subtree = self.parse_query_tree(tokens, search_field)
+                search_field_par = search_field
+                subtree = self.parse_query_tree(tokens, search_field, search_field_par)
                 root, current_operator = self.append_node(
                     root, current_operator, subtree
                 )
 
             elif token_type == "PARENTHESIS_CLOSED":
+                # Return subtree
                 if root is None:
                     raise ValueError("Parsing failed: Unmatched closing parenthesis.")
                 return root
