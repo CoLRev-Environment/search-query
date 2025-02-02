@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Tests for search query translation."""
-from pathlib import Path
 from typing import List
 from typing import Tuple
 
@@ -8,7 +7,6 @@ import pytest  # type: ignore
 
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
-from search_query.query import Query
 
 
 # to run (from top-level dir): pytest test/test_parser_ebsco.py
@@ -69,10 +67,10 @@ def print_debug_tokens(
     return debug_message
 
 
-directory_path = Path(
-    "/home/ubuntu1/Thesis/sorted-examples/search-query/data/ebscohost"
-)
-file_list = list(directory_path.glob("*.json"))
+# directory_path = Path(
+#     "/home/ubuntu1/Thesis/sorted-examples/search-query/data/ebscohost"
+# )
+# file_list = list(directory_path.glob("*.json"))
 
 
 # # Use the list of files with pytest.mark.parametrize
@@ -99,16 +97,16 @@ file_list = list(directory_path.glob("*.json"))
 #         pytest.fail(f"JSON decoding failed for {file_path}: {e}")
 
 
-def print_debug(
-    parser: QueryStringParser, query: Query, query_string: str, query_str: str
-) -> str:
-    """Debugging utility for query parsing mismatches."""
-    return (
-        f"Query String: {query_string}\n\n"
-        f"Tokens: {parser.get_token_types(parser.tokens)}\n\n"
-        f"Generated Query String: {query_str}\n\n"
-        f"Structured Query: {query.to_string('structured')}"
-    )
+# def print_debug(
+#     parser: QueryStringParser, query: Query, query_string: str, query_str: str
+# ) -> str:
+#     """Debugging utility for query parsing mismatches."""
+#     return (
+#         f"Query String: {query_string}\n\n"
+#         f"Tokens: {parser.get_token_types(parser.tokens)}\n\n"
+#         f"Generated Query String: {query_str}\n\n"
+#         f"Structured Query: {query.to_string()}"
+#     )
 
 
 # @pytest.mark.parametrize(
