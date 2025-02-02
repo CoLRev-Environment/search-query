@@ -45,7 +45,7 @@ def to_string_structured(node: Query, *, level: int = 0) -> str:
 
     result = f"{result}[\n"
     for child in node.children:
-        result = f"{result}{to_string_structured(child, level = level +1 )}\n"
-    result = f"{result}{'|' + ' ' *level*3 + ' '}]"
+        result = f"{result}{to_string_structured(child, level=level + 1)}\n"
+    result = f"{result}{'|' + ' ' * level * 3 + ' '}]"
 
     return result
