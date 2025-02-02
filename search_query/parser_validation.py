@@ -60,13 +60,12 @@ class QueryStringValidator:
                 close_count += 1
 
         if open_count != close_count:
-            # print("Unbalanced parenthesis")
             self.linter_messages.append(
                 {
                     "level": "Fatal",
                     "msg": (
                         f"Unbalanced parentheses: open = {open_count},"
-                        f" close =  {close_count}"
+                        f" close = {close_count}"
                     ),
                     "pos": "",
                 }
@@ -91,7 +90,7 @@ class EBSCOQueryStringValidator:
         """Check field 'Search Fields' in content."""
         self.linter_messages.clear()
 
-        if strict:
+        if self.search_field_general != "" and strict:
             self.linter_messages.append(
                 {
                     "level": "Warning",

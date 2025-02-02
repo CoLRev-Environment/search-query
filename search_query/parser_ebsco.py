@@ -473,6 +473,3 @@ class EBSCOListParser(QueryListParser):
         return token_nr
 
     # the parse() method of QueryListParser is called to parse the list of queries
-
-
-# Add exceptions to exception.py (e.g., XYInvalidFieldTag, XYSyntaxMissingSearchField)

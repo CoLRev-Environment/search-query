@@ -11,6 +11,8 @@ from search_query.parser_ebsco import EBSCOParser
 
 # to run (from top-level dir): pytest test/test_parser_ebsco.py
 
+# flake8: noqa: E501
+
 
 @pytest.mark.parametrize(
     "query_string, expected_tokens",
@@ -77,24 +79,19 @@ def print_debug_tokens(
 # @pytest.mark.parametrize("file_path", file_list)
 # def test_ebsco_query_parser(file_path: str) -> None:
 #     """Test the translation of a search query to an EBSCO query."""
-#     try:
-#         with open(file_path) as file:
-#             data = json.load(file)
-#             query_string = data.get("search_string")
-#             expected = data.get("parsed", {}).get("search")
 
-#             assert query_string is not None, f"Missing 'search_string' in {file_path}"
-#             assert expected is not None, f"Missing 'parsed.search' in {file_path}"
+#     with open(file_path) as file:
+#         data = json.load(file)
+#         query_string = data.get("search_string")
+#         expected = data["parsed"]["search"]
 
-#             parser = EBSCOParser(query_string, None)
-#             query = parser.parse()
-#             query_str = query.to_string()
+#         parser = EBSCOParser(query_string, "")
+#         query = parser.parse()
+#         query_str = query.to_string()
 
-#             assert query_str == expected, print_debug(  # type: ignore
-#                 parser, query, query_string, query_str
-#             )
-#     except json.JSONDecodeError as e:
-#         pytest.fail(f"JSON decoding failed for {file_path}: {e}")
+#         assert query_str == expected, print_debug(  # type: ignore
+#             parser, query, query_string, query_str
+#         )
 
 
 # def print_debug(
@@ -109,17 +106,61 @@ def print_debug_tokens(
 #     )
 
 
-# @pytest.mark.parametrize(
-#     "query_string, linter_messages",
-#     [
-#         ("AB-(Health)", []),
-#         ('TI "Artificial" Intelligence', ["Mismatched quotes in 'Artificial'"]),
-#     ],
-# )
-# def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
-#     ebsco_parser = EBSCOParser(query_string, "")
-#     try:
-#         ebsco_parser.parse()
-#     except Exception:
-#         pass
-#     assert ebsco_parser.linter_messages == linter_messages
+@pytest.mark.parametrize(
+    "query_string, linter_messages",
+    [
+        # 1️. Boolean operators should be capitalized
+        (
+            "Artificial intelligence and Future",
+            [
+                {
+                    "level": "Warning",
+                    "msg": "Operator 'and' automatically capitalized",
+                    "pos": (24, 27),
+                }
+            ],
+        ),
+        # 2️. Unbalanced parentheses
+        (
+            "(Artificial Intelligence AND Future",
+            [
+                {
+                    "level": "Fatal",
+                    "msg": "Unbalanced parentheses: open = 1, close = 0",
+                    "pos": "",
+                }
+            ],
+        ),
+        # 3. Unsupported search fields (e.g., `XY` is unsupported)
+        (
+            "XY Artificial Intelligence OR AB Future",
+            [
+                {
+                    "level": "Error",
+                    "msg": "search-field-unsupported: 'XY' automatically changed to Abstract AB.",
+                    "pos": (0, 2),
+                }
+            ],
+        ),
+        # 4️. Invalid token sequence (Field followed directly by Logic Operator)
+        (
+            "TI AND Artificial Intelligence",
+            [
+                {
+                    "level": "Error",
+                    "msg": "Invalid token sequence: 'FIELD' followed by 'LOGIC_OPERATOR'",
+                    "pos": (3, 6),
+                }
+            ],
+        ),
+        # 5️. Correct query (No linter messages expected)
+        ("TI Artificial Intelligence AND AB Future", []),
+    ],
+)
+def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
+    ebsco_parser = EBSCOParser(query_string, "")
+    try:
+        ebsco_parser.parse()
+    except Exception:
+        pass
+    assert ebsco_parser.linter_messages == linter_messages
