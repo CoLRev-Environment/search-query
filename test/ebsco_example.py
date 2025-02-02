@@ -15,9 +15,8 @@ messages = run_linter(
     search.search_string, search.search_field_general, syntax=search.platform
 )
 print(messages)
+print("-" * 20)
 
 # translates query string to syntax from ebsco host
-pubmed_query = query.to_string(syntax="pubmed")
-ebsco_query = query.to_string(syntax="ebsco")
-print(pubmed_query)
+ebsco_query = query.to_string(syntax="ebscohost")
 print(ebsco_query)

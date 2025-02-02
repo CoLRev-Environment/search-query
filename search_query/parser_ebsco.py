@@ -188,7 +188,7 @@ class EBSCOParser(QueryStringParser):
         """Create new Query node"""
 
         # Handles case if search_field was created for entire parentheses
-        if search_field is None and search_field_par is not None:
+        if not search_field and search_field_par is not None:
             search_field = search_field_par
 
         return Query(
@@ -260,19 +260,25 @@ class EBSCOParser(QueryStringParser):
 
         return new_operator_node, new_operator_node
 
+    def check_for_none(self, root: typing.Optional[Query]) -> Query:
+        """Check if root is none"""
+        if root is None:
+            raise ValueError("Failed to construct a valid query tree.")
+        return root
+
     def parse_query_tree(
         self,
         tokens: list,
         search_field: typing.Optional[SearchField] = None,
         search_field_par: typing.Optional[SearchField] = None,
-        # previous_token_type: typing.Optional[str] = None,
     ) -> Query:
         """
         Build a query tree from a list of tokens
         dynamic tree restructuring for precedence (NOT > AND > OR).
         """
 
-        precedence = {"NOT": 3, "AND": 2, "OR": 1}  # Higher number=higher precedence
+        # Higher number=higher precedence
+        precedence = {"NOT": 3, "AND": 2, "OR": 1}
         root: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
 
@@ -293,6 +299,7 @@ class EBSCOParser(QueryStringParser):
                 root, current_operator = self.append_node(
                     root, current_operator, term_node
                 )
+
                 search_field = None
 
             elif token_type == "PROXIMITY_OPERATOR":
@@ -331,20 +338,24 @@ class EBSCOParser(QueryStringParser):
 
             elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
-                search_field_par = search_field
-                subtree = self.parse_query_tree(tokens, search_field, search_field_par)
+                # Set search_field_par as search field regarding the whole subtree
+                # If subtree is done, reset search_field_par
+                if search_field_par is not None:
+                    search_field = search_field_par
+
+                subtree = self.parse_query_tree(tokens, search_field, search_field)
+                search_field_par = None
+
                 root, current_operator = self.append_node(
                     root, current_operator, subtree
                 )
 
             elif token_type == "PARENTHESIS_CLOSED":
                 # Return subtree
-                if root is None:
-                    raise ValueError("Parsing failed: Unmatched closing parenthesis.")
+                root = self.check_for_none(root)
                 return root
 
-        if root is None:
-            raise ValueError("Failed to construct a valid query tree.")
+        root = self.check_for_none(root)
 
         return root
 
