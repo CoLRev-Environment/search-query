@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # These variable must be set before running the script
     coder_initials = "TF"
     parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
-    # parent_directory = "/home/ubuntu1/Thesis/sorted-examples/"
+    # parent_directory = "/home/ubuntu1/Thesis/sorted_queries/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -158,15 +158,15 @@ if __name__ == "__main__":
 
                 try:
                     # Option: select only list queries
-                    if "1." not in query_string:
-                        continue
+                    # if "1." not in query_string:
+                    #     continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
                     ret = parse(query_string, search_field_general, syntax=syntax)
                     # To select (start with) smaller queries:
-                    # # if ret.get_nr_leaves() > 20:
-                    # #     continue
+                    if ret.get_nr_leaves() > 20:
+                        continue
 
                     # Print for validation
                     print(ret.to_string("structured"))

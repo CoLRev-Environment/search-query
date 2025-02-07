@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 """Tests for search query translation."""
+import json
+from pathlib import Path
 from typing import List
 from typing import Tuple
 
 import pytest  # type: ignore
 
 from search_query.parser_base import QueryStringParser
+from search_query.parser_ebsco import EBSCOListParser
 from search_query.parser_ebsco import EBSCOParser
+from search_query.query import Query
 
 
 # to run (from top-level dir): pytest test/test_parser_ebsco.py
@@ -69,41 +73,38 @@ def print_debug_tokens(
     return debug_message
 
 
-# directory_path = Path(
-#     "/home/ubuntu1/Thesis/sorted-examples/search-query/data/ebscohost"
-# )
+directory_path = Path("/home/ubuntu1/Thesis/search-query-ebsco/test")
+file_list = list(directory_path.glob("*test.json"))
+
+# directory_path = Path("/home/ubuntu1/Thesis/sorted_queries/search-query/data/ebscohost")
 # file_list = list(directory_path.glob("*.json"))
 
 
-# # Use the list of files with pytest.mark.parametrize
-# @pytest.mark.parametrize("file_path", file_list)
-# def test_ebsco_query_parser(file_path: str) -> None:
-#     """Test the translation of a search query to an EBSCO query."""
+# Use the list of files with pytest.mark.parametrize
+@pytest.mark.parametrize("file_path", file_list)
+def test_ebsco_query_parser(file_path: str) -> None:
+    """Test the translation of a search query to an EBSCO query."""
 
-#     with open(file_path) as file:
-#         data = json.load(file)
-#         query_string = data.get("search_string")
-#         expected = data["parsed"]["search"]
+    with open(file_path) as file:
+        data = json.load(file)
+        query_string = data.get("search_string")
+        expected = data["parsed"]["search"]
 
-#         parser = EBSCOParser(query_string, "")
-#         query = parser.parse()
-#         query_str = query.to_string()
+        parser = EBSCOListParser(query_string, "")
+        query = parser.parse()
+        query_str = query.to_string("pre_notation")
 
-#         assert query_str == expected, print_debug(  # type: ignore
-#             parser, query, query_string, query_str
-#         )
+        assert query_str == expected, print_debug(  # type: ignore
+            query, query_string, query_str
+        )
 
 
-# def print_debug(
-#     parser: QueryStringParser, query: Query, query_string: str, query_str: str
-# ) -> str:
-#     """Debugging utility for query parsing mismatches."""
-#     return (
-#         f"Query String: {query_string}\n\n"
-#         f"Tokens: {parser.get_token_types(parser.tokens)}\n\n"
-#         f"Generated Query String: {query_str}\n\n"
-#         f"Structured Query: {query.to_string()}"
-#     )
+def print_debug(query: Query, query_string: str, query_str: str) -> None:
+    """Debugging utility for query parsing mismatches."""
+    print(query_string)
+    print()
+    print(query_str)
+    print(query.to_string("structured"))
 
 
 @pytest.mark.parametrize(

@@ -113,16 +113,18 @@ class EBSCOParser(QueryStringParser):
         if self.query_str is None:
             raise ValueError("No string provided to parse.")
 
+        strict = False
+        if self.mode == "strict":
+            strict = True
+
         self.tokens = []
 
         validator = EBSCOQueryStringValidator(self.query_str, self.search_field_general)
-        validator.filter_search_field(
-            strict=False
-        )  # strict should be changed to strict.mode
+        validator.filter_search_field(strict)
         self.query_str = validator.query_str
         self.linter_messages.extend(validator.linter_messages)
 
-        validator.check_search_field_general(strict=True)
+        validator.check_search_field_general(strict)
         self.linter_messages.extend(validator.linter_messages)
 
         previous_token_type = None
@@ -131,7 +133,6 @@ class EBSCOParser(QueryStringParser):
         for match in re.finditer(self.pattern, self.query_str):
             token = match.group()
             token = token.strip()
-            # print("This token is being processed: " + token)   # -> Debug line
             start, end = match.span()
 
             # Determine token type
@@ -168,9 +169,6 @@ class EBSCOParser(QueryStringParser):
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
-            # print(
-            #    f"Tokenized: {token} as {token_type} at position {start}-{end}"
-            # )   # ->   Debug line
 
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
@@ -411,6 +409,7 @@ class EBSCOParser(QueryStringParser):
         """Parse a query string."""
 
         self.linter_messages.clear()
+        self.mode = "not-strict"
 
         # Create an instance of QueryStringValidator
         validator = QueryStringValidator(self.query_str, self.search_field_general)
