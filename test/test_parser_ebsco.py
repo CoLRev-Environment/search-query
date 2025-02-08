@@ -7,8 +7,8 @@ from typing import Tuple
 
 import pytest  # type: ignore
 
+from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
-from search_query.parser_ebsco import EBSCOListParser
 from search_query.parser_ebsco import EBSCOParser
 from search_query.query import Query
 
@@ -73,11 +73,11 @@ def print_debug_tokens(
     return debug_message
 
 
-directory_path = Path("/home/ubuntu1/Thesis/search-query-ebsco/test")
-file_list = list(directory_path.glob("*test.json"))
+# directory_path = Path("/home/ubuntu1/Thesis/search-query-ebsco/test")
+# file_list = list(directory_path.glob("*test.json"))
 
-# directory_path = Path("/home/ubuntu1/Thesis/sorted_queries/search-query/data/ebscohost")
-# file_list = list(directory_path.glob("*.json"))
+directory_path = Path("/home/ubuntu1/Thesis/sorted_queries/search-query/data/ebscohost")
+file_list = list(directory_path.glob("*.json"))
 
 
 # Use the list of files with pytest.mark.parametrize
@@ -87,11 +87,10 @@ def test_ebsco_query_parser(file_path: str) -> None:
 
     with open(file_path) as file:
         data = json.load(file)
-        query_string = data.get("search_string")
+        query_string = data["search_string"]
         expected = data["parsed"]["search"]
 
-        parser = EBSCOListParser(query_string, "")
-        query = parser.parse()
+        query = parse(query_string, search_field_general="", syntax="ebscohost")
         query_str = query.to_string("pre_notation")
 
         assert query_str == expected, print_debug(  # type: ignore

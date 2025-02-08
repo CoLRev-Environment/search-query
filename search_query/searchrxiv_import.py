@@ -164,9 +164,9 @@ if __name__ == "__main__":
                     print(filepath)
                     print(query_string)
                     ret = parse(query_string, search_field_general, syntax=syntax)
-                    # To select (start with) smaller queries:
-                    if ret.get_nr_leaves() > 20:
-                        continue
+                    # # To select (start with) smaller queries:
+                    # if ret.get_nr_leaves() > 20:
+                    #     continue
 
                     # Print for validation
                     print(ret.to_string("structured"))
