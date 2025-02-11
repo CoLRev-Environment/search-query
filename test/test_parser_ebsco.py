@@ -73,9 +73,6 @@ def print_debug_tokens(
     return debug_message
 
 
-# directory_path = Path("/home/ubuntu1/Thesis/search-query-ebsco/test")
-# file_list = list(directory_path.glob("*test.json"))
-
 directory_path = Path("/home/ubuntu1/Thesis/sorted_queries/search-query/data/ebscohost")
 file_list = list(directory_path.glob("*.json"))
 

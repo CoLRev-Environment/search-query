@@ -431,6 +431,7 @@ class EBSCOParser(QueryStringParser):
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
+        # Uncomment if linter_messages should be printed (e.g. for testing)
         # self.print_linter_messages(self.linter_messages)
 
         return query

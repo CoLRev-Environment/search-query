@@ -158,8 +158,6 @@ class EBSCOQueryStringValidator:
         # Convert the modified list back to a string
         self.query_str = "".join(modified_query_list)
 
-        # print("Modified query string:", self.query_str) # -> Debug line
-
     def validate_token_position(
         self,
         token_type: str,
@@ -233,10 +231,11 @@ class QueryListValidator:
         self.query_list = query_list
         self.search_field_general = search_field_general
 
+    # Possible validations to be implemented in the future
     def check_string_connector(self) -> None:
         """Check string combination, e.g., replace #1 OR #2 -> S1 OR S2."""
         raise NotImplementedError("not yet implemented")
 
     def check_comments(self) -> None:
-        """Check last string for possible commentary -> add to file commentary"""
+        """Check string for comments -> add to file comments"""
         raise NotImplementedError("not yet implemented")

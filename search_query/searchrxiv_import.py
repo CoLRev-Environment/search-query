@@ -98,7 +98,6 @@ if __name__ == "__main__":
     # These variable must be set before running the script
     coder_initials = "TF"
     parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
-    # parent_directory = "/home/ubuntu1/Thesis/sorted_queries/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
