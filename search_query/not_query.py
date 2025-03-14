@@ -15,7 +15,7 @@ class NotQuery(Query):
         children: typing.List[typing.Union[str, Query]],
         *,
         search_field: typing.Union[SearchField, str],
-        position: typing.Optional[tuple] = None
+        position: typing.Optional[tuple] = None,
     ) -> None:
         """init method
         search terms: strings which you want to include in the search query

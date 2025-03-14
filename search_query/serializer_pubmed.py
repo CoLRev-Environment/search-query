@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_MAP
-from search_query.constants import Operators
+
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
 
