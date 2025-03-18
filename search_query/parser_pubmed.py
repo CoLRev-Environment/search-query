@@ -20,14 +20,60 @@ class PubmedParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
 
     DEFAULT_FIELD_MAP = {
+        "[affiliation]": "[ad]",
         "[all fields]": "[all]",
+        "[article identifier]": "[aid]",
         "[author]": "[au]",
-        "[mesh terms]": "[mh]",
+        "[author identifier]": "[auid]",
+        "[completion date]": "[dcom]",
+        "[conflict of interest statement]": "[cois]",
+        "[corporate author]": "[cn]",
+        "[create date]": "[crdt]",
+        "[ec/rn number]": "[rn]",
+        "[editor]": "[ed]",
+        "[entry date]": "[edat]",
+        "[filter]": "[sb]",
+        "[first author name]": "[1au]",
+        "[full author name]": "[fau]",
+        "[full investigator name]": "[fir]",
+        "[grants and funding]": "[gr]",
+        "[investigator]": "[ir]",
+        "[isbn]": "[isbn]",
+        "[issue]": "[ip]",
+        "[journal]": "[ta]",
+        "[language]": "[la]",
+        "[last author name]": "[lastau]",
+        "[location id]": "[lid]",
+        "[mesh date]": "[mhda]",
         "[mesh]": "[mh]",
-        "[mesh:noexp]": "[mh]",
+        "[mesh terms]": "[mh]",
+        "[mesh terms:noexp]": "[mh]",
         "[mh:noexp]": "[mh]",
+        "[mesh:noexp]": "[mh]",
+        "[mesh major topic]": "[mh]",
+        "[majr]": "[mh]",
+        "[mj]": "[mh]",
+        "[mesh subheading]": "[mh]",
+        "[subheading]": "[mh]",
+        "[sh]": "[mh]",
+        "[modification date]": "[lr]",
+        "[nlm unique id]": "[jid]",
+        "[other term]": "[ot]",
+        "[pagination]": "[pg]",
+        "[personal name as subject]": "[ps]",
+        "[pharmacological action]": "[pa]",
+        "[place of publication]": "[pl]",
+        "[publication date]": "[dp]",
+        "[publication type]": "[pt]",
+        "[publisher]": "[pubn]",
+        "[secondary source id]": "[si]",
+        "[subset]": "[sb]",
+        "[supplementary concept]": "[nm]",
+        "[text word]": "[tw]",
         "[title]": "[ti]",
         "[title/abstract]": "[tiab]",
+        "[transliterated title]": "[tt]",
+        "[volume]": "[vi]"
     }
 
     DEFAULT_ERROR_MESSAGES = {
@@ -45,7 +91,7 @@ class PubmedParser(QueryStringParser):
         PubmedErrorCodes.EMPTY_PARENTHESES:
         "Empty parentheses.",
         PubmedErrorCodes.NESTED_NOT_QUERY:
-        "NOT operator nested within subquery.",
+        "NOT operator should not be nested inside a subquery.",
 
         # Error
         PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX:
@@ -62,6 +108,8 @@ class PubmedParser(QueryStringParser):
         "Field tag unsupported by the PubMed search interface: https://pubmed.ncbi.nlm.nih.gov/help/#search-tags.",
         PubmedErrorCodes.INVALID_CHARACTER:
         "Search term contains invalid character:",
+        PubmedErrorCodes.INVALID_WILDCARD:
+        "Invalid wildcard use. Search terms must have at least 4 characters before the first wildcard *.",
 
         # Warning
         PubmedErrorCodes.FIELD_REDUNDANT:
@@ -72,7 +120,10 @@ class PubmedParser(QueryStringParser):
         "If applicable, it is recommended to explicitly define search fields in the search string.",
         PubmedErrorCodes.TERM_REDUNDANT:
         "Warning: Redundant search term. "
-        "To avoid an unnecessarily complex query structure, it is recommended to remove redundant search terms."
+        "To avoid an unnecessarily complex query structure, it is recommended to remove redundant search terms.",
+        PubmedErrorCodes.PRECEDENCE_WARNING:
+        "Warning: AND operator used after OR operator in the same subquery. "
+        "PubMed does not enforce operator precedence and processes queries strictly from left to right."
     }
 
     # Messages to inform the user about automatic corrections made by the parser when operating in non-strict mode.
@@ -87,6 +138,8 @@ class PubmedParser(QueryStringParser):
             "Field has been converted to default field [all].",
         PubmedErrorCodes.INVALID_CHARACTER:
             "Character has been converted to whitespace.",
+        PubmedErrorCodes.INVALID_WILDCARD:
+            "Wildcard * has been ignored.",
     }
 
     SEARCH_FIELD_REGEX = r'\[[^\[]*?\]'
@@ -304,6 +357,9 @@ class PubmedParser(QueryStringParser):
                 value = Fields.TITLE
                 field_values.insert(index + 1, Fields.ABSTRACT)
 
+            if value in {"[subject headings]"}:
+                value = Fields.MESH_TERM
+
             if value in self.FIELD_TRANSLATION_MAP:
                 value = self.FIELD_TRANSLATION_MAP[value]
 
@@ -316,7 +372,7 @@ class PubmedParser(QueryStringParser):
         if field_value.lower() in self.DEFAULT_FIELD_MAP:
             return self.DEFAULT_FIELD_MAP.get(field_value.lower())
         else:
-            return field_value
+            return field_value.lower()
 
     def _expand_combined_fields(self, query: Query, search_fields: list) -> None:
         """Expand queries with combined search fields into an OR query"""
@@ -381,6 +437,8 @@ class PubmedParser(QueryStringParser):
 
             if self.is_term(token[0]):
                 self._check_invalid_characters(index, tokens, invalid_token_indices)
+                if "*" in token[0]:
+                    self._check_invalid_wildcard(index, tokens)
             else:
                 self._check_invalid_token_position(index, tokens, invalid_token_indices)
 
@@ -398,8 +456,8 @@ class PubmedParser(QueryStringParser):
             ):
                 self._check_missing_operator(index, tokens)
 
-        for index in invalid_token_indices:
-            tokens.pop(index)
+        refined_tokens = [val for i, val in enumerate(tokens) if i not in invalid_token_indices]
+        self._check_precedence(tokens)
 
         return tokens
 
@@ -428,6 +486,17 @@ class PubmedParser(QueryStringParser):
                 if i == 0:
                     break
 
+    def _check_precedence(self, tokens: list) -> None:
+        """Check token list contain unspecified precedence (OR & AND operator in the same subquery)"""
+        or_query = False
+        for token in tokens:
+            if token[0] == Operators.OR:
+                or_query = True
+            elif self.is_parenthesis(token[0]):
+                or_query = False
+            elif token[0] == Operators.AND and or_query:
+                self.add_linter_message(PubmedErrorCodes.PRECEDENCE_WARNING, token[1])
+
     def _check_invalid_characters(self, index: int, tokens: list, invalid_token_indices: list) -> None:
         """Check a search term for invalid characters"""
 
@@ -450,6 +519,20 @@ class PubmedParser(QueryStringParser):
             tokens[index] = (term_value, token[1])
             if term_value.isspace():
                 invalid_token_indices.append(index)
+
+    def _check_invalid_wildcard(self, index: int, tokens: list):
+        """Check search term for invalid wildcard *"""
+        token = tokens[index]
+        if token[0][0] == '"':
+            k = 5
+        else:
+            k = 4
+        if '*' in token[0][:k]:
+            # Wildcard * is invalid if it is applied to terms with less than 4 characters
+            self.add_linter_message(
+                PubmedErrorCodes.INVALID_WILDCARD,
+                token[1]
+            )
 
     def _check_invalid_token_position(self, index: int, tokens: list, invalid_token_indices: list):
         """Check if tokens contains invalid token position at index"""
@@ -561,6 +644,11 @@ class PubmedParser(QueryStringParser):
         # Compare search terms in the same subquery for redundancy
         for query_id in subqueries.keys():
             terms = subqueries[query_id]
+
+            # Exclude subqueries without search terms
+            if not terms:
+                continue
+
             redundant_terms = []
 
             if query_id not in subquery_types:
@@ -596,7 +684,7 @@ class PubmedParser(QueryStringParser):
                             self.add_linter_message(PubmedErrorCodes.TERM_REDUNDANT, terms[i].position)
                             redundant_terms.append(terms[i])
 
-    def _extract_subqueries(self, query: Query, subqueries: dict, subquery_types: dict, subquery_id = 0) -> None:
+    def _extract_subqueries(self, query: Query, subqueries: dict, subquery_types: dict, subquery_id=0) -> None:
         """Extract subqueries from query tree"""
         if subquery_id not in subqueries:
             subqueries[subquery_id] = []
@@ -641,7 +729,7 @@ class PubmedParser(QueryStringParser):
         if user_field_values and query_field_values:
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
-                self.add_linter_message(PubmedErrorCodes.FIELD_CONTRADICTION,None, self.search_fields)
+                self.add_linter_message(PubmedErrorCodes.FIELD_CONTRADICTION, None, self.search_fields)
             else:
                 # User-provided fields match fields in the query
                 self.add_linter_message(PubmedErrorCodes.FIELD_REDUNDANT, None)
@@ -718,6 +806,8 @@ class PubmedParser(QueryStringParser):
             PubmedErrorCodes.INVALID_PROXIMITY_USE: lambda: QuerySyntaxError(user_message, self.query_str, pos),
             PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX: lambda: QuerySyntaxError(user_message, self.query_str, pos),
             PubmedErrorCodes.INVALID_CHARACTER: lambda: QuerySyntaxError(user_message, self.query_str, pos),
+            PubmedErrorCodes.INVALID_WILDCARD: lambda: QuerySyntaxError(user_message, self.query_str, pos),
+            PubmedErrorCodes.NESTED_NOT_QUERY: lambda: QuerySyntaxError(user_message, self.query_str, pos),
 
             # Invalid Field Error
             PubmedErrorCodes.UNSUPPORTED_FIELD: lambda: PubmedInvalidFieldTag(user_message, self.query_str, pos),
@@ -729,7 +819,8 @@ class PubmedParser(QueryStringParser):
             # Warnings
             PubmedErrorCodes.FIELD_REDUNDANT: lambda: PubmedFieldWarning(user_message),
             PubmedErrorCodes.FIELD_NOT_SPECIFIED: lambda: PubmedFieldWarning(user_message),
-            PubmedErrorCodes.TERM_REDUNDANT: lambda: PubmedQueryWarning(user_message, self.query_str, pos)
+            PubmedErrorCodes.TERM_REDUNDANT: lambda: PubmedQueryWarning(user_message, self.query_str, pos),
+            PubmedErrorCodes.PRECEDENCE_WARNING: lambda: PubmedQueryWarning(user_message, self.query_str, pos)
         }
         return exception_map.get(code)()
 

@@ -50,8 +50,17 @@ class PubmedFieldMismatch(SearchQueryException):
 class PubmedFieldWarning(SearchQueryException):
     """PubmedFieldWarning Exception"""
 
-    def __init__(self, msg: str) -> None:
-        self.message = msg
+    def __init__(self, msg: str, query_string: str = None, pos: tuple = None) -> None:
+        # Error position marked in orange
+        if pos:
+            query_string_highlighted = search_query.utils.format_query_string_pos(
+                query_string, pos
+            )
+            self.message = f"{msg}\n{query_string_highlighted}"
+            self.pos = pos
+            self.query_string = query_string
+        else:
+            self.message = msg
         super().__init__(self.message)
 
 

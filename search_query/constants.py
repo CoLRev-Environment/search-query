@@ -33,7 +33,13 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    FILTER = "sb"
+    JOURNAL = "ta"
     MESH_TERM = "mh"
+    PUBLICATION_TYPE = "pt"
+    TEXT_WORD = "tw"
+    AFFILIATION = "ad"
+    LANGUAGE = "la"
 
     @classmethod
     def all(cls) -> list:
@@ -66,7 +72,13 @@ PLATFORM_FIELD_MAP = {
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
         Fields.AUTHOR_KEYWORDS: "[au]",
-        Fields.MESH_TERM: "[mh]"
+        Fields.FILTER: "[sb]",
+        Fields.JOURNAL: "[ta]",
+        Fields.MESH_TERM: "[mh]",
+        Fields.PUBLICATION_TYPE: "[pt]",
+        Fields.TEXT_WORD: "[tw]",
+        Fields.AFFILIATION: "[ad]",
+        Fields.LANGUAGE: "[la]"
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
@@ -104,10 +116,12 @@ class PubmedErrorCodes:
     INVALID_PROXIMITY_USE = "E0006"
     INVALID_PROXIMITY_SYNTAX = "E0007"
     INVALID_CHARACTER = "E0008"
+    INVALID_WILDCARD = "E0009"
 
     FIELD_REDUNDANT = "W0001"
     FIELD_NOT_SPECIFIED = "W0002"
     TERM_REDUNDANT = "W0003"
+    PRECEDENCE_WARNING = "W0004"
 
 
 class ExitCodes:
