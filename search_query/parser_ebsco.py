@@ -13,7 +13,7 @@ from search_query.parser_validation import EBSCOQueryStringValidator
 from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
-
+from search_query.constants import TokenTypes
 
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
@@ -48,14 +48,14 @@ class EBSCOParser(QueryStringParser):
             # Iterate through token list
             current_token, current_token_type, position = self.tokens[i]
 
-            if current_token_type == "SEARCH_TERM":
+            if current_token_type == TokenTypes.SEARCH_TERM:
                 # Filter out search_term
                 start_pos = position[0]
                 end_position = position[1]
                 combined_value = current_token
 
                 while (
-                    i + 1 < len(self.tokens) and self.tokens[i + 1][1] == "SEARCH_TERM"
+                    i + 1 < len(self.tokens) and self.tokens[i + 1][1] == TokenTypes.SEARCH_TERM
                 ):
                     # Iterate over subsequent search_terms and combine
                     next_token, _, next_position = self.tokens[i + 1]
@@ -78,7 +78,7 @@ class EBSCOParser(QueryStringParser):
         self, token: str, token_type: str
     ) -> tuple[str, int]:
         """Convert proximity operator token into operator and distance components"""
-        if token_type != "PROXIMITY_OPERATOR":
+        if token_type != TokenTypes.PROXIMITY_OPERATOR:
             raise ValueError(
                 f"Invalid token type: {token_type}. Expected 'PROXIMITY_OPERATOR'."
             )
@@ -138,17 +138,17 @@ class EBSCOParser(QueryStringParser):
             # Determine token type
             if re.fullmatch(self.PARENTHESIS_REGEX, token):
                 if token == "(":
-                    token_type = "PARENTHESIS_OPEN"
+                    token_type = TokenTypes.PARENTHESIS_OPEN
                 else:
-                    token_type = "PARENTHESIS_CLOSED"
+                    token_type = TokenTypes.PARENTHESIS_CLOSED
             elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, token):
-                token_type = "LOGIC_OPERATOR"
+                token_type = TokenTypes.LOGIC_OPERATOR
             elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, token):
-                token_type = "PROXIMITY_OPERATOR"
+                token_type = TokenTypes.PROXIMITY_OPERATOR
             elif re.fullmatch(self.SEARCH_FIELD_REGEX, token):
-                token_type = "FIELD"
+                token_type = TokenTypes.FIELD
             elif re.fullmatch(self.SEARCH_TERM_REGEX, token):
-                token_type = "SEARCH_TERM"
+                token_type = TokenTypes.SEARCH_TERM
             else:
                 self.linter_messages.append(
                     {
@@ -283,11 +283,11 @@ class EBSCOParser(QueryStringParser):
         while tokens:
             token, token_type, position = tokens.pop(0)
 
-            if token_type == "FIELD":
+            if token_type == TokenTypes.FIELD:
                 # Create new search_field used by following search_terms
                 search_field = SearchField(token, position=position)
 
-            elif token_type == "SEARCH_TERM":
+            elif token_type == TokenTypes.SEARCH_TERM:
                 # Create new search_term and in case tree is empty, sets first root
                 term_node = self.create_query_node(
                     token, False, position, search_field, None, search_field_par
@@ -300,7 +300,7 @@ class EBSCOParser(QueryStringParser):
 
                 search_field = None
 
-            elif token_type == "PROXIMITY_OPERATOR":
+            elif token_type == TokenTypes.PROXIMITY_OPERATOR:
                 # Split token into NEAR/WITHIN and distance
                 token, distance = self.convert_proximity_operators(token, token_type)
 
@@ -312,7 +312,7 @@ class EBSCOParser(QueryStringParser):
                 # Set proximity_operator as tree node
                 root, current_operator = self.append_operator(root, proximity_node)
 
-            elif token_type == "LOGIC_OPERATOR":
+            elif token_type == TokenTypes.LOGIC_OPERATOR:
                 # Create new operator node
                 new_operator_node = self.create_query_node(
                     token, True, position, search_field, None
@@ -334,7 +334,7 @@ class EBSCOParser(QueryStringParser):
                         token, root, new_operator_node
                     )
 
-            elif token_type == "PARENTHESIS_OPEN":
+            elif token_type == TokenTypes.PARENTHESIS_OPEN:
                 # Recursively parse the group inside parentheses
                 # Set search_field_par as search field regarding the whole subtree
                 # If subtree is done, reset search_field_par
@@ -348,7 +348,7 @@ class EBSCOParser(QueryStringParser):
                     root, current_operator, subtree
                 )
 
-            elif token_type == "PARENTHESIS_CLOSED":
+            elif token_type == TokenTypes.PARENTHESIS_CLOSED:
                 # Return subtree
                 root = self.check_for_none(root)
                 return root

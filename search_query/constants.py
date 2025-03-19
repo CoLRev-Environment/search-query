@@ -17,6 +17,16 @@ class PLATFORM(Enum):
     PRE_NOTATION = "pre_notation"
 
 
+class TokenTypes:
+    """Token types"""
+
+    LOGIC_OPERATOR = "logic_operator"
+    PROXIMITY_OPERATOR = "proximity_operator"
+    FIELD = "field"
+    SEARCH_TERM = "search_term"
+    PARENTHESIS_OPEN = "parenthesis_open"
+    PARENTHESIS_CLOSED = "parenthesis_closed"
+
 class Operators:
     """Operators"""
 
