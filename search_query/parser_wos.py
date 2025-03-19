@@ -12,7 +12,7 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import LinterMode
 from search_query.constants import WOSRegex
-from search_query.constants import SearchFieldList
+from search_query.constants import WOSSearchFieldList
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -57,7 +57,7 @@ class WOSParser(QueryStringParser):
         """Token is search field"""
         return (
             bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token))
-            or token in SearchFieldList.language_list
+            or token in WOSSearchFieldList.language_list
         )
 
     def is_operator(self, token: str) -> bool:
@@ -187,7 +187,7 @@ class WOSParser(QueryStringParser):
                 # Handle search fields
                 elif (
                         (self.is_search_field(token)) or
-                        (token in SearchFieldList.language_list)
+                        (token in WOSSearchFieldList.language_list)
                 ):
                     search_field = SearchField(
                         value=token,
@@ -199,7 +199,7 @@ class WOSParser(QueryStringParser):
                     # Check if the token is a search field which has constraints
                     # Check if the token is a year
                     if re.findall(WOSRegex.YEAR_REGEX, token):
-                        if search_field.value in SearchFieldList.year_published_list:
+                        if search_field.value in WOSSearchFieldList.year_published_list:
                             children = self.handle_year_search(
                                 token,
                                 span,
@@ -224,7 +224,7 @@ class WOSParser(QueryStringParser):
                         search_field = SearchField('Misc', position=None)
 
                     # Check if the token is ISSN or ISBN
-                    if search_field.value in SearchFieldList.issn_isbn_list:
+                    if search_field.value in WOSSearchFieldList.issn_isbn_list:
                         if self.query_linter.check_issn_isbn_format(
                             search_field=search_field,
                             token=token
@@ -232,7 +232,7 @@ class WOSParser(QueryStringParser):
                             self.fatal_linter_err = True
 
                     # Check if the token is a doi
-                    if search_field.value in SearchFieldList.doi_list:
+                    if search_field.value in WOSSearchFieldList.doi_list:
                         if self.query_linter.check_doi_format(
                             search_field=search_field,
                             token=token
@@ -295,9 +295,9 @@ class WOSParser(QueryStringParser):
                                 children[children.index(child)].search_field.value
                                 and (
                                     children[children.index(child)].search_field.value
-                                    in SearchFieldList.language_list
+                                    in WOSSearchFieldList.language_list
                                     or children[children.index(child)].search_field.value
-                                    in SearchFieldList.year_published_list
+                                    in WOSSearchFieldList.year_published_list
                                 )
                             ):
                                 children[0].children.append(child)
@@ -738,7 +738,7 @@ class WOSParser(QueryStringParser):
 
     def get_search_field_key(self, search_field: str) -> str:
         """Get the key of the search field."""
-        for key, value_list in SearchFieldList.search_field_dict.items():
+        for key, value_list in WOSSearchFieldList.search_field_dict.items():
             if search_field in value_list:
                 return key
         return "Misc"

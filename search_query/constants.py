@@ -176,7 +176,7 @@ class WOSRegex:
     ISBN_REGEX = r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
     DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
-class SearchFieldList:
+class WOSSearchFieldList:
     """List of search fields"""
     # Define lists for all search fields
     abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
