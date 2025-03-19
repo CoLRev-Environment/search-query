@@ -408,7 +408,6 @@ class EBSCOParser(QueryStringParser):
         """Parse a query string."""
 
         self.linter_messages.clear()
-        self.mode = "not-strict"
 
         # Create an instance of QueryStringValidator
         validator = QueryStringValidator(self.query_str, self.search_field_general)
