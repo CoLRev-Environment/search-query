@@ -15,6 +15,7 @@ class QueryStringParser:
 
     tokens: list
     linter_messages: typing.List[dict] = []
+    PRECEDENCE = {"NOT": 3, "AND": 2, "OR": 1}
 
     def __init__(
         self, query_str: str, search_field_general: str, mode: str = "strict"

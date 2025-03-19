@@ -272,11 +272,10 @@ class EBSCOParser(QueryStringParser):
     ) -> Query:
         """
         Build a query tree from a list of tokens
-        dynamic tree restructuring for precedence (NOT > AND > OR).
+        dynamic tree restructuring based on PRECEDENCE.
         """
 
         # Higher number=higher precedence
-        precedence = {"NOT": 3, "AND": 2, "OR": 1}
         root: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
 
@@ -323,7 +322,7 @@ class EBSCOParser(QueryStringParser):
                     root, current_operator = self.append_operator(
                         root, new_operator_node
                     )
-                elif precedence[token] > precedence[current_operator.value]:
+                elif self.PRECEDENCE[token] > self.PRECEDENCE[current_operator.value]:
                     # Higher precedence
                     current_operator = self.handle_higher_precedence(
                         current_operator, new_operator_node
