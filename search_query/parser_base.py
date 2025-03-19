@@ -128,6 +128,31 @@ class QueryStringParser:
             "parse method must be implemented by inheriting classes"
         )
 
+    def add_linter_message(
+        self,
+        rule: str,
+        msg: str,
+        position: typing.Optional[tuple] = None,
+    ):
+        """Adds a message to the self.linter_messages list"""
+
+        # check if linter message is already in the list
+        for message in self.linter_messages:
+            if (
+                message["rule"] == rule
+                and message["message"] == msg
+                and message["position"] == position
+            ):
+                return
+
+        self.linter_messages.append(
+            {
+                "rule": rule,
+                "message": msg,
+                "position": position,
+            }
+        )
+
 
 class QueryListParser:
     """QueryListParser"""
