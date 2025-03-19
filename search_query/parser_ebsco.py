@@ -23,7 +23,7 @@ class EBSCOParser(QueryStringParser):
     PARENTHESIS_REGEX = r"[\(\)]"
     LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
-    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB)\b"
+    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB|DE|LA|KW)\b"
     SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
 
     pattern = "|".join(

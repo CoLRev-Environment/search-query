@@ -112,7 +112,7 @@ class EBSCOQueryStringValidator:
         """
         self.linter_messages.clear()
 
-        supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB"}
+        supported_fields = {"TI", "AU", "TX", "AB", "SO", "SU", "IS", "IB", "DE", "LA", "KW"}
         modified_query_list = list(
             self.query_str
         )  # Convert to list for direct modification

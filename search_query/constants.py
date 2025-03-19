@@ -44,10 +44,12 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    KEYWORDS = "kw"
     SUBJECT_TERMS = "st"
     SOURCE = "so"
     ISSN = "is"
     ISBN = "ib"
+    LANGUAGE = "la"
 
     @classmethod
     def all(cls) -> list:
@@ -90,6 +92,9 @@ PLATFORM_FIELD_MAP = {
         Fields.SOURCE: "SO",
         Fields.ISSN: "IS",
         Fields.ISBN: "IB",
+        Fields.LANGUAGE: "LA",
+        Fields.AUTHOR_KEYWORDS: "KW",
+        Fields.KEYWORDS: "DE"
     },
 }
 
