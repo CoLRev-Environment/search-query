@@ -54,5 +54,10 @@ def pre_commit_hook() -> int:
     return ExitCodes.SUCCESS
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main entrypoint for the query linter hook"""
     raise SystemExit(pre_commit_hook())
+
+
+if __name__ == "__main__":
+    main()
