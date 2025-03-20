@@ -7,13 +7,14 @@ import typing
 
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+from search_query.constants import TokenTypes
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.parser_validation import EBSCOQueryStringValidator
 from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.constants import TokenTypes
+
 
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
@@ -55,7 +56,8 @@ class EBSCOParser(QueryStringParser):
                 combined_value = current_token
 
                 while (
-                    i + 1 < len(self.tokens) and self.tokens[i + 1][1] == TokenTypes.SEARCH_TERM
+                    i + 1 < len(self.tokens)
+                    and self.tokens[i + 1][1] == TokenTypes.SEARCH_TERM
                 ):
                     # Iterate over subsequent search_terms and combine
                     next_token, _, next_position = self.tokens[i + 1]

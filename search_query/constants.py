@@ -27,6 +27,7 @@ class TokenTypes:
     PARENTHESIS_OPEN = "parenthesis_open"
     PARENTHESIS_CLOSED = "parenthesis_closed"
 
+
 class Operators:
     """Operators"""
 
@@ -94,7 +95,7 @@ PLATFORM_FIELD_MAP = {
         Fields.ISBN: "IB",
         Fields.LANGUAGE: "LA",
         Fields.AUTHOR_KEYWORDS: "KW",
-        Fields.KEYWORDS: "DE"
+        Fields.KEYWORDS: "DE",
     },
 }
 
