@@ -78,7 +78,7 @@ PLATFORM_FIELD_MAP = {
         Fields.PUBLICATION_TYPE: "[pt]",
         Fields.TEXT_WORD: "[tw]",
         Fields.AFFILIATION: "[ad]",
-        Fields.LANGUAGE: "[la]"
+        Fields.LANGUAGE: "[la]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
