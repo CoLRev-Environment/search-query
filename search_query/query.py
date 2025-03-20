@@ -2,9 +2,10 @@
 """Query class."""
 from __future__ import annotations
 
+import re
 import typing
-from abc import ABC
 
+from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.serializer_pre_notation import to_string_pre_notation
@@ -32,11 +33,10 @@ class SearchField:
         return self.value
 
 
-class Query(ABC):
+class Query:
     """Query class."""
 
     # pylint: disable=too-many-arguments
-    # @abstractmethod
     def __init__(
         self,
         value: str = "NOT_INITIALIZED",
@@ -78,6 +78,49 @@ class Query(ABC):
         self.position = position
 
         self._ensure_children_not_circular()
+
+    def selects(self, *, record_dict: dict) -> bool:
+        """Indicates whether the query selects a given record."""
+
+        if self.value == Operators.NOT:
+            return not self.children[0].selects(record_dict=record_dict)
+
+        if self.value == Operators.AND:
+            return all(x.selects(record_dict=record_dict) for x in self.children)
+
+        if self.value == Operators.OR:
+            return any(x.selects(record_dict=record_dict) for x in self.children)
+
+        assert not self.operator
+
+        if self.search_field is None:
+            raise ValueError("Search field not set")
+
+        if self.search_field.value == Fields.TITLE:
+            field_value = record_dict.get("title", "").lower()
+        elif self.search_field.value == Fields.ABSTRACT:
+            field_value = record_dict.get("abstract", "").lower()
+        else:
+            raise ValueError(f"Invalid search field: {self.search_field}")
+
+        value = self.value.lower().lstrip('"').rstrip('"')
+
+        # Handle wildcards
+        if "*" in value:
+            pattern = re.compile(value.replace("*", ".*").lower())
+            match = pattern.search(field_value)
+            return match is not None
+
+        # Match exact word
+        return value.lower() in field_value
+
+    def is_operator(self) -> bool:
+        """Check whether the SearchQuery is an operator."""
+        return self.operator
+
+    def is_term(self) -> bool:
+        """Check whether the SearchQuery is a term."""
+        return not self.is_operator()
 
     def get_nr_leaves(self) -> int:
         """Returns the number of leaves in the query tree"""

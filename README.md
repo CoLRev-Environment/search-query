@@ -1,6 +1,6 @@
-#  Welcome to search-query
-
 <div align="center">
+
+#  search-query
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CoLRev-Environment/search-query/.github%2Fworkflows%2Ftests.yml?label=tests)](https://github.com/CoLRev-Environment/search-query/actions/workflows/tests.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
@@ -39,10 +39,8 @@ query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keyword
 
 Parameters:
 
-- list of strings or queries: strings which you want to include in the search query,
-- search field: search field to which the query should be applied (available options: TODO: GIVE EXAMPLES AND LINK TO DOCS)
-
-**TODO : implement a user-friendly version of OrQuery / AndQuery, which accepts lists of strings/queries and search_fields as strings**
+- list of strings or queries: strings that you want to include in the search query,
+- `search_field`: search field to which the query should be applied (available options: TODO: GIVE EXAMPLES AND LINK TO DOCS)
 
 To load a JSON query file, run the parser:
 
@@ -107,7 +105,18 @@ search-query lint search-file.json
 
 Linters can be included as pre-commit hooks by adding the following to the `.pre-commit-config.yaml:
 
+```yaml
+repos:
+  - repo: https://github.com/CoLRev-Environment/search-query
+    rev: main # or version of search-query
+    hooks:
+      - id: search-file-lint
+
 ```
+
+For development and testing, use the following:
+
+```yaml
 repos:
   - repo: local
     hooks:
@@ -117,17 +126,6 @@ repos:
         language: python
         files: \.json$
 ```
-
-<!--
-TODO: the previous one should be for dev. Enable (based on [.pre-commit-hooks.yaml](https://github.com/pre-commit/pre-commit-hooks/blob/main/.pre-commit-hooks.yaml)):
-
-```
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0  # Use the ref you want to point at
-    hooks:
-    -   id: trailing-whitespace
-```
--->
 
 To activate and run:
 
@@ -154,7 +152,7 @@ The package was developed as part of Bachelor's theses:
 
 ## Not what you are looking for?
 
-This python package was developed with purpose of integrating it into other literature management tools. If that isn't your use case, it migth be useful for you to look at these related tools:
+This Python package was developed with purpose of integrating it into other literature management tools. If that isn't your use case, it might be useful for you to look at these related tools:
 
 - [LitSonar](https://litsonar.com/)
 - [Polyglot](https://sr-accelerator.com/#/polyglot)

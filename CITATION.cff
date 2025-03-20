@@ -6,6 +6,6 @@ authors:
 - family-names: "Ernst"
   given-names: "Katharina Maria"
 title: "Search-query: A Python package for queries in academic literature searches."
-version: 0.10.0
-date-released: 2024-03-09
+version: 0.11.0
+date-released: 2024-12-27
 url: "https://github.com/ColRev-Environment/search-query"

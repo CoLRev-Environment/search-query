@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from search_query.constants import Fields
+from search_query.constants import Operators
 
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
@@ -36,7 +37,7 @@ def to_string_wos(node: Query) -> str:
 
         else:
             # node is operator node
-            if child.value == "NOT":
+            if child.value == Operators.NOT:
                 # current element is NOT Operator -> no parenthesis in WoS
                 result = f"{result}{to_string_wos(child)}"
 
@@ -45,7 +46,7 @@ def to_string_wos(node: Query) -> str:
             else:
                 result = f"{result} {node.value} {to_string_wos(child)}"
 
-            if (child == node.children[-1]) & (child.value != "NOT"):
+            if (child == node.children[-1]) & (child.value != Operators.NOT):
                 result = f"{result})"
     return f"{result}"
 

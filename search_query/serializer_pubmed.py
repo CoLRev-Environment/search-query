@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_MAP
 
@@ -41,7 +42,7 @@ def to_string_pubmed(node: Query) -> str:
 
         else:
             # node is operator node
-            if child.value == "NOT":
+            if child.value == Operators.NOT:
                 # current element is NOT Operator -> no parenthesis in PubMed
                 result = f"{result}{to_string_pubmed(child)}"
 
@@ -50,7 +51,7 @@ def to_string_pubmed(node: Query) -> str:
             else:
                 result = f"{result} {node.value} {to_string_pubmed(child)}"
 
-            if (child == node.children[-1]) & (child.value != "NOT"):
+            if (child == node.children[-1]) & (child.value != Operators.NOT):
                 result = f"{result})"
     return f"{result}"
 

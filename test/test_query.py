@@ -156,6 +156,51 @@ class TestQuery(unittest.TestCase):
                 search_field=SearchField("Author Keywords"),
             )
 
+    def test_selects(self) -> None:
+        """Test whether the 'selects' method correctly evaluates records."""
+
+        record_1 = {
+            "title": "Artificial Intelligence in Health Care",
+            "abstract": "This study explores the role of AI and machine learning in improving health outcomes.",
+        }
+
+        record_2 = {
+            "title": "Moral Implications of Artificial Intelligence",
+            "abstract": "Examines ethical concerns in AI development.",
+        }
+
+        record_3 = {
+            "title": "Unrelated Title",
+            "abstract": "This abstract is about something else entirely.",
+        }
+
+        record_4 = {
+            "title": "Title with AI and medicine",
+            "abstract": "abstract containing ethics.",
+        }
+
+        self.assertTrue(
+            self.query_ai.selects(record_dict=record_1),
+            "Query should select record_1 based on title match.",
+        )
+        self.assertFalse(
+            self.query_health.selects(record_dict=record_2),
+            "Query should not select record_2 as it doesn't match health-related keywords.",
+        )
+        self.assertFalse(
+            self.query_health.selects(record_dict=record_3),
+            "Query should not select record_3 as it has no matching keywords.",
+        )
+
+        self.assertTrue(
+            self.query_complete.selects(record_dict=record_4),
+            "Query should select record_4 as it matches AI, health, and ethics conditions.",
+        )
+        self.assertFalse(
+            self.query_complete.selects(record_dict=record_3),
+            "Query should not select record_3 as it doesn't meet any conditions.",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
