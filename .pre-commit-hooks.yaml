@@ -1,0 +1,7 @@
+-   id: search-file-lint
+    name: lint search files
+    description: Linter for search files based on the search-query package.
+    entry: search-file-lint
+    language: python
+    stages: [pre-commit, pre-push, manual]
+    minimum_pre_commit_version: 3.2.0
