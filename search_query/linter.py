@@ -11,10 +11,11 @@ from search_query.search_file import SearchFile
 from search_query.utils import format_query_string_pos
 
 
-def run_linter(search_string: str, search_field_general: str, syntax: str) -> list:
+def run_linter(search_string: str, *, platform: str, search_field_general: str) -> list:
     """Run the linter on the search string"""
 
-    parser = search_query.parser.PARSERS[syntax](search_string, search_field_general)
+    parser = search_query.parser.PARSERS[platform](search_string, search_field_general)
+
     try:
         parser.parse()
     except Exception:  # pylint: disable=broad-except
@@ -34,10 +35,17 @@ def pre_commit_hook() -> int:
         print(e)
         return ExitCodes.FAIL
 
+    if platform not in search_query.parser.PARSERS:
+        print(
+            f"Unknown platform: {platform}."
+            f"Must be one of {search_query.parser.PARSERS}"
+        )
+        return ExitCodes.FAIL
+
     linter_messages = run_linter(
         search_file.search_string,
-        search_file.search_string,
-        search_file.search_field_general,
+        platform=search_file.platform,
+        search_field_general=search_file.search_field_general,
     )
 
     if linter_messages:
@@ -58,5 +66,10 @@ def pre_commit_hook() -> int:
     return ExitCodes.SUCCESS
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main entrypoint for the query linter hook"""
     raise SystemExit(pre_commit_hook())
+
+
+if __name__ == "__main__":
+    main()
