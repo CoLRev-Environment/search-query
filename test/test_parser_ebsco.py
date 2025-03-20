@@ -106,7 +106,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
 @pytest.mark.parametrize(
     "query_string, linter_messages",
     [
-        # 1️. Boolean operators should be capitalized
+        # 1. Boolean operators should be capitalized
         (
             "Artificial intelligence and Future",
             [
@@ -117,7 +117,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 }
             ],
         ),
-        # 2️. Unbalanced parentheses
+        # 2. Unbalanced parentheses
         (
             "(Artificial Intelligence AND Future",
             [
@@ -128,18 +128,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 }
             ],
         ),
-        # 3. Unsupported search fields (e.g., `XY` is unsupported)
-        (
-            "XY Artificial Intelligence OR AB Future",
-            [
-                {
-                    "level": "Error",
-                    "msg": "search-field-unsupported: 'XY' automatically changed to Abstract AB.",
-                    "pos": (0, 2),
-                }
-            ],
-        ),
-        # 4️. Invalid token sequence (Field followed directly by Logic Operator)
+        # 3. Invalid token sequence (Field followed directly by Logic Operator)
         (
             "TI AND Artificial Intelligence",
             [
@@ -150,12 +139,37 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 }
             ],
         ),
-        # 5️. Correct query (No linter messages expected)
+        # 4. Correct query (No linter messages expected)
         ("TI Artificial Intelligence AND AB Future", []),
     ],
 )
 def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "")
+    try:
+        ebsco_parser.parse()
+    except Exception:
+        pass
+    assert ebsco_parser.linter_messages == linter_messages
+
+
+@pytest.mark.parametrize(
+    "query_string, linter_messages",
+    [
+        # 1. Unsupported search fields (e.g., `XY` is unsupported)
+        (
+            "XY Artificial Intelligence OR AB Future",
+            [
+                {
+                    "level": "Error",
+                    "msg": "search-field-unsupported: 'XY' automatically changed to Abstract AB.",
+                    "pos": (0, 2),
+                }
+            ],
+        ),
+    ],
+)
+def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
+    ebsco_parser = EBSCOParser(query_string, "", mode="non-strict")
     try:
         ebsco_parser.parse()
     except Exception:

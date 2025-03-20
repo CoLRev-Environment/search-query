@@ -20,12 +20,12 @@ class PLATFORM(Enum):
 class TokenTypes:
     """Token types"""
 
-    LOGIC_OPERATOR = "logic_operator"
-    PROXIMITY_OPERATOR = "proximity_operator"
-    FIELD = "field"
-    SEARCH_TERM = "search_term"
-    PARENTHESIS_OPEN = "parenthesis_open"
-    PARENTHESIS_CLOSED = "parenthesis_closed"
+    LOGIC_OPERATOR = "LOGIC_OPERATOR"
+    PROXIMITY_OPERATOR = "PROXIMITY_OPERATOR"
+    FIELD = "FIELD"
+    SEARCH_TERM = "SEARCH_TERM"
+    PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
+    PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
 
 
 class Operators:
