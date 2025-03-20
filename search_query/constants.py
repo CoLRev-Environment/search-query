@@ -115,8 +115,6 @@ PLATFORM_FIELD_MAP = {
         Fields.ACCESSION_NUMBER: "UT=",
         Fields.WEB_OF_SCIENCE_CATEGORY: "WC=",
         Fields.ZIP_POSTAL_CODE: "ZP=",
-
-
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {
@@ -141,6 +139,7 @@ PLATFORM_COMBINED_FIELDS_MAP = {
     },
 }
 
+
 class ExitCodes:
     """Exit codes"""
 
@@ -160,117 +159,312 @@ class Colors:
 
 class LinterMode:
     """Linter mode"""
-    STRICT = 'strict'
-    NONSTRICT = 'non-strict'
+
+    STRICT = "strict"
+    NONSTRICT = "non-strict"
+
 
 class WOSRegex:
     """Regex for WOS"""
+
     TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
-    OPERATOR_REGEX = r'\b(AND|and|OR|or|NOT|not|NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b'
-    SEARCH_FIELD_REGEX = r'\b\w{2}=|\b\w{3}='
-    PARENTHESIS_REGEX = r'[\(\)]'
-    SEARCH_FIELDS_REGEX = r'\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*'
+    OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not|NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
+    SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
+    PARENTHESIS_REGEX = r"[\(\)]"
+    SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
     UNSUPPORTED_WILDCARD_REGEX = r"\!+"
     ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
-    ISBN_REGEX = r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
+    ISBN_REGEX = (
+        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
+    )
     DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
+
 
 class WOSSearchFieldList:
     """List of search fields"""
+
     # Define lists for all search fields
-    abstract_list = ["AB=", "Abstract", "ab=", "abstract=", "ab", "abstract", "AB", "ABSTRACT"]
-    language_list = ["LA=", "Languages", "la=", "language=", "la", "language", "LA", "LANGUAGE"]
-    address_list = ["AD=", "Address", "ad=", "address=", "ad", "address", "AD", "ADDRESS"]
+    abstract_list = [
+        "AB=",
+        "Abstract",
+        "ab=",
+        "abstract=",
+        "ab",
+        "abstract",
+        "AB",
+        "ABSTRACT",
+    ]
+    language_list = [
+        "LA=",
+        "Languages",
+        "la=",
+        "language=",
+        "la",
+        "language",
+        "LA",
+        "LANGUAGE",
+    ]
+    address_list = [
+        "AD=",
+        "Address",
+        "ad=",
+        "address=",
+        "ad",
+        "address",
+        "AD",
+        "ADDRESS",
+    ]
     all_fields_list = [
-        "ALL=", "All Fields", "all=", "all fields=", "all", "all fields", "ALL", "ALL FIELDS"
+        "ALL=",
+        "All Fields",
+        "all=",
+        "all fields=",
+        "all",
+        "all fields",
+        "ALL",
+        "ALL FIELDS",
     ]
     author_identifiers_list = [
-        "AI=", "Author Identifiers", "ai=", "author identifiers=",
-        "ai", "author identifiers", "AI", "AUTHOR IDENTIFIERS"
+        "AI=",
+        "Author Identifiers",
+        "ai=",
+        "author identifiers=",
+        "ai",
+        "author identifiers",
+        "AI",
+        "AUTHOR IDENTIFIERS",
     ]
     author_keywords_list = [
-        "AK=", "Author Keywords", "ak=", "author keywords=", "ak",
-        "author keywords", "AK", "AUTHOR KEYWORDS"
+        "AK=",
+        "Author Keywords",
+        "ak=",
+        "author keywords=",
+        "ak",
+        "author keywords",
+        "AK",
+        "AUTHOR KEYWORDS",
     ]
     author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
     conference_list = [
-        "CF=", "Conference", "cf=", "conference=", "cf", "conference", "CF", "CONFERENCE"
+        "CF=",
+        "Conference",
+        "cf=",
+        "conference=",
+        "cf",
+        "conference",
+        "CF",
+        "CONFERENCE",
     ]
     city_list = ["CI=", "City", "ci=", "city=", "ci", "city", "CI", "CITY"]
     country_region_list = [
-        "CU=", "Country/Region", "cu=", "country/region=",
-        "cu", "country/region", "CU", "COUNTRY/REGION"
+        "CU=",
+        "Country/Region",
+        "cu=",
+        "country/region=",
+        "cu",
+        "country/region",
+        "CU",
+        "COUNTRY/REGION",
     ]
     doi_list = ["DO=", "DOI", "do=", "doi=", "do", "doi", "DO", "DOI"]
     editor_list = ["ED=", "Editor", "ed=", "editor=", "ed", "editor", "ED", "EDITOR"]
     grant_number_list = [
-        "FG=", "Grant Number", "fg=", "grant number=", "fg", "grant number", "FG", "GRANT NUMBER"]
+        "FG=",
+        "Grant Number",
+        "fg=",
+        "grant number=",
+        "fg",
+        "grant number",
+        "FG",
+        "GRANT NUMBER",
+    ]
     funding_agency_list = [
-        "FO=", "Funding Agency", "fo=", "funding agency=",
-        "fo", "funding agency", "FO", "FUNDING AGENCY"
+        "FO=",
+        "Funding Agency",
+        "fo=",
+        "funding agency=",
+        "fo",
+        "funding agency",
+        "FO",
+        "FUNDING AGENCY",
     ]
     funding_text_list = [
-        "FT=", "Funding Text", "ft=", "funding text=",
-        "ft", "funding text", "FT", "FUNDING TEXT"
+        "FT=",
+        "Funding Text",
+        "ft=",
+        "funding text=",
+        "ft",
+        "funding text",
+        "FT",
+        "FUNDING TEXT",
     ]
     group_author_list = [
-        "GP=", "Group Author", "gp=", "group author=", "gp",
-        "group author", "GP", "GROUP AUTHOR"
+        "GP=",
+        "Group Author",
+        "gp=",
+        "group author=",
+        "gp",
+        "group author",
+        "GP",
+        "GROUP AUTHOR",
     ]
-    issn_isbn_list = ["IS=", "ISSN/ISBN", "is=", "issn/isbn=", "is", "issn/isbn", "IS", "ISSN/ISBN"]
+    issn_isbn_list = [
+        "IS=",
+        "ISSN/ISBN",
+        "is=",
+        "issn/isbn=",
+        "is",
+        "issn/isbn",
+        "IS",
+        "ISSN/ISBN",
+    ]
     keywords_plus_list = [
-        "KP=", "Keywords Plus®", "kp=", "keywords plus=",
-        "kp", "keywords plus", "KP", "KEYWORDS PLUS"
+        "KP=",
+        "Keywords Plus®",
+        "kp=",
+        "keywords plus=",
+        "kp",
+        "keywords plus",
+        "KP",
+        "KEYWORDS PLUS",
     ]
     organization_enhanced_list = [
-        "OG=", "Organization - Enhanced", "og=", "organization - enhanced=", 
-        "og", "organization - enhanced", "OG", "ORGANIZATION - ENHANCED"
+        "OG=",
+        "Organization - Enhanced",
+        "og=",
+        "organization - enhanced=",
+        "og",
+        "organization - enhanced",
+        "OG",
+        "ORGANIZATION - ENHANCED",
     ]
     organization_list = [
-        "OO=", "Organization", "oo=", "organization=",
-        "oo", "organization", "OO", "ORGANIZATION"
+        "OO=",
+        "Organization",
+        "oo=",
+        "organization=",
+        "oo",
+        "organization",
+        "OO",
+        "ORGANIZATION",
     ]
     pubmed_id_list = [
-        "PMID=", "PubMed ID", "pmid=", "pubmed id=", "pmid", "pubmed id", "PMID", "PUBMED ID"
+        "PMID=",
+        "PubMed ID",
+        "pmid=",
+        "pubmed id=",
+        "pmid",
+        "pubmed id",
+        "PMID",
+        "PUBMED ID",
     ]
     province_state_list = [
-        "PS=", "Province/State", "ps=", "province/state=",
-        "ps", "province/state", "PS", "PROVINCE/STATE"
+        "PS=",
+        "Province/State",
+        "ps=",
+        "province/state=",
+        "ps",
+        "province/state",
+        "PS",
+        "PROVINCE/STATE",
     ]
     year_published_list = [
-        "PY=", "Year Published", "py=", "year published=", "py", "year published",
-        "PY", "YEAR PUBLISHED", "Publication Year", "publication year", "PUBLICATION YEAR", "PUBLICATION YEAR"
+        "PY=",
+        "Year Published",
+        "py=",
+        "year published=",
+        "py",
+        "year published",
+        "PY",
+        "YEAR PUBLISHED",
+        "Publication Year",
+        "publication year",
+        "PUBLICATION YEAR",
+        "PUBLICATION YEAR",
     ]
     street_address_list = [
-        "SA=", "Street Address", "sa=", "street address=", 
-        "sa", "street address", "SA", "STREET ADDRESS"
+        "SA=",
+        "Street Address",
+        "sa=",
+        "street address=",
+        "sa",
+        "street address",
+        "SA",
+        "STREET ADDRESS",
     ]
     suborganization_list = [
-        "SG=", "Suborganization", "sg=", "suborganization=",
-        "sg", "suborganization", "SG", "SUBORGANIZATION"
+        "SG=",
+        "Suborganization",
+        "sg=",
+        "suborganization=",
+        "sg",
+        "suborganization",
+        "SG",
+        "SUBORGANIZATION",
     ]
     publication_name_list = [
-        "SO=", "Publication Name", "so=", "publication name=",
-        "so", "publication name", "SO", "PUBLICATION NAME"
+        "SO=",
+        "Publication Name",
+        "so=",
+        "publication name=",
+        "so",
+        "publication name",
+        "SO",
+        "PUBLICATION NAME",
     ]
     research_area_list = [
-        "SU=", "Research Area", "su=", "research area=",
-        "su", "research area", "SU", "RESEARCH AREA"
+        "SU=",
+        "Research Area",
+        "su=",
+        "research area=",
+        "su",
+        "research area",
+        "SU",
+        "RESEARCH AREA",
     ]
     title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
-    topic_list = ["TS=", "Topic", "ts=", "topic=", "ts", "topic", "TS", "TOPIC", "Topic Search", "Topic TS"]
+    topic_list = [
+        "TS=",
+        "Topic",
+        "ts=",
+        "topic=",
+        "ts",
+        "topic",
+        "TS",
+        "TOPIC",
+        "Topic Search",
+        "Topic TS",
+    ]
     accession_number_list = [
-        "UT=", "Accession Number", "ut=", "accession number=",
-        "ut", "accession number", "UT", "ACCESSION NUMBER"
+        "UT=",
+        "Accession Number",
+        "ut=",
+        "accession number=",
+        "ut",
+        "accession number",
+        "UT",
+        "ACCESSION NUMBER",
     ]
     web_of_science_category_list = [
-        "WC=", "Web of Science Category", "wc=", "web of science category=",
-        "wc", "web of science category", "WC", "WEB OF SCIENCE CATEGORY"
+        "WC=",
+        "Web of Science Category",
+        "wc=",
+        "web of science category=",
+        "wc",
+        "web of science category",
+        "WC",
+        "WEB OF SCIENCE CATEGORY",
     ]
     zip_postal_code_list = [
-        "ZP=", "Zip/Postal Code", "zp=", "zip/postal code=",
-        "zp", "zip/postal code", "ZP", "ZIP/POSTAL CODE"
+        "ZP=",
+        "Zip/Postal Code",
+        "zp=",
+        "zip/postal code=",
+        "zp",
+        "zip/postal code",
+        "ZP",
+        "ZIP/POSTAL CODE",
     ]
 
     search_field_dict = {
@@ -305,5 +499,5 @@ class WOSSearchFieldList:
         "TS=": topic_list,
         "UT=": accession_number_list,
         "WC=": web_of_science_category_list,
-        "ZP=": zip_postal_code_list
+        "ZP=": zip_postal_code_list,
     }

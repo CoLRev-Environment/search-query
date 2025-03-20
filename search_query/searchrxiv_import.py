@@ -6,10 +6,10 @@ import os
 from pathlib import Path
 
 import inquirer
+from constants import LinterMode
 
 import search_query.exception as search_query_exception
 from search_query.parser import parse
-from constants import LinterMode
 
 # pylint: disable=invalid-name
 
@@ -120,7 +120,11 @@ if __name__ == "__main__":
                     continue
 
                 if not platform == "web of science":
-                    print("Only search for wos. Platform " + platform + " is to be ignored.")
+                    print(
+                        "Only search for wos. Platform "
+                        + platform
+                        + " is to be ignored."
+                    )
                     continue
 
                 syntax = SYNTAX_MAP[platform]
@@ -163,20 +167,16 @@ if __name__ == "__main__":
                     print(query_string)
 
                     if linter_mode:
-                        print('[INFO:] Current linter mode: ' + linter_mode)
+                        print("[INFO:] Current linter mode: " + linter_mode)
                     else:
                         print(
-                            '[INFO:] No mode for the linter was selected'
-                            + '\nStrict linter mode assumed.'
-                            )
+                            "[INFO:] No mode for the linter was selected"
+                            + "\nStrict linter mode assumed."
+                        )
 
                     ret = parse(
-                            query_string,
-                            search_fields,
-                            syntax=syntax,
-                            mode=linter_mode
+                        query_string, search_fields, syntax=syntax, mode=linter_mode
                     )
-
 
                     # To select (start with) smaller queries:
                     # if ret.get_nr_leaves() > 10:
@@ -198,7 +198,7 @@ if __name__ == "__main__":
                 except Exception as exc:
                     print(exc)
                     DB[syntax]["fail"] += 1
-                    #raise exc
+                    # raise exc
                     continue
 
                 # Uncomment the following to skip validation

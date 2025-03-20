@@ -2,15 +2,15 @@
 """Query parser."""
 from __future__ import annotations
 
-
-from search_query.constants import PLATFORM, LinterMode
+from search_query.constants import LinterMode
+from search_query.constants import PLATFORM
+from search_query.parser_wos import WOSListParser
+from search_query.parser_wos import WOSParser
 from search_query.query import Query
 
 # from search_query.parser_ebsco import EBSCOParser
 # from search_query.parser_pubmed import PubmedListParser
 # from search_query.parser_pubmed import PubmedParser
-from search_query.parser_wos import WOSListParser
-from search_query.parser_wos import WOSParser
 
 PARSERS = {
     PLATFORM.WOS.value: WOSParser,
@@ -27,12 +27,12 @@ LIST_PARSERS = {
 
 # pylint: disable=too-many-return-statements
 def parse(
-        query_str: str,
-        search_fields:str,
-        *,
-        syntax: str = "wos",
-        mode: LinterMode = LinterMode.STRICT
-    ) -> Query:
+    query_str: str,
+    search_fields: str,
+    *,
+    syntax: str = "wos",
+    mode: LinterMode = LinterMode.STRICT,
+) -> Query:
     """Parse a query string."""
     syntax = syntax.lower()
 

@@ -4,13 +4,14 @@ import unittest
 from search_query.linter_wos import QueryLinter
 from search_query.query import SearchField
 
+
 class TestQueryLinter(unittest.TestCase):
     """Test suite for the QueryLinter class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.linter_messages = []
 
-    def test_no_parentheses(self):
+    def test_no_parentheses(self) -> None:
         """
         Test that the QueryLinter correctly identifies a query with no unmatched parentheses.
 
@@ -26,7 +27,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_matched_parentheses(self):
+    def test_matched_parentheses(self) -> None:
         """
         Test case for checking matched parentheses in a query string.
 
@@ -43,7 +44,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_unmatched_opening_parenthesis(self):
+    def test_unmatched_opening_parenthesis(self) -> None:
         """
         Test case for detecting an unmatched opening parenthesis in a query.
 
@@ -62,11 +63,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("(test query", self.linter_messages)
         self.assertTrue(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0002")
-        self.assertEqual(self.linter_messages[0]['message'], "Unmatched opening parenthesis '('.")
-        self.assertEqual(self.linter_messages[0]['position'], (0, 1))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (0, 1))
 
-    def test_unmatched_closing_parenthesis(self):
+    def test_unmatched_closing_parenthesis(self) -> None:
         """
         Test case for detecting an unmatched closing parenthesis in a query string.
 
@@ -85,11 +88,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("test query)", self.linter_messages)
         self.assertTrue(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0002")
-        self.assertEqual(self.linter_messages[0]['message'], "Unmatched closing parenthesis ')'.")
-        self.assertEqual(self.linter_messages[0]['position'], (10, 11))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (10, 11))
 
-    def test_multiple_unmatched_parentheses(self):
+    def test_multiple_unmatched_parentheses(self) -> None:
         """
         Test case for checking unmatched parentheses in a query string.
 
@@ -104,11 +109,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("(test query))", self.linter_messages)
         self.assertTrue(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0002")
-        self.assertEqual(self.linter_messages[0]['message'], "Unmatched closing parenthesis ')'.")
-        self.assertEqual(self.linter_messages[0]['position'], (12, 13))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (12, 13))
 
-    def test_nested_unmatched_parentheses(self):
+    def test_nested_unmatched_parentheses(self) -> None:
         """
         Test case for checking unmatched parentheses in a nested query.
 
@@ -128,11 +135,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("((test query)", self.linter_messages)
         self.assertTrue(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0002")
-        self.assertEqual(self.linter_messages[0]['message'], "Unmatched opening parenthesis '('.")
-        self.assertEqual(self.linter_messages[0]['position'], (0, 1))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (0, 1))
 
-    def test_two_operators_in_a_row(self):
+    def test_two_operators_in_a_row(self) -> None:
         """
         Test case for detecting two operators in a row in a query string.
 
@@ -152,11 +161,11 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 AND OR", self.linter_messages)
         self.assertTrue(linter.check_order_of_tokens(tokens, "AND", (5, 8), 1))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0005")
-        self.assertEqual(self.linter_messages[0]['message'], "Two operators in a row.")
-        self.assertEqual(self.linter_messages[0]['position'], (8, 10))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0005")
+        self.assertEqual(self.linter_messages[0]["message"], "Two operators in a row.")
+        self.assertEqual(self.linter_messages[0]["position"], (8, 10))
 
-    def test_two_search_fields_in_a_row(self):
+    def test_two_search_fields_in_a_row(self) -> None:
         """
         Test case for detecting two search fields in a row in a query string.
 
@@ -176,11 +185,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 au= ti=", self.linter_messages)
         self.assertTrue(linter.check_order_of_tokens(tokens, "au=", (5, 10), 1))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0003")
-        self.assertEqual(self.linter_messages[0]['message'], "Two Search Fields in a row.")
-        self.assertEqual(self.linter_messages[0]['position'], (10, 15))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "Two Search Fields in a row."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (10, 15))
 
-    def test_missing_operator_between_term_and_parenthesis(self):
+    def test_missing_operator_between_term_and_parenthesis(self) -> None:
         """
         Test case for detecting missing operator between term and parenthesis in a query string.
 
@@ -193,7 +204,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the missing operator between term and parenthesis.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F0003".
-            - The message in the linter message should indicate 
+            - The message in the linter message should indicate
                 a missing operator between term and parenthesis.
             - The position in the linter message should be (5, 6).
         """
@@ -201,16 +212,16 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 (query)", self.linter_messages)
         self.assertTrue(linter.check_order_of_tokens(tokens, "term1", (0, 5), 0))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0003")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Missing Operator between term and parenthesis."
+            self.linter_messages[0]["message"],
+            "Missing Operator between term and parenthesis.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (0, 5))
+        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
 
-    def test_missing_operator_between_parentheses(self):
+    def test_missing_operator_between_parentheses(self) -> None:
         """
-        Test case for detecting missing operator between 
+        Test case for detecting missing operator between
         closing and opening parenthesis in a query string.
 
         This test initializes a QueryLinter object with a query string containing
@@ -222,7 +233,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the missing operator between closing and opening parenthesis.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F0003".
-            - The message in the linter message should indicate 
+            - The message in the linter message should indicate
                 a missing operator between closing and opening parenthesis.
             - The position in the linter message should be (5, 6).
         """
@@ -230,14 +241,14 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter(") (query)", self.linter_messages)
         self.assertTrue(linter.check_order_of_tokens(tokens, ")", (0, 5), 0))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0003")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Missing Operator between closing and opening parenthesis."
+            self.linter_messages[0]["message"],
+            "Missing Operator between closing and opening parenthesis.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (0, 5))
+        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
 
-    def test_missing_operator_between_term_and_search_field(self):
+    def test_missing_operator_between_term_and_search_field(self) -> None:
         """
         Test case for detecting missing operator between term and search field in a query string.
 
@@ -250,7 +261,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the missing operator between term and search field.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F0003".
-            - The message in the linter message should 
+            - The message in the linter message should
                 indicate a missing operator between term and search field.
             - The position in the linter message should be (5, 10).
         """
@@ -258,14 +269,14 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 field1", self.linter_messages)
         self.assertTrue(linter.check_order_of_tokens(tokens, "term1", (0, 5), 0))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0003")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Missing Operator between term and search field."
+            self.linter_messages[0]["message"],
+            "Missing Operator between term and search field.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (0, 5))
+        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
 
-    def test_near_distance_within_range(self):
+    def test_near_distance_within_range(self) -> None:
         """
         Test case for NEAR operator with a specified distance within the allowed range.
 
@@ -282,7 +293,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_near_distance_in_range(tokens, 1))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_near_distance_out_of_range(self):
+    def test_near_distance_out_of_range(self) -> None:
         """
         Test case for NEAR operator with a specified distance out of the allowed range.
 
@@ -301,14 +312,14 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 NEAR/20 term2", self.linter_messages)
         self.assertTrue(linter.check_near_distance_in_range(tokens, 1))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0006")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0006")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "NEAR operator distance out of range (max. 15)."
+            self.linter_messages[0]["message"],
+            "NEAR operator distance out of range (max. 15).",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (5, 13))
+        self.assertEqual(self.linter_messages[0]["position"], (5, 13))
 
-    def test_near_without_distance(self):
+    def test_near_without_distance(self) -> None:
         """
         Test case for NEAR operator without a specified distance.
 
@@ -325,7 +336,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_near_distance_in_range(tokens, 1))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_no_unsupported_wildcards(self):
+    def test_no_unsupported_wildcards(self) -> None:
         """
         Test case for a query string with no unsupported wildcards.
 
@@ -340,7 +351,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_unsupported_wildcards("term1 term2"))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_unsupported_wildcards(self):
+    def test_unsupported_wildcards(self) -> None:
         """
         Test case for a query string with unsupported wildcards.
 
@@ -357,14 +368,14 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("term1 !term2", self.linter_messages)
         self.assertTrue(linter.check_unsupported_wildcards("term1 !term2"))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F1001")
+        self.assertEqual(self.linter_messages[0]["rule"], "F1001")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Unsupported wildcard in search string: !"
+            self.linter_messages[0]["message"],
+            "Unsupported wildcard in search string: !",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (6, 7))
+        self.assertEqual(self.linter_messages[0]["position"], (6, 7))
 
-    def test_standalone_wildcard(self):
+    def test_standalone_wildcard(self) -> None:
         """
         Test case for a query string with a standalone wildcard.
 
@@ -381,14 +392,14 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter('term1 "?" term2', self.linter_messages)
         self.assertTrue(linter.check_unsupported_wildcards('term1 "?" term2'))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F1002")
+        self.assertEqual(self.linter_messages[0]["rule"], "F1002")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Wildcard ? should not be used as standalone."
+            self.linter_messages[0]["message"],
+            "Wildcard ? should not be used as standalone.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (7, 8))
+        self.assertEqual(self.linter_messages[0]["position"], (7, 8))
 
-    def test_wildcard_within_term(self):
+    def test_wildcard_within_term(self) -> None:
         """
         Test case for a query string with a wildcard within a term.
 
@@ -403,7 +414,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_unsupported_wildcards("term1 te?m2"))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_no_unsupported_right_hand_wildcards(self):
+    def test_no_unsupported_right_hand_wildcards(self) -> None:
         """
         Test case for a query string with no unsupported right-hand wildcards.
 
@@ -415,12 +426,14 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         linter = QueryLinter("term1 term2*", self.linter_messages)
-        self.assertFalse(linter.check_unsupported_right_hand_wildcards("term2*", 5, (6, 7)))
+        self.assertFalse(
+            linter.check_unsupported_right_hand_wildcards("term2*", 5, (6, 7))
+        )
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_unsupported_right_hand_wildcard_after_special_character(self):
+    def test_unsupported_right_hand_wildcard_after_special_character(self) -> None:
         """
-        Test case for a query string with an unsupported 
+        Test case for a query string with an unsupported
         right-hand wildcard after a special character.
 
         This test initializes a QueryLinter object with a query string containing
@@ -431,27 +444,31 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the unsupported right-hand wildcard.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F1001".
-            - The message in the linter message should 
+            - The message in the linter message should
                 indicate unsupported wildcard after a special character.
             - The position in the linter message should be (5, 6).
         """
         linter = QueryLinter("term1 term2!*", self.linter_messages)
-        self.assertTrue(linter.check_unsupported_right_hand_wildcards("term2!*", 6, (6, 7)))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F1001")
-        self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Do not use wildcard after a special character."
+        self.assertTrue(
+            linter.check_unsupported_right_hand_wildcards("term2!*", 6, (6, 7))
         )
-        self.assertEqual(self.linter_messages[0]['position'], (6, 7))
+        self.assertEqual(len(self.linter_messages), 1)
+        self.assertEqual(self.linter_messages[0]["rule"], "F1001")
+        self.assertEqual(
+            self.linter_messages[0]["message"],
+            "Do not use wildcard after a special character.",
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (6, 7))
 
-    def test_unsupported_right_hand_wildcard_with_less_than_three_characters(self):
+    def test_unsupported_right_hand_wildcard_with_less_than_three_characters(
+        self,
+    ) -> None:
         """
-        Test case for a query string with an unsupported 
+        Test case for a query string with an unsupported
         right-hand wildcard preceded by less than three characters.
 
         This test initializes a QueryLinter object with a query string containing
-        an unsupported right-hand wildcard preceded by less than 
+        an unsupported right-hand wildcard preceded by less than
         three characters and verifies that the linter
         correctly identifies the issue.
 
@@ -459,21 +476,21 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the unsupported right-hand wildcard.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F1001".
-            - The message in the linter message should indicate 
+            - The message in the linter message should indicate
                 right-hand wildcard must be preceded by at least three characters.
             - The position in the linter message should be (0, 2).
         """
         linter = QueryLinter("te*", self.linter_messages)
         self.assertTrue(linter.check_unsupported_right_hand_wildcards("te*", 2, (0, 2)))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F1001")
+        self.assertEqual(self.linter_messages[0]["rule"], "F1001")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Right-hand wildcard must preceded by at least three characters."
+            self.linter_messages[0]["message"],
+            "Right-hand wildcard must preceded by at least three characters.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (0, 2))
+        self.assertEqual(self.linter_messages[0]["position"], (0, 2))
 
-    def test_no_left_hand_wildcard(self):
+    def test_no_left_hand_wildcard(self) -> None:
         """
         Test case for a query string with no left-hand wildcard.
 
@@ -488,7 +505,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_format_left_hand_wildcards("term2", (6, 11)))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_valid_left_hand_wildcard(self):
+    def test_valid_left_hand_wildcard(self) -> None:
         """
         Test case for a query string with a valid left-hand wildcard.
 
@@ -503,7 +520,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_format_left_hand_wildcards("*term2", (6, 12)))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_invalid_left_hand_wildcard(self):
+    def test_invalid_left_hand_wildcard(self) -> None:
         """
         Test case for a query string with an invalid left-hand wildcard.
 
@@ -514,21 +531,21 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should detect the wrong left-hand wildcard usage.
             - The linter messages list should contain exactly one message.
             - The rule in the linter message should be "F1001".
-            - The message in the linter message should indicate 
+            - The message in the linter message should indicate
                 left-hand wildcard must be followed by at least three characters.
             - The position in the linter message should be (0, 2).
         """
         linter = QueryLinter("*te", self.linter_messages)
         self.assertTrue(linter.check_format_left_hand_wildcards("*te", (0, 2)))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F1001")
+        self.assertEqual(self.linter_messages[0]["rule"], "F1001")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "Left-hand wildcard must be followed by at least three characters."
+            self.linter_messages[0]["message"],
+            "Left-hand wildcard must be followed by at least three characters.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (0, 2))
+        self.assertEqual(self.linter_messages[0]["position"], (0, 2))
 
-    def test_valid_issn_format(self):
+    def test_valid_issn_format(self) -> None:
         """
         Test case for a query string with a valid ISSN format.
 
@@ -544,7 +561,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_issn_isbn_format("1234-5678", search_field))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_invalid_issn_format(self):
+    def test_invalid_issn_format(self) -> None:
         """
         Test case for a query string with an invalid ISSN format.
 
@@ -562,11 +579,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("1234-567", self.linter_messages)
         self.assertTrue(linter.check_issn_isbn_format("1234-567", search_field))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0008")
-        self.assertEqual(self.linter_messages[0]['message'], "ISSN/ISBN format is incorrect.")
-        self.assertEqual(self.linter_messages[0]['position'], (0, 3))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0008")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "ISSN/ISBN format is incorrect."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (0, 3))
 
-    def test_valid_isbn_format(self):
+    def test_valid_isbn_format(self) -> None:
         """
         Test case for a query string with a valid ISBN format.
 
@@ -579,10 +598,12 @@ class TestQueryLinter(unittest.TestCase):
         """
         search_field = SearchField(value="is=", position=(0, 3))
         linter = QueryLinter("978-3-16-148410-0", self.linter_messages)
-        self.assertFalse(linter.check_issn_isbn_format("978-3-16-148410-0", search_field))
+        self.assertFalse(
+            linter.check_issn_isbn_format("978-3-16-148410-0", search_field)
+        )
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_invalid_isbn_format(self):
+    def test_invalid_isbn_format(self) -> None:
         """
         Test case for a query string with an invalid ISBN format.
 
@@ -600,11 +621,13 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("978-3-16-148410", self.linter_messages)
         self.assertTrue(linter.check_issn_isbn_format("978-3-16-148410", search_field))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0008")
-        self.assertEqual(self.linter_messages[0]['message'], "ISSN/ISBN format is incorrect.")
-        self.assertEqual(self.linter_messages[0]['position'], (0, 3))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0008")
+        self.assertEqual(
+            self.linter_messages[0]["message"], "ISSN/ISBN format is incorrect."
+        )
+        self.assertEqual(self.linter_messages[0]["position"], (0, 3))
 
-    def test_valid_doi_format(self):
+    def test_valid_doi_format(self) -> None:
         """
         Test case for a query string with a valid DOI format.
 
@@ -620,7 +643,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertFalse(linter.check_doi_format("10.1000/xyz123", search_field))
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_invalid_doi_format(self):
+    def test_invalid_doi_format(self) -> None:
         """
         Test case for a query string with an invalid DOI format.
 
@@ -638,17 +661,17 @@ class TestQueryLinter(unittest.TestCase):
         linter = QueryLinter("12.1000/xyz", self.linter_messages)
         self.assertTrue(linter.check_doi_format("12.1000/xyz", search_field))
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0008")
-        self.assertEqual(self.linter_messages[0]['message'], "DOI format is incorrect.")
-        self.assertEqual(self.linter_messages[0]['position'], (0, 3))
+        self.assertEqual(self.linter_messages[0]["rule"], "F0008")
+        self.assertEqual(self.linter_messages[0]["message"], "DOI format is incorrect.")
+        self.assertEqual(self.linter_messages[0]["position"], (0, 3))
 
-    def test_handle_multiple_same_level_operators_change(self):
+    def test_handle_multiple_same_level_operators_change(self) -> None:
         """
         Test the handle_multiple_same_level_operators method of the QueryLinter class.
 
         This test checks if the linter correctly identifies and handles multiple operators
-        at the same level in a query string. It verifies that the linter sets the 
-        multiple_same_level_operators attribute to True and adds the appropriate message 
+        at the same level in a query string. It verifies that the linter sets the
+        multiple_same_level_operators attribute to True and adds the appropriate message
         to the linter_messages list.
 
         The test uses the following tokens:
@@ -669,19 +692,19 @@ class TestQueryLinter(unittest.TestCase):
             ("AND", (5, 8)),
             ("term2", (8, 13)),
             ("OR", (13, 15)),
-            ("term3", (15, 20))
+            ("term3", (15, 20)),
         ]
         linter = QueryLinter("term1 AND term2 OR term3", self.linter_messages)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0007")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "The operator changed at the same level. Please introduce parentheses."
+            self.linter_messages[0]["message"],
+            "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (13, 15))
+        self.assertEqual(self.linter_messages[0]["position"], (13, 15))
 
-    def test_handle_multiple_same_level_operators_issue(self):
+    def test_handle_multiple_same_level_operators_issue(self) -> None:
         """
         Test case for handle_multiple_same_level_operators with issues.
 
@@ -701,20 +724,20 @@ class TestQueryLinter(unittest.TestCase):
             ("AND", (5, 8)),
             ("term2", (8, 13)),
             ("NEAR", (13, 17)),
-            ("term3", (17, 22))
+            ("term3", (17, 22)),
         ]
         linter = QueryLinter("term1 AND term2 NEAR term3", self.linter_messages)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
         self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0007")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "The operator changed at the same level. Please introduce parentheses."
+            self.linter_messages[0]["message"],
+            "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (13, 17))
+        self.assertEqual(self.linter_messages[0]["position"], (13, 17))
 
-    def test_handle_multiple_same_level_operators_nested_no_issue(self):
+    def test_handle_multiple_same_level_operators_nested_no_issue(self) -> None:
         """
         Test case for handling multiple same level operators
         within nested parentheses without any issues.
@@ -742,21 +765,21 @@ class TestQueryLinter(unittest.TestCase):
             ("term2", (9, 14)),
             ("OR", (14, 16)),
             ("term3", (16, 21)),
-            (")", (21, 22))
+            (")", (21, 22)),
         ]
         linter = QueryLinter("term1 AND (term2 OR term3)", self.linter_messages)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertFalse(linter.multiple_same_level_operators)
         self.assertEqual(len(self.linter_messages), 0)
 
-    def test_handle_multiple_same_level_operators_with_near(self):
+    def test_handle_multiple_same_level_operators_with_near(self) -> None:
         """
         Test the handling of multiple same-level operators with the 'NEAR' operator.
 
-        This test checks if the QueryLinter correctly identifies and handles the 
-        presence of multiple same-level operators, specifically when 'NEAR' and 'AND' 
-        operators are used in the query. It verifies that the linter sets the 
-        `multiple_same_level_operators` flag and adds the appropriate message to 
+        This test checks if the QueryLinter correctly identifies and handles the
+        presence of multiple same-level operators, specifically when 'NEAR' and 'AND'
+        operators are used in the query. It verifies that the linter sets the
+        `multiple_same_level_operators` flag and adds the appropriate message to
         `linter_messages`.
 
         The test uses the following tokens:
@@ -779,17 +802,18 @@ class TestQueryLinter(unittest.TestCase):
             ("NEAR/5", (5, 11)),
             ("term2", (11, 16)),
             ("AND", (16, 19)),
-            ("term3", (19, 24))
+            ("term3", (19, 24)),
         ]
         linter = QueryLinter("term1 NEAR/5 term2 AND term3", self.linter_messages)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
-        self.assertEqual(self.linter_messages[0]['rule'], "F0007")
+        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]['message'],
-            "The operator changed at the same level. Please introduce parentheses."
+            self.linter_messages[0]["message"],
+            "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]['position'], (16, 19))
+        self.assertEqual(self.linter_messages[0]["position"], (16, 19))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
