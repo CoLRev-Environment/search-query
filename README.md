@@ -39,10 +39,8 @@ query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keyword
 
 Parameters:
 
-- list of strings or queries: strings which you want to include in the search query,
-- search field: search field to which the query should be applied (available options: TODO: GIVE EXAMPLES AND LINK TO DOCS)
-
-**TODO : implement a user-friendly version of OrQuery / AndQuery, which accepts lists of strings/queries and search_fields as strings**
+- list of strings or queries: strings that you want to include in the search query,
+- `search_field`: search field to which the query should be applied (available options: TODO: GIVE EXAMPLES AND LINK TO DOCS)
 
 To load a JSON query file, run the parser:
 
@@ -154,7 +152,7 @@ The package was developed as part of Bachelor's theses:
 
 ## Not what you are looking for?
 
-This python package was developed with purpose of integrating it into other literature management tools. If that isn't your use case, it migth be useful for you to look at these related tools:
+This Python package was developed with purpose of integrating it into other literature management tools. If that isn't your use case, it might be useful for you to look at these related tools:
 
 - [LitSonar](https://litsonar.com/)
 - [Polyglot](https://sr-accelerator.com/#/polyglot)
