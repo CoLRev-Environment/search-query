@@ -105,7 +105,18 @@ search-query lint search-file.json
 
 Linters can be included as pre-commit hooks by adding the following to the `.pre-commit-config.yaml:
 
+```yaml
+repos:
+  - repo: https://github.com/CoLRev-Environment/search-query
+    rev: main # or version of search-query
+    hooks:
+      - id: search-file-lint
+
 ```
+
+For development and testing, use the following:
+
+```yaml
 repos:
   - repo: local
     hooks:
@@ -115,17 +126,6 @@ repos:
         language: python
         files: \.json$
 ```
-
-<!--
-TODO: the previous one should be for dev. Enable (based on [.pre-commit-hooks.yaml](https://github.com/pre-commit/pre-commit-hooks/blob/main/.pre-commit-hooks.yaml)):
-
-```
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0  # Use the ref you want to point at
-    hooks:
-    -   id: trailing-whitespace
-```
--->
 
 To activate and run:
 
