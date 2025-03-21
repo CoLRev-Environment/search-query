@@ -51,14 +51,17 @@ class Query:
         self.value = value
         self.operator = operator
         if operator:
-            assert value in [
-                Operators.AND,
-                Operators.OR,
-                Operators.NOT,
-                "NOT_INITIALIZED",
-            ]
+            if "NEAR" not in value:
+                assert self.value in [
+                    Operators.AND,
+                    Operators.OR,
+                    Operators.NOT,
+                    Operators.NEAR,
+                    "NOT_INITIALIZED",
+                ]
 
         self.children: typing.List[Query] = []
+
         if children:
             for child in children:
                 if isinstance(child, str):

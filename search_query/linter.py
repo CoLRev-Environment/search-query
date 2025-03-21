@@ -41,7 +41,7 @@ def pre_commit_hook() -> int:
         )
         return ExitCodes.FAIL
 
-    linter_messages = run_linter(search_file.search_string, platform)
+    linter_messages = run_linter(search_file.search_string, search_file.platform)
 
     if linter_messages:
         for message in linter_messages:
