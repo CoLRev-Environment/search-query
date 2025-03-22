@@ -9,6 +9,7 @@ from search_query.query import Query
 from search_query.query import SearchField
 
 
+# pylint: disable=duplicate-code
 class OrQuery(Query):
     """OR Query Class"""
 
