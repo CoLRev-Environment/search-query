@@ -9,6 +9,7 @@ from abc import abstractmethod
 
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
+from search_query.constants import QueryErrorCode
 from search_query.query import Query
 
 
@@ -22,6 +23,18 @@ class QueryStringParser(ABC):
         self.query_str = query_str
         self.tokens = []
         self.mode = mode
+
+    def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
+        """Add a linter message."""
+        self.linter_messages.append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "pos": pos,
+            }
+        )
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
