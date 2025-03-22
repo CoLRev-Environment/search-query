@@ -13,7 +13,7 @@
 Search-query is a Python package for **translating academic literature search queries (i.e., parsing and serializing)**, but also for **validating, simplifying, and improving** them.
 It implements various syntax validation checks ("linters" for search queries) and prints instructive messages to inform users about potential issues.
 
-For more, see the [documentation](docs/readme.md).
+For more, see the [documentation](https://colrev-environment.github.io/search-query/).
 
 ## How to cite
 
