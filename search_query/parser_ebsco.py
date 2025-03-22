@@ -277,7 +277,6 @@ class EBSCOParser(QueryStringParser):
         dynamic tree restructuring based on PRECEDENCE.
         """
 
-        # Higher number=higher precedence
         root: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
 

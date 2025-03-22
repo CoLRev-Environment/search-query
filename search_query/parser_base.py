@@ -15,6 +15,8 @@ class QueryStringParser:
 
     tokens: list
     linter_messages: typing.List[dict] = []
+
+    # Higher number=higher precedence
     PRECEDENCE = {"NOT": 3, "AND": 2, "OR": 1}
 
     def __init__(
