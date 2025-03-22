@@ -1,0 +1,14 @@
+.. _E0002:
+
+E0002 — search-field-missing
+============================
+
+**Error Code**: E0002
+
+**Message**: ``Expected search field is missing``
+
+**Scope**: all
+
+**Description**: Expected search field is missing
+
+**Back to**: :ref:`query-error-messages`
