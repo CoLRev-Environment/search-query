@@ -2,6 +2,7 @@ Search-Query Documentation
 ========================================
 
 .. image:: documentation.png
+   :width: 800px
 
 Search string
 ----------------
@@ -47,7 +48,7 @@ Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyha
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    dev_docs/parser
