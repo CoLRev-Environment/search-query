@@ -1,6 +1,7 @@
 # scripts/generate_errors_index.py
 from pathlib import Path
 
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 
 OUTPUT_FILE = Path("docs/source/messages/errors_index.rst")
@@ -21,7 +22,7 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
         f.write(".. toctree::\n   :maxdepth: 1\n\n")
 
         for error in filter(filter_fn, QueryErrorCode):
-            f.write(f"   errors/{error.code}\n")
+            f.write(f"   {error.code}\n")
             f.write("\n")
 
 OUTPUT_DIR = Path("docs/source/messages")
@@ -60,3 +61,17 @@ def generate_rst_file(error: QueryErrorCode) -> None:
 
 for error in QueryErrorCode:
     generate_rst_file(error)
+
+
+OUTPUT_FILE = Path("docs/source/parser/parser_index.rst")
+OUTPUT_FILE.write_text(".. _parsers:\n\n")
+with OUTPUT_FILE.open("a", encoding="utf-8") as f:
+    f.write("Parsers\n")
+    f.write("====================\n\n")
+    f.write("Overview of query parsers:\n\n")
+    # f.write(".. toctree::\n   :maxdepth: 1\n\n")
+
+    for platform in PLATFORM:
+        f.write(f"- {platform.value}\n")
+        # f.write(f" parser/{platform}.rst\n")
+        f.write("\n")
