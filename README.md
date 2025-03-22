@@ -10,23 +10,14 @@
 
 </div>
 
-Search-query is a Python package for parsing, validating, simplifying, and serializing literature search queries.
-It currently supports PubMed and Web of Science, and can be extended to support other databases.
-As a default it relies on the JSON schema proposed by an expert panel (Haddaway et al., 2022).
-The package can be used programmatically or through the command line, has zero dependencies, and can therefore be integrated in a variety of environments.
-The heuristics, parsers, and linters are battle-tested on over 500 peer-reviewed queries registered at [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv).
+Search-query is a Python package for **translating academic literature search queries (i.e., parsing and serializing)**, but also for **validating, simplifying, and improving** them.
+It implements various syntax validation checks ("linters" for search queries) and prints instructive messages to inform users about potential issues.
 
-## Documentation
-
-[docs](docs/readme.md)
-
-## Demo
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
+For more, see the [documentation](docs/readme.md).
 
 ## How to cite
 
-TODO: main citation
+Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. "search-query: An Open-Source Python Library for Academic Search Queries".
 
 The package was developed as part of Bachelor's theses:
 
