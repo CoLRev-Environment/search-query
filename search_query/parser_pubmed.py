@@ -197,21 +197,28 @@ class PubmedParser(QueryStringParser):
     def parse_query_tree(self, tokens: list) -> Query:
         """Parse a query from a list of tokens"""
 
-        operator_indices = self._get_operator_indices(tokens)
+        if self.is_compound_query(tokens):
+            query = self._parse_compound_query(tokens)
 
-        if operator_indices:
-            query = self._parse_compound_query(tokens, operator_indices)
-            return query
-
-        current_token = tokens[0][0]
-
-        if current_token == "(":
+        elif self.is_nested_query(tokens):
             query = self._parse_nested_query(tokens)
-            return query
 
-        if self.is_term(current_token):
+        elif self.is_term_query(tokens):
             query = self._parse_search_term(tokens)
-            return query
+
+        else:
+            raise ValueError()
+
+        return query
+
+    def is_term_query(self, tokens):
+        return self.is_term(tokens[0][0]) and len(tokens) == 1
+
+    def is_compound_query(self, tokens):
+        return bool(self._get_operator_indices(tokens))
+
+    def is_nested_query(self, tokens):
+        return tokens[0][0] == "(" and tokens[-1][0] == ")"
 
     def _get_operator_indices(self, tokens: list) -> list:
         """Get indices of top-level operators in the token list"""
@@ -243,10 +250,10 @@ class PubmedParser(QueryStringParser):
 
         return operator_indices
 
-    def _parse_compound_query(self, tokens: list, operator_indices: list) -> Query:
+    def _parse_compound_query(self, tokens: list) -> Query:
         """Parse a compound query consisting of two or more subqueries connected by a boolean operator"""
-        query_start_pos = tokens[0][1][0]
-        query_end_pos = tokens[-1][1][1]
+
+        operator_indices = self._get_operator_indices(tokens)
 
         # Divide tokens into separate lists based on top-level operator positions.
         token_lists = []
@@ -262,7 +269,11 @@ class PubmedParser(QueryStringParser):
             query = self.parse_query_tree(token_list)
             children.append(query)
 
+        # TODO : assert operators equal?
         operator_type = self.get_operator_type(tokens[operator_indices[0]][0])
+
+        query_start_pos = tokens[0][1][0]
+        query_end_pos = tokens[-1][1][1]
 
         return Query(
             value=operator_type,
