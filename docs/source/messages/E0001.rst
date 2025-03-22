@@ -1,0 +1,14 @@
+.. _E0001:
+
+E0001 — search-field-contradiction
+==================================
+
+**Error Code**: E0001
+
+**Message**: ``Contradictory search fields specified``
+
+**Scope**: all
+
+**Description**: Contradictory search fields specified
+
+**Back to**: :ref:`query-error-messages`
