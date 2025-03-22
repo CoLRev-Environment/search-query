@@ -116,75 +116,100 @@ class QueryErrorCode(Enum):
 
     # Fatal errors (prefix: F)
     TOKENIZING_FAILED = (
-        "all",
+        ["all"],
         "F0001",
         "tokenizing-failed",
         "Fatal error during tokenization",
+        "",
     )
     UNBALANCED_PARENTHESES = (
-        "all",
+        ["all"],
         "F0002",
         "unbalanced-parentheses",
         "Parentheses are unbalanced in the query",
+        """**Typical fix**: Check the parentheses in the query
+
+**Problematic query**:
+
+.. code-block:: python
+
+    (a AND b OR c
+
+**Correct query**:
+
+.. code-block:: python
+
+    (a AND b) OR c""",
     )
     MISSING_OPERATOR = (
-        "all",
+        ["all"],
         "F0003",
         "missing-operator",
         "An operator is missing between terms",
+        "",
     )
 
     # Errors (prefix: E)
     SEARCH_FIELD_CONTRADICTION = (
-        "all",
+        ["all"],
         "E0001",
         "search-field-contradiction",
         "Contradictory search fields specified",
+        "",
     )
     SEARCH_FIELD_MISSING = (
-        "all",
+        ["all"],
         "E0002",
         "search-field-missing",
         "Expected search field is missing",
+        "",
     )
     SEARCH_FIELD_UNSUPPORTED = (
-        "all",
+        ["all"],
         "E0003",
         "search-field-unsupported",
         "Search field is not supported for this database",
+        "",
     )
 
     # Warnings (prefix: W)
     SEARCH_FIELD_REDUNDANT = (
-        "all",
+        ["all"],
         "W0001",
         "search-field-redundant",
         "Recommend specifying search field only once in the search string",
+        "",
     )
     SEARCH_FIELD_EXTRACTED = (
-        "all",
+        ["all"],
         "W0002",
         "search-field-extracted",
         "Recommend explicitly specifying the search field in the string",
+        "",
     )
     SEARCH_FIELD_NOT_SPECIFIED = (
-        "all",
+        ["all"],
         "W0003",
         "search-field-not-specified",
         "Search field should be explicitly specified",
+        "",
     )
     QUERY_STRUCTURE_COMPLEX = (
-        "all",
+        ["all"],
         "W0004",
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
+        "",
     )
 
-    def __init__(self, scope: str, code: str, label: str, message: str) -> None:
+    def __init__(
+        self, scope: list, code: str, label: str, message: str, docs: str
+    ) -> None:
         self.scope = scope
         self.code = code
         self.label = label
         self.message = message
+        self.docs = docs
 
     # Error type is defined by first letter
     def is_fatal(self) -> bool:

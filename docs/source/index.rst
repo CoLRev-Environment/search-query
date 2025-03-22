@@ -51,5 +51,6 @@ Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyha
    :maxdepth: 1
    :caption: Contents:
 
+   messages/errors_index
    dev_docs/parser
    dev_docs/linter
