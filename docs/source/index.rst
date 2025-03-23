@@ -71,7 +71,7 @@ Search-query can parse queries from strings and JSON files in the standard forma
       "date": {"data_entry": "2019.07.01", "search_conducted": "2019.07.01"},
       "platform": "Web of Science",
       "database": ["SCI-EXPANDED", "SSCI", "A&HCI"],
-      "search_string": "TS=(quantum AND dot AND spin)",
+      "search_string": "TS=(quantum AND dot AND spin)"
    }
 
 To load a JSON query file, run the parser:

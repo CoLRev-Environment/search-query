@@ -31,6 +31,7 @@ requires-python = ">=3.8"
 docs = [
     "Sphinx>=5.2.3",
     "sphinx-rtd-theme>=1.1.1",
+    "sphinx-copybutton>=0.5.2",
 ]
 dev = [
     "pylint==3.0.1",

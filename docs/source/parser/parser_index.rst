@@ -14,4 +14,3 @@ Overview of query parsers:
 - structured
 
 - pre_notation
-
