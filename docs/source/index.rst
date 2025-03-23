@@ -39,10 +39,10 @@ To install `search-query`, run:
     pip install search-query
 
 
-Programmatic Use
+Quickstart
 ================
 
-To create a query programmatically, run:
+Creating a query programmatically is simple:
 
 .. code-block:: python
 
@@ -53,13 +53,73 @@ To create a query programmatically, run:
     work_synonyms = OrQuery(["work", "labor", "service"], search_field="Abstract")
     query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keywords")
 
-Parameters:
+..
+    Parameters:
 
-- list of strings or queries: strings that you want to include in the search query,
-- ``search_field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
+    - list of strings or queries: strings that you want to include in the search query,
+    - ``search_field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
+   Search strings can be either in string or list format.
+
+We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers (syntax) </parser/parser_index>`):
+
+.. code-block:: python
+
+    from search_query.parser import parse
+
+    query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
+    query = parse(query_string, syntax="pubmed")
+
+Once we have created a :literal:`query` object, we may want to translate it for different databases.
+Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
+
+.. code-block:: python
+
+    query.to_string(syntax="ebsco")
+   # Output:
+   # (TI("digital health") OR AB("digital health")) AND (TI("privacy") OR AB("privacy"))
+
+    query.to_string(syntax="wos")
+   # Output:
+   # (TI=("digital health") OR AB=("digital health")) AND (TI=("privacy") OR AB=("privacy"))
+
+Another useful feature of search-query is its **validation (linter)** functionality, which helps us to identify syntactical errors:
+
+.. code-block:: python
+
+    from search_query.parser import parse
+
+    query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
+    query = parse(query_string, syntax="pubmed")
+    # Output:
+    # Fatal: unbalanced-parentheses (F0002) at position 66:
+    #   ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+    #                                                                    ^^
+
+Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.
 
 ..
-   Search strings can be either in string or list format.
+    Each query parser has a corresponding linter that checks for errors and warnings in the query.
+    To validate a JSON query file, run the linter:
+
+    .. code-block:: python
+
+        from search_query.linter import run_linter
+
+        messages = run_linter(search.search_string, syntax=search.platform)
+        print(messages)
+
+    There are two modes:
+
+    - **Strict mode**: Forces the user to maintain clean, valid input but at the cost of convenience. This mode fails on fatal or error outcomes and prints warnings.
+    - **Non-strict mode**: Focuses on usability, automatically resolving common issues while maintaining transparency via warnings. This mode fails only on fatal outcomes. Auto-corrects errors as much as possible and prints a message (adds a fatal message if this is not possible). Prints warnings.
+
+    An additional "silent" option may be used to silence warnings.
+
+
+.. _json-search-files:
+
+JSON search files
+-----------------------
 
 Search-query can parse queries from strings and JSON files in the standard format (Haddaway et al. 2022). Example:
 
@@ -84,39 +144,6 @@ To load a JSON query file, run the parser:
     search = SearchFile("search-file.json")
     query = parse(search.search_string, syntax=search.platform)
 
-Available platform identifiers are listed :doc:`here </parser/parser_index>`.
-
-Linters
-----------------
-
-Each query parser has a corresponding linter that checks for errors and warnings in the query.
-To validate a JSON query file, run the linter:
-
-.. code-block:: python
-
-    from search_query.linter import run_linter
-
-    messages = run_linter(search.search_string, syntax=search.platform)
-    print(messages)
-
-There are two modes:
-
-- **Strict mode**: Forces the user to maintain clean, valid input but at the cost of convenience. This mode fails on fatal or error outcomes and prints warnings.
-- **Non-strict mode**: Focuses on usability, automatically resolving common issues while maintaining transparency via warnings. This mode fails only on fatal outcomes. Auto-corrects errors as much as possible and prints a message (adds a fatal message if this is not possible). Prints warnings.
-
-An additional "silent" option may be used to silence warnings.
-
-Query translation
------------------------------
-
-To translate a query to a particular database syntax and print it, run:
-
-.. code-block:: python
-
-    query.to_string(syntax="ebsco")
-    query.to_string(syntax="pubmed")
-    query.to_string(syntax="wos")
-
 To write a query to a JSON file, run the serializer:
 
 .. code-block:: python
@@ -131,6 +158,7 @@ To write a query to a JSON file, run the serializer:
         record_info={},
         date={}
     )
+
 
 
 CLI Use
