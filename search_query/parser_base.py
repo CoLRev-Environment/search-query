@@ -68,6 +68,7 @@ class QueryStringParser(ABC):
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
 
+    # TODO: should be attributes of Token
     def is_parenthesis(self, token: str) -> bool:
         """Token is parenthesis"""
         return token in ["(", ")"]

@@ -39,6 +39,7 @@ dev = [
 ]
 
 [project.scripts]
+search-query = "search_query.cli:main"
 search-file-lint = "search_query.linter:main"
 
 [tool.pylint.MAIN]
