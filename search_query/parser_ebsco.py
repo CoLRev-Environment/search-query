@@ -37,6 +37,14 @@ class EBSCOParser(QueryStringParser):
         ]
     )
 
+    OPERATOR_PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
+
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
         if not self.tokens:
@@ -108,6 +116,132 @@ class EBSCOParser(QueryStringParser):
     def is_search_field(self, token: str) -> bool:
         """Check if the token is a valid search field."""
         return re.fullmatch(self.SEARCH_FIELD_REGEX, token) is not None
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        if token.startswith("N"):
+            return self.OPERATOR_PRECEDENCE["NEAR"]
+        if token.startswith("W"):
+            return self.OPERATOR_PRECEDENCE["WITHIN"]
+        if token in self.OPERATOR_PRECEDENCE:
+            return self.OPERATOR_PRECEDENCE[token]
+        return -1  # Not an operator
+
+    def add_higher_value(
+        self,
+        output: list[tuple[str, str, tuple[int, int]]],
+        current_value: int,
+        value: int,
+        art_par: int,
+    ) -> tuple[list[tuple[str, str, tuple[int, int]]], int]:
+        """Adds open parenthesis to higher value operators"""
+        temp: list[tuple[str, str, tuple[int, int]]] = []
+        depth_lvl = 0  # Counter for actual parenthesis
+
+        while output:
+            # Get previous tokens until right operator has been reached
+            token, token_type, pos = output.pop()
+
+            # Track already existing query blocks
+            if token_type == "PARENTHESIS_CLOSED":
+                depth_lvl += 1
+            elif token_type == "PARENTHESIS_OPEN":
+                depth_lvl -= 1
+
+            temp.insert(0, (token, token_type, pos))
+
+            if (
+                token_type in ["LOGIC_OPERATOR", "PROXIMITY_OPERATOR"]
+                and depth_lvl == 0
+            ):
+                # Insert open parenthesis for each point in value difference
+                while current_value < value:
+                    # Insert open parenthesis after operator
+                    temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
+                    current_value += 1
+                    art_par += 1
+                break
+
+        return temp, art_par
+
+    def add_artificial_parentheses_for_operator_precedence(
+        self,
+        tokens: list,
+        index: int = 0,
+        output: typing.Optional[list] = None,
+    ) -> tuple[int, list[tuple[str, str, tuple[int, int]]]]:
+        """
+        Adds artificial parentheses with position (-1, -1)
+        to enforce operator precedence.
+        """
+        if output is None:
+            output = []
+        # Value of operator
+        value = 0
+        # Value of previous operator
+        current_value = -1
+        # Added artificial parenthesis
+        art_par = 0
+
+        while index < len(tokens):
+            # Forward iteration through tokens
+            token, token_type, pos = tokens[index]
+
+            if token_type == "PARENTHESIS_OPEN":
+                output.append((token, token_type, pos))
+                index += 1
+                index, output = self.add_artificial_parentheses_for_operator_precedence(
+                    tokens, index, output
+                )
+                continue
+
+            if token_type == "PARENTHESIS_CLOSED":
+                output.append((token, token_type, pos))
+                index += 1
+                # Add cosed parenthesis in case there are still open ones
+                while art_par > 0:
+                    output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                    art_par -= 1
+                return index, output
+
+            if token_type in ["LOGIC_OPERATOR", "PROXIMITY_OPERATOR"]:
+                value = self.get_precedence(token)
+
+                if current_value in (value, -1):
+                    # Same precedence → just add to output
+                    output.append((token, token_type, pos))
+                    current_value = value
+
+                elif value > current_value:
+                    # Higher precedence → wrap previous part in parentheses
+
+                    temp, art_par = self.add_higher_value(
+                        output, current_value, value, art_par
+                    )
+
+                    output.extend(temp)
+                    output.append((token, token_type, pos))
+                    current_value = value
+
+                elif value < current_value:
+                    # Insert close parenthesis for each point in value difference
+                    while current_value > value:
+                        # Lower precedence → close parentheses
+                        output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                        current_value -= 1
+                        art_par -= 1
+                    output.append((token, token_type, pos))
+                    current_value = value
+
+                index += 1
+                continue
+
+            # Default: search terms, fields, etc.
+            output.append((token, token_type, pos))
+            index += 1
+
+        return index, output
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -224,42 +358,6 @@ class EBSCOParser(QueryStringParser):
             operator_node.children.append(root)
         return operator_node, operator_node
 
-    def handle_higher_precedence(
-        self,
-        current_operator: Query,
-        new_operator_node: Query,
-    ) -> Query:
-        """Handle logic operators of higher precedence"""
-
-        # pop child from previous operator
-        # append to new operator and new operator takes place of child
-        # functions then as current operator
-        new_operator_node.children.append(current_operator.children.pop())
-        current_operator.children.append(new_operator_node)
-
-        return new_operator_node
-
-    def handle_lower_precedence(
-        self,
-        token: str,
-        root: typing.Optional[Query],
-        new_operator_node: Query,
-    ) -> tuple[Query, Query]:
-        """Handle logic operators of lower precedence"""
-
-        # if operator is same as token, sets tree depth back one layer
-        # ensures correct logical nesting
-        if root and root.value == token:
-            return root, root
-
-        # if not same, still sets back one layer,
-        # however, creates new node element
-        if root:
-            root.children.append(new_operator_node)
-            return root, new_operator_node
-
-        return new_operator_node, new_operator_node
-
     def check_for_none(self, root: typing.Optional[Query]) -> Query:
         """Check if root is none"""
         if root is None:
@@ -334,7 +432,7 @@ class EBSCOParser(QueryStringParser):
                         token, root, new_operator_node
                     )
 
-            elif token_type == TokenTypes.PARENTHESIS_OPEN:
+            elif token_type == "PARENTHESIS_OPEN":
                 # Recursively parse the group inside parentheses
                 # Set search_field_par as search field regarding the whole subtree
                 # If subtree is done, reset search_field_par
@@ -425,8 +523,14 @@ class EBSCOParser(QueryStringParser):
 
         # Tokenize the search string
         self.tokenize()
+        # Add artificial parentheses
+        _, self.tokens = self.add_artificial_parentheses_for_operator_precedence(
+            tokens=self.tokens, index=0
+        )
+
         # Parse query on basis of tokens and recursively build a query-tree
         query = self.parse_query_tree(self.tokens)
+
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
