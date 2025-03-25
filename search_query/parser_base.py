@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import re
 import typing
+from abc import ABC
+from abc import abstractmethod
 
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
+from search_query.constants import QueryErrorCode
 from search_query.query import Query
 
 
-class QueryStringParser:
-    """QueryStringParser"""
+class QueryStringParser(ABC):
+    """Abstract base class for query string parsers"""
 
     tokens: list
     linter_messages: typing.List[dict] = []
@@ -26,6 +29,18 @@ class QueryStringParser:
         self.tokens = []
         self.mode = mode
         self.search_field_general = search_field_general
+
+    def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
+        """Add a linter message."""
+        self.linter_messages.append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "pos": pos,
+            }
+        )
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
@@ -68,12 +83,11 @@ class QueryStringParser:
             raise ValueError
         return output
 
+    @abstractmethod
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
-        raise NotImplementedError(
-            "is_search_field method must be implemented by inheriting classes"
-        )
 
+    # TODO: should be attributes of Token
     def is_parenthesis(self, token: str) -> bool:
         """Token is parenthesis"""
         return token in ["(", ")"]
@@ -114,11 +128,9 @@ class QueryStringParser:
 
         self.tokens = combined_tokens
 
+    @abstractmethod
     def parse(self) -> Query:
         """Parse the query."""
-        raise NotImplementedError(
-            "parse method must be implemented by inheriting classes"
-        )
 
 
 class QueryListParser:
