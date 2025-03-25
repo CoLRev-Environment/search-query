@@ -19,10 +19,16 @@ class QueryStringParser(ABC):
     tokens: list
     linter_messages: typing.List[dict] = []
 
-    def __init__(self, query_str: str, mode: str = "strict") -> None:
+    # Higher number=higher precedence
+    PRECEDENCE = {"NOT": 3, "AND": 2, "OR": 1}
+
+    def __init__(
+        self, query_str: str, search_field_general: str, mode: str = "strict"
+    ) -> None:
         self.query_str = query_str
         self.tokens = []
         self.mode = mode
+        self.search_field_general = search_field_general
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
         """Add a linter message."""
@@ -131,10 +137,17 @@ class QueryListParser:
     """QueryListParser"""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    linter_messages: typing.List[dict] = []
 
-    def __init__(self, query_list: str, parser_class: type[QueryStringParser]) -> None:
+    def __init__(
+        self,
+        query_list: str,
+        search_field_general: str,
+        parser_class: type[QueryStringParser],
+    ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
+        self.search_field_general = search_field_general
 
     def parse_dict(self) -> dict:
         """Tokenize the query_list."""
@@ -220,9 +233,10 @@ class QueryListParser:
 
         query_list = self.dict_to_positioned_list(tokens)
         query_string = "".join([query[0] for query in query_list])
+        search_field_general = self.search_field_general
 
         try:
-            query = self.parser_class(query_string).parse()
+            query = self.parser_class(query_string, search_field_general).parse()
 
         except search_query_exception.QuerySyntaxError as exc:
             # Correct positions and query string
