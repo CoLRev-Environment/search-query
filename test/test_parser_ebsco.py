@@ -59,6 +59,53 @@ def test_tokenization_ebsco(
     )
 
 
+@pytest.mark.parametrize(
+    "query_string, updated_string",
+    [
+        (
+            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
+            'TI "Artificial Intelligence" AND ( AB Future NOT AB Past ) ',
+        ),
+        (
+            'TI "Artificial Intelligence" NOT AB Future AND AB Past',
+            '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
+        ),
+        (
+            'TI "AI" OR AB Robots AND AB Ethics',
+            'TI "AI" OR ( AB Robots AND AB Ethics ) ',
+        ),
+        (
+            'TI "AI" AND AB Robots OR AB Ethics',
+            '( TI "AI" AND AB Robots ) OR AB Ethics ',
+        ),
+        (
+            'TI "AI" NOT AB Robots OR AB Ethics',
+            '( TI "AI" NOT AB Robots ) OR AB Ethics ',
+        ),
+        (
+            'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
+            '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
+        ),
+    ],
+)
+def test_add_artificial_parentheses_for_operator_precedence(
+    query_string: str, updated_string: List[Tuple[str, str, Tuple[int, int]]]
+) -> None:
+    """Test EBSCO parser tokenization."""
+    ebsco_parser = EBSCOParser(query_string, "")
+    ebsco_parser.tokenize()
+    _, actual_tokens = ebsco_parser.add_artificial_parentheses_for_operator_precedence(
+        tokens=ebsco_parser.tokens, index=0
+    )
+    actual_string = "".join([f"{token[0]} " for token in actual_tokens])
+
+    # Assert equality with error message on failure
+    print(actual_string)
+    assert actual_string == updated_string, print_debug_tokens(
+        ebsco_parser, updated_string, query_string
+    )
+
+
 def print_debug_tokens(
     ebsco_parser: QueryStringParser,
     expected_tokens: List[Tuple[str, str, Tuple[int, int]]],

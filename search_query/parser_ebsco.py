@@ -132,7 +132,6 @@ class EBSCOParser(QueryStringParser):
         self,
         output: list[tuple[str, str, tuple[int, int]]],
         current_value: int,
-        value: int,
         art_par: int,
     ) -> tuple[list[tuple[str, str, tuple[int, int]]], int]:
         """Adds open parenthesis to higher value operators"""
@@ -155,14 +154,13 @@ class EBSCOParser(QueryStringParser):
                 token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
                 and depth_lvl == 0
             ):
-                # Insert open parenthesis for each point in value difference,
+                # Insert open parenthesis
                 # depth_lvl ensures that already existing blocks are ignored
-                while current_value < value:
-                    # Insert open parenthesis after operator
-                    temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
-                    current_value += 1
-                    art_par += 1
-                break
+
+                # Insert open parenthesis after operator
+                temp.insert(1, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
+                current_value += 1
+                art_par += 1
 
         return temp, art_par
 
@@ -184,6 +182,7 @@ class EBSCOParser(QueryStringParser):
         current_value = -1
         # Added artificial parentheses
         art_par = 0
+        par_opened = 0
 
         while index < len(tokens):
             # Forward iteration through tokens
@@ -202,7 +201,7 @@ class EBSCOParser(QueryStringParser):
                 index += 1
                 # Add closed parenthesis in case there are still open ones
                 while art_par > 0:
-                    output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                    output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
                     art_par -= 1
                 return index, output
 
@@ -217,22 +216,23 @@ class EBSCOParser(QueryStringParser):
                 elif value > current_value:
                     # Higher precedence → wrap previous part in parentheses
                     temp, art_par = self.add_higher_value(
-                        output, current_value, value, art_par
+                        output, current_value, art_par
                     )
 
                     output.extend(temp)
                     output.append((token, token_type, pos))
                     current_value = value
+                    par_opened += 1
 
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
-                    while current_value > value:
-                        # Lower precedence → close parenthesis
-                        output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
-                        current_value -= 1
-                        art_par -= 1
+                    # Lower precedence → close parenthesis
+                    output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                    current_value -= 1
+                    art_par -= 1
                     output.append((token, token_type, pos))
                     current_value = value
+                    par_opened -= 1
 
                 index += 1
                 continue
@@ -240,6 +240,16 @@ class EBSCOParser(QueryStringParser):
             # Default: search terms, fields, etc.
             output.append((token, token_type, pos))
             index += 1
+
+        # Add parenthesis in case there are missing ones
+        if par_opened > 0:
+            while par_opened > 0:
+                output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                par_opened -= 1
+        if par_opened < 0:
+            while par_opened < 0:
+                output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
+                par_opened += 1
 
         return index, output
 
@@ -516,7 +526,7 @@ class EBSCOParser(QueryStringParser):
         self.tokenize()
         # Add artificial parentheses
         _, self.tokens = self.add_artificial_parentheses_for_operator_precedence(
-            tokens=self.tokens, index=0
+            tokens=self.tokens
         )
 
         # Parse query on basis of tokens and recursively build a query-tree

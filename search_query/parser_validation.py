@@ -135,6 +135,10 @@ class EBSCOQueryStringValidator:
             field = field.strip()
             start, end = match.span()
 
+            # if escaped by quotes: continue (e.g., search term "AI")
+            if self.query_str[start - 1] == '"':
+                continue
+
             if field not in supported_fields:
                 unsupported_fields.append(field)
                 if strict:
