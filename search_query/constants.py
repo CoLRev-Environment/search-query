@@ -219,6 +219,13 @@ class QueryErrorCode(Enum):
         "Query structure is more complex than necessary",
         "",
     )
+    OPERATOR_CAPITALIZATION = (
+        ["all"],
+        "W0005",
+        "operator-capitalization",
+        "Operator should be in upper case",
+        "",
+    )
 
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str

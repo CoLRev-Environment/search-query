@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""EBSCO query parser."""
+"""Validator for search queries."""
 from __future__ import annotations
 
 import re
 import typing
 
+import search_query.parser_base
+import search_query.parser_ebsco
+from search_query.constants import QueryErrorCode
 
+
+# Could indeed be a general Validator class
 class QueryStringValidator:
     """Class for Query String Validation"""
 
@@ -15,11 +20,11 @@ class QueryStringValidator:
 
     def __init__(
         self,
-        query_str: str,
-        search_field_general: str,
+        parser: search_query.parser_base.QueryStringParser,
     ):
-        self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.query_str = parser.query_str
+        self.search_field_general = parser.search_field_general
+        self.parser = parser
 
     def check_operator(self) -> None:
         """Check for operators written in not all capital letters."""
@@ -35,12 +40,9 @@ class QueryStringValidator:
                     self.query_str[:start] + operator.upper() + self.query_str[end:]
                 )
 
-                self.linter_messages.append(
-                    {
-                        "level": "Warning",
-                        "msg": f"Operator '{operator}' automatically capitalized",
-                        "pos": (start, end),
-                    }
+                self.parser.add_linter_message(
+                    QueryErrorCode.OPERATOR_CAPITALIZATION,
+                    (start, end),
                 )
 
     def check_parenthesis(self) -> None:
@@ -80,11 +82,11 @@ class EBSCOQueryStringValidator:
 
     def __init__(
         self,
-        query_str: str,
-        search_field_general: str,
+        parser: search_query.parser_ebsco.EBSCOQueryStringParser,
     ):
-        self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.query_str = parser.query_str
+        self.search_field_general = parser.search_field_general
+        self.parser = parser
 
     def check_search_field_general(self, strict: bool) -> None:
         """Check field 'Search Fields' in content."""

@@ -266,13 +266,13 @@ class EBSCOParser(QueryStringParser):
 
         self.tokens = []
 
-        validator = EBSCOQueryStringValidator(self.query_str, self.search_field_general)
+        validator = EBSCOQueryStringValidator(self)
         validator.filter_search_field(strict)
         self.query_str = validator.query_str
-        self.linter_messages.extend(validator.linter_messages)
+        # self.linter_messages.extend(validator.linter_messages)
 
         validator.check_search_field_general(strict)
-        self.linter_messages.extend(validator.linter_messages)
+        # self.linter_messages.extend(validator.linter_messages)
 
         previous_token_type = None
         token_type = None
@@ -312,7 +312,7 @@ class EBSCOParser(QueryStringParser):
             )
             # Set token_type for continoued validation
             previous_token_type = token_type
-            self.linter_messages.extend(validator.linter_messages)
+            # self.linter_messages.extend(validator.linter_messages)
 
             # Append token with its type and position to self.tokens
             self.tokens.append((token, token_type, (start, end)))
@@ -510,17 +510,17 @@ class EBSCOParser(QueryStringParser):
         self.linter_messages.clear()
 
         # Create an instance of QueryStringValidator
-        validator = QueryStringValidator(self.query_str, self.search_field_general)
+        validator = QueryStringValidator(self)
 
         # Call validation methods
         validator.check_operator()
-        self.linter_messages.extend(validator.linter_messages)
+        # self.linter_messages.extend(validator.linter_messages)
 
         validator.check_parenthesis()
 
         # Update the query string and messages after validation
         self.query_str = validator.query_str
-        self.linter_messages.extend(validator.linter_messages)
+        # self.linter_messages.extend(validator.linter_messages)
 
         # Tokenize the search string
         self.tokenize()
