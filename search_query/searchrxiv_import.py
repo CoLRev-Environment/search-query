@@ -68,7 +68,7 @@ def create_search_file(
         "url": loaded_data["url"],
     }
     s_file["authors"] = [  # type: ignore
-        {"name": author} for author in loaded_data["author"].split(" and ")
+        {"name": author} for author in loaded_data["authors"].split(" and ")
     ]
     s_file["platform"] = loaded_data["content"]["Platform"]
     s_file["database"] = [loaded_data["content"]["Database Searched"]]  # type: ignore

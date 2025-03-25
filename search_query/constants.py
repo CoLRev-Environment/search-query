@@ -51,6 +51,7 @@ class Fields:
     ISSN = "is"
     ISBN = "ib"
     LANGUAGE = "la"
+    DESCRIPTORS = "de"
 
     @classmethod
     def all(cls) -> list:
@@ -94,8 +95,8 @@ PLATFORM_FIELD_MAP = {
         Fields.ISSN: "IS",
         Fields.ISBN: "IB",
         Fields.LANGUAGE: "LA",
-        Fields.AUTHOR_KEYWORDS: "KW",
-        Fields.KEYWORDS: "DE",
+        Fields.KEYWORDS: "KW",
+        Fields.DESCRIPTORS: "DE",
     },
 }
 

@@ -18,11 +18,17 @@ search = SearchFile(
 )
 
 # Parse loaded file, depending on platform syntax written in File
-query = parse(search.search_string, search.search_field_general, syntax=search.platform)
+query = parse(
+    search.search_string,
+    search_field_general=search.search_field_general,
+    syntax=search.platform,
+)
 
 # While parsing is done, linter messages will be collected and printed here
 messages = run_linter(
-    search.search_string, search.search_field_general, syntax=search.platform
+    search.search_string,
+    platform=search.platform,
+    search_field_general=search.search_field_general,
 )
 print(messages)
 print("-" * 20)

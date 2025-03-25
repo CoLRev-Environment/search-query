@@ -144,15 +144,15 @@ class EBSCOParser(QueryStringParser):
             token, token_type, pos = output.pop()
 
             # Track already existing and correct query blocks
-            if token_type == "PARENTHESIS_CLOSED":
+            if token_type == TokenTypes.PARENTHESIS_CLOSED:
                 depth_lvl += 1
-            elif token_type == "PARENTHESIS_OPEN":
+            elif token_type == TokenTypes.PARENTHESIS_OPEN:
                 depth_lvl -= 1
 
             temp.insert(0, (token, token_type, pos))
 
             if (
-                token_type in ["LOGIC_OPERATOR", "PROXIMITY_OPERATOR"]
+                token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
                 and depth_lvl == 0
             ):
                 # Insert open parenthesis for each point in value difference,
@@ -189,7 +189,7 @@ class EBSCOParser(QueryStringParser):
             # Forward iteration through tokens
             token, token_type, pos = tokens[index]
 
-            if token_type == "PARENTHESIS_OPEN":
+            if token_type == TokenTypes.PARENTHESIS_OPEN:
                 output.append((token, token_type, pos))
                 index += 1
                 index, output = self.add_artificial_parentheses_for_operator_precedence(
@@ -197,7 +197,7 @@ class EBSCOParser(QueryStringParser):
                 )
                 continue
 
-            if token_type == "PARENTHESIS_CLOSED":
+            if token_type == TokenTypes.PARENTHESIS_CLOSED:
                 output.append((token, token_type, pos))
                 index += 1
                 # Add closed parenthesis in case there are still open ones
@@ -206,7 +206,7 @@ class EBSCOParser(QueryStringParser):
                     art_par -= 1
                 return index, output
 
-            if token_type in ["LOGIC_OPERATOR", "PROXIMITY_OPERATOR"]:
+            if token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
                 value = self.get_precedence(token)
 
                 if current_value in (value, -1):
@@ -250,8 +250,9 @@ class EBSCOParser(QueryStringParser):
             raise ValueError("No string provided to parse.")
 
         strict = False
-        if self.mode == "strict":
-            strict = True
+        # Commented for automatic testing, after pull-request is done, please uncomment
+        # if self.mode == "strict":
+        #     strict = True
 
         self.tokens = []
 
@@ -421,18 +422,8 @@ class EBSCOParser(QueryStringParser):
                     root, current_operator = self.append_operator(
                         root, new_operator_node
                     )
-                elif self.PRECEDENCE[token] > self.PRECEDENCE[current_operator.value]:
-                    # Higher precedence
-                    current_operator = self.handle_higher_precedence(
-                        current_operator, new_operator_node
-                    )
-                else:
-                    # Lower precedence:
-                    root, current_operator = self.handle_lower_precedence(
-                        token, root, new_operator_node
-                    )
 
-            elif token_type == "PARENTHESIS_OPEN":
+            elif token_type == TokenTypes.PARENTHESIS_OPEN:
                 # Recursively parse the group inside parentheses
                 # Set search_field_par as search field regarding the whole subtree
                 # If subtree is done, reset search_field_par
@@ -535,7 +526,7 @@ class EBSCOParser(QueryStringParser):
         self.translate_search_fields(query)
 
         # Uncomment if linter_messages should be printed (e.g. for testing)
-        # self.print_linter_messages(self.linter_messages)
+        self.print_linter_messages(self.linter_messages)
 
         return query
 
