@@ -143,7 +143,7 @@ class EBSCOParser(QueryStringParser):
             # Get previous tokens until right operator has been reached
             token, token_type, pos = output.pop()
 
-            # Track already existing query blocks
+            # Track already existing and correct query blocks
             if token_type == "PARENTHESIS_CLOSED":
                 depth_lvl += 1
             elif token_type == "PARENTHESIS_OPEN":
@@ -155,7 +155,8 @@ class EBSCOParser(QueryStringParser):
                 token_type in ["LOGIC_OPERATOR", "PROXIMITY_OPERATOR"]
                 and depth_lvl == 0
             ):
-                # Insert open parenthesis for each point in value difference
+                # Insert open parenthesis for each point in value difference,
+                # depth_lvl ensures that already existing blocks are ignored
                 while current_value < value:
                     # Insert open parenthesis after operator
                     temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
@@ -181,7 +182,7 @@ class EBSCOParser(QueryStringParser):
         value = 0
         # Value of previous operator
         current_value = -1
-        # Added artificial parenthesis
+        # Added artificial parentheses
         art_par = 0
 
         while index < len(tokens):
@@ -199,7 +200,7 @@ class EBSCOParser(QueryStringParser):
             if token_type == "PARENTHESIS_CLOSED":
                 output.append((token, token_type, pos))
                 index += 1
-                # Add cosed parenthesis in case there are still open ones
+                # Add closed parenthesis in case there are still open ones
                 while art_par > 0:
                     output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
                     art_par -= 1
@@ -215,7 +216,6 @@ class EBSCOParser(QueryStringParser):
 
                 elif value > current_value:
                     # Higher precedence → wrap previous part in parentheses
-
                     temp, art_par = self.add_higher_value(
                         output, current_value, value, art_par
                     )
@@ -227,7 +227,7 @@ class EBSCOParser(QueryStringParser):
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
                     while current_value > value:
-                        # Lower precedence → close parentheses
+                        # Lower precedence → close parenthesis
                         output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
                         current_value -= 1
                         art_par -= 1
