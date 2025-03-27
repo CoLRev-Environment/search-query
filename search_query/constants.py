@@ -17,6 +17,17 @@ class PLATFORM(Enum):
     PRE_NOTATION = "pre_notation"
 
 
+class TokenTypes:
+    """Token types"""
+
+    LOGIC_OPERATOR = "LOGIC_OPERATOR"
+    PROXIMITY_OPERATOR = "PROXIMITY_OPERATOR"
+    FIELD = "FIELD"
+    SEARCH_TERM = "SEARCH_TERM"
+    PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
+    PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
+
+
 class Operators:
     """Operators"""
 
@@ -155,7 +166,6 @@ class Colors:
     ORANGE = "\033[93m"
     BLUE = "\033[94m"
     END = "\033[0m"
-
 
 class LinterMode:
     """Linter mode"""
@@ -501,3 +511,116 @@ class WOSSearchFieldList:
         "WC=": web_of_science_category_list,
         "ZP=": zip_postal_code_list,
     }
+
+class QueryErrorCode(Enum):
+    """Error codes for the query parser"""
+
+    # Fatal errors (prefix: F)
+    TOKENIZING_FAILED = (
+        ["all"],
+        "F0001",
+        "tokenizing-failed",
+        "Fatal error during tokenization",
+        "",
+    )
+    UNBALANCED_PARENTHESES = (
+        ["all"],
+        "F0002",
+        "unbalanced-parentheses",
+        "Parentheses are unbalanced in the query",
+        """**Typical fix**: Check the parentheses in the query
+
+**Problematic query**:
+
+.. code-block:: python
+
+    (a AND b OR c
+
+**Correct query**:
+
+.. code-block:: python
+
+    (a AND b) OR c""",
+    )
+    MISSING_OPERATOR = (
+        ["all"],
+        "F0003",
+        "missing-operator",
+        "An operator is missing between terms",
+        "",
+    )
+
+    # Errors (prefix: E)
+    SEARCH_FIELD_CONTRADICTION = (
+        ["all"],
+        "E0001",
+        "search-field-contradiction",
+        "Contradictory search fields specified",
+        "",
+    )
+    SEARCH_FIELD_MISSING = (
+        ["all"],
+        "E0002",
+        "search-field-missing",
+        "Expected search field is missing",
+        "",
+    )
+    SEARCH_FIELD_UNSUPPORTED = (
+        ["all"],
+        "E0003",
+        "search-field-unsupported",
+        "Search field is not supported for this database",
+        "",
+    )
+
+    # Warnings (prefix: W)
+    SEARCH_FIELD_REDUNDANT = (
+        ["all"],
+        "W0001",
+        "search-field-redundant",
+        "Recommend specifying search field only once in the search string",
+        "",
+    )
+    SEARCH_FIELD_EXTRACTED = (
+        ["all"],
+        "W0002",
+        "search-field-extracted",
+        "Recommend explicitly specifying the search field in the string",
+        "",
+    )
+    SEARCH_FIELD_NOT_SPECIFIED = (
+        ["all"],
+        "W0003",
+        "search-field-not-specified",
+        "Search field should be explicitly specified",
+        "",
+    )
+    QUERY_STRUCTURE_COMPLEX = (
+        ["all"],
+        "W0004",
+        "query-structure-unnecessarily-complex",
+        "Query structure is more complex than necessary",
+        "",
+    )
+
+    def __init__(
+        self, scope: list, code: str, label: str, message: str, docs: str
+    ) -> None:
+        self.scope = scope
+        self.code = code
+        self.label = label
+        self.message = message
+        self.docs = docs
+
+    # Error type is defined by first letter
+    def is_fatal(self) -> bool:
+        """Check if error is fatal"""
+        return self.code.startswith("F")
+
+    def is_error(self) -> bool:
+        """Check if error is an error"""
+        return self.code.startswith("E")
+
+    def is_warning(self) -> bool:
+        """Check if error is a warning"""
+        return self.code.startswith("W")
