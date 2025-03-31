@@ -17,7 +17,6 @@ class QueryStringValidator:
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
-    linter_messages: typing.List[dict] = []
 
     def __init__(
         self,
@@ -29,7 +28,6 @@ class QueryStringValidator:
 
     def check_operator(self) -> None:
         """Check for operators written in not all capital letters."""
-        self.linter_messages.clear()
 
         for match in re.finditer(
             self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE
@@ -48,7 +46,6 @@ class QueryStringValidator:
 
     def check_parenthesis(self) -> None:
         """Check if the string has the same amount of '(' as well as ')'."""
-        self.linter_messages.clear()
 
         open_count = 0
         close_count = 0
@@ -70,7 +67,6 @@ class EBSCOQueryStringValidator:
     """Class for EBSCO Query String Validation"""
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
-    linter_messages: typing.List[dict] = []
 
     def __init__(self, parser: search_query.parser_ebsco.EBSCOParser):
         self.query_str = parser.query_str
@@ -79,7 +75,6 @@ class EBSCOQueryStringValidator:
 
     def check_search_field_general(self, strict: str) -> None:
         """Check field 'Search Fields' in content."""
-        self.linter_messages.clear()
 
         if self.search_field_general != "" and strict == "strict":
             self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
@@ -89,7 +84,6 @@ class EBSCOQueryStringValidator:
         Filter out unsupported search_fields.
         Depending on strictness, automatically change or ask user
         """
-        self.linter_messages.clear()
 
         supported_fields = {
             "TI",
@@ -156,7 +150,6 @@ class EBSCOQueryStringValidator:
         Validate the position of the current token
         based on its type and the previous token type.
         """
-        self.linter_messages.clear()
 
         if previous_token_type is None:
             # First token, no validation required
