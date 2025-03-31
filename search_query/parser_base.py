@@ -10,6 +10,7 @@ from abc import abstractmethod
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import QueryErrorCode
+from search_query.constants import TokenTypes
 from search_query.query import Query
 
 
@@ -127,6 +128,143 @@ class QueryStringParser(ABC):
                 i += 1
 
         self.tokens = combined_tokens
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        if token in self.PRECEDENCE:
+            return self.PRECEDENCE[token]
+        return -1  # Not an operator
+
+    def add_higher_value(
+        self,
+        output: list[tuple[str, str, tuple[int, int]]],
+        current_value: int,
+        value: int,
+        art_par: int,
+    ) -> tuple[list[tuple[str, str, tuple[int, int]]], int]:
+        """Adds open parenthesis to higher value operators"""
+        temp: list[tuple[str, str, tuple[int, int]]] = []
+        depth_lvl = 0  # Counter for actual parenthesis
+
+        while output:
+            # Get previous tokens until right operator has been reached
+            token, token_type, pos = output.pop()
+
+            # Track already existing and correct query blocks
+            if token_type == TokenTypes.PARENTHESIS_CLOSED:
+                depth_lvl += 1
+            elif token_type == TokenTypes.PARENTHESIS_OPEN:
+                depth_lvl -= 1
+
+            temp.insert(0, (token, token_type, pos))
+
+            if (
+                token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                and depth_lvl == 0
+            ):
+                # Insert open parenthesis
+                # depth_lvl ensures that already existing blocks are ignored
+
+                # Insert open parenthesis after operator
+                while current_value < value:
+                    # Insert open parenthesis after operator
+                    temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
+                    current_value += 1
+                    art_par += 1
+                break
+
+        return temp, art_par
+
+    # pylint: disable=too-many-branches
+    def add_artificial_parentheses_for_operator_precedence(
+        self,
+        tokens: list,
+        index: int = 0,
+        output: typing.Optional[list] = None,
+    ) -> tuple[int, list[tuple[str, str, tuple[int, int]]]]:
+        """
+        Adds artificial parentheses with position (-1, -1)
+        to enforce operator precedence.
+        """
+        if output is None:
+            output = []
+        # Value of operator
+        value = 0
+        # Value of previous operator
+        current_value = -1
+        # Added artificial parentheses
+        art_par = 0
+        par_opened = 0
+
+        while index < len(tokens):
+            # Forward iteration through tokens
+            token, token_type, pos = tokens[index]
+
+            if token_type == TokenTypes.PARENTHESIS_OPEN:
+                output.append((token, token_type, pos))
+                index += 1
+                index, output = self.add_artificial_parentheses_for_operator_precedence(
+                    tokens, index, output
+                )
+                continue
+
+            if token_type == TokenTypes.PARENTHESIS_CLOSED:
+                output.append((token, token_type, pos))
+                index += 1
+                # Add closed parenthesis in case there are still open ones
+                while art_par > 0:
+                    output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                    art_par -= 1
+                return index, output
+
+            if token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+                value = self.get_precedence(token)
+
+                if current_value in (value, -1):
+                    # Same precedence → just add to output
+                    output.append((token, token_type, pos))
+                    current_value = value
+
+                elif value > current_value:
+                    # Higher precedence → wrap previous part in parentheses
+                    temp, art_par = self.add_higher_value(
+                        output, current_value, value, art_par
+                    )
+
+                    output.extend(temp)
+                    output.append((token, token_type, pos))
+                    current_value = value
+                    par_opened += 1
+
+                elif value < current_value:
+                    # Insert close parenthesis for each point in value difference
+                    while current_value > value:
+                        # Lower precedence → close parenthesis
+                        output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                        current_value -= 1
+                        art_par -= 1
+                    output.append((token, token_type, pos))
+                    current_value = value
+
+                index += 1
+                continue
+
+            # Default: search terms, fields, etc.
+            output.append((token, token_type, pos))
+            index += 1
+
+        # Add parenthesis in case there are missing ones
+        if art_par > 0:
+            while art_par > 0:
+                output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                art_par -= 1
+        if art_par < 0:
+            while art_par < 0:
+                output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
+                art_par += 1
+
+        return index, output
 
     @abstractmethod
     def parse(self) -> Query:
