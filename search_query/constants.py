@@ -189,6 +189,13 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
+    INVALID_TOKEN_TRANSITION = (
+        ["ebsco"],
+        "E0004",
+        "invalid-token-transition",
+        "The transition from [token_type] to [token_type] is not allowed",
+        "",
+    )
 
     # Warnings (prefix: W)
     SEARCH_FIELD_REDUNDANT = (
@@ -227,6 +234,7 @@ class QueryErrorCode(Enum):
         "",
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

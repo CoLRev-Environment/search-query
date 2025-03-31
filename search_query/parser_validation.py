@@ -5,8 +5,9 @@ from __future__ import annotations
 import re
 import typing
 
+import search_query.parser
 import search_query.parser_base
-import search_query.parser_ebsco
+import search_query.parser_ebsco  # pylint: disable=cyclic-import
 from search_query.constants import QueryErrorCode
 
 
@@ -62,16 +63,7 @@ class QueryStringValidator:
                 close_count += 1
 
         if open_count != close_count:
-            self.linter_messages.append(
-                {
-                    "level": "Fatal",
-                    "msg": (
-                        f"Unbalanced parentheses: open = {open_count},"
-                        f" close = {close_count}"
-                    ),
-                    "pos": "",
-                }
-            )
+            self.parser.add_linter_message(QueryErrorCode.UNBALANCED_PARENTHESES, ())
 
 
 class EBSCOQueryStringValidator:
@@ -80,32 +72,17 @@ class EBSCOQueryStringValidator:
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
     linter_messages: typing.List[dict] = []
 
-    def __init__(
-        self,
-        parser: search_query.parser_ebsco.EBSCOQueryStringParser,
-    ):
+    def __init__(self, parser: search_query.parser_ebsco.EBSCOParser):
         self.query_str = parser.query_str
         self.search_field_general = parser.search_field_general
         self.parser = parser
 
-    def check_search_field_general(self, strict: bool) -> None:
+    def check_search_field_general(self, strict: str) -> None:
         """Check field 'Search Fields' in content."""
         self.linter_messages.clear()
 
-        if self.search_field_general != "" and strict:
-            self.linter_messages.append(
-                {
-                    "level": "Warning",
-                    "msg": (
-                        "Content in Search Fields: "
-                        f"'{self.search_field_general}'\n"
-                        "If content is applicable in search, "
-                        "please add to search_terms "
-                        "in the search-string"
-                    ),
-                    "pos": "",
-                }
-            )
+        if self.search_field_general != "" and strict == "strict":
+            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
 
     def filter_search_field(self, strict: bool) -> None:
         """
@@ -162,15 +139,8 @@ class EBSCOQueryStringValidator:
                 else:
                     # Replace the unsupported field with 'AB' directly
                     modified_query_list[start:end] = list("AB")
-                    self.linter_messages.append(
-                        {
-                            "level": "Error",
-                            "msg": (
-                                f"search-field-unsupported: '{field}' "
-                                "automatically changed to Abstract AB."
-                            ),
-                            "pos": (start, end),
-                        }
+                    self.parser.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED, (start, end)
                     )
 
         # Convert the modified list back to a string
@@ -227,23 +197,18 @@ class EBSCOQueryStringValidator:
             # LOGIC_OPERATOR; PROXIMITY_OPERATOR
         }
 
+        if position is None:
+            position = (-1, -1)
+
         if token_type not in valid_transitions.get(previous_token_type, []):
-            self.linter_messages.append(
-                {
-                    "level": "Error",
-                    "msg": (
-                        f"Invalid token sequence: '{previous_token_type}' "
-                        f"followed by '{token_type}'"
-                    ),
-                    "pos": position,
-                }
+            self.parser.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_TRANSITION,
+                position,
             )
 
 
 class QueryListValidator:
     """Class for Query List Validation"""
-
-    linter_messages: typing.List[dict] = []
 
     def __init__(self, query_list: str, search_field_general: str):
         self.query_list = query_list

@@ -7,6 +7,7 @@ import typing
 
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -132,6 +133,7 @@ class EBSCOParser(QueryStringParser):
         self,
         output: list[tuple[str, str, tuple[int, int]]],
         current_value: int,
+        value: int,
         art_par: int,
     ) -> tuple[list[tuple[str, str, tuple[int, int]]], int]:
         """Adds open parenthesis to higher value operators"""
@@ -158,12 +160,16 @@ class EBSCOParser(QueryStringParser):
                 # depth_lvl ensures that already existing blocks are ignored
 
                 # Insert open parenthesis after operator
-                temp.insert(1, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
-                current_value += 1
-                art_par += 1
+                while current_value < value:
+                    # Insert open parenthesis after operator
+                    temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
+                    current_value += 1
+                    art_par += 1
+                break
 
         return temp, art_par
 
+    # pylint: disable=too-many-branches
     def add_artificial_parentheses_for_operator_precedence(
         self,
         tokens: list,
@@ -216,7 +222,7 @@ class EBSCOParser(QueryStringParser):
                 elif value > current_value:
                     # Higher precedence → wrap previous part in parentheses
                     temp, art_par = self.add_higher_value(
-                        output, current_value, art_par
+                        output, current_value, value, art_par
                     )
 
                     output.extend(temp)
@@ -226,13 +232,13 @@ class EBSCOParser(QueryStringParser):
 
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
-                    # Lower precedence → close parenthesis
-                    output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
-                    current_value -= 1
-                    art_par -= 1
+                    while current_value > value:
+                        # Lower precedence → close parenthesis
+                        output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                        current_value -= 1
+                        art_par -= 1
                     output.append((token, token_type, pos))
                     current_value = value
-                    par_opened -= 1
 
                 index += 1
                 continue
@@ -242,14 +248,14 @@ class EBSCOParser(QueryStringParser):
             index += 1
 
         # Add parenthesis in case there are missing ones
-        if par_opened > 0:
-            while par_opened > 0:
+        if art_par > 0:
+            while art_par > 0:
                 output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
-                par_opened -= 1
-        if par_opened < 0:
-            while par_opened < 0:
+                art_par -= 1
+        if art_par < 0:
+            while art_par < 0:
                 output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
-                par_opened += 1
+                art_par += 1
 
         return index, output
 
@@ -271,7 +277,7 @@ class EBSCOParser(QueryStringParser):
         self.query_str = validator.query_str
         # self.linter_messages.extend(validator.linter_messages)
 
-        validator.check_search_field_general(strict)
+        validator.check_search_field_general(strict=self.mode)
         # self.linter_messages.extend(validator.linter_messages)
 
         previous_token_type = None
@@ -297,13 +303,7 @@ class EBSCOParser(QueryStringParser):
             elif re.fullmatch(self.SEARCH_TERM_REGEX, token):
                 token_type = TokenTypes.SEARCH_TERM
             else:
-                self.linter_messages.append(
-                    {
-                        "level": "Fatal",
-                        "msg": f"tokenizing-failed: '{token}' not supported",
-                        "pos": (start, end),
-                    }
-                )
+                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
                 continue
 
             # Validate token positioning to ensure logical structure

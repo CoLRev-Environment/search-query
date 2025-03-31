@@ -64,11 +64,11 @@ def test_tokenization_ebsco(
     [
         (
             'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'TI "Artificial Intelligence" AND ( AB Future NOT AB Past ) ',
+            'TI "Artificial Intelligence" AND ( ( AB Future NOT AB Past ) ) ',
         ),
         (
             'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
+            '( ( TI "Artificial Intelligence" NOT AB Future ) ) AND AB Past ',
         ),
         (
             'TI "AI" OR AB Robots AND AB Ethics',
@@ -80,11 +80,15 @@ def test_tokenization_ebsco(
         ),
         (
             'TI "AI" NOT AB Robots OR AB Ethics',
-            '( TI "AI" NOT AB Robots ) OR AB Ethics ',
+            '( ( ( TI "AI" NOT AB Robots ) ) ) OR AB Ethics ',
         ),
         (
             'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
+            '( TI "AI" AND ( AB Robots OR ( ( ( AB Ethics NOT AB Bias ) ) ) ) ) OR SU "Technology" ',
+        ),
+        (
+            'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
+            'TI "Robo*" OR ( AB Robots AND ( ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
         ),
     ],
 )
@@ -100,7 +104,7 @@ def test_add_artificial_parentheses_for_operator_precedence(
     actual_string = "".join([f"{token[0]} " for token in actual_tokens])
 
     # Assert equality with error message on failure
-    print(actual_string)
+    print("actual string: " + actual_string)
     assert actual_string == updated_string, print_debug_tokens(
         ebsco_parser, updated_string, query_string
     )
@@ -155,13 +159,15 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
 @pytest.mark.parametrize(
     "query_string, linter_messages",
     [
-        # 1. Boolean operators should be capitalized
+        # 1. Boolean operator not capitalized
         (
             "Artificial intelligence and Future",
             [
                 {
-                    "level": "Warning",
-                    "msg": "Operator 'and' automatically capitalized",
+                    "code": "W0005",
+                    "label": "operator-capitalization",
+                    "message": "Operator should be in upper case",
+                    "is_fatal": False,
                     "pos": (24, 27),
                 }
             ],
@@ -171,24 +177,28 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
             "(Artificial Intelligence AND Future",
             [
                 {
-                    "level": "Fatal",
-                    "msg": "Unbalanced parentheses: open = 1, close = 0",
-                    "pos": "",
+                    "code": "F0002",
+                    "label": "unbalanced-parentheses",
+                    "message": "Parentheses are unbalanced in the query",
+                    "is_fatal": True,
+                    "pos": (),
                 }
             ],
         ),
-        # 3. Invalid token sequence (Field followed directly by Logic Operator)
+        # 3. Invalid token sequence (FIELD followed directly by LOGIC_OPERATOR)
         (
             "TI AND Artificial Intelligence",
             [
                 {
-                    "level": "Error",
-                    "msg": "Invalid token sequence: 'FIELD' followed by 'LOGIC_OPERATOR'",
+                    "code": "E0004",
+                    "label": "invalid-token-transition",
+                    "message": "The transition from [token_type] to [token_type] is not allowed",
+                    "is_fatal": False,
                     "pos": (3, 6),
                 }
             ],
         ),
-        # 4. Correct query (No linter messages expected)
+        # 4. Correct query (no linter messages expected)
         ("TI Artificial Intelligence AND AB Future", []),
     ],
 )
@@ -204,13 +214,15 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
 @pytest.mark.parametrize(
     "query_string, linter_messages",
     [
-        # 1. Unsupported search fields (e.g., `XY` is unsupported)
+        # 1. Unsupported search field
         (
             "XY Artificial Intelligence OR AB Future",
             [
                 {
-                    "level": "Error",
-                    "msg": "search-field-unsupported: 'XY' automatically changed to Abstract AB.",
+                    "code": "E0003",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": False,
                     "pos": (0, 2),
                 }
             ],
@@ -219,6 +231,35 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
 )
 def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "", mode="non-strict")
+    try:
+        ebsco_parser.parse()
+    except Exception:
+        pass
+    assert ebsco_parser.linter_messages == linter_messages
+
+
+@pytest.mark.parametrize(
+    "query_string, linter_messages",
+    [
+        # 1. Invalid token sequence (FIELD followed directly by LOGIC_OPERATOR)
+        (
+            "TI Artificial Intelligence AND AB Future",
+            [
+                {
+                    "code": "W0002",
+                    "label": "search-field-extracted",
+                    "message": "Recommend explicitly specifying the search field in the string",
+                    "is_fatal": False,
+                    "pos": (),
+                }
+            ],
+        ),
+    ],
+)
+def test_linter_ebsco_general_search_field(
+    query_string: str, linter_messages: list
+) -> None:
+    ebsco_parser = EBSCOParser(query_string, "AB", mode="strict")
     try:
         ebsco_parser.parse()
     except Exception:
