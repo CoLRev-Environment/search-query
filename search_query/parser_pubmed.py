@@ -3,6 +3,8 @@
 import re
 import typing
 
+from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
@@ -128,60 +130,37 @@ class PubmedParser(QueryStringParser):
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_PHRASE_REGEX = r"\".*?\""
+    SEARCH_TERM_REGEX = r"[^\s\[\]()]+"
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
 
     pattern = "|".join(
-        [SEARCH_FIELD_REGEX, OPERATOR_REGEX, PARENTHESIS_REGEX, SEARCH_PHRASE_REGEX]
+        [SEARCH_FIELD_REGEX, OPERATOR_REGEX, PARENTHESIS_REGEX, SEARCH_PHRASE_REGEX, SEARCH_TERM_REGEX]
     )
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
         # Parse tokens and positions based on regex patterns.
-        tokens = re.finditer(
-            pattern=self.pattern, string=self.query_str, flags=re.IGNORECASE
-        )
+        for match in re.finditer(self.pattern, self.query_str, re.IGNORECASE):
+            value = match.group(0)
+            start, end = match.span()
 
-        # Add tokens along with their positions.
-        prev_token_end_pos = 0
-        for token in tokens:
-            current_token_start_pos = token.span()[0]
-            current_token_end_pos = token.span()[1]
+            if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
+                token_type = TokenTypes.LOGIC_OPERATOR
+            elif value == "(":
+                token_type = TokenTypes.PARENTHESIS_OPEN
+            elif value == ")":
+                token_type = TokenTypes.PARENTHESIS_CLOSED
+            elif value.startswith("[") and value.endswith("]"):
+                token_type = TokenTypes.FIELD
+            else:
+                token_type = TokenTypes.SEARCH_TERM
 
-            # Gaps between quoted search phrases, operators, fields and parentheses are the unquoted search terms.
-            if current_token_start_pos > prev_token_end_pos:
-                self._add_token(prev_token_end_pos, current_token_start_pos)
-
-            self._add_token(current_token_start_pos, current_token_end_pos)
-            prev_token_end_pos = current_token_end_pos
-
-        if len(self.query_str) > prev_token_end_pos:
-            self._add_token(prev_token_end_pos, len(self.query_str))
-
-    def _add_token(self, start_pos: int, end_pos: int) -> None:
-        """Add token to list"""
-        token_value = self.query_str[start_pos:end_pos]
-
-        if self.is_term(token_value):
-            # Filter out tokens consisting only of whitespace.
-            if token_value.isspace():
-                return
-
-            # Remove leading and trailing whitespace and update start/end positions accordingly.
-            token_value_stripped = token_value.strip()
-            start_pos += len(token_value) - len(token_value.lstrip())
-            end_pos -= len(token_value) - len(token_value.rstrip())
-
-            token_value = token_value_stripped
-
-        self.tokens.append((token_value, (start_pos, end_pos)))
+            self.tokens.append(Token(value=value, type=token_type, position=(start, end)))
+        self.combine_subsequent_terms()
 
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
         return bool(re.match(r"^\[.*]$", token))
-
-    def is_operator(self, token: str) -> bool:
-        """Token is operator"""
-        return bool(re.match(r"^(&|\||AND|OR|NOT)$", token, re.IGNORECASE))
 
     def get_operator_type(self, operator: str) -> str:
         """Get operator type"""
@@ -192,7 +171,7 @@ class PubmedParser(QueryStringParser):
         elif operator.upper() == "NOT":
             return Operators.NOT
         else:
-            return ""
+            raise ValueError()
 
     def parse_query_tree(self, tokens: list) -> Query:
         """Parse a query from a list of tokens"""
@@ -212,13 +191,13 @@ class PubmedParser(QueryStringParser):
         return query
 
     def is_term_query(self, tokens):
-        return self.is_term(tokens[0][0]) and len(tokens) == 1
+        return tokens[0].type == TokenTypes.SEARCH_TERM and len(tokens) <= 2
 
     def is_compound_query(self, tokens):
         return bool(self._get_operator_indices(tokens))
 
     def is_nested_query(self, tokens):
-        return tokens[0][0] == "(" and tokens[-1][0] == ")"
+        return tokens[0].type == TokenTypes.PARENTHESIS_OPEN and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
 
     def _get_operator_indices(self, tokens: list) -> list:
         """Get indices of top-level operators in the token list"""
@@ -230,16 +209,15 @@ class PubmedParser(QueryStringParser):
         # Iterate over tokens in reverse to find and save positions of consecutive top-level operators
         # matching the first encountered until a different type is found.
         for token in reversed(tokens):
-            token_value = token[0]
             token_index = tokens.index(token)
 
-            if token_value == "(":
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i = i + 1
-            elif token_value == ")":
+            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i = i - 1
 
-            if i == 0 and self.is_operator(token_value):
-                operator = self.get_operator_type(token_value)
+            if i == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+                operator = self.get_operator_type(token.value)
                 if not first_operator_found:
                     first_operator = operator
                     first_operator_found = True
@@ -269,11 +247,10 @@ class PubmedParser(QueryStringParser):
             query = self.parse_query_tree(token_list)
             children.append(query)
 
-        # TODO : assert operators equal?
-        operator_type = self.get_operator_type(tokens[operator_indices[0]][0])
+        operator_type = self.get_operator_type(tokens[operator_indices[0]].value)
 
-        query_start_pos = tokens[0][1][0]
-        query_end_pos = tokens[-1][1][1]
+        query_start_pos = tokens[0].position[0]
+        query_end_pos = tokens[-1].position[1]
 
         return Query(
             value=operator_type,
@@ -290,23 +267,22 @@ class PubmedParser(QueryStringParser):
 
     def _parse_search_term(self, tokens: list) -> Query:
         """Parse a search term"""
-        search_term = tokens[0]
-        query_start_pos = tokens[0][1][0]
-        query_end_pos = tokens[0][1][1]
+        search_term_token = tokens[0]
+        query_end_pos = tokens[0].position[1]
 
         # Determine the search field of the search term.
-        if len(tokens) > 1 and self.is_search_field(tokens[1][0]):
-            search_field = SearchField(value=tokens[1][0], position=tokens[1][1])
-            query_end_pos = tokens[1][1][1]
+        if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
+            search_field = SearchField(value=tokens[1].value, position=tokens[1].position)
+            query_end_pos = tokens[1].position[1]
         else:
             # Select default field "all" if no search field is found.
             search_field = SearchField(value=Fields.ALL)
 
         return Query(
-            value=search_term[0],
+            value=search_term_token.value,
             operator=False,
             search_field=search_field,
-            position=(query_start_pos, query_end_pos),
+            position=(tokens[0].position[0], query_end_pos),
         )
 
     def translate_search_fields(self, query: Query) -> None:
@@ -425,17 +401,17 @@ class PubmedParser(QueryStringParser):
         self._check_unbalanced_parentheses(tokens, invalid_token_indices)
 
         for index, token in enumerate(tokens):
-            if self.is_term(token[0]):
+            if token.type == TokenTypes.SEARCH_TERM:
                 self._check_invalid_characters(index, tokens, invalid_token_indices)
-                if "*" in token[0]:
+                if "*" in token.value:
                     self._check_invalid_wildcard(index, tokens)
             else:
                 self._check_invalid_token_position(index, tokens, invalid_token_indices)
 
             if (
                 index not in invalid_token_indices
-                and self.is_search_field(token[0])
-                and ":~" in token[0]
+                and token.type == TokenTypes.FIELD
+                and ":~" in token.value
             ):
                 self._check_invalid_proximity_operator(index, tokens)
 
@@ -446,10 +422,10 @@ class PubmedParser(QueryStringParser):
             ):
                 self._check_missing_operator(index, tokens)
 
-        [val for i, val in enumerate(tokens) if i not in invalid_token_indices]
-        self._check_precedence(tokens)
+        refined_tokens = [val for i, val in enumerate(tokens) if i not in invalid_token_indices]
+        self._check_precedence(refined_tokens)
 
-        return tokens
+        return refined_tokens
 
     def _check_unbalanced_parentheses(
         self, tokens: list, invalid_token_indices: list
@@ -457,13 +433,13 @@ class PubmedParser(QueryStringParser):
         """Check token list for unbalanced parentheses"""
         i = 0
         for index, token in enumerate(tokens):
-            if token[0] == "(":
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i += 1
-            elif token[0] == ")":
+            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if i == 0:
                     # Query contains unbalanced closing parentheses
                     self.add_linter_message(
-                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token[1]
+                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token.position
                     )
                     invalid_token_indices.append(index)
                 else:
@@ -473,9 +449,9 @@ class PubmedParser(QueryStringParser):
             # Query contains unbalanced opening parentheses
             last_index = len(tokens) - 1
             for index, token in enumerate(reversed(tokens)):
-                if token[0] == "(":
+                if token.type == TokenTypes.PARENTHESIS_OPEN:
                     self.add_linter_message(
-                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token[1]
+                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token.position
                     )
                     invalid_token_indices.append(last_index - index)
                     i -= 1
@@ -486,12 +462,12 @@ class PubmedParser(QueryStringParser):
         """Check token list contain unspecified precedence (OR & AND operator in the same subquery)"""
         or_query = False
         for token in tokens:
-            if token[0] == Operators.OR:
+            if token.value == Operators.OR:
                 or_query = True
-            elif self.is_parenthesis(token[0]):
+            elif token.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.PARENTHESIS_CLOSED}:
                 or_query = False
-            elif token[0] == Operators.AND and or_query:
-                self.add_linter_message(PubmedErrorCodes.PRECEDENCE_WARNING, token[1])
+            elif token.value == Operators.AND and or_query:
+                self.add_linter_message(PubmedErrorCodes.PRECEDENCE_WARNING, token.position)
 
     def _check_invalid_characters(
         self, index: int, tokens: list, invalid_token_indices: list
@@ -501,35 +477,35 @@ class PubmedParser(QueryStringParser):
         invalid_characters = "!#$%+.;<>?\\^_{}~'()"
 
         token = tokens[index]
-        term_value = token[0]
+        value = token.value
         # Iterate over term to identify invalid characters and replace them with whitespace
-        for i, char in enumerate(token[0]):
+        for i, char in enumerate(token.value):
             if char in invalid_characters:
                 self.add_linter_message(
-                    PubmedErrorCodes.INVALID_CHARACTER, token[1], char
+                    PubmedErrorCodes.INVALID_CHARACTER, token.position, char
                 )
-                term_value = term_value[:i] + " " + term_value[i + 1 :]
+                value = value[:i] + " " + value[i + 1:]
             elif char in "[]":
                 self.add_linter_message(
                     PubmedErrorCodes.INVALID_BRACKET_USE,
-                    (token[1][0] + i, token[1][0] + i + 1),
+                    (token.position[0] + i, token.position[0] + i + 1),
                 )
         # Update token
-        if term_value != token[0]:
-            tokens[index] = (term_value, token[1])
-            if term_value.isspace():
+        if value != token.value:
+            token.value = value
+            if value.isspace():
                 invalid_token_indices.append(index)
 
     def _check_invalid_wildcard(self, index: int, tokens: list):
         """Check search term for invalid wildcard *"""
         token = tokens[index]
-        if token[0][0] == '"':
+        if token.value == '"':
             k = 5
         else:
             k = 4
-        if "*" in token[0][:k]:
+        if "*" in token.value[:k]:
             # Wildcard * is invalid if it is applied to terms with less than 4 characters
-            self.add_linter_message(PubmedErrorCodes.INVALID_WILDCARD, token[1])
+            self.add_linter_message(PubmedErrorCodes.INVALID_WILDCARD, token.position)
 
     def _check_invalid_token_position(
         self, index: int, tokens: list, invalid_token_indices: list
@@ -547,86 +523,86 @@ class PubmedParser(QueryStringParser):
 
         current_token = tokens[index]
 
-        if self.is_operator(current_token[0]):
+        if current_token.type == TokenTypes.LOGIC_OPERATOR:
             if not (
                 prev_token
                 and (
-                    self.is_term(prev_token[0])
-                    or self.is_search_field(prev_token[0])
-                    or prev_token[0] == ")"
+                    prev_token.type == TokenTypes.SEARCH_TERM
+                    or prev_token.type == TokenTypes.FIELD
+                    or prev_token.type == TokenTypes.PARENTHESIS_CLOSED
                 )
             ):
                 # Invalid operator position
                 self.add_linter_message(
-                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token[1]
+                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token.position
                 )
                 invalid_token_indices.append(index)
             elif not (
-                next_token and (self.is_term(next_token[0]) or next_token[0] == "(")
+                next_token and (next_token.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM})
             ):
                 # Invalid operator position
                 self.add_linter_message(
-                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token[1]
+                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token.position
                 )
                 invalid_token_indices.append(index)
 
-        elif self.is_search_field(current_token[0]):
-            if not (prev_token and self.is_term(prev_token[0])):
+        elif current_token.type == TokenTypes.FIELD:
+            if not (prev_token and prev_token.type == TokenTypes.SEARCH_TERM):
                 # Invalid search field position
                 self.add_linter_message(
-                    PubmedErrorCodes.INVALID_FIELD_POSITION, current_token[1]
+                    PubmedErrorCodes.INVALID_FIELD_POSITION, current_token.position
                 )
                 invalid_token_indices.append(index)
 
-        elif current_token[0] == "(":
-            if next_token and next_token[0] == ")":
+        elif current_token.type == TokenTypes.PARENTHESIS_OPEN:
+            if next_token and next_token.type == TokenTypes.PARENTHESIS_CLOSED:
                 # Empty parentheses
                 self.add_linter_message(
                     PubmedErrorCodes.EMPTY_PARENTHESES,
-                    (current_token[1][0], next_token[1][1]),
+                    (current_token.position[0], next_token.position[1]),
                 )
 
     def _check_invalid_proximity_operator(self, index: int, tokens: list) -> None:
         """Check search field for invalid proximity operator"""
-        search_field_token = tokens[index]
+        field_token = tokens[index]
         search_phrase_token = tokens[index - 1]
 
-        match = re.match(self.PROXIMITY_REGEX, search_field_token[0])
+        match = re.match(self.PROXIMITY_REGEX, field_token.value)
         if match:
-            search_field_value, prox_value = match.groups()
+            field_value, prox_value = match.groups()
             if not prox_value.isdigit():
                 prox_value_pos = tuple(
-                    pos + search_phrase_token[1][0] for pos in match.span(2)
+                    pos + search_phrase_token.position[0] for pos in match.span(2)
                 )
                 self.add_linter_message(
                     PubmedErrorCodes.INVALID_PROXIMITY_DISTANCE, prox_value_pos
                 )
             else:
-                nr_of_terms = len(search_phrase_token[0].strip('"').split())
+                nr_of_terms = len(search_phrase_token.value.strip('"').split())
                 if not (
-                    search_phrase_token[0][0] == '"'
-                    and search_phrase_token[0][-1] == '"'
+                    search_phrase_token.value[0] == '"'
+                    and search_phrase_token.value[-1] == '"'
                     and nr_of_terms >= 2
                 ):
                     self.add_linter_message(
                         PubmedErrorCodes.INVALID_PROXIMITY_USE,
-                        search_phrase_token[1],
+                        field_token.position,
                         "Proximity search should be applied to quoted search phrases with at least two terms.",
                     )
 
-                search_field_value = self._map_default_field(search_field_value.lower())
-                if search_field_value not in {"tiab", "ti", "ad"}:
+                field_value = self._map_default_field(field_value.lower())
+                if field_value not in {"tiab", "ti", "ad"}:
                     self.add_linter_message(
                         PubmedErrorCodes.INVALID_PROXIMITY_USE,
-                        search_phrase_token[1],
+                        field_token.position,
                         "Proximity search is only supported for Title, Title/Abstract and Affiliation fields.",
                     )
 
             # Update search field token
-            tokens[index] = ("[" + search_field_value + "]", search_field_token[1])
+            tokens[index].value = "[" + field_value + "]"
         else:
             self.add_linter_message(
-                PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX, search_phrase_token[1]
+                PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX, field_token.position
             )
 
     def _check_missing_operator(self, index: int, tokens: list) -> None:
@@ -634,12 +610,10 @@ class PubmedParser(QueryStringParser):
         token_1 = tokens[index - 1]
         token_2 = tokens[index]
         if (
-            token_1[0] == ")"
-            or self.is_term(token_1[0])
-            or self.is_search_field(token_1[0])
-        ) and (token_2[0] == "(" or self.is_term(token_2[0])):
+            token_1.type in {TokenTypes.PARENTHESIS_CLOSED, TokenTypes.SEARCH_TERM, TokenTypes.FIELD}
+                and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}):
             self.add_linter_message(
-                PubmedErrorCodes.MISSING_OPERATOR, (token_1[1][0], token_2[1][1])
+                PubmedErrorCodes.MISSING_OPERATOR, (token_1.position[0], token_2.position[1])
             )
 
     def validate_query_tree(self, query: Query) -> None:
