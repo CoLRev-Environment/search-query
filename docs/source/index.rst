@@ -69,7 +69,7 @@ We can also parse a query from a string or a `JSON search file <#json-search-fil
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
     query = parse(query_string, syntax="pubmed")
 
-Once we have created a :literal:`query` object, we may want to translate it for different databases.
+Once we have created a :literal:`query` object, we can translate it for different databases.
 Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
 
 .. code-block:: python
@@ -159,8 +159,6 @@ To write a query to a JSON file, run the serializer:
         date={}
     )
 
-
-
 CLI Use
 =======
 
@@ -169,7 +167,6 @@ Linters can be run on the CLI:
 .. code-block:: bash
 
     search-file-lint search-file.json
-
 
 Pre-commit Hooks
 ================
@@ -204,24 +201,33 @@ To activate and run:
     pre-commit install
     pre-commit run --all
 
-
 Parser development
 -------------------------
 
 To develop a parser, see `dev-parser <dev_docs/parser.html>`_ docs.
-
 
 References
 ----------------
 
 Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyhan, K., & Young, S. (2022). A suggested data structure for transparent and repeatable reporting of bibliographic searching. *Campbell Systematic Reviews*, 18(4), e1288. doi:`10.1002/cl2.1288 <https://onlinelibrary.wiley.com/doi/full/10.1002/cl2.1288>`_
 
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+   :caption: Contents:
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
-   :caption: Contents:
+   :maxdepth: 2
+   :caption: Manual
 
    parser/parser_index
    messages/errors_index
+   api_search/api_search
+
+.. toctree::
+   :hidden:
+   :caption: Developer documentation
+   :maxdepth: 1
+
    dev_docs/parser
