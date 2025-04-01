@@ -192,8 +192,8 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
             [
                 {
                     "code": "E0004",
-                    "label": "invalid-token-transition",
-                    "message": "The transition from [token_type] to [token_type] is not allowed",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
                     "is_fatal": False,
                     "pos": (3, 6),
                 }

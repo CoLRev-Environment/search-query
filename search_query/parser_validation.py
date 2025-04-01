@@ -195,7 +195,7 @@ class EBSCOQueryStringValidator:
 
         if token_type not in valid_transitions.get(previous_token_type, []):
             self.parser.add_linter_message(
-                QueryErrorCode.INVALID_TOKEN_TRANSITION,
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 position,
             )
 

@@ -189,11 +189,11 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
-    INVALID_TOKEN_TRANSITION = (
+    INVALID_TOKEN_SEQUENCE = (
         ["ebsco"],
         "E0004",
-        "invalid-token-transition",
-        "The transition from [token_type] to [token_type] is not allowed",
+        "invalid-token-sequence",
+        "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
         "",
     )
 
