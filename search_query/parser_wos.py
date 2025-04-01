@@ -11,6 +11,7 @@ from search_query.constants import LinterMode
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+from search_query.constants import QueryErrorCode
 from search_query.constants import WOSRegex
 from search_query.constants import WOSSearchFieldList
 from search_query.exception import FatalLintingException
@@ -343,15 +344,13 @@ class WOSParser(QueryStringParser):
         # Add linter messages for operators that are not uppercase
         if token.islower():
             self.add_linter_message(
-                rule="W0005", msg="Operators must be uppercase.", position=span
+                QueryErrorCode.OPERATOR_CAPITALIZATION, position=span
             )
 
         # Set default near_distance if not set in the search string
         if current_operator == "NEAR":
             # Add linter message for NEAR operator without distance
-            self.add_linter_message(
-                rule="W1001", msg="Default distance set to 15.", position=span
-            )
+            self.add_linter_message(QueryErrorCode.IMPLICIT_NEAR_VALUE, position=span)
             default_near_distance = True
             current_operator = "NEAR/15"
 
@@ -456,11 +455,10 @@ class WOSParser(QueryStringParser):
         if any(char in token for char in ["*", "?", "$"]):
             # Add messages to self.linter_messages
             self.add_linter_message(
-                rule="W1002",
-                msg="Wildcard characters not supported in year search.",
+                QueryErrorCode.WILDCARD_IN_YEAR,
                 position=span,
             )
-            self.fatal_linter_err = True
+            # TODO : use any(x.is_fatal() for x in QueryErrorCodes)
 
         # Check if the yearspan is not more than 5 years
         if len(token) > 4:
@@ -470,7 +468,7 @@ class WOSParser(QueryStringParser):
 
                 # Add messages to self.linter_messages
                 self.add_linter_message(
-                    rule="W1003", msg="Year span must be five or less.", position=span
+                    QueryErrorCode.YEAR_SPAN_VIOLATION, position=span
                 )
 
         search_field = SearchField(
@@ -588,6 +586,7 @@ class WOSParser(QueryStringParser):
                         if search_field_item.value == "Misc":
                             search_field_item.value = Fields.ALL
                             # Add messages to self.linter_messages
+                            # TODO : check whether this corresponds to SEARCH_FIELD_UNSUPPORTED
                             self.add_linter_message(
                                 rule="W0003",
                                 msg='Search Field from JSON not supported. Set to "ALL=".',
@@ -625,6 +624,7 @@ class WOSParser(QueryStringParser):
                         )
 
                         # Add messages to self.linter_messages
+                        # TODO : let's discuss this. Not sure I understand.
                         self.add_linter_message(
                             rule="W0006",
                             msg="Search Fields have been extracted from JSON. ",
@@ -671,6 +671,7 @@ class WOSParser(QueryStringParser):
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
             # Add messages to self.linter_messages
+            # TODO : SEARCH_FIELD_NOT_SPECIFIED ?
             self.add_linter_message(
                 rule="W0003",
                 msg='Search Field must be set. Set to "ALL=".',
@@ -767,9 +768,8 @@ class WOSParser(QueryStringParser):
     def pre_linting(self):
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
-        self.fatal_linter_err = self.query_linter.pre_linting(
-            tokens=self.tokens, search_str=self.query_str
-        )
+        self.query_linter.pre_linting(tokens=self.tokens, search_str=self.query_str)
+        self.fatal_linter_err = any(e.is_fatal() for e in self.linter_messages)
 
     def insert_parentheses(self, tokens, index, span) -> None:
         """Insert parentheses in the query string."""

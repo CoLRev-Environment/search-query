@@ -551,6 +551,25 @@ class QueryErrorCode(Enum):
         "An operator is missing between terms",
         "",
     )
+    WILDCARD_IN_YEAR = (
+        [PLATFORM.WOS],
+        "F1001",
+        "wildcard-in-year",
+        "Wildcard characters (*, ?, $) not supported in year search.",
+        """**Typical fix**: Replace with year range.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND year=201*
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND (year >= 2010 AND year < 2020)""",
+    )
 
     # Errors (prefix: E)
     SEARCH_FIELD_CONTRADICTION = (
@@ -603,6 +622,63 @@ class QueryErrorCode(Enum):
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
         "",
+    )
+    IMPLICIT_NEAR_VALUE = (
+        [PLATFORM.WOS],
+        "W1000",
+        "implicit-near-value",
+        "The value of NEAR operator is implicit",
+        """**Typical fix**: The parser automatically sets implicit NEAR values to the default of 15.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A NEAR B
+
+**Correct query**:
+
+.. code-block:: python
+
+    A NEAR/15 B""",
+    )
+    YEAR_SPAN_VIOLATION = (
+        [PLATFORM.WOS],
+        "W1001",
+        "year-span-violation",
+        "Year span must be five or less.",
+        """**Typical fix**: The parser automatically sets the year span to 5.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND PY=2000-2020
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND PY=2015-2020""",
+    )
+    UNSUPPORTED_SEARCH_FIELD = (
+        [PLATFORM.WOS],
+        "W1002",
+        "year-span-violation",
+        "Year span must be five or less.",
+        """**Typical fix**: The parser automatically sets the year span to 5.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND PY=2000-2020
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND PY=2015-2020""",
     )
 
     def __init__(
