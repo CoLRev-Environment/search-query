@@ -10,8 +10,8 @@ from abc import abstractmethod
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import LinterMode
-from search_query.linter_wos import QueryLinter
 from search_query.constants import QueryErrorCode
+from search_query.linter_wos import QueryLinter
 from search_query.query import Query
 
 

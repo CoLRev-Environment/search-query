@@ -167,6 +167,7 @@ class Colors:
     BLUE = "\033[94m"
     END = "\033[0m"
 
+
 class LinterMode:
     """Linter mode"""
 
@@ -511,6 +512,7 @@ class WOSSearchFieldList:
         "WC=": web_of_science_category_list,
         "ZP=": zip_postal_code_list,
     }
+
 
 class QueryErrorCode(Enum):
     """Error codes for the query parser"""
