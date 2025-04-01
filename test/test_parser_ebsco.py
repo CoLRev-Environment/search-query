@@ -68,7 +68,7 @@ def test_tokenization_ebsco(
         ),
         (
             'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            '( ( TI "Artificial Intelligence" NOT AB Future ) ) AND AB Past ',
+            '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
         ),
         (
             'TI "AI" OR AB Robots AND AB Ethics',
@@ -80,15 +80,15 @@ def test_tokenization_ebsco(
         ),
         (
             'TI "AI" NOT AB Robots OR AB Ethics',
-            '( ( ( TI "AI" NOT AB Robots ) ) ) OR AB Ethics ',
+            '( TI "AI" NOT AB Robots ) OR AB Ethics ',
         ),
         (
             'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            '( TI "AI" AND ( AB Robots OR ( ( ( AB Ethics NOT AB Bias ) ) ) ) ) OR SU "Technology" ',
+            '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
         ),
         (
             'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'TI "Robo*" OR ( AB Robots AND ( ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
+            'TI "Robo*" OR ( AB Robots AND ( AB Ethics NOT AB Bias ) ) OR SU "Technology" ',
         ),
     ],
 )
@@ -101,6 +101,7 @@ def test_add_artificial_parentheses_for_operator_precedence(
     _, actual_tokens = ebsco_parser.add_artificial_parentheses_for_operator_precedence(
         tokens=ebsco_parser.tokens, index=0
     )
+
     actual_string = "".join([f"{token[0]} " for token in actual_tokens])
 
     # Assert equality with error message on failure

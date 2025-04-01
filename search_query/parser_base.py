@@ -21,7 +21,7 @@ class QueryStringParser(ABC):
     linter_messages: typing.List[dict] = []
 
     # Higher number=higher precedence
-    PRECEDENCE = {"NOT": 3, "AND": 2, "OR": 1}
+    PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
 
     def __init__(
         self, query_str: str, search_field_general: str, mode: str = "strict"
@@ -169,7 +169,7 @@ class QueryStringParser(ABC):
                 # Insert open parenthesis after operator
                 while current_value < value:
                     # Insert open parenthesis after operator
-                    temp.insert(1, ("(", "PARENTHESIS_OPEN", (-1, -1)))
+                    temp.insert(1, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
                     current_value += 1
                     art_par += 1
                 break
@@ -195,7 +195,6 @@ class QueryStringParser(ABC):
         current_value = -1
         # Added artificial parentheses
         art_par = 0
-        par_opened = 0
 
         while index < len(tokens):
             # Forward iteration through tokens
@@ -235,13 +234,12 @@ class QueryStringParser(ABC):
                     output.extend(temp)
                     output.append((token, token_type, pos))
                     current_value = value
-                    par_opened += 1
 
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
                     while current_value > value:
                         # Lower precedence → close parenthesis
-                        output.append((")", "PARENTHESIS_CLOSED", (-1, -1)))
+                        output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
                         current_value -= 1
                         art_par -= 1
                     output.append((token, token_type, pos))
@@ -264,7 +262,71 @@ class QueryStringParser(ABC):
                 output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
                 art_par += 1
 
+        if index == len(tokens):
+            output = self.flatten_redundant_artificial_nesting(output)
         return index, output
+
+    def flatten_redundant_artificial_nesting(
+        self, tokens: list[tuple[str, str, tuple[int, int]]]
+    ) -> list[tuple[str, str, tuple[int, int]]]:
+        """
+        Flattens redundant artificial nesting:
+        If two artificial open parens are followed eventually by
+        two artificial close parens at the same level, removes the outer ones.
+        """
+
+        while True:
+            len_initial = len(tokens)
+
+            output = []
+            i = 0
+            while i < len(tokens):
+                # Look ahead for double artificial opening
+                if (
+                    i + 1 < len(tokens)
+                    and tokens[i][1] == TokenTypes.PARENTHESIS_OPEN
+                    and tokens[i + 1][1] == TokenTypes.PARENTHESIS_OPEN
+                    and tokens[i][2] == (-1, -1)
+                    and tokens[i + 1][2] == (-1, -1)
+                ):
+                    # Look for matching double closing
+                    inner_start = i + 2
+                    depth = 2
+                    j = inner_start
+                    while j < len(tokens) and depth > 0:
+                        if tokens[j][1] == TokenTypes.PARENTHESIS_OPEN and tokens[j][
+                            2
+                        ] == (-1, -1):
+                            depth += 1
+                        elif tokens[j][1] == TokenTypes.PARENTHESIS_CLOSED and tokens[
+                            j
+                        ][2] == (-1, -1):
+                            depth -= 1
+                        j += 1
+
+                    # Check for double artificial closing
+                    if (
+                        j < len(tokens)
+                        and tokens[j - 1][1] == TokenTypes.PARENTHESIS_CLOSED
+                        and tokens[j - 2][1] == TokenTypes.PARENTHESIS_CLOSED
+                        and tokens[j - 1][2] == (-1, -1)
+                        and tokens[j - 2][2] == (-1, -1)
+                    ):
+                        # Skip outer pair
+                        output.extend(tokens[i + 1 : j - 1])
+                        i = j
+
+                        continue
+
+                output.append(tokens[i])
+                i += 1
+
+            # Repeat for multiple nestings
+            if len_initial == len(output):
+                break
+            tokens = output
+
+        return output
 
     @abstractmethod
     def parse(self) -> Query:
