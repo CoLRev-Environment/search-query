@@ -15,6 +15,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import WOSRegex
 from search_query.constants import WOSSearchFieldList
 from search_query.exception import FatalLintingException
+from search_query.linter_wos import QueryLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -25,6 +26,13 @@ class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
+
+    def __init__(self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT) -> None:
+        """Initialize the parser."""
+        super().__init__(
+            query_str=query_str, search_fields=search_fields, mode=mode
+        )
+        self.query_linter = QueryLinter(parser=self)
 
     # Combine all regex patterns into a single pattern
     pattern = "|".join(
@@ -467,9 +475,7 @@ class WOSParser(QueryStringParser):
                 token = str(int(token[5:9]) - 5) + "-" + token[5:9]
 
                 # Add messages to self.linter_messages
-                self.add_linter_message(
-                    QueryErrorCode.YEAR_SPAN_VIOLATION, position=span
-                )
+                self.add_linter_message(QueryErrorCode.YEAR_SPAN_VIOLATION, pos=span)
 
         search_field = SearchField(
             value=Fields.YEAR,

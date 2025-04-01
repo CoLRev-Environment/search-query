@@ -2,6 +2,7 @@
 import unittest
 
 from search_query.linter_wos import QueryLinter
+from search_query.parser_wos import WOSParser
 from search_query.query import SearchField
 
 
@@ -23,9 +24,10 @@ class TestQueryLinter(unittest.TestCase):
             - The `check_unmatched_parentheses` method should return False.
             - The length of `self.linter_messages` should be 0.
         """
-        linter = QueryLinter("test query", self.linter_messages)
-        self.assertFalse(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("test query")
+        linter = QueryLinter(parser)
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_matched_parentheses(self) -> None:
         """
@@ -40,9 +42,10 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any unmatched parentheses.
             - The length of linter messages should be 0.
         """
-        linter = QueryLinter("(test query)", self.linter_messages)
-        self.assertFalse(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("(test query)")
+        linter = QueryLinter(parser)
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_unmatched_opening_parenthesis(self) -> None:
         """
@@ -60,12 +63,13 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message is "Unmatched opening parenthesis '('."
             - The position in the linter message is (0, 1).
         """
-        linter = QueryLinter("(test query", self.linter_messages)
-        self.assertTrue(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        parser = WOSParser("(test query")
+        linter = QueryLinter(parser)
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0002")
         self.assertEqual(
-            self.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
+            parser.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
         )
         self.assertEqual(self.linter_messages[0]["position"], (0, 1))
 
@@ -85,7 +89,8 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate an unmatched closing parenthesis.
             - The position in the linter message should be (10, 11).
         """
-        linter = QueryLinter("test query)", self.linter_messages)
+        parser = WOSParser("test query)")
+        linter = QueryLinter(parser)
         self.assertTrue(linter.check_unmatched_parentheses())
         self.assertEqual(len(self.linter_messages), 1)
         self.assertEqual(self.linter_messages[0]["rule"], "F0002")

@@ -11,7 +11,6 @@ import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import LinterMode
 from search_query.constants import QueryErrorCode
-from search_query.linter_wos import QueryLinter
 from search_query.query import Query
 
 
@@ -32,9 +31,7 @@ class QueryStringParser(ABC):
         self.mode = mode
         self.search_fields = search_fields
         self.search_fields_list = []
-        self.query_linter = QueryLinter(
-            search_str=query_str, linter_messages=self.linter_messages
-        )
+
         self.fatal_linter_err = False
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:

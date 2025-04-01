@@ -7,7 +7,7 @@ from search_query.constants import WOSRegex
 from search_query.query import SearchField
 
 if typing.TYPE_CHECKING:
-    import search_query.parser_wos.WOSParser
+    import search_query.parser_wos
 
 
 class QueryLinter:
@@ -24,8 +24,8 @@ class QueryLinter:
         "LANGUAGE",
     ]
 
-    def __init__(self, search_str: str, parser: search_query.parser_wos.WOSParser):
-        self.search_str = search_str
+    def __init__(self, parser: "search_query.parser_wos.WOSParser"):
+        self.search_str = parser.query_str
         self.parser = parser
 
     def pre_linting(self, tokens: list, search_str: str) -> None:
@@ -88,9 +88,10 @@ class QueryLinter:
                 position=span,
             )
 
-    def check_unmatched_parentheses(self) -> bool:
+        self.check_unmatched_parentheses()
+
+    def check_unmatched_parentheses(self) -> None:
         """Check for unmatched parentheses in the query."""
-        unmatched_parentheses = False
         stack = []
         for i, char in enumerate(self.search_str):
             if char == "(":
@@ -99,7 +100,6 @@ class QueryLinter:
                 if stack:
                     stack.pop()
                 else:
-                    unmatched_parentheses = True
                     self.parser.add_linter_message(
                         rule="F0002",
                         message="Unmatched closing parenthesis ')'.",
@@ -107,14 +107,12 @@ class QueryLinter:
                     )
 
         for unmatched_index in stack:
-            unmatched_parentheses = True
             self.parser.add_linter_message(
                 rule="F0002",
                 message="Unmatched opening parenthesis '('.",
                 position=(unmatched_index, unmatched_index + 1),
             )
 
-        return unmatched_parentheses
 
     def check_order_of_tokens(self, tokens, token, span, index) -> None:
         """Check for the correct order of tokens in the query."""
