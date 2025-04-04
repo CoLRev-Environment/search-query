@@ -113,7 +113,6 @@ class QueryLinter:
                 position=(unmatched_index, unmatched_index + 1),
             )
 
-
     def check_order_of_tokens(self, tokens, token, span, index) -> None:
         """Check for the correct order of tokens in the query."""
 

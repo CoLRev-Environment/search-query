@@ -36,6 +36,13 @@ class QueryStringParser(ABC):
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
         """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and pos == msg["pos"]
+            for msg in self.linter_messages
+        ):
+            return
+
         self.linter_messages.append(
             {
                 "code": error.code,

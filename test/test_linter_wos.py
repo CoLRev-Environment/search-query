@@ -91,13 +91,13 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("test query)")
         linter = QueryLinter(parser)
-        self.assertTrue(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0002")
         self.assertEqual(
-            self.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
+            parser.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
         )
-        self.assertEqual(self.linter_messages[0]["position"], (10, 11))
+        self.assertEqual(parser.linter_messages[0]["position"], (10, 11))
 
     def test_multiple_unmatched_parentheses(self) -> None:
         """
@@ -111,14 +111,15 @@ class TestQueryLinter(unittest.TestCase):
         - The message text indicates an unmatched closing parenthesis.
         - The position of the unmatched parenthesis is correctly reported.
         """
-        linter = QueryLinter("(test query))", self.linter_messages)
-        self.assertTrue(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        parser = WOSParser("(test query))")
+        linter = QueryLinter(parser)
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0002")
         self.assertEqual(
-            self.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
+            parser.linter_messages[0]["message"], "Unmatched closing parenthesis ')'."
         )
-        self.assertEqual(self.linter_messages[0]["position"], (12, 13))
+        self.assertEqual(parser.linter_messages[0]["position"], (12, 13))
 
     def test_nested_unmatched_parentheses(self) -> None:
         """
@@ -137,14 +138,15 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the first linter message is "Unmatched opening parenthesis '('."
             - The position in the first linter message is (0, 1).
         """
-        linter = QueryLinter("((test query)", self.linter_messages)
-        self.assertTrue(linter.check_unmatched_parentheses())
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0002")
+        parser = WOSParser("((test query)")
+        linter = QueryLinter(parser)
+        linter.check_unmatched_parentheses()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0002")
         self.assertEqual(
-            self.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
+            parser.linter_messages[0]["message"], "Unmatched opening parenthesis '('."
         )
-        self.assertEqual(self.linter_messages[0]["position"], (0, 1))
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 1))
 
     def test_two_operators_in_a_row(self) -> None:
         """
@@ -163,12 +165,17 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         tokens = [("term1", (0, 5)), ("AND", (5, 8)), ("OR", (8, 10))]
-        linter = QueryLinter("term1 AND OR", self.linter_messages)
-        self.assertTrue(linter.check_order_of_tokens(tokens, "AND", (5, 8), 1))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0005")
-        self.assertEqual(self.linter_messages[0]["message"], "Two operators in a row.")
-        self.assertEqual(self.linter_messages[0]["position"], (8, 10))
+
+        parser = WOSParser("term1 AND OR")
+        linter = QueryLinter(parser)
+
+        linter.check_order_of_tokens(tokens, "AND", (5, 8), 1)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0005")
+        self.assertEqual(
+            parser.linter_messages[0]["message"], "Two operators in a row."
+        )
+        self.assertEqual(parser.linter_messages[0]["position"], (8, 10))
 
     def test_two_search_fields_in_a_row(self) -> None:
         """

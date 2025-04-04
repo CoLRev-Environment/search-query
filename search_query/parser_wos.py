@@ -27,11 +27,11 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
-    def __init__(self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT) -> None:
+    def __init__(
+        self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT
+    ) -> None:
         """Initialize the parser."""
-        super().__init__(
-            query_str=query_str, search_fields=search_fields, mode=mode
-        )
+        super().__init__(query_str=query_str, search_fields=search_fields, mode=mode)
         self.query_linter = QueryLinter(parser=self)
 
     # Combine all regex patterns into a single pattern
@@ -351,14 +351,12 @@ class WOSParser(QueryStringParser):
 
         # Add linter messages for operators that are not uppercase
         if token.islower():
-            self.add_linter_message(
-                QueryErrorCode.OPERATOR_CAPITALIZATION, position=span
-            )
+            self.add_linter_message(QueryErrorCode.OPERATOR_CAPITALIZATION, pos=span)
 
         # Set default near_distance if not set in the search string
         if current_operator == "NEAR":
             # Add linter message for NEAR operator without distance
-            self.add_linter_message(QueryErrorCode.IMPLICIT_NEAR_VALUE, position=span)
+            self.add_linter_message(QueryErrorCode.IMPLICIT_NEAR_VALUE, pos=span)
             default_near_distance = True
             current_operator = "NEAR/15"
 
@@ -461,10 +459,9 @@ class WOSParser(QueryStringParser):
         """Handle the year search field."""
         # Check if a wildcard is used in the year search field
         if any(char in token for char in ["*", "?", "$"]):
-            # Add messages to self.linter_messages
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_IN_YEAR,
-                position=span,
+                pos=span,
             )
             # TODO : use any(x.is_fatal() for x in QueryErrorCodes)
 
@@ -474,7 +471,6 @@ class WOSParser(QueryStringParser):
                 # Change the year span to five years
                 token = str(int(token[5:9]) - 5) + "-" + token[5:9]
 
-                # Add messages to self.linter_messages
                 self.add_linter_message(QueryErrorCode.YEAR_SPAN_VIOLATION, pos=span)
 
         search_field = SearchField(
@@ -591,12 +587,12 @@ class WOSParser(QueryStringParser):
                     for search_field_item in self.search_fields_list:
                         if search_field_item.value == "Misc":
                             search_field_item.value = Fields.ALL
-                            # Add messages to self.linter_messages
+
                             # TODO : check whether this corresponds to SEARCH_FIELD_UNSUPPORTED
                             self.add_linter_message(
                                 rule="W0003",
                                 msg='Search Field from JSON not supported. Set to "ALL=".',
-                                position=query.position,
+                                pos=query.position,
                             )
 
                         query.search_field = search_field_item
@@ -629,12 +625,11 @@ class WOSParser(QueryStringParser):
                             )
                         )
 
-                        # Add messages to self.linter_messages
                         # TODO : let's discuss this. Not sure I understand.
                         self.add_linter_message(
                             rule="W0006",
                             msg="Search Fields have been extracted from JSON. ",
-                            position=query.position,
+                            pos=query.position,
                         )
 
                     if len(query_search_field_list) > 1:
@@ -665,23 +660,22 @@ class WOSParser(QueryStringParser):
                         + str(query.position)
                     )
                 else:
-                    # Add messages to self.linter_messages
                     self.add_linter_message(
                         rule="W0003",
                         msg="Search Field not set or not supported."
                         + '\n\t\t\t\tUsing default of the database (ALL)".',
-                        position=query.position,
+                        pos=query.position,
                     )
                     query.search_field = Fields.ALL
 
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
-            # Add messages to self.linter_messages
+
             # TODO : SEARCH_FIELD_NOT_SPECIFIED ?
             self.add_linter_message(
                 rule="W0003",
                 msg='Search Field must be set. Set to "ALL=".',
-                position=query.position,
+                pos=query.position,
             )
 
         return query
@@ -714,6 +708,7 @@ class WOSParser(QueryStringParser):
             diffrent_search_field = []
             for search_field_item in self.search_fields_list:
                 if search_field == search_field_item.value:
+                    # TODO : warning (message) for linter?
                     print(
                         "[INFO:] Data redudancy. Same Search Field in Search and Search Fields."
                     )
@@ -726,11 +721,9 @@ class WOSParser(QueryStringParser):
                     diffrent_search_field.append("True")
 
             if "False" not in diffrent_search_field:
-                # Add messages to self.linter_messages
                 self.add_linter_message(
-                    rule="W0006",
-                    msg="Search Field specified was not found in Search Fields from JSON.",
-                    position=position,
+                    QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
+                    pos=position,
                 )
 
     def safe_children(self, children: list, current_operator: str) -> list:

@@ -593,6 +593,14 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
+    # TODO : clarify (WOS only?)
+    SEARCH_FIELD_NOT_FOUND = (
+        ["all"],
+        "E0004",
+        "search-field-not-found",
+        "Search Field specified was not found in Search Fields from JSON.",
+        "",
+    )
 
     # Warnings (prefix: W)
     SEARCH_FIELD_REDUNDANT = (
@@ -623,6 +631,20 @@ class QueryErrorCode(Enum):
         "Query structure is more complex than necessary",
         "",
     )
+    OPERATOR_CAPITALIZATION = (
+        ["all"],
+        "W0005",
+        "operator-capitalization",
+        "Operators should be capitalized",
+        """**Typical fix**: Capitalize the operator
+**Problematic query**:
+.. code-block:: python
+    a and b or c
+**Correct query**:
+.. code-block:: python
+    a AND b OR c""",
+    )
+
     IMPLICIT_NEAR_VALUE = (
         [PLATFORM.WOS],
         "W1000",

@@ -4,6 +4,7 @@
 import unittest
 
 from search_query.constants import Fields
+from search_query.constants import QueryErrorCode
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -369,9 +370,11 @@ class TestWOSParser(unittest.TestCase):
         self.assertFalse(result_near_distance)
         self.assertIn(
             {
-                "rule": "W0005",
-                "message": "Operators must be uppercase.",
-                "position": span,
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "pos": (0, 3),
             },
             self.parser.linter_messages,
         )
@@ -402,9 +405,11 @@ class TestWOSParser(unittest.TestCase):
         self.assertTrue(result_near_distance)
         self.assertIn(
             {
-                "rule": "W1001",
-                "message": "Default distance set to 15.",
-                "position": span,
+                "code": "W1000",
+                "label": "implicit-near-value",
+                "message": "The value of NEAR operator is implicit",
+                "is_fatal": False,
+                "pos": (0, 4),
             },
             self.parser.linter_messages,
         )
@@ -707,15 +712,16 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_linter_message` method correctly adds
         a new linter message to the `linter_messages` list.
         """
-        rule = "TestRule"
-        msg = "This is a test message."
+        rule = QueryErrorCode.OPERATOR_CAPITALIZATION
         position = (0, 10)
 
-        self.parser.add_linter_message(rule, msg, position)
+        self.parser.add_linter_message(rule, pos=position)
         expected_message = {
-            "rule": rule,
-            "message": msg,
-            "position": position,
+            "code": "W0005",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "pos": (0, 10),
         }
         self.assertIn(expected_message, self.parser.linter_messages)
 
@@ -726,18 +732,14 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_linter_message` method does not add
         a duplicate linter message to the `linter_messages` list.
         """
-        rule = "TestRule"
-        msg = "This is a test message."
+        rule = QueryErrorCode.OPERATOR_CAPITALIZATION
         position = (0, 10)
+        self.parser.linter_messages = []
 
-        self.parser.add_linter_message(rule, msg, position)
-        self.parser.add_linter_message(rule, msg, position)
-        expected_message = {
-            "rule": rule,
-            "message": msg,
-            "position": position,
-        }
-        self.assertEqual(self.parser.linter_messages.count(expected_message), 1)
+        self.parser.add_linter_message(rule, pos=position)
+        self.parser.add_linter_message(rule, pos=position)
+        print(self.parser.linter_messages)
+        self.assertEqual(len(self.parser.linter_messages), 1)
 
     def test_add_linter_message_different_position(self) -> None:
         """
@@ -746,22 +748,25 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_linter_message` method correctly adds
         the same message with different positions to the `linter_messages` list.
         """
-        rule = "TestRule"
-        msg = "This is a test message."
+        rule = QueryErrorCode.OPERATOR_CAPITALIZATION
         position1 = (0, 10)
         position2 = (11, 20)
 
-        self.parser.add_linter_message(rule, msg, position1)
-        self.parser.add_linter_message(rule, msg, position2)
+        self.parser.add_linter_message(rule, pos=position1)
+        self.parser.add_linter_message(rule, pos=position2)
         expected_message1 = {
-            "rule": rule,
-            "message": msg,
-            "position": position1,
+            "code": "W0005",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "pos": (0, 10),
         }
         expected_message2 = {
-            "rule": rule,
-            "message": msg,
-            "position": position2,
+            "code": "W0005",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "pos": (11, 20),
         }
         self.assertIn(expected_message1, self.parser.linter_messages)
         self.assertIn(expected_message2, self.parser.linter_messages)
@@ -773,14 +778,17 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_linter_message` method correctly adds
         a linter message with no position to the `linter_messages` list.
         """
-        rule = "TestRule"
-        msg = "This is a test message."
 
-        self.parser.add_linter_message(rule, msg)
+        # TODO : discuss this. Would -1,-1 be a better option?
+        self.parser.add_linter_message(
+            QueryErrorCode.SEARCH_FIELD_NOT_FOUND, pos=[-1, -1]
+        )
         expected_message = {
-            "rule": rule,
-            "message": msg,
-            "position": None,
+            "code": "E0004",
+            "label": "search-field-not-found",
+            "message": "Search Field specified was not found in Search Fields from JSON.",
+            "is_fatal": False,
+            "pos": [-1, -1],
         }
         self.assertIn(expected_message, self.parser.linter_messages)
 
@@ -861,9 +869,11 @@ class TestWOSParser(unittest.TestCase):
         )
         self.assertIn(
             {
-                "rule": "W1003",
+                "code": "W1001",
+                "label": "year-span-violation",
                 "message": "Year span must be five or less.",
-                "position": span,
+                "is_fatal": False,
+                "pos": (0, 9),
             },
             self.parser.linter_messages,
         )
@@ -1375,9 +1385,11 @@ class TestWOSParser(unittest.TestCase):
         self.parser.check_search_fields_from_json(search_field, position=(0, 3))
         self.assertIn(
             {
-                "rule": "W0006",
+                "code": "E0004",
+                "label": "search-field-not-found",
                 "message": "Search Field specified was not found in Search Fields from JSON.",
-                "position": (0, 3),
+                "is_fatal": False,
+                "pos": (0, 3),
             },
             self.parser.linter_messages,
         )
