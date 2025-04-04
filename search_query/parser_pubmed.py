@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Pubmed query parser."""
 import re
-import typing
 
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -9,7 +8,7 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
-from search_query.constants import PubmedErrorCodes
+from search_query.constants import QueryErrorCode
 from search_query.exception import PubmedFieldMismatch
 from search_query.exception import PubmedFieldWarning
 from search_query.exception import PubmedInvalidFieldTag
@@ -87,45 +86,6 @@ class PubmedParser(QueryStringParser):
         "[volume]": "[vi]",
     }
 
-    DEFAULT_ERROR_MESSAGES = {
-        # Fatal
-        PubmedErrorCodes.UNBALANCED_PARENTHESES: "Unbalanced parentheses.",
-        PubmedErrorCodes.MISSING_OPERATOR: "Boolean operator expected.",
-        PubmedErrorCodes.INVALID_BRACKET_USE: "Invalid use of square brackets.",
-        PubmedErrorCodes.INVALID_OPERATOR_POSITION: "Invalid operator position.",
-        PubmedErrorCodes.INVALID_FIELD_POSITION: "Search field tags should directly follow search terms.",
-        PubmedErrorCodes.EMPTY_PARENTHESES: "Empty parentheses.",
-        PubmedErrorCodes.NESTED_NOT_QUERY: "NOT operator should not be nested inside a subquery.",
-        # Error
-        PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX: "Invalid proximity syntax.",
-        PubmedErrorCodes.INVALID_PROXIMITY_DISTANCE: "Invalid proximity distance. Proximity distance should be a positive integer.",
-        PubmedErrorCodes.INVALID_PROXIMITY_USE: "Invalid proximity use.",
-        PubmedErrorCodes.FIELD_CONTRADICTION: "Search fields in search string do not match the user-provided fields:",
-        PubmedErrorCodes.MISSING_QUERY_FIELD: "User-provided search fields missing in search string:",
-        PubmedErrorCodes.UNSUPPORTED_FIELD: "Field tag unsupported by the PubMed search interface: https://pubmed.ncbi.nlm.nih.gov/help/#search-tags.",
-        PubmedErrorCodes.INVALID_CHARACTER: "Search term contains invalid character:",
-        PubmedErrorCodes.INVALID_WILDCARD: "Invalid wildcard use. Search terms must have at least 4 characters before the first wildcard *.",
-        # Warning
-        PubmedErrorCodes.FIELD_REDUNDANT: "Warning: User-provided search fields are redundant. "
-        "To avoid redundancy, it is recommended to specify search field tags in the search string only.",
-        PubmedErrorCodes.FIELD_NOT_SPECIFIED: "Warning: Search fields not specified. "
-        "If applicable, it is recommended to explicitly define search fields in the search string.",
-        PubmedErrorCodes.TERM_REDUNDANT: "Warning: Redundant search term. "
-        "To avoid an unnecessarily complex query structure, it is recommended to remove redundant search terms.",
-        PubmedErrorCodes.PRECEDENCE_WARNING: "Warning: AND operator used after OR operator in the same subquery. "
-        "PubMed does not enforce operator precedence and processes queries strictly from left to right.",
-    }
-
-    # Messages to inform the user about automatic corrections made by the parser when operating in non-strict mode.
-    NON_STRICT_CORRECTION_MESSAGES = {
-        PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX: "Proximity operator has been ignored.",
-        PubmedErrorCodes.INVALID_PROXIMITY_DISTANCE: "Proximity operator has been ignored.",
-        PubmedErrorCodes.INVALID_PROXIMITY_USE: "Proximity operator has been ignored.",
-        PubmedErrorCodes.UNSUPPORTED_FIELD: "Field has been converted to default field [all].",
-        PubmedErrorCodes.INVALID_CHARACTER: "Character has been converted to whitespace.",
-        PubmedErrorCodes.INVALID_WILDCARD: "Wildcard * has been ignored.",
-    }
-
     SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
     PARENTHESIS_REGEX = r"[\(\)]"
@@ -140,9 +100,13 @@ class PubmedParser(QueryStringParser):
     def tokenize(self) -> None:
         """Tokenize the query_str"""
         # Parse tokens and positions based on regex patterns.
+        prev_end = 0
         for match in re.finditer(self.pattern, self.query_str, re.IGNORECASE):
             value = match.group(0)
             start, end = match.span()
+
+            if start > prev_end and self.query_str[prev_end:start].strip():
+                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (prev_end, start))
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
                 token_type = TokenTypes.LOGIC_OPERATOR
@@ -155,7 +119,12 @@ class PubmedParser(QueryStringParser):
             else:
                 token_type = TokenTypes.SEARCH_TERM
 
+            prev_end = end
             self.tokens.append(Token(value=value, type=token_type, position=(start, end)))
+
+        if prev_end < len(self.query_str) and self.query_str[:prev_end].strip():
+            self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (prev_end, len(self.query_str)))
+
         self.combine_subsequent_terms()
 
     def is_search_field(self, token: str) -> bool:
@@ -422,7 +391,7 @@ class PubmedParser(QueryStringParser):
             ):
                 self._check_missing_operator(index, tokens)
 
-        refined_tokens = [val for i, val in enumerate(tokens) if i not in invalid_token_indices]
+        refined_tokens = [token for index, token in enumerate(tokens) if index not in invalid_token_indices]
         self._check_precedence(refined_tokens)
 
         return refined_tokens
@@ -438,9 +407,7 @@ class PubmedParser(QueryStringParser):
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if i == 0:
                     # Query contains unbalanced closing parentheses
-                    self.add_linter_message(
-                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token.position
-                    )
+                    self.add_linter_message(QueryErrorCode.UNBALANCED_PARENTHESES, token.position)
                     invalid_token_indices.append(index)
                 else:
                     i -= 1
@@ -450,9 +417,7 @@ class PubmedParser(QueryStringParser):
             last_index = len(tokens) - 1
             for index, token in enumerate(reversed(tokens)):
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    self.add_linter_message(
-                        PubmedErrorCodes.UNBALANCED_PARENTHESES, token.position
-                    )
+                    self.add_linter_message(QueryErrorCode.UNBALANCED_PARENTHESES, token.position)
                     invalid_token_indices.append(last_index - index)
                     i -= 1
                 if i == 0:
@@ -462,34 +427,27 @@ class PubmedParser(QueryStringParser):
         """Check token list contain unspecified precedence (OR & AND operator in the same subquery)"""
         or_query = False
         for token in tokens:
-            if token.value == Operators.OR:
+            if token.value.upper() in {"OR", "|"}:
                 or_query = True
             elif token.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.PARENTHESIS_CLOSED}:
                 or_query = False
-            elif token.value == Operators.AND and or_query:
-                self.add_linter_message(PubmedErrorCodes.PRECEDENCE_WARNING, token.position)
+            elif token.value.upper() in {"AND", "&"} and or_query:
+                self.add_linter_message(QueryErrorCode.QUERY_PRECEDENCE, token.position)
 
     def _check_invalid_characters(
         self, index: int, tokens: list, invalid_token_indices: list
     ) -> None:
         """Check a search term for invalid characters"""
 
-        invalid_characters = "!#$%+.;<>?\\^_{}~'()"
+        invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
 
         token = tokens[index]
         value = token.value
         # Iterate over term to identify invalid characters and replace them with whitespace
         for i, char in enumerate(token.value):
             if char in invalid_characters:
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_CHARACTER, token.position, char
-                )
+                self.add_linter_message(QueryErrorCode.INVALID_CHARACTER, token.position)
                 value = value[:i] + " " + value[i + 1:]
-            elif char in "[]":
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_BRACKET_USE,
-                    (token.position[0] + i, token.position[0] + i + 1),
-                )
         # Update token
         if value != token.value:
             token.value = value
@@ -505,12 +463,12 @@ class PubmedParser(QueryStringParser):
             k = 4
         if "*" in token.value[:k]:
             # Wildcard * is invalid if it is applied to terms with less than 4 characters
-            self.add_linter_message(PubmedErrorCodes.INVALID_WILDCARD, token.position)
+            self.add_linter_message(QueryErrorCode.INVALID_WILDCARD_USE, token.position)
 
     def _check_invalid_token_position(
         self, index: int, tokens: list, invalid_token_indices: list
     ):
-        """Check if tokens contains invalid token position at index"""
+        """Check if token list contains invalid token position at index"""
         if index == 0:
             prev_token = None
         else:
@@ -523,6 +481,15 @@ class PubmedParser(QueryStringParser):
 
         current_token = tokens[index]
 
+        if current_token.type == TokenTypes.PARENTHESIS_OPEN:
+            if next_token and next_token.type == TokenTypes.PARENTHESIS_CLOSED:
+                self.add_linter_message(
+                    QueryErrorCode.EMPTY_PARENTHESES,
+                    (current_token.position[0], next_token.position[1])
+                )
+                invalid_token_indices.append(index)
+                invalid_token_indices.append(index + 1)
+
         if current_token.type == TokenTypes.LOGIC_OPERATOR:
             if not (
                 prev_token
@@ -533,34 +500,20 @@ class PubmedParser(QueryStringParser):
                 )
             ):
                 # Invalid operator position
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token.position
-                )
+                self.add_linter_message(QueryErrorCode.INVALID_OPERATOR_POSITION, current_token.position)
                 invalid_token_indices.append(index)
             elif not (
                 next_token and (next_token.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM})
             ):
                 # Invalid operator position
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_OPERATOR_POSITION, current_token.position
-                )
+                self.add_linter_message(QueryErrorCode.INVALID_OPERATOR_POSITION, current_token.position)
                 invalid_token_indices.append(index)
 
         elif current_token.type == TokenTypes.FIELD:
             if not (prev_token and prev_token.type == TokenTypes.SEARCH_TERM):
                 # Invalid search field position
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_FIELD_POSITION, current_token.position
-                )
+                self.add_linter_message(QueryErrorCode.INVALID_SEARCH_FIELD_POSITION, current_token.position)
                 invalid_token_indices.append(index)
-
-        elif current_token.type == TokenTypes.PARENTHESIS_OPEN:
-            if next_token and next_token.type == TokenTypes.PARENTHESIS_CLOSED:
-                # Empty parentheses
-                self.add_linter_message(
-                    PubmedErrorCodes.EMPTY_PARENTHESES,
-                    (current_token.position[0], next_token.position[1]),
-                )
 
     def _check_invalid_proximity_operator(self, index: int, tokens: list) -> None:
         """Check search field for invalid proximity operator"""
@@ -571,12 +524,7 @@ class PubmedParser(QueryStringParser):
         if match:
             field_value, prox_value = match.groups()
             if not prox_value.isdigit():
-                prox_value_pos = tuple(
-                    pos + search_phrase_token.position[0] for pos in match.span(2)
-                )
-                self.add_linter_message(
-                    PubmedErrorCodes.INVALID_PROXIMITY_DISTANCE, prox_value_pos
-                )
+                self.add_linter_message(QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position)
             else:
                 nr_of_terms = len(search_phrase_token.value.strip('"').split())
                 if not (
@@ -584,26 +532,16 @@ class PubmedParser(QueryStringParser):
                     and search_phrase_token.value[-1] == '"'
                     and nr_of_terms >= 2
                 ):
-                    self.add_linter_message(
-                        PubmedErrorCodes.INVALID_PROXIMITY_USE,
-                        field_token.position,
-                        "Proximity search should be applied to quoted search phrases with at least two terms.",
-                    )
+                    self.add_linter_message(QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position)
 
                 field_value = self._map_default_field(field_value.lower())
                 if field_value not in {"tiab", "ti", "ad"}:
-                    self.add_linter_message(
-                        PubmedErrorCodes.INVALID_PROXIMITY_USE,
-                        field_token.position,
-                        "Proximity search is only supported for Title, Title/Abstract and Affiliation fields.",
-                    )
+                    self.add_linter_message(QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position)
 
             # Update search field token
             tokens[index].value = "[" + field_value + "]"
         else:
-            self.add_linter_message(
-                PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX, field_token.position
-            )
+            self.add_linter_message(QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position)
 
     def _check_missing_operator(self, index: int, tokens: list) -> None:
         """Check if there is a missing operator between previous and current token"""
@@ -612,9 +550,7 @@ class PubmedParser(QueryStringParser):
         if (
             token_1.type in {TokenTypes.PARENTHESIS_CLOSED, TokenTypes.SEARCH_TERM, TokenTypes.FIELD}
                 and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}):
-            self.add_linter_message(
-                PubmedErrorCodes.MISSING_OPERATOR, (token_1.position[0], token_2.position[1])
-            )
+            self.add_linter_message(QueryErrorCode.MISSING_OPERATOR, (token_1.position[0], token_2.position[1]))
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
@@ -625,9 +561,7 @@ class PubmedParser(QueryStringParser):
         """Check query tree for nested NOT queries"""
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
-                self.add_linter_message(
-                    PubmedErrorCodes.NESTED_NOT_QUERY, child.position
-                )
+                self.add_linter_message(QueryErrorCode.NESTED_NOT_QUERY, child.position)
             self._check_nested_not_query(child)
 
     def _check_redundant_terms(self, query: Query) -> None:
@@ -680,14 +614,10 @@ class PubmedParser(QueryStringParser):
                     ):
                         # Terms in AND queries follow different redundancy logic than terms in OR queries
                         if operator == Operators.AND:
-                            self.add_linter_message(
-                                PubmedErrorCodes.TERM_REDUNDANT, terms[k].position
-                            )
+                            self.add_linter_message(QueryErrorCode.QUERY_STRUCTURE_COMPLEX, terms[k].position)
                             redundant_terms.append(terms[k])
                         elif operator in {Operators.OR, Operators.NOT}:
-                            self.add_linter_message(
-                                PubmedErrorCodes.TERM_REDUNDANT, terms[i].position
-                            )
+                            self.add_linter_message(QueryErrorCode.QUERY_STRUCTURE_COMPLEX, terms[i].position)
                             redundant_terms.append(terms[i])
 
     def _extract_subqueries(
@@ -735,9 +665,7 @@ class PubmedParser(QueryStringParser):
         if search_field.value not in Fields.all() or (
             search_field.position and search_field.value == "ab"
         ):
-            self.add_linter_message(
-                PubmedErrorCodes.UNSUPPORTED_FIELD, search_field.position
-            )
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_UNSUPPORTED, search_field.position)
             search_field.value = Fields.ALL
             search_field.position = None
 
@@ -748,39 +676,18 @@ class PubmedParser(QueryStringParser):
         if user_field_values and query_field_values:
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
-                self.add_linter_message(
-                    PubmedErrorCodes.FIELD_CONTRADICTION, None, self.search_fields
-                )
+                self.add_linter_message(QueryErrorCode.SEARCH_FIELD_CONTRADICTION, None)
             else:
                 # User-provided fields match fields in the query
-                self.add_linter_message(PubmedErrorCodes.FIELD_REDUNDANT, None)
+                self.add_linter_message(QueryErrorCode.SEARCH_FIELD_REDUNDANT, None)
 
         elif user_field_values and not query_field_values:
             # User-provided fields are missing in the query
-            self.add_linter_message(
-                PubmedErrorCodes.MISSING_QUERY_FIELD, None, self.search_fields
-            )
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, None)
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.add_linter_message(PubmedErrorCodes.FIELD_NOT_SPECIFIED, None)
-
-    def add_linter_message(
-        self, code: str, position: typing.Optional[tuple], error_details: str = None
-    ) -> None:
-        """Add a linter message"""
-
-        message = self.DEFAULT_ERROR_MESSAGES.get(code)
-
-        if error_details:
-            message += " " + error_details
-
-        if self.mode != "strict" and code in self.NON_STRICT_CORRECTION_MESSAGES:
-            message += "\n" + self.NON_STRICT_CORRECTION_MESSAGES.get(code)
-
-        self.linter_messages.append(
-            {"code": code, "message": message, "position": position}
-        )
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED, None)
 
     def check_linter_status(self) -> None:
         """Check the output of the linter and report errors to the user"""
@@ -790,17 +697,17 @@ class PubmedParser(QueryStringParser):
 
             code = msg.get("code")
             # Always raise an exception for fatal messages
-            if code[0] == "F":
+            if code.startswith("F"):
                 raise e
 
             # Raise an exception for error messages if in strict mode
-            elif code[0] == "E":
+            elif code.startswith("E"):
                 if self.mode == "strict":
                     raise e
                 else:
                     print(e)
 
-            elif code[0] == "W":
+            elif code.startswith("W"):
                 if not self.silence_warnings:
                     print(e)
 
@@ -810,66 +717,62 @@ class PubmedParser(QueryStringParser):
         """Retrieve the corresponding exception for a linter message"""
         code = msg.get("code")
         user_message = str(msg.get("message"))
-        pos = msg.get("position")
+        pos = msg.get("pos")
 
         exception_map = {
             # Syntax Errors
-            PubmedErrorCodes.UNBALANCED_PARENTHESES: lambda: QuerySyntaxError(
+            QueryErrorCode.TOKENIZING_FAILED.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.MISSING_OPERATOR: lambda: QuerySyntaxError(
+            QueryErrorCode.UNBALANCED_PARENTHESES.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_BRACKET_USE: lambda: QuerySyntaxError(
+            QueryErrorCode.MISSING_OPERATOR.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_OPERATOR_POSITION: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_OPERATOR_POSITION.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_FIELD_POSITION: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_SEARCH_FIELD_POSITION.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.EMPTY_PARENTHESES: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_PROXIMITY_USE.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_PROXIMITY_DISTANCE: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_CHARACTER.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_PROXIMITY_USE: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_WILDCARD_USE.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_PROXIMITY_SYNTAX: lambda: QuerySyntaxError(
+            QueryErrorCode.NESTED_NOT_QUERY.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.INVALID_CHARACTER: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            PubmedErrorCodes.INVALID_WILDCARD: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            PubmedErrorCodes.NESTED_NOT_QUERY: lambda: QuerySyntaxError(
+            QueryErrorCode.EMPTY_PARENTHESES.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
             # Invalid Field Error
-            PubmedErrorCodes.UNSUPPORTED_FIELD: lambda: PubmedInvalidFieldTag(
+            QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.code: lambda: PubmedInvalidFieldTag(
                 user_message, self.query_str, pos
             ),
             # Field Mismatch Error
-            PubmedErrorCodes.MISSING_QUERY_FIELD: lambda: PubmedFieldMismatch(
+            QueryErrorCode.SEARCH_FIELD_MISSING.code: lambda: PubmedFieldMismatch(
                 user_message
             ),
-            PubmedErrorCodes.FIELD_CONTRADICTION: lambda: PubmedFieldMismatch(
+            QueryErrorCode.SEARCH_FIELD_CONTRADICTION.code: lambda: PubmedFieldMismatch(
                 user_message
             ),
             # Warnings
-            PubmedErrorCodes.FIELD_REDUNDANT: lambda: PubmedFieldWarning(user_message),
-            PubmedErrorCodes.FIELD_NOT_SPECIFIED: lambda: PubmedFieldWarning(
+            QueryErrorCode.SEARCH_FIELD_REDUNDANT.code: lambda: PubmedFieldWarning(
                 user_message
             ),
-            PubmedErrorCodes.TERM_REDUNDANT: lambda: PubmedQueryWarning(
+            QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED.code: lambda: PubmedFieldWarning(
+                user_message
+            ),
+            QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: lambda: PubmedQueryWarning(
                 user_message, self.query_str, pos
             ),
-            PubmedErrorCodes.PRECEDENCE_WARNING: lambda: PubmedQueryWarning(
+            QueryErrorCode.QUERY_PRECEDENCE.code: lambda: PubmedQueryWarning(
                 user_message, self.query_str, pos
             ),
         }

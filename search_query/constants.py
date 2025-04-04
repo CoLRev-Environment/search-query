@@ -119,32 +119,6 @@ PLATFORM_COMBINED_FIELDS_MAP = {
 }
 
 
-class PubmedErrorCodes:
-    """Error codes used by the Pubmed parser"""
-
-    UNBALANCED_PARENTHESES = "F0002"
-    MISSING_OPERATOR = "F0003"
-    INVALID_BRACKET_USE = "F0004"
-    INVALID_OPERATOR_POSITION = "F0005"
-    INVALID_FIELD_POSITION = "F0006"
-    EMPTY_PARENTHESES = "F0007"
-    NESTED_NOT_QUERY = "F0008"
-
-    FIELD_CONTRADICTION = "E0001"
-    UNSUPPORTED_FIELD = "E0003"
-    MISSING_QUERY_FIELD = "E0004"
-    INVALID_PROXIMITY_DISTANCE = "E0005"
-    INVALID_PROXIMITY_USE = "E0006"
-    INVALID_PROXIMITY_SYNTAX = "E0007"
-    INVALID_CHARACTER = "E0008"
-    INVALID_WILDCARD = "E0009"
-
-    FIELD_REDUNDANT = "W0001"
-    FIELD_NOT_SPECIFIED = "W0002"
-    TERM_REDUNDANT = "W0003"
-    PRECEDENCE_WARNING = "W0004"
-
-
 class ExitCodes:
     """Exit codes"""
 
@@ -199,6 +173,34 @@ class QueryErrorCode(Enum):
         "An operator is missing between terms",
         "",
     )
+    INVALID_OPERATOR_POSITION = (
+        ["pubmed"],
+        "F0004",
+        "invalid-operator-position",
+        "Invalid operator position",
+        ""
+    )
+    INVALID_SEARCH_FIELD_POSITION = (
+        ["pubmed"],
+        "F0005",
+        "invalid-search-field-position",
+        "Search field tags should directly follow search terms",
+        ""
+    )
+    NESTED_NOT_QUERY = (
+        ["pubmed"],
+        "F0006",
+        "nested-not-query",
+        "Nesting of NOT operator is not supported for this database",
+        ""
+    )
+    EMPTY_PARENTHESES = (
+        ["pubmed"],
+        "F0007",
+        "empty-parentheses",
+        "Query contains empty parentheses",
+        ""
+    )
 
     # Errors (prefix: E)
     SEARCH_FIELD_CONTRADICTION = (
@@ -221,6 +223,27 @@ class QueryErrorCode(Enum):
         "search-field-unsupported",
         "Search field is not supported for this database",
         "",
+    )
+    INVALID_CHARACTER = (
+        ["pubmed"],
+        "E0004",
+        "invalid-character",
+        "Search term contains invalid character",
+        ""
+    )
+    INVALID_PROXIMITY_USE = (
+        ["pubmed"],
+        "E0005",
+        "invalid-proximity-use",
+        "Invalid use of the proximity operator :~",
+        ""
+    )
+    INVALID_WILDCARD_USE = (
+        ["pubmed"],
+        "E0006",
+        "invalid-wildcard-use",
+        "Invalid use of the wildcard operator *",
+        ""
     )
 
     # Warnings (prefix: W)
@@ -251,6 +274,13 @@ class QueryErrorCode(Enum):
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
         "",
+    )
+    QUERY_PRECEDENCE = (
+        ["pubmed"],
+        "W0005",
+        "query-precedence-warning",
+        "AND operator used after OR operator in the same subquery",
+        ""
     )
 
     def __init__(
