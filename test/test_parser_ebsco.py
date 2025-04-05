@@ -8,6 +8,7 @@ from typing import Tuple
 import pytest  # type: ignore
 
 from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
@@ -24,26 +25,32 @@ from search_query.query import Query
         (
             'TI "Artificial Intelligence" AND AB Future NOT AB Past',
             [
-                Token(value="TI", type="FIELD", position=(0, 2)),
+                Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
                 Token(
                     value='"Artificial Intelligence"',
-                    type="SEARCH_TERM",
+                    type=TokenTypes.SEARCH_TERM,
                     position=(3, 28),
                 ),
-                Token(value="AND", type="LOGIC_OPERATOR", position=(29, 32)),
-                Token(value="AB", type="FIELD", position=(33, 35)),
-                Token(value="Future", type="SEARCH_TERM", position=(36, 42)),
-                Token(value="NOT", type="LOGIC_OPERATOR", position=(43, 46)),
-                Token(value="AB", type="FIELD", position=(47, 49)),
-                Token(value="Past", type="SEARCH_TERM", position=(50, 54)),
+                Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
+                Token(value="AB", type=TokenTypes.FIELD, position=(33, 35)),
+                Token(value="Future", type=TokenTypes.SEARCH_TERM, position=(36, 42)),
+                Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(43, 46)),
+                Token(value="AB", type=TokenTypes.FIELD, position=(47, 49)),
+                Token(value="Past", type=TokenTypes.SEARCH_TERM, position=(50, 54)),
             ],
         ),
         (
             "Artificial N2 Intelligence",
             [
-                Token(value="Artificial", type="SEARCH_TERM", position=(0, 10)),
-                Token(value="N2", type="PROXIMITY_OPERATOR", position=(11, 13)),
-                Token(value="Intelligence", type="SEARCH_TERM", position=(14, 26)),
+                Token(
+                    value="Artificial", type=TokenTypes.SEARCH_TERM, position=(0, 10)
+                ),
+                Token(
+                    value="N2", type=TokenTypes.PROXIMITY_OPERATOR, position=(11, 13)
+                ),
+                Token(
+                    value="Intelligence", type=TokenTypes.SEARCH_TERM, position=(14, 26)
+                ),
             ],
         ),
         # Add more test cases as needed

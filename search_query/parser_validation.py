@@ -5,10 +5,9 @@ from __future__ import annotations
 import re
 import typing
 
-import search_query.parser
 import search_query.parser_base
-import search_query.parser_ebsco  # pylint: disable=cyclic-import
 from search_query.constants import QueryErrorCode
+from search_query.constants import TokenTypes
 
 
 # Could indeed be a general Validator class
@@ -143,7 +142,7 @@ class EBSCOQueryStringValidator:
     def validate_token_position(
         self,
         token_type: str,
-        previous_token_type: typing.Optional[str],
+        previous_token_type: typing.Optional[TokenTypes],
         position: typing.Optional[tuple[int, int]],
     ) -> None:
         """
@@ -156,36 +155,36 @@ class EBSCOQueryStringValidator:
             return
 
         valid_transitions = {
-            "FIELD": [
-                "SEARCH_TERM",
-                "PARENTHESIS_OPEN",
+            TokenTypes.FIELD: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
             ],  # After FIELD can be SEARCH_TERM; PARENTHESIS_OPEN
-            "SEARCH_TERM": [
-                "SEARCH_TERM",
-                "LOGIC_OPERATOR",
-                "PROXIMITY_OPERATOR",
-                "PARENTHESIS_CLOSED",
+            TokenTypes.SEARCH_TERM: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+                TokenTypes.PARENTHESIS_CLOSED,
             ],  # After SEARCH_TERM can be SEARCH_TERM (will get connected anyway);
             # LOGIC_OPERATOR; PROXIMITY_OPERATOR; PARENTHESIS_CLOSED
-            "LOGIC_OPERATOR": [
-                "SEARCH_TERM",
-                "FIELD",
-                "PARENTHESIS_OPEN",
+            TokenTypes.LOGIC_OPERATOR: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.FIELD,
+                TokenTypes.PARENTHESIS_OPEN,
             ],  # After LOGIC_OPERATOR can be SEARCH_TERM; FIELD; PARENTHESIS_OPEN
-            "PROXIMITY_OPERATOR": [
-                "SEARCH_TERM",
-                "PARENTHESIS_OPEN",
-                "FIELD",
+            TokenTypes.PROXIMITY_OPERATOR: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
+                TokenTypes.FIELD,
             ],  # After PROXIMITY_OPERATOR can be SEARCH_TERM; PARENTHESIS_OPEN; FIELD
-            "PARENTHESIS_OPEN": [
-                "FIELD",
-                "SEARCH_TERM",
-                "PARENTHESIS_OPEN",
+            TokenTypes.PARENTHESIS_OPEN: [
+                TokenTypes.FIELD,
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
             ],  # After PARENTHESIS_OPEN can be FIELD; SEARCH_TERM; PARENTHESIS_OPEN
-            "PARENTHESIS_CLOSED": [
-                "PARENTHESIS_CLOSED",
-                "LOGIC_OPERATOR",
-                "PROXIMITY_OPERATOR",
+            TokenTypes.PARENTHESIS_CLOSED: [
+                TokenTypes.PARENTHESIS_CLOSED,
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
             ],  # After PARENTHESIS_CLOSED can be PARENTHESIS_CLOSED;
             # LOGIC_OPERATOR; PROXIMITY_OPERATOR
         }

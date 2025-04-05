@@ -19,7 +19,7 @@ class PLATFORM(Enum):
     PRE_NOTATION = "pre_notation"
 
 
-class TokenTypes:
+class TokenTypes(Enum):
     """Token types"""
 
     LOGIC_OPERATOR = "LOGIC_OPERATOR"
