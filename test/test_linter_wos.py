@@ -194,14 +194,16 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 10).
         """
         tokens = [("term1", (0, 5)), ("au=", (5, 10)), ("ti=", (10, 15))]
-        linter = QueryLinter("term1 au= ti=", self.linter_messages)
-        self.assertTrue(linter.check_order_of_tokens(tokens, "au=", (5, 10), 1))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
+
+        parser = WOSParser("term1 au= ti=")
+        linter = QueryLinter(parser)
+        linter.check_order_of_tokens(tokens, "au=", (5, 10), 1)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]["message"], "Two Search Fields in a row."
+            parser.linter_messages[0]["message"], "Two Search Fields in a row."
         )
-        self.assertEqual(self.linter_messages[0]["position"], (10, 15))
+        self.assertEqual(parser.linter_messages[0]["position"], (10, 15))
 
     def test_missing_operator_between_term_and_parenthesis(self) -> None:
         """
@@ -220,16 +222,17 @@ class TestQueryLinter(unittest.TestCase):
                 a missing operator between term and parenthesis.
             - The position in the linter message should be (5, 6).
         """
+        parser = WOSParser("term1 (query)")
+        linter = QueryLinter(parser)
         tokens = [("term1", (0, 5)), ("(", (5, 6))]
-        linter = QueryLinter("term1 (query)", self.linter_messages)
-        self.assertTrue(linter.check_order_of_tokens(tokens, "term1", (0, 5), 0))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
+        linter.check_order_of_tokens(tokens, "term1", (0, 5), 0)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "Missing Operator between term and parenthesis.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 5))
 
     def test_missing_operator_between_parentheses(self) -> None:
         """
@@ -249,16 +252,17 @@ class TestQueryLinter(unittest.TestCase):
                 a missing operator between closing and opening parenthesis.
             - The position in the linter message should be (5, 6).
         """
+        parser = WOSParser(") (query)")
+        linter = QueryLinter(parser)
         tokens = [(")", (0, 5)), ("(", (5, 6))]
-        linter = QueryLinter(") (query)", self.linter_messages)
-        self.assertTrue(linter.check_order_of_tokens(tokens, ")", (0, 5), 0))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
+        linter.check_order_of_tokens(tokens, ")", (0, 5), 0)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "Missing Operator between closing and opening parenthesis.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 5))
 
     def test_missing_operator_between_term_and_search_field(self) -> None:
         """

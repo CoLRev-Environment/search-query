@@ -517,7 +517,9 @@ class WOSSearchFieldList:
 class QueryErrorCode(Enum):
     """Error codes for the query parser"""
 
+    # -------------------------------------------------------
     # Fatal errors (prefix: F)
+    # -------------------------------------------------------
     TOKENIZING_FAILED = (
         ["all"],
         "F0001",
@@ -571,7 +573,9 @@ class QueryErrorCode(Enum):
     A AND (year >= 2010 AND year < 2020)""",
     )
 
+    # -------------------------------------------------------
     # Errors (prefix: E)
+    # -------------------------------------------------------
     SEARCH_FIELD_CONTRADICTION = (
         ["all"],
         "E0001",
@@ -601,8 +605,24 @@ class QueryErrorCode(Enum):
         "Search Field specified was not found in Search Fields from JSON.",
         "",
     )
+    QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
+        [PLATFORM.WOS],
+        "E0005",
+        "query-starts-with-platform-identifier",
+        "Query starts with platform identifier",
+        "",
+    )
+    QUERY_IN_QUOTES = (
+        [PLATFORM.WOS],
+        "E0006",
+        "query-in-quotes",
+        "The whole Search string is in quotes.",
+        "",
+    )
 
+    # -------------------------------------------------------
     # Warnings (prefix: W)
+    # -------------------------------------------------------
     SEARCH_FIELD_REDUNDANT = (
         ["all"],
         "W0001",

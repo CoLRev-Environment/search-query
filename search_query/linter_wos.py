@@ -3,6 +3,7 @@
 import re
 import typing
 
+from search_query.constants import QueryErrorCode
 from search_query.constants import WOSRegex
 from search_query.query import SearchField
 
@@ -36,9 +37,9 @@ class QueryLinter:
 
         if len(tokens) < 2:
             if '"' in tokens[0][0]:
+                # TODO : non-fatal error: remove quotes from tokens
                 self.parser.add_linter_message(
-                    rule="F0001",
-                    message="The whole Search string is in quotes.",
+                    QueryErrorCode.QUERY_IN_QUOTES,
                     position=tokens[0][1],
                 )
 
@@ -53,10 +54,10 @@ class QueryLinter:
             "WoS=",
         ]:
             self.parser.add_linter_message(
-                rule="F0004",
-                message="Platform identifier at the beginning detected in query.",
+                QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
                 position=tokens[0][1],
             )
+            # TODO : non-fatal error: remove identifier from tokens
 
         while index < len(tokens) - 1:
             token, span = tokens[index]
