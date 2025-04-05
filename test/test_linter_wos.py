@@ -282,15 +282,16 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 10).
         """
         tokens = [("term1", (0, 5)), ("au=", (5, 8))]
-        linter = QueryLinter("term1 field1", self.linter_messages)
-        self.assertTrue(linter.check_order_of_tokens(tokens, "term1", (0, 5), 0))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0003")
+        parser = WOSParser("term1 au=")
+        linter = QueryLinter(parser)
+        linter.check_order_of_tokens(tokens, "term1", (0, 5), 0)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0003")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "Missing Operator between term and search field.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (0, 5))
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 5))
 
     def test_near_distance_within_range(self) -> None:
         """
@@ -304,10 +305,11 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any NEAR distance out of range.
             - The linter messages list should be empty.
         """
+        parser = WOSParser("term1 NEAR/10 term2")
+        linter = QueryLinter(parser)
         tokens = [("term1", (0, 5)), ("NEAR/10", (5, 12))]
-        linter = QueryLinter("term1 NEAR/10 term2", self.linter_messages)
-        self.assertFalse(linter.check_near_distance_in_range(tokens, 1))
-        self.assertEqual(len(self.linter_messages), 0)
+        linter.check_near_distance_in_range(tokens, 1)
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_near_distance_out_of_range(self) -> None:
         """
@@ -324,16 +326,17 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate NEAR operator distance out of range.
             - The position in the linter message should be (5, 13).
         """
+        parser = WOSParser("term1 NEAR/20 term2")
+        linter = QueryLinter(parser)
         tokens = [("term1", (0, 5)), ("NEAR/20", (5, 13))]
-        linter = QueryLinter("term1 NEAR/20 term2", self.linter_messages)
-        self.assertTrue(linter.check_near_distance_in_range(tokens, 1))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0006")
+        linter.check_near_distance_in_range(tokens, 1)
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0006")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "NEAR operator distance out of range (max. 15).",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (5, 13))
+        self.assertEqual(parser.linter_messages[0]["position"], (5, 13))
 
     def test_near_without_distance(self) -> None:
         """
@@ -347,10 +350,11 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any NEAR distance out of range.
             - The linter messages list should be empty.
         """
+        parser = WOSParser("term1 NEAR term2")
+        linter = QueryLinter(parser)
         tokens = [("term1", (0, 5)), ("NEAR", (5, 9))]
-        linter = QueryLinter("term1 NEAR term2", self.linter_messages)
-        self.assertFalse(linter.check_near_distance_in_range(tokens, 1))
-        self.assertEqual(len(self.linter_messages), 0)
+        linter.check_near_distance_in_range(tokens, 1)
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_no_unsupported_wildcards(self) -> None:
         """
@@ -381,15 +385,16 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate unsupported wildcards.
             - The position in the linter message should be (5, 6).
         """
-        linter = QueryLinter("term1 !term2", self.linter_messages)
-        self.assertTrue(linter.check_unsupported_wildcards("term1 !term2"))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F1001")
+        parser = WOSParser("term1 !term2")
+        linter = QueryLinter(parser)
+        linter.check_unsupported_wildcards("term1 !term2")
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F1001")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "Unsupported wildcard in search string: !",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (6, 7))
+        self.assertEqual(parser.linter_messages[0]["position"], (6, 7))
 
     def test_standalone_wildcard(self) -> None:
         """
@@ -405,15 +410,16 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate a standalone wildcard.
             - The position in the linter message should be (5, 6).
         """
-        linter = QueryLinter('term1 "?" term2', self.linter_messages)
-        self.assertTrue(linter.check_unsupported_wildcards('term1 "?" term2'))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F1002")
+        parser = WOSParser('term1 "?" term2')
+        linter = QueryLinter(parser)
+        linter.check_unsupported_wildcards('term1 "?" term2')
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F1002")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "Wildcard ? should not be used as standalone.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (7, 8))
+        self.assertEqual(parser.linter_messages[0]["position"], (7, 8))
 
     def test_wildcard_within_term(self) -> None:
         """
@@ -426,9 +432,10 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any unsupported wildcards.
             - The linter messages list should be empty.
         """
-        linter = QueryLinter("term1 te?m2", self.linter_messages)
-        self.assertFalse(linter.check_unsupported_wildcards("term1 te?m2"))
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("term1 te?m2")
+        linter = QueryLinter(parser)
+        linter.check_unsupported_wildcards("term1 te?m2")
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_no_unsupported_right_hand_wildcards(self) -> None:
         """
@@ -532,9 +539,10 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any wrong left-hand wildcard usage.
             - The linter messages list should be empty.
         """
-        linter = QueryLinter("term1 *term2", self.linter_messages)
-        self.assertFalse(linter.check_format_left_hand_wildcards("*term2", (6, 12)))
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("term1 *term2")
+        linter = QueryLinter(parser)
+        linter.check_format_left_hand_wildcards("*term2", (6, 12))
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_invalid_left_hand_wildcard(self) -> None:
         """
@@ -572,10 +580,12 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any ISSN format issues.
             - The linter messages list should be empty.
         """
-        search_field = SearchField(value="is=", position=(0, 3))
-        linter = QueryLinter("1234-5678", self.linter_messages)
-        self.assertFalse(linter.check_issn_isbn_format("1234-5678", search_field))
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("1234-5678")
+        linter = QueryLinter(parser)
+        linter.check_issn_isbn_format(
+            "1234-5678", SearchField(value="is=", position=(0, 3))
+        )
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_invalid_issn_format(self) -> None:
         """
@@ -591,15 +601,17 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate ISSN/ISBN format is incorrect.
             - The position in the linter message should be (0, 3).
         """
-        search_field = SearchField(value="is=", position=(0, 3))
-        linter = QueryLinter("1234-567", self.linter_messages)
-        self.assertTrue(linter.check_issn_isbn_format("1234-567", search_field))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0008")
-        self.assertEqual(
-            self.linter_messages[0]["message"], "ISSN/ISBN format is incorrect."
+        parser = WOSParser("1234-567")
+        linter = QueryLinter(parser)
+        linter.check_issn_isbn_format(
+            "1234-567", SearchField(value="is=", position=(0, 3))
         )
-        self.assertEqual(self.linter_messages[0]["position"], (0, 3))
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0008")
+        self.assertEqual(
+            parser.linter_messages[0]["message"], "ISSN/ISBN format is incorrect."
+        )
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 3))
 
     def test_valid_isbn_format(self) -> None:
         """
@@ -612,12 +624,12 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any ISBN format issues.
             - The linter messages list should be empty.
         """
-        search_field = SearchField(value="is=", position=(0, 3))
-        linter = QueryLinter("978-3-16-148410-0", self.linter_messages)
-        self.assertFalse(
-            linter.check_issn_isbn_format("978-3-16-148410-0", search_field)
+        parser = WOSParser("978-3-16-148410-0")
+        linter = QueryLinter(parser)
+        linter.check_issn_isbn_format(
+            "978-3-16-148410-0", SearchField(value="is=", position=(0, 3))
         )
-        self.assertEqual(len(self.linter_messages), 0)
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_invalid_isbn_format(self) -> None:
         """
@@ -654,10 +666,12 @@ class TestQueryLinter(unittest.TestCase):
             - The linter should not detect any DOI format issues.
             - The linter messages list should be empty.
         """
-        search_field = SearchField(value="do=", position=(0, 3))
-        linter = QueryLinter("10.1000/xyz123", self.linter_messages)
-        self.assertFalse(linter.check_doi_format("10.1000/xyz123", search_field))
-        self.assertEqual(len(self.linter_messages), 0)
+        parser = WOSParser("10.1000/xyz123")
+        linter = QueryLinter(parser)
+        linter.check_doi_format(
+            "10.1000/xyz123", SearchField(value="do=", position=(0, 3))
+        )
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_invalid_doi_format(self) -> None:
         """
@@ -673,13 +687,17 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate DOI format is incorrect.
             - The position in the linter message should be (0, 3).
         """
-        search_field = SearchField(value="do=", position=(0, 3))
-        linter = QueryLinter("12.1000/xyz", self.linter_messages)
-        self.assertTrue(linter.check_doi_format("12.1000/xyz", search_field))
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0008")
-        self.assertEqual(self.linter_messages[0]["message"], "DOI format is incorrect.")
-        self.assertEqual(self.linter_messages[0]["position"], (0, 3))
+        parser = WOSParser("12.1000/xyz")
+        linter = QueryLinter(parser)
+        linter.check_doi_format(
+            "12.1000/xyz", SearchField(value="do=", position=(0, 3))
+        )
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0008")
+        self.assertEqual(
+            parser.linter_messages[0]["message"], "DOI format is incorrect."
+        )
+        self.assertEqual(parser.linter_messages[0]["position"], (0, 3))
 
     def test_handle_multiple_same_level_operators_change(self) -> None:
         """
@@ -710,15 +728,16 @@ class TestQueryLinter(unittest.TestCase):
             ("OR", (13, 15)),
             ("term3", (15, 20)),
         ]
-        linter = QueryLinter("term1 AND term2 OR term3", self.linter_messages)
+        parser = WOSParser("term1 AND term2 OR term3")
+        linter = QueryLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (13, 15))
+        self.assertEqual(parser.linter_messages[0]["position"], (13, 15))
 
     def test_handle_multiple_same_level_operators_issue(self) -> None:
         """
@@ -742,16 +761,17 @@ class TestQueryLinter(unittest.TestCase):
             ("NEAR", (13, 17)),
             ("term3", (17, 22)),
         ]
-        linter = QueryLinter("term1 AND term2 NEAR term3", self.linter_messages)
+        parser = WOSParser("term1 AND term2 NEAR term3")
+        linter = QueryLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
-        self.assertEqual(len(self.linter_messages), 1)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (13, 17))
+        self.assertEqual(parser.linter_messages[0]["position"], (13, 17))
 
     def test_handle_multiple_same_level_operators_nested_no_issue(self) -> None:
         """
@@ -783,10 +803,11 @@ class TestQueryLinter(unittest.TestCase):
             ("term3", (16, 21)),
             (")", (21, 22)),
         ]
-        linter = QueryLinter("term1 AND (term2 OR term3)", self.linter_messages)
+        parser = WOSParser("term1 AND (term2 OR term3)")
+        linter = QueryLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertFalse(linter.multiple_same_level_operators)
-        self.assertEqual(len(self.linter_messages), 0)
+        self.assertEqual(len(parser.linter_messages), 0)
 
     def test_handle_multiple_same_level_operators_with_near(self) -> None:
         """
@@ -820,15 +841,16 @@ class TestQueryLinter(unittest.TestCase):
             ("AND", (16, 19)),
             ("term3", (19, 24)),
         ]
-        linter = QueryLinter("term1 NEAR/5 term2 AND term3", self.linter_messages)
+        parser = WOSParser("term1 NEAR/5 term2 AND term3")
+        linter = QueryLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertTrue(linter.multiple_same_level_operators)
-        self.assertEqual(self.linter_messages[0]["rule"], "F0007")
+        self.assertEqual(parser.linter_messages[0]["rule"], "F0007")
         self.assertEqual(
-            self.linter_messages[0]["message"],
+            parser.linter_messages[0]["message"],
             "The operator changed at the same level. Please introduce parentheses.",
         )
-        self.assertEqual(self.linter_messages[0]["position"], (16, 19))
+        self.assertEqual(parser.linter_messages[0]["position"], (16, 19))
 
 
 if __name__ == "__main__":
