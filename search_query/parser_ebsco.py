@@ -390,9 +390,7 @@ class EBSCOParser(QueryStringParser):
         # Tokenize the search string
         self.tokenize()
         # Add artificial parentheses
-        _, self.tokens = self.add_artificial_parentheses_for_operator_precedence(
-            tokens=self.tokens
-        )
+        self.add_artificial_parentheses_for_operator_precedence()
 
         # Parse query on basis of tokens and recursively build a query-tree
         query = self.parse_query_tree(self.tokens)

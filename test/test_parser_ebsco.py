@@ -98,9 +98,8 @@ def test_add_artificial_parentheses_for_operator_precedence(
     """Test EBSCO parser tokenization."""
     ebsco_parser = EBSCOParser(query_string, "")
     ebsco_parser.tokenize()
-    _, actual_tokens = ebsco_parser.add_artificial_parentheses_for_operator_precedence(
-        tokens=ebsco_parser.tokens, index=0
-    )
+    ebsco_parser.add_artificial_parentheses_for_operator_precedence()
+    actual_tokens = ebsco_parser.tokens
 
     actual_string = "".join([f"{token[0]} " for token in actual_tokens])
 

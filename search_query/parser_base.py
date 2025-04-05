@@ -179,7 +179,6 @@ class QueryStringParser(ABC):
     # pylint: disable=too-many-branches
     def add_artificial_parentheses_for_operator_precedence(
         self,
-        tokens: list,
         index: int = 0,
         output: typing.Optional[list] = None,
     ) -> tuple[int, list[tuple[str, str, tuple[int, int]]]]:
@@ -196,15 +195,15 @@ class QueryStringParser(ABC):
         # Added artificial parentheses
         art_par = 0
 
-        while index < len(tokens):
+        while index < len(self.tokens):
             # Forward iteration through tokens
-            token, token_type, pos = tokens[index]
+            token, token_type, pos = self.tokens[index]
 
             if token_type == TokenTypes.PARENTHESIS_OPEN:
                 output.append((token, token_type, pos))
                 index += 1
                 index, output = self.add_artificial_parentheses_for_operator_precedence(
-                    tokens, index, output
+                    index, output
                 )
                 continue
 
@@ -262,8 +261,10 @@ class QueryStringParser(ABC):
                 output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
                 art_par += 1
 
-        if index == len(tokens):
+        if index == len(self.tokens):
             output = self.flatten_redundant_artificial_nesting(output)
+            self.tokens = output
+
         return index, output
 
     def flatten_redundant_artificial_nesting(
