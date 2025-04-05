@@ -1,6 +1,6 @@
 .. _query-error-messages:
 
-Messages
+Linter messages
 ====================
 
 Overview of query error messages grouped by type.
