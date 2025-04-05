@@ -193,7 +193,8 @@ class QueryErrorCode(Enum):
         ["ebsco"],
         "E0004",
         "invalid-token-sequence",
-        "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+        "The sequence of tokens is invalid "
+        "([token_type] followed by [token_type] is not allowed)",
         "",
     )
 
