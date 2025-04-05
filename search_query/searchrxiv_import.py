@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import inquirer
+from constants import LinterMode
 
 import search_query.exception as search_query_exception
 from search_query.parser import parse
@@ -89,8 +90,10 @@ def create_search_file(
 
 if __name__ == "__main__":
     # These variable must be set before running the script
-    coder_initials = "GW"
-    parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
+    coder_initials = "PE"
+    parent_directory = "/home/peteer98/Desktop/ba_thes/rxiv/"
+    search_fields = ""
+    linter_mode = LinterMode.NONSTRICT
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -113,7 +116,15 @@ if __name__ == "__main__":
 
                 platform = data["content"]["Platform"].strip().lower()
                 if platform not in SYNTAX_MAP:
-                    # print(f"Platform not available: {platform}")
+                    print(f"Platform not available: {platform}")
+                    continue
+
+                if not platform == "web of science":
+                    print(
+                        "Only search for wos. Platform "
+                        + platform
+                        + " is to be ignored."
+                    )
                     continue
 
                 syntax = SYNTAX_MAP[platform]
@@ -144,17 +155,33 @@ if __name__ == "__main__":
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
 
+                if "Search Fields" in data["content"]:
+                    search_fields = data["content"]["Search Fields"]
+
                 try:
                     # Option: select only list queries
-                    if "1." not in query_string:
-                        continue
+                    # if "1." in query_string:
+                    #     continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
-                    ret = parse(query_string, syntax=syntax)
+
+                    if linter_mode:
+                        print("[INFO:] Current linter mode: " + linter_mode)
+                    else:
+                        print(
+                            "[INFO:] No mode for the linter was selected"
+                            + "\nStrict linter mode assumed."
+                        )
+
+                    ret = parse(
+                        query_string, search_fields, syntax=syntax, mode=linter_mode
+                    )
+
                     # To select (start with) smaller queries:
-                    # # if ret.get_nr_leaves() > 20:
-                    # #     continue
+                    # if ret.get_nr_leaves() > 10:
+                    #     print('Smaller queries only. > 10')
+                    #     continue
 
                     # Print for validation
                     print(ret.to_string("structured"))
@@ -166,6 +193,7 @@ if __name__ == "__main__":
                     print(exc)
                     status = "QuerySyntaxError"
                     DB[syntax]["fail"] += 1
+                    raise exc
                 # pylint: disable=broad-exception-caught
                 except Exception as exc:
                     print(exc)
