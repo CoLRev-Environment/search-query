@@ -34,6 +34,16 @@ class XYParser(QueryStringParser):
         ]
     )
 
+    OPERATOR_PRECEDENCE = {
+        # ...
+    }
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        # Change precedence or add operators
+        # Implement and override methods of parent class (as needed)
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 

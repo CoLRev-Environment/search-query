@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-import inquirer
+import inquirer  # type: ignore
 
 import search_query.exception as search_query_exception
 from search_query.parser import parse
@@ -27,6 +27,11 @@ SYNTAX_MAP = {
     "ebsco": "ebscohost",
     "ebsco host": "ebscohost",
     "ebscohost research databases": "ebscohost",
+    "EbscoHost": "ebscohost",
+    "EBSCO": "ebscohost",
+    "EBSCOHOST": "ebscohost",
+    "EBSCO HOST": "ebscohost",
+    "EBSCO host": "ebscohost",
     "ovid": "ovid",
     "ovid sp": "ovid",
     "psycinfo": "psycinfo",
@@ -63,11 +68,13 @@ def create_search_file(
         "url": loaded_data["url"],
     }
     s_file["authors"] = [  # type: ignore
-        {"name": author} for author in loaded_data["author"].split(" and ")
+        {"name": author} for author in loaded_data["authors"].split(" and ")
     ]
     s_file["platform"] = loaded_data["content"]["Platform"]
     s_file["database"] = [loaded_data["content"]["Database Searched"]]  # type: ignore
     s_file["search_string"] = loaded_data["content"]["Search"]
+    if "Search Fields" in loaded_data["content"]:
+        s_file["search_field_general"] = loaded_data["content"]["Search Fields"]
     s_file["date"] = {}
     if "Search Conducted Date" in loaded_data["content"]:
         s_file["date"]["search_conducted"] = loaded_data["content"][
@@ -89,8 +96,8 @@ def create_search_file(
 
 if __name__ == "__main__":
     # These variable must be set before running the script
-    coder_initials = "GW"
-    parent_directory = "/home/gerit/ownCloud/projects/SearchQuery/wip/"
+    coder_initials = "TF"
+    parent_directory = "/home/ubuntu1/Thesis/example/searchRxiv_scraper/"
 
     # These variables are set automatically
     source_directory = parent_directory + "searchRxiv_scraper/data"
@@ -100,6 +107,7 @@ if __name__ == "__main__":
     DB = {}
 
     for filename in os.listdir(source_directory):
+        print(filename)  # Debug line
         if filename.endswith(".json"):
             filepath = os.path.join(source_directory, filename)
             with open(filepath, encoding="utf-8") as file:
@@ -113,7 +121,7 @@ if __name__ == "__main__":
 
                 platform = data["content"]["Platform"].strip().lower()
                 if platform not in SYNTAX_MAP:
-                    # print(f"Platform not available: {platform}")
+                    print(f"Platform not available: {platform}")
                     continue
 
                 syntax = SYNTAX_MAP[platform]
@@ -143,18 +151,21 @@ if __name__ == "__main__":
 
                 status, comment = "todo", "todo"
                 query_string = data["content"]["Search"]
+                search_field_general = "No general search-field"
+                if "Search Fields" in data["content"]:
+                    search_field_general = data["content"]["Search Fields"]
 
                 try:
                     # Option: select only list queries
-                    if "1." not in query_string:
-                        continue
+                    # if "1." not in query_string:
+                    #     continue
                     print("\n\n\n\n\n")
                     print(filepath)
                     print(query_string)
-                    ret = parse(query_string, syntax=syntax)
-                    # To select (start with) smaller queries:
-                    # # if ret.get_nr_leaves() > 20:
-                    # #     continue
+                    ret = parse(query_string, search_field_general, syntax=syntax)
+                    # # To select (start with) smaller queries:
+                    # if ret.get_nr_leaves() > 20:
+                    #     continue
 
                     # Print for validation
                     print(ret.to_string("structured"))
