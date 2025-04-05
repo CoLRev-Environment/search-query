@@ -8,6 +8,8 @@ from abc import ABC
 from abc import abstractmethod
 
 import search_query.exception as search_query_exception
+from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.constants import Colors
 from search_query.constants import QueryErrorCode
 from search_query.query import Query
@@ -107,12 +109,13 @@ class QueryStringParser(ABC):
         while i < len(self.tokens):
             if (
                 i + 1 < len(self.tokens)
-                and self.is_term(self.tokens[i][0])
-                and self.is_term(self.tokens[i + 1][0])
+                and self.tokens[i].type == TokenTypes.SEARCH_TERM
+                and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
             ):
-                combined_token = (
-                    self.tokens[i][0] + " " + self.tokens[i + 1][0],
-                    (self.tokens[i][1][0], self.tokens[i + 1][1][1]),
+                combined_token = Token (
+                    value=self.tokens[i].value + " " + self.tokens[i + 1].value,
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(self.tokens[i].position[0], self.tokens[i + 1].position[1])
                 )
                 combined_tokens.append(combined_token)
                 i += 2

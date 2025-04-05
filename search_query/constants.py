@@ -55,6 +55,13 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    FILTER = "sb"
+    JOURNAL = "ta"
+    MESH_TERM = "mh"
+    PUBLICATION_TYPE = "pt"
+    TEXT_WORD = "tw"
+    AFFILIATION = "ad"
+    LANGUAGE = "la"
 
     @classmethod
     def all(cls) -> list:
@@ -86,6 +93,14 @@ PLATFORM_FIELD_MAP = {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
+        Fields.AUTHOR_KEYWORDS: "[au]",
+        Fields.FILTER: "[sb]",
+        Fields.JOURNAL: "[ta]",
+        Fields.MESH_TERM: "[mh]",
+        Fields.PUBLICATION_TYPE: "[pt]",
+        Fields.TEXT_WORD: "[tw]",
+        Fields.AFFILIATION: "[ad]",
+        Fields.LANGUAGE: "[la]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
@@ -159,6 +174,34 @@ class QueryErrorCode(Enum):
         "An operator is missing between terms",
         "",
     )
+    INVALID_OPERATOR_POSITION = (
+        [PLATFORM.PUBMED],
+        "F0004",
+        "invalid-operator-position",
+        "Invalid operator position",
+        ""
+    )
+    INVALID_SEARCH_FIELD_POSITION = (
+        [PLATFORM.PUBMED],
+        "F0005",
+        "invalid-search-field-position",
+        "Search field tags should directly follow search terms",
+        ""
+    )
+    NESTED_NOT_QUERY = (
+        [PLATFORM.PUBMED],
+        "F0006",
+        "nested-not-query",
+        "Nesting of NOT operator is not supported for this database",
+        ""
+    )
+    EMPTY_PARENTHESES = (
+        [PLATFORM.PUBMED],
+        "F0007",
+        "empty-parentheses",
+        "Query contains empty parentheses",
+        ""
+    )
 
     # Errors (prefix: E)
     SEARCH_FIELD_CONTRADICTION = (
@@ -181,6 +224,27 @@ class QueryErrorCode(Enum):
         "search-field-unsupported",
         "Search field is not supported for this database",
         "",
+    )
+    INVALID_CHARACTER = (
+        [PLATFORM.PUBMED],
+        "E0004",
+        "invalid-character",
+        "Search term contains invalid character",
+        ""
+    )
+    INVALID_PROXIMITY_USE = (
+        [PLATFORM.PUBMED],
+        "E0005",
+        "invalid-proximity-use",
+        "Invalid use of the proximity operator :~",
+        ""
+    )
+    INVALID_WILDCARD_USE = (
+        [PLATFORM.PUBMED],
+        "E0006",
+        "invalid-wildcard-use",
+        "Invalid use of the wildcard operator *",
+        ""
     )
 
     # Warnings (prefix: W)
@@ -211,6 +275,13 @@ class QueryErrorCode(Enum):
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
         "",
+    )
+    QUERY_PRECEDENCE = (
+        [PLATFORM.PUBMED],
+        "W0005",
+        "query-precedence-warning",
+        "AND operator used after OR operator in the same subquery",
+        ""
     )
 
     def __init__(
