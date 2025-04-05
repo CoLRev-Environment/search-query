@@ -7,11 +7,11 @@ from typing import Tuple
 
 import pytest  # type: ignore
 
+from search_query.constants import Token
 from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
 from search_query.query import Query
-
 
 # to run (from top-level dir): pytest test/test_parser_ebsco.py
 
@@ -24,22 +24,26 @@ from search_query.query import Query
         (
             'TI "Artificial Intelligence" AND AB Future NOT AB Past',
             [
-                ("TI", "FIELD", (0, 2)),
-                ('"Artificial Intelligence"', "SEARCH_TERM", (3, 28)),
-                ("AND", "LOGIC_OPERATOR", (29, 32)),
-                ("AB", "FIELD", (33, 35)),
-                ("Future", "SEARCH_TERM", (36, 42)),
-                ("NOT", "LOGIC_OPERATOR", (43, 46)),
-                ("AB", "FIELD", (47, 49)),
-                ("Past", "SEARCH_TERM", (50, 54)),
+                Token(value="TI", type="FIELD", position=(0, 2)),
+                Token(
+                    value='"Artificial Intelligence"',
+                    type="SEARCH_TERM",
+                    position=(3, 28),
+                ),
+                Token(value="AND", type="LOGIC_OPERATOR", position=(29, 32)),
+                Token(value="AB", type="FIELD", position=(33, 35)),
+                Token(value="Future", type="SEARCH_TERM", position=(36, 42)),
+                Token(value="NOT", type="LOGIC_OPERATOR", position=(43, 46)),
+                Token(value="AB", type="FIELD", position=(47, 49)),
+                Token(value="Past", type="SEARCH_TERM", position=(50, 54)),
             ],
         ),
         (
             "Artificial N2 Intelligence",
             [
-                ("Artificial", "SEARCH_TERM", (0, 10)),
-                ("N2", "PROXIMITY_OPERATOR", (11, 13)),
-                ("Intelligence", "SEARCH_TERM", (14, 26)),
+                Token(value="Artificial", type="SEARCH_TERM", position=(0, 10)),
+                Token(value="N2", type="PROXIMITY_OPERATOR", position=(11, 13)),
+                Token(value="Intelligence", type="SEARCH_TERM", position=(14, 26)),
             ],
         ),
         # Add more test cases as needed
@@ -101,7 +105,7 @@ def test_add_artificial_parentheses_for_operator_precedence(
     ebsco_parser.add_artificial_parentheses_for_operator_precedence()
     actual_tokens = ebsco_parser.tokens
 
-    actual_string = "".join([f"{token[0]} " for token in actual_tokens])
+    actual_string = "".join([f"{token.value} " for token in actual_tokens])
 
     # Assert equality with error message on failure
     print("actual string: " + actual_string)

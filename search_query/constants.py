@@ -2,7 +2,9 @@
 """Constants for search-query"""
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
+from dataclasses import dataclass
 from enum import Enum
+from typing import Tuple
 
 # noqa: E501
 
@@ -26,6 +28,15 @@ class TokenTypes:
     SEARCH_TERM = "SEARCH_TERM"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
+
+
+@dataclass
+class Token:
+    """Token class"""
+
+    value: str
+    type: TokenTypes
+    position: Tuple[int, int]
 
 
 class Operators:

@@ -10,6 +10,7 @@ from abc import abstractmethod
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
 
@@ -138,29 +139,29 @@ class QueryStringParser(ABC):
 
     def add_higher_value(
         self,
-        output: list[tuple[str, str, tuple[int, int]]],
+        output: list[Token],
         current_value: int,
         value: int,
         art_par: int,
-    ) -> tuple[list[tuple[str, str, tuple[int, int]]], int]:
+    ) -> tuple[list[Token], int]:
         """Adds open parenthesis to higher value operators"""
-        temp: list[tuple[str, str, tuple[int, int]]] = []
+        temp: list[Token] = []
         depth_lvl = 0  # Counter for actual parenthesis
 
         while output:
             # Get previous tokens until right operator has been reached
-            token, token_type, pos = output.pop()
+            token = output.pop()
 
             # Track already existing and correct query blocks
-            if token_type == TokenTypes.PARENTHESIS_CLOSED:
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth_lvl += 1
-            elif token_type == TokenTypes.PARENTHESIS_OPEN:
+            elif token.type == TokenTypes.PARENTHESIS_OPEN:
                 depth_lvl -= 1
 
-            temp.insert(0, (token, token_type, pos))
+            temp.insert(0, token)
 
             if (
-                token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
                 and depth_lvl == 0
             ):
                 # Insert open parenthesis
@@ -169,7 +170,14 @@ class QueryStringParser(ABC):
                 # Insert open parenthesis after operator
                 while current_value < value:
                     # Insert open parenthesis after operator
-                    temp.insert(1, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
+                    temp.insert(
+                        1,
+                        Token(
+                            value="(",
+                            type=TokenTypes.PARENTHESIS_OPEN,
+                            position=(-1, -1),
+                        ),
+                    )
                     current_value += 1
                     art_par += 1
                 break
@@ -181,7 +189,7 @@ class QueryStringParser(ABC):
         self,
         index: int = 0,
         output: typing.Optional[list] = None,
-    ) -> tuple[int, list[tuple[str, str, tuple[int, int]]]]:
+    ) -> tuple[int, list[Token]]:
         """
         Adds artificial parentheses with position (-1, -1)
         to enforce operator precedence.
@@ -197,31 +205,39 @@ class QueryStringParser(ABC):
 
         while index < len(self.tokens):
             # Forward iteration through tokens
-            token, token_type, pos = self.tokens[index]
 
-            if token_type == TokenTypes.PARENTHESIS_OPEN:
-                output.append((token, token_type, pos))
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
+                output.append(self.tokens[index])
                 index += 1
                 index, output = self.add_artificial_parentheses_for_operator_precedence(
                     index, output
                 )
                 continue
 
-            if token_type == TokenTypes.PARENTHESIS_CLOSED:
-                output.append((token, token_type, pos))
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
+                output.append(self.tokens[index])
                 index += 1
                 # Add closed parenthesis in case there are still open ones
                 while art_par > 0:
-                    output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                    output.append(
+                        Token(
+                            value=")",
+                            type=TokenTypes.PARENTHESIS_CLOSED,
+                            position=(-1, -1),
+                        )
+                    )
                     art_par -= 1
                 return index, output
 
-            if token_type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
-                value = self.get_precedence(token)
+            if self.tokens[index].type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
+                value = self.get_precedence(self.tokens[index].value)
 
                 if current_value in (value, -1):
                     # Same precedence → just add to output
-                    output.append((token, token_type, pos))
+                    output.append(self.tokens[index])
                     current_value = value
 
                 elif value > current_value:
@@ -231,45 +247,59 @@ class QueryStringParser(ABC):
                     )
 
                     output.extend(temp)
-                    output.append((token, token_type, pos))
+                    output.append(self.tokens[index])
                     current_value = value
 
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
                     while current_value > value:
                         # Lower precedence → close parenthesis
-                        output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                        output.append(
+                            Token(
+                                value=")",
+                                type=TokenTypes.PARENTHESIS_CLOSED,
+                                position=(-1, -1),
+                            )
+                        )
                         current_value -= 1
                         art_par -= 1
-                    output.append((token, token_type, pos))
+                    output.append(self.tokens[index])
                     current_value = value
 
                 index += 1
                 continue
 
             # Default: search terms, fields, etc.
-            output.append((token, token_type, pos))
+            output.append(self.tokens[index])
             index += 1
 
         # Add parenthesis in case there are missing ones
         if art_par > 0:
             while art_par > 0:
-                output.append((")", TokenTypes.PARENTHESIS_CLOSED, (-1, -1)))
+                output.append(
+                    Token(
+                        value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(-1, -1)
+                    )
+                )
                 art_par -= 1
         if art_par < 0:
             while art_par < 0:
-                output.insert(0, ("(", TokenTypes.PARENTHESIS_OPEN, (-1, -1)))
+                output.insert(
+                    0,
+                    Token(
+                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
+                    ),
+                )
                 art_par += 1
 
         if index == len(self.tokens):
+            print(output)
             output = self.flatten_redundant_artificial_nesting(output)
             self.tokens = output
 
         return index, output
 
-    def flatten_redundant_artificial_nesting(
-        self, tokens: list[tuple[str, str, tuple[int, int]]]
-    ) -> list[tuple[str, str, tuple[int, int]]]:
+    def flatten_redundant_artificial_nesting(self, tokens: list[Token]) -> list[Token]:
         """
         Flattens redundant artificial nesting:
         If two artificial open parens are followed eventually by
@@ -285,33 +315,33 @@ class QueryStringParser(ABC):
                 # Look ahead for double artificial opening
                 if (
                     i + 1 < len(tokens)
-                    and tokens[i][1] == TokenTypes.PARENTHESIS_OPEN
-                    and tokens[i + 1][1] == TokenTypes.PARENTHESIS_OPEN
-                    and tokens[i][2] == (-1, -1)
-                    and tokens[i + 1][2] == (-1, -1)
+                    and tokens[i].type == TokenTypes.PARENTHESIS_OPEN
+                    and tokens[i + 1].type == TokenTypes.PARENTHESIS_OPEN
+                    and tokens[i].position == (-1, -1)
+                    and tokens[i + 1].position == (-1, -1)
                 ):
                     # Look for matching double closing
                     inner_start = i + 2
                     depth = 2
                     j = inner_start
                     while j < len(tokens) and depth > 0:
-                        if tokens[j][1] == TokenTypes.PARENTHESIS_OPEN and tokens[j][
-                            2
-                        ] == (-1, -1):
-                            depth += 1
-                        elif tokens[j][1] == TokenTypes.PARENTHESIS_CLOSED and tokens[
+                        if tokens[j].type == TokenTypes.PARENTHESIS_OPEN and tokens[
                             j
-                        ][2] == (-1, -1):
+                        ].position == (-1, -1):
+                            depth += 1
+                        elif tokens[j].type == TokenTypes.PARENTHESIS_CLOSED and tokens[
+                            j
+                        ].position == (-1, -1):
                             depth -= 1
                         j += 1
 
                     # Check for double artificial closing
                     if (
                         j < len(tokens)
-                        and tokens[j - 1][1] == TokenTypes.PARENTHESIS_CLOSED
-                        and tokens[j - 2][1] == TokenTypes.PARENTHESIS_CLOSED
-                        and tokens[j - 1][2] == (-1, -1)
-                        and tokens[j - 2][2] == (-1, -1)
+                        and tokens[j - 1].type == TokenTypes.PARENTHESIS_CLOSED
+                        and tokens[j - 2].type == TokenTypes.PARENTHESIS_CLOSED
+                        and tokens[j - 1].position == (-1, -1)
+                        and tokens[j - 2].position == (-1, -1)
                     ):
                         # Skip outer pair
                         output.extend(tokens[i + 1 : j - 1])

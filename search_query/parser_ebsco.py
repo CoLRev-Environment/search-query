@@ -8,6 +8,7 @@ import typing
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -56,17 +57,17 @@ class EBSCOParser(QueryStringParser):
 
         while i < len(self.tokens):
             # Iterate through token list
-            current_token, current_token_type, position = self.tokens[i]
+            # current_token, current_token_type, position = self.tokens[i]
 
-            if current_token_type == TokenTypes.SEARCH_TERM:
+            if self.tokens[i].type == TokenTypes.SEARCH_TERM:
                 # Filter out search_term
-                start_pos = position[0]
-                end_position = position[1]
-                combined_value = current_token
+                start_pos = self.tokens[i].position[0]
+                end_position = self.tokens[i].position[1]
+                combined_value = self.tokens[i].value
 
                 while (
                     i + 1 < len(self.tokens)
-                    and self.tokens[i + 1][1] == TokenTypes.SEARCH_TERM
+                    and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
                 ):
                     # Iterate over subsequent search_terms and combine
                     next_token, _, next_position = self.tokens[i + 1]
@@ -75,11 +76,21 @@ class EBSCOParser(QueryStringParser):
                     i += 1
 
                 combined_tokens.append(
-                    (combined_value, current_token_type, (start_pos, end_position))
+                    Token(
+                        value=combined_value,
+                        type=self.tokens[i].type,
+                        position=(start_pos, end_position),
+                    )
                 )
 
             else:
-                combined_tokens.append((current_token, current_token_type, position))
+                combined_tokens.append(
+                    Token(
+                        value=self.tokens[i].value,
+                        type=self.tokens[i].type,
+                        position=self.tokens[i].position,
+                    )
+                )
 
             i += 1
 
@@ -152,23 +163,23 @@ class EBSCOParser(QueryStringParser):
         token_type = None
 
         for match in re.finditer(self.pattern, self.query_str):
-            token = match.group()
-            token = token.strip()
+            value = match.group()
+            value = value.strip()
             start, end = match.span()
 
             # Determine token type
-            if re.fullmatch(self.PARENTHESIS_REGEX, token):
-                if token == "(":
+            if re.fullmatch(self.PARENTHESIS_REGEX, value):
+                if value == "(":
                     token_type = TokenTypes.PARENTHESIS_OPEN
                 else:
                     token_type = TokenTypes.PARENTHESIS_CLOSED
-            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, token):
+            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, value):
                 token_type = TokenTypes.LOGIC_OPERATOR
-            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, token):
+            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif re.fullmatch(self.SEARCH_FIELD_REGEX, token):
+            elif re.fullmatch(self.SEARCH_FIELD_REGEX, value):
                 token_type = TokenTypes.FIELD
-            elif re.fullmatch(self.SEARCH_TERM_REGEX, token):
+            elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
                 self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
@@ -182,7 +193,9 @@ class EBSCOParser(QueryStringParser):
             previous_token_type = token_type
 
             # Append token with its type and position to self.tokens
-            self.tokens.append((token, token_type, (start, end)))
+            self.tokens.append(
+                Token(value=value, type=token_type, position=(start, end))
+            )
 
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
