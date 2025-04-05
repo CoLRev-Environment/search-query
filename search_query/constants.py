@@ -201,7 +201,7 @@ class QueryErrorCode(Enum):
         "",
     )
     INVALID_TOKEN_SEQUENCE = (
-        ["ebsco"],
+        [PLATFORM.EBSCO],
         "E0004",
         "invalid-token-sequence",
         "The sequence of tokens is invalid "
