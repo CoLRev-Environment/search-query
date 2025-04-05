@@ -174,28 +174,28 @@ class QueryErrorCode(Enum):
         "",
     )
     INVALID_OPERATOR_POSITION = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "F0004",
         "invalid-operator-position",
         "Invalid operator position",
         ""
     )
     INVALID_SEARCH_FIELD_POSITION = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "F0005",
         "invalid-search-field-position",
         "Search field tags should directly follow search terms",
         ""
     )
     NESTED_NOT_QUERY = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "F0006",
         "nested-not-query",
         "Nesting of NOT operator is not supported for this database",
         ""
     )
     EMPTY_PARENTHESES = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "F0007",
         "empty-parentheses",
         "Query contains empty parentheses",
@@ -225,21 +225,21 @@ class QueryErrorCode(Enum):
         "",
     )
     INVALID_CHARACTER = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "E0004",
         "invalid-character",
         "Search term contains invalid character",
         ""
     )
     INVALID_PROXIMITY_USE = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "E0005",
         "invalid-proximity-use",
         "Invalid use of the proximity operator :~",
         ""
     )
     INVALID_WILDCARD_USE = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "E0006",
         "invalid-wildcard-use",
         "Invalid use of the wildcard operator *",
@@ -276,7 +276,7 @@ class QueryErrorCode(Enum):
         "",
     )
     QUERY_PRECEDENCE = (
-        ["pubmed"],
+        [PLATFORM.PUBMED],
         "W0005",
         "query-precedence-warning",
         "AND operator used after OR operator in the same subquery",
