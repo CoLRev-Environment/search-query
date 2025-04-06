@@ -225,3 +225,4 @@ Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyha
    parser/parser_index
    messages/errors_index
    dev_docs/parser
+   api_search/api_search
