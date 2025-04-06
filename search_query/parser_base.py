@@ -20,7 +20,6 @@ class QueryStringParser(ABC):
     tokens: list
     search_fields: str
     search_fields_list: list
-    linter_messages: typing.List[dict] = []
     fatal_linter_err: bool
 
     def __init__(
@@ -33,6 +32,7 @@ class QueryStringParser(ABC):
         self.search_fields_list = []
 
         self.fatal_linter_err = False
+        self.linter_messages: typing.List[dict] = []
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
         """Add a linter message."""

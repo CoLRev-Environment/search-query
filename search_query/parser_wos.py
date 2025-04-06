@@ -57,9 +57,7 @@ class WOSParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-        token_types = self.get_token_types(tokens=self.tokens, legend=False)
-
-        print(token_types)
+        self.get_token_types(tokens=self.tokens, legend=False)
 
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:

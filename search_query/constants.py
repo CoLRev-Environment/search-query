@@ -546,6 +546,36 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
+    UNMATCHED_OPENING_PARENTHESIS = (
+        ["all"],
+        "F0004",
+        "unmatched-opening-parenthesis",
+        "Unmatched opening parenthesis",
+        """**Typical fix**: Check the parentheses in the query
+**Problematic query**:
+.. code-block:: python
+
+    (a AND b OR c
+**Correct query**:
+.. code-block:: python
+
+
+    (a AND b) OR c""",
+    )
+    UNMATCHED_CLOSING_PARENTHESIS = (
+        ["all"],
+        "F0005",
+        "unmatched-closing-parenthesis",
+        "Unmatched closing parenthesis",
+        """**Typical fix**: Check the parentheses in the query
+**Problematic query**:
+.. code-block:: python
+    a AND b) OR c
+**Correct query**:
+.. code-block:: python
+
+    (a AND b) OR c""",
+    )
     MISSING_OPERATOR = (
         ["all"],
         "F0003",
@@ -571,6 +601,85 @@ class QueryErrorCode(Enum):
 .. code-block:: python
 
     A AND (year >= 2010 AND year < 2020)""",
+    )
+    UNSUPPORTED_WILDCARD = (
+        [PLATFORM.WOS],
+        "F1002",
+        "unsupported-wildcard",
+        "Unsupported wildcard in search string.",
+        "",
+    )
+    WILDCARD_RIGHT_SHORT_LENGTH = (
+        [PLATFORM.WOS],
+        "F1003",
+        "wildcard-short-length",
+        "Right-hand wildcard must preceded by at least three characters.",
+        "",
+    )
+    WILDCARD_AFTER_SPECIAL_CHAR = (
+        [PLATFORM.WOS],
+        "F1004",
+        "wildcard-after-special-char",
+        "Wildcard cannot be preceded by special characters.",
+        "",
+    )
+
+    # TODO : consolidate with INVALID_TOKEN_SEQUENCE (EBSCO) is non-fatal?!
+    INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS = (
+        [PLATFORM.EBSCO],
+        "F1005",
+        "invalid-token-sequence-two-search-fields",
+        "Invalid token sequence: two search fields in a row.",
+        "",
+    )
+    INVALID_TOKEN_SEQUENCE_TWO_OPERATORS = (
+        [PLATFORM.EBSCO],
+        "F1006",
+        "invalid-token-sequence-two-operators",
+        "Invalid token sequence: two operators in a row.",
+        "",
+    )
+    NEAR_DISTANCE_TOO_LARGE = (
+        [PLATFORM.WOS],
+        "F1007",
+        "near-distance-too-large",
+        "NEAR distance is too large (max: 15).",
+        "",
+    )
+    WILDCARD_STANDALONE = (
+        [PLATFORM.WOS],
+        "F1008",
+        "wildcard-standalone",
+        "Wildcard cannot be standalone.",
+        "",
+    )
+    INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR = (
+        [PLATFORM.WOS],
+        "F1009",
+        "invalid-token-sequence-missing-operator",
+        "Invalid token sequence: missing operator.",
+        "",
+    )
+    WILDCARD_LEFT_SHORT_LENGTH = (
+        [PLATFORM.WOS],
+        "F1010",
+        "wildcard-left-short-length",
+        "Left-hand wildcard must be preceded by at least three characters.",
+        "",
+    )
+    ISBN_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F1011",
+        "isbn-format-invalid",
+        "Invalid ISBN format.",
+        "",
+    )
+    DOI_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F1012",
+        "doi-format-invalid",
+        "Invalid DOI format.",
+        "",
     )
 
     # -------------------------------------------------------
@@ -664,7 +773,6 @@ class QueryErrorCode(Enum):
 .. code-block:: python
     a AND b OR c""",
     )
-
     IMPLICIT_NEAR_VALUE = (
         [PLATFORM.WOS],
         "W1000",
@@ -721,6 +829,13 @@ class QueryErrorCode(Enum):
 .. code-block:: python
 
     A AND PY=2015-2020""",
+    )
+    OPERATOR_CHANGED_AT_SAME_LEVEL = (
+        ["all"],
+        "W1003",
+        "operator-changed-at-same-level",
+        "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        "",
     )
 
     def __init__(
