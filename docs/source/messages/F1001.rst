@@ -1,26 +1,26 @@
 .. _F1001:
 
-F1001 — wildcard-in-year
-========================
+F1001 — unbalanced-parentheses
+==============================
 
 **Error Code**: F1001
 
-**Message**: ``Wildcard characters (*, ?, $) not supported in year search.``
+**Message**: ``Parentheses are unbalanced in the query``
 
-**Scope**: PLATFORM.WOS
+**Scope**: all
 
-**Typical fix**: Replace with year range.
+**Typical fix**: Check the parentheses in the query
 
 **Problematic query**:
 
 .. code-block:: python
 
-    A AND year=201*
+    (a AND b OR c
 
 **Correct query**:
 
 .. code-block:: python
 
-    A AND (year >= 2010 AND year < 2020)
+    (a AND b) OR c
 
 **Back to**: :ref:`query-error-messages`

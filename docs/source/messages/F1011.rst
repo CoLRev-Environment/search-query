@@ -1,14 +1,14 @@
 .. _F1011:
 
-F1011 — isbn-format-invalid
-===========================
+F1011 — invalid-token-sequence-two-operators
+============================================
 
 **Error Code**: F1011
 
-**Message**: ``Invalid ISBN format.``
+**Message**: ``Invalid token sequence: two operators in a row.``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.EBSCO
 
-**Description**: Invalid ISBN format.
+**Description**: Invalid token sequence: two operators in a row.
 
 **Back to**: :ref:`query-error-messages`

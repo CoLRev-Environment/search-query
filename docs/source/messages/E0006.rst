@@ -1,14 +1,14 @@
 .. _E0006:
 
-E0006 — query-in-quotes
-=======================
+E0006 — invalid-wildcard-use
+============================
 
 **Error Code**: E0006
 
-**Message**: ``The whole Search string is in quotes.``
+**Message**: ``Invalid use of the wildcard operator *``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.PUBMED
 
-**Description**: The whole Search string is in quotes.
+**Description**: Invalid use of the wildcard operator *
 
 **Back to**: :ref:`query-error-messages`

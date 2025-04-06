@@ -1,14 +1,14 @@
 .. _E0005:
 
-E0005 — query-starts-with-platform-identifier
-=============================================
+E0005 — invalid-proximity-use
+=============================
 
 **Error Code**: E0005
 
-**Message**: ``Query starts with platform identifier``
+**Message**: ``Invalid use of the proximity operator :~``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.PUBMED
 
-**Description**: Query starts with platform identifier
+**Description**: Invalid use of the proximity operator :~
 
 **Back to**: :ref:`query-error-messages`

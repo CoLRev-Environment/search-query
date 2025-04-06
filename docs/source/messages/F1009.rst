@@ -1,14 +1,14 @@
 .. _F1009:
 
-F1009 — invalid-token-sequence-missing-operator
-===============================================
+F1009 — empty-parentheses
+=========================
 
 **Error Code**: F1009
 
-**Message**: ``Invalid token sequence: missing operator.``
+**Message**: ``Query contains empty parentheses``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.PUBMED
 
-**Description**: Invalid token sequence: missing operator.
+**Description**: Query contains empty parentheses
 
 **Back to**: :ref:`query-error-messages`

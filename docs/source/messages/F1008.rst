@@ -1,14 +1,14 @@
 .. _F1008:
 
-F1008 — wildcard-standalone
-===========================
+F1008 — nested-not-query
+========================
 
 **Error Code**: F1008
 
-**Message**: ``Wildcard cannot be standalone.``
+**Message**: ``Nesting of NOT operator is not supported for this database``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.PUBMED
 
-**Description**: Wildcard cannot be standalone.
+**Description**: Nesting of NOT operator is not supported for this database
 
 **Back to**: :ref:`query-error-messages`

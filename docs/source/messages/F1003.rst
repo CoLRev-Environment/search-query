@@ -1,14 +1,21 @@
 .. _F1003:
 
-F1003 — wildcard-short-length
-=============================
+F1003 — unmatched-closing-parenthesis
+=====================================
 
 **Error Code**: F1003
 
-**Message**: ``Right-hand wildcard must preceded by at least three characters.``
+**Message**: ``Unmatched closing parenthesis``
 
-**Scope**: PLATFORM.WOS
+**Scope**: all
 
-**Description**: Right-hand wildcard must preceded by at least three characters.
+**Typical fix**: Check the parentheses in the query
+**Problematic query**:
+.. code-block:: python
+    a AND b) OR c
+**Correct query**:
+.. code-block:: python
+
+    (a AND b) OR c
 
 **Back to**: :ref:`query-error-messages`

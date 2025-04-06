@@ -1,0 +1,14 @@
+.. _W0007:
+
+W0007 — implicit-precedence
+===========================
+
+**Error Code**: W0007
+
+**Message**: ``Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)``
+
+**Scope**: all, PLATFORM.PUBMED
+
+**Description**: Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)
+
+**Back to**: :ref:`query-error-messages`

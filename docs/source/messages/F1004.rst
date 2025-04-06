@@ -1,14 +1,14 @@
 .. _F1004:
 
-F1004 — wildcard-after-special-char
-===================================
+F1004 — invalid-token-sequence
+==============================
 
 **Error Code**: F1004
 
-**Message**: ``Wildcard cannot be preceded by special characters.``
+**Message**: ``The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.EBSCO
 
-**Description**: Wildcard cannot be preceded by special characters.
+**Description**: The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)
 
 **Back to**: :ref:`query-error-messages`

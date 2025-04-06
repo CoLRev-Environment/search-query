@@ -1,14 +1,20 @@
 .. _W0005:
 
-W0005 — query-precedence-warning
-================================
+W0005 — operator-capitalization
+===============================
 
 **Error Code**: W0005
 
-**Message**: ``AND operator used after OR operator in the same subquery``
+**Message**: ``Operators should be capitalized``
 
-**Scope**: PLATFORM.PUBMED
+**Scope**: all
 
-**Description**: AND operator used after OR operator in the same subquery
+**Typical fix**: Capitalize the operator
+**Problematic query**:
+.. code-block:: python
+    a and b or c
+**Correct query**:
+.. code-block:: python
+    a AND b OR c
 
 **Back to**: :ref:`query-error-messages`

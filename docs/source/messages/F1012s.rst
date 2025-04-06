@@ -1,13 +1,13 @@
-.. _F1012:
+.. _F1012s:
 
-F1012 — invalid-token-sequence-missing-operator
-===============================================
+F1012s — invalid-token-sequence-missing-operator
+================================================
 
-**Error Code**: F1012
+**Error Code**: F1012s
 
 **Message**: ``Invalid token sequence: missing operator.``
 
-**Scope**: all, PLATFORM.WOS
+**Scope**: PLATFORM.WOS
 
 **Description**: Invalid token sequence: missing operator.
 

@@ -1,14 +1,14 @@
 .. _F1005:
 
-F1005 — invalid-token-sequence-two-search-fields
-================================================
+F1005 — missing-operator
+========================
 
 **Error Code**: F1005
 
-**Message**: ``Invalid token sequence: two search fields in a row.``
+**Message**: ``An operator is missing between terms``
 
-**Scope**: PLATFORM.EBSCO
+**Scope**: all
 
-**Description**: Invalid token sequence: two search fields in a row.
+**Description**: An operator is missing between terms
 
 **Back to**: :ref:`query-error-messages`

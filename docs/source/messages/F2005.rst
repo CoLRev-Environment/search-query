@@ -1,0 +1,14 @@
+.. _F2005:
+
+F2005 — wildcard-after-special-char
+===================================
+
+**Error Code**: F2005
+
+**Message**: ``Wildcard cannot be preceded by special characters.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Wildcard cannot be preceded by special characters.
+
+**Back to**: :ref:`query-error-messages`

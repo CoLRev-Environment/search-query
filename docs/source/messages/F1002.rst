@@ -1,14 +1,23 @@
 .. _F1002:
 
-F1002 — unsupported-wildcard
-============================
+F1002 — unmatched-opening-parenthesis
+=====================================
 
 **Error Code**: F1002
 
-**Message**: ``Unsupported wildcard in search string.``
+**Message**: ``Unmatched opening parenthesis``
 
-**Scope**: PLATFORM.WOS
+**Scope**: all
 
-**Description**: Unsupported wildcard in search string.
+**Typical fix**: Check the parentheses in the query
+**Problematic query**:
+.. code-block:: python
+
+    (a AND b OR c
+**Correct query**:
+.. code-block:: python
+
+
+    (a AND b) OR c
 
 **Back to**: :ref:`query-error-messages`

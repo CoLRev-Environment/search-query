@@ -1,14 +1,14 @@
 .. _F1006:
 
-F1006 — invalid-token-sequence-two-operators
-============================================
+F1006 — invalid-operator-position
+=================================
 
 **Error Code**: F1006
 
-**Message**: ``Invalid token sequence: two operators in a row.``
+**Message**: ``Invalid operator position``
 
-**Scope**: PLATFORM.EBSCO
+**Scope**: PLATFORM.PUBMED
 
-**Description**: Invalid token sequence: two operators in a row.
+**Description**: Invalid operator position
 
 **Back to**: :ref:`query-error-messages`

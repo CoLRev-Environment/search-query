@@ -1,14 +1,14 @@
 .. _F1010:
 
-F1010 — wildcard-left-short-length
-==================================
+F1010 — invalid-token-sequence-two-search-fields
+================================================
 
 **Error Code**: F1010
 
-**Message**: ``Left-hand wildcard must be preceded by at least three characters.``
+**Message**: ``Invalid token sequence: two search fields in a row.``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.EBSCO
 
-**Description**: Left-hand wildcard must be preceded by at least three characters.
+**Description**: Invalid token sequence: two search fields in a row.
 
 **Back to**: :ref:`query-error-messages`
