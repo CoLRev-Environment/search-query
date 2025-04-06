@@ -16,13 +16,11 @@ from search_query.query import Query
 class QueryStringParser(ABC):
     """Abstract base class for query string parsers"""
 
-    tokens: list
-    linter_messages: typing.List[dict] = []
-
     def __init__(self, query_str: str, mode: str = "strict") -> None:
         self.query_str = query_str
-        self.tokens = []
+        self.tokens: list = []
         self.mode = mode
+        self.linter_messages: typing.List[dict] = []
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
         """Add a linter message."""
