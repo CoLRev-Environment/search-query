@@ -1,0 +1,14 @@
+.. _F1007:
+
+F1007 — near-distance-too-large
+===============================
+
+**Error Code**: F1007
+
+**Message**: ``NEAR distance is too large (max: 15).``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: NEAR distance is too large (max: 15).
+
+**Back to**: :ref:`query-error-messages`

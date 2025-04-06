@@ -1,0 +1,14 @@
+.. _F1002:
+
+F1002 — unsupported-wildcard
+============================
+
+**Error Code**: F1002
+
+**Message**: ``Unsupported wildcard in search string.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Unsupported wildcard in search string.
+
+**Back to**: :ref:`query-error-messages`

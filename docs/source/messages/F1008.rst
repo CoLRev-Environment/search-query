@@ -1,0 +1,14 @@
+.. _F1008:
+
+F1008 — wildcard-standalone
+===========================
+
+**Error Code**: F1008
+
+**Message**: ``Wildcard cannot be standalone.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Wildcard cannot be standalone.
+
+**Back to**: :ref:`query-error-messages`

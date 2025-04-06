@@ -1,0 +1,14 @@
+.. _F1006:
+
+F1006 — invalid-token-sequence-two-operators
+============================================
+
+**Error Code**: F1006
+
+**Message**: ``Invalid token sequence: two operators in a row.``
+
+**Scope**: PLATFORM.EBSCO
+
+**Description**: Invalid token sequence: two operators in a row.
+
+**Back to**: :ref:`query-error-messages`

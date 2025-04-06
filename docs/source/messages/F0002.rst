@@ -9,8 +9,6 @@ F0002 — unbalanced-parentheses
 
 **Scope**: all
 
-**Description**: Unbalanced parentheses
-
 **Typical fix**: Check the parentheses in the query
 
 **Problematic query**:

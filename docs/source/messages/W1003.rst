@@ -1,0 +1,14 @@
+.. _W1003:
+
+W1003 — operator-changed-at-same-level
+======================================
+
+**Error Code**: W1003
+
+**Message**: ``Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)``
+
+**Scope**: all
+
+**Description**: Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)
+
+**Back to**: :ref:`query-error-messages`

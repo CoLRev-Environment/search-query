@@ -1,0 +1,14 @@
+.. _F1011:
+
+F1011 — isbn-format-invalid
+===========================
+
+**Error Code**: F1011
+
+**Message**: ``Invalid ISBN format.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Invalid ISBN format.
+
+**Back to**: :ref:`query-error-messages`

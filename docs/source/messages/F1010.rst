@@ -1,0 +1,14 @@
+.. _F1010:
+
+F1010 — wildcard-left-short-length
+==================================
+
+**Error Code**: F1010
+
+**Message**: ``Left-hand wildcard must be preceded by at least three characters.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Left-hand wildcard must be preceded by at least three characters.
+
+**Back to**: :ref:`query-error-messages`

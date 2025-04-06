@@ -1,0 +1,14 @@
+.. _F1004:
+
+F1004 — wildcard-after-special-char
+===================================
+
+**Error Code**: F1004
+
+**Message**: ``Wildcard cannot be preceded by special characters.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Wildcard cannot be preceded by special characters.
+
+**Back to**: :ref:`query-error-messages`

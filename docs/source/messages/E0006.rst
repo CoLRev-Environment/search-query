@@ -1,0 +1,14 @@
+.. _E0006:
+
+E0006 — query-in-quotes
+=======================
+
+**Error Code**: E0006
+
+**Message**: ``The whole Search string is in quotes.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: The whole Search string is in quotes.
+
+**Back to**: :ref:`query-error-messages`

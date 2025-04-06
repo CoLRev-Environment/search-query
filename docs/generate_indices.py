@@ -45,7 +45,7 @@ def generate_rst_file(error: QueryErrorCode) -> None:
         "",
         f"**Message**: ``{error.message}``",
         "",
-        f"**Scope**: {', '.join(error.scope)}",
+        f"**Scope**: {', '.join(str(e) for e in error.scope)}",
         "",
         error.docs.strip()
         if error.docs.strip()

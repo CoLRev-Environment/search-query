@@ -1,0 +1,14 @@
+.. _F1003:
+
+F1003 — wildcard-short-length
+=============================
+
+**Error Code**: F1003
+
+**Message**: ``Right-hand wildcard must preceded by at least three characters.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Right-hand wildcard must preceded by at least three characters.
+
+**Back to**: :ref:`query-error-messages`

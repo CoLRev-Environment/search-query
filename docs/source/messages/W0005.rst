@@ -1,0 +1,14 @@
+.. _W0005:
+
+W0005 — query-precedence-warning
+================================
+
+**Error Code**: W0005
+
+**Message**: ``AND operator used after OR operator in the same subquery``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: AND operator used after OR operator in the same subquery
+
+**Back to**: :ref:`query-error-messages`
