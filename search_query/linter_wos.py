@@ -82,10 +82,8 @@ class QueryLinter:
 
         if year_search_field_detected and count_search_fields < 2:
             # Year detected without other search fields
-            # TODO : should this be a fatal error? (starting with "F....")
             self.parser.add_linter_message(
-                rule="E0002",
-                message="Year detected without specified search field.",
+                QueryErrorCode.YEAR_WITHOUT_SEARCH_FIELD,
                 pos=span,
             )
 

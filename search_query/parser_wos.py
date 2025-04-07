@@ -585,11 +585,9 @@ class WOSParser(QueryStringParser):
                     for search_field_item in self.search_fields_list:
                         if search_field_item.value == "Misc":
                             search_field_item.value = Fields.ALL
-
-                            # TODO : check whether this corresponds to SEARCH_FIELD_UNSUPPORTED
                             self.add_linter_message(
-                                rule="W0003",
-                                msg='Search Field from JSON not supported. Set to "ALL=".',
+                                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                                # note='Set to "ALL=".',
                                 pos=query.position,
                             )
 
@@ -623,10 +621,10 @@ class WOSParser(QueryStringParser):
                             )
                         )
 
-                        # TODO : let's discuss this. Not sure I understand.
+                        # TODO : let's discuss this to make sure the message is correct.
                         self.add_linter_message(
-                            rule="W0006",
-                            msg="Search Fields have been extracted from JSON. ",
+                            QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
+                            # msg="Search Fields have been extracted from JSON.",
                             pos=query.position,
                         )
 
@@ -659,9 +657,10 @@ class WOSParser(QueryStringParser):
                     )
                 else:
                     self.add_linter_message(
-                        rule="W0003",
-                        msg="Search Field not set or not supported."
-                        + '\n\t\t\t\tUsing default of the database (ALL)".',
+                        # TODO : check whether this is accurate:
+                        # msg="Search Field not set or not supported."
+                        # fix= Using default of the database (ALL)
+                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         pos=query.position,
                     )
                     query.search_field = Fields.ALL
@@ -669,10 +668,9 @@ class WOSParser(QueryStringParser):
         if not query.search_field and not translated_field and not query.operator:
             query.search_field = Fields.ALL
 
-            # TODO : SEARCH_FIELD_NOT_SPECIFIED ?
             self.add_linter_message(
-                rule="W0003",
-                msg='Search Field must be set. Set to "ALL=".',
+                QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
+                # msg='Set to "ALL=".',
                 pos=query.position,
             )
 

@@ -681,6 +681,13 @@ class QueryErrorCode(Enum):
         "Invalid DOI format.",
         "",
     )
+    YEAR_WITHOUT_SEARCH_FIELD = (
+        [PLATFORM.WOS],
+        "F1013",
+        "year-without-search-field",
+        "Year detected without specified search field.",
+        "",
+    )
 
     # -------------------------------------------------------
     # Errors (prefix: E)
@@ -707,6 +714,7 @@ class QueryErrorCode(Enum):
         "",
     )
     # TODO : clarify (WOS only?)
+    # TODO : merge with SEARCH_FIELD_NOT_SPECIFIED
     SEARCH_FIELD_NOT_FOUND = (
         ["all"],
         "E0004",
@@ -778,7 +786,7 @@ class QueryErrorCode(Enum):
         "W1000",
         "implicit-near-value",
         "The value of NEAR operator is implicit",
-        """**Typical fix**: The parser automatically sets implicit NEAR values to the default of 15.
+        """**Typical fix**: The parser automatically sets NEAR values (default 15).
 
 **Problematic query**:
 
@@ -834,7 +842,9 @@ class QueryErrorCode(Enum):
         ["all"],
         "W1003",
         "operator-changed-at-same-level",
-        "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        "Operator changed at the same level "
+        "(currently relying on implicit operator precedence, "
+        "explicit parentheses are recommended)",
         "",
     )
 
