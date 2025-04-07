@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 #!/usr/bin/env python3
 """Web-of-Science query parser unit tests."""
 import unittest
@@ -8,6 +7,9 @@ from search_query.constants import QueryErrorCode
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
+
+# ruff: noqa: E501
+# pylint: disable=too-many-lines
 
 
 class TestWOSParser(unittest.TestCase):

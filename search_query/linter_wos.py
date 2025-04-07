@@ -110,7 +110,9 @@ class QueryLinter:
                 pos=(unmatched_index, unmatched_index + 1),
             )
 
-    def check_order_of_tokens(self, tokens, token, span, index) -> None:
+    def check_order_of_tokens(
+        self, tokens: list, token: str, span: tuple, index: int
+    ) -> None:
         """Check for the correct order of tokens in the query."""
 
         # Check for two operators in a row
@@ -143,7 +145,8 @@ class QueryLinter:
             and not (tokens[index - 1][0].upper() == "NEAR")
         ):
             self.parser.add_linter_message(
-                # TODO : more detailed? message="Missing Operator between term and parenthesis.",
+                # TODO : more detailed?
+                # message="Missing Operator between term and parenthesis.",
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
                 pos=span,
             )
@@ -157,7 +160,8 @@ class QueryLinter:
             and re.match(WOSRegex.TERM_REGEX, tokens[index + 1][0])
         ):
             self.parser.add_linter_message(
-                # TODO : more detailed? message="Missing Operator between term and parenthesis.",
+                # TODO : more detailed?
+                # message="Missing Operator between term and parenthesis.",
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
                 pos=tokens[index + 1][1],
             )
@@ -165,7 +169,8 @@ class QueryLinter:
         # Check for opening parenthesis after closing parenthesis
         if (token == ")") and (tokens[index + 1][0] == "("):
             self.parser.add_linter_message(
-                # TODO: more detailed? message="Missing Operator between closing and opening parenthesis.",
+                # TODO: more detailed?
+                # message="Missing Operator between closing and opening parenthesis.",
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
                 pos=span,
             )
@@ -178,7 +183,8 @@ class QueryLinter:
             and re.match(WOSRegex.TERM_REGEX, token)
         ) and re.match(WOSRegex.SEARCH_FIELD_REGEX, tokens[index + 1][0]):
             self.parser.add_linter_message(
-                # TODO : more detailed? message="Missing Operator between term and search field.",
+                # TODO : more detailed?
+                # message="Missing Operator between term and search field.",
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
                 pos=span,
             )

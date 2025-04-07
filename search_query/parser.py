@@ -31,7 +31,7 @@ def parse(
     search_fields: str,
     *,
     syntax: str = "wos",
-    mode: LinterMode = LinterMode.STRICT,
+    mode: str = LinterMode.STRICT,
 ) -> Query:
     """Parse a query string."""
     syntax = syntax.lower()

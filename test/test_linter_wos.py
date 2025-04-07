@@ -5,12 +5,15 @@ from search_query.linter_wos import QueryLinter
 from search_query.parser_wos import WOSParser
 from search_query.query import SearchField
 
+# ruff: noqa: E501
+# flake8: noqa: E501
+
 
 class TestQueryLinter(unittest.TestCase):
     """Test suite for the QueryLinter class."""
 
     def setUp(self) -> None:
-        self.linter_messages = []
+        self.linter_messages: list = []
 
     def test_no_parentheses(self) -> None:
         """

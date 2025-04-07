@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 #!/usr/bin/env python3
 """Web-of-Science query parser."""
 from __future__ import annotations
@@ -28,7 +27,10 @@ class WOSParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
     def __init__(
-        self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT
+        self,
+        query_str: str,
+        search_fields: str = "",
+        mode: str = LinterMode.STRICT,
     ) -> None:
         """Initialize the parser."""
         super().__init__(query_str=query_str, search_fields=search_fields, mode=mode)
@@ -106,12 +108,12 @@ class WOSParser(QueryStringParser):
 
         # Parse a query tree from tokens recursively
         def parse_expression(
-            tokens,
-            index,
+            tokens: list,
+            index: int,
             search_field: typing.Optional[SearchField] = None,
             superior_search_field: typing.Optional[SearchField] = None,
             current_negation: bool = None,
-        ):
+        ) -> typing.Tuple[Query, int]:
             """Parse tokens starting at the given index,
             handling parentheses, operators, search fields and terms recursively."""
             children = []
@@ -138,7 +140,8 @@ class WOSParser(QueryStringParser):
                     )
 
                     if isinstance(sub_expr, list):
-                        # Add all children from the parsed expression to the list of children
+                        # Add all children from the parsed expression
+                        # to the list of children
                         for child in sub_expr:
                             children = self.append_children(
                                 children=children,
@@ -175,7 +178,8 @@ class WOSParser(QueryStringParser):
                             current_operator=current_operator,
                         )
 
-                    # Handle the operator and update all changes within the handler
+                    # Handle the operator
+                    # and update all changes within the handler
                     (
                         current_operator,
                         current_negation,
@@ -208,11 +212,12 @@ class WOSParser(QueryStringParser):
                         else:
                             # Year detected without search field
                             print(
-                                "[INFO:] Year detected without search field at position "
-                                + str(span)
+                                "[INFO:] Year detected "
+                                "without search field at position " + str(span)
                             )
 
-                    # Set search field to superior search field if no search field is given
+                    # Set search field to superior search field
+                    # if no search field is given
                     if not search_field and superior_search_field:
                         search_field = superior_search_field
 
@@ -277,7 +282,8 @@ class WOSParser(QueryStringParser):
 
             # Return the children if there are multiple children
             if self.is_operator(children[0].value):
-                # Check if the operator of the first child is not the same as the second child
+                # Check if the operator of the first child
+                # is not the same as the second child
                 if children[0].value != children[1].value:
                     for child in children:
                         if not children.index(child) == 0:
@@ -292,7 +298,8 @@ class WOSParser(QueryStringParser):
                                 children.pop(children.index(child))
                     return children[0], index
 
-                # Check if the operator of the first child is the same as the second child
+                # Check if the operator of the first child is the same
+                # as the second child
                 if children[0].value == children[1].value:
                     operator_children = []
                     for child in children:
@@ -598,7 +605,8 @@ class WOSParser(QueryStringParser):
                                 search_field_item.value, None
                             )
 
-                        # Translate only if a mapping exists else use default search field [ALL=]
+                        # Translate only if a mapping exists
+                        # else use default search field [ALL=]
                         if translated_field:
                             query.search_field = translated_field
 
@@ -642,7 +650,8 @@ class WOSParser(QueryStringParser):
                         original_field, None
                     )
 
-                # Translate only if a mapping exists else use default search field [ALL=]
+                # Translate only if a mapping exists
+                # else use default search field [ALL=]
                 if translated_field:
                     query.search_field = translated_field
 
@@ -706,7 +715,8 @@ class WOSParser(QueryStringParser):
                 if search_field == search_field_item.value:
                     # TODO : warning (message) for linter?
                     print(
-                        "[INFO:] Data redudancy. Same Search Field in Search and Search Fields."
+                        "[INFO:] Data redudancy. "
+                        "Same Search Field in Search and Search Fields."
                     )
 
                 if self.check_search_fields(search_field) == self.check_search_fields(
@@ -829,7 +839,9 @@ class WOSParser(QueryStringParser):
                     + str(msg["position"])
                 )
 
-            # Raise an exception if the linter is in strict mode or if a fatal error has occurred
+            # Raise an exception
+            # if the linter is in strict mode
+            # or if a fatal error has occurred
             if self.mode == "strict" or self.fatal_linter_err and self.linter_messages:
                 raise FatalLintingException(
                     message="LinterDetected",
@@ -846,9 +858,7 @@ class WOSListParser(QueryListParser):
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
     LIST_COMBINE_REGEX = r"#\d+|AND|OR"
 
-    def __init__(
-        self, query_list: str, search_fields: str, linter_mode: LinterMode
-    ) -> None:
+    def __init__(self, query_list: str, search_fields: str, linter_mode: str) -> None:
         super().__init__(query_list, WOSParser, search_fields, linter_mode)
 
     def get_token_str(self, token_nr: str) -> str:
@@ -913,7 +923,8 @@ class WOSListParser(QueryListParser):
                 )
 
             # Check if the last token is a number
-            # This error is never raised because the regex only matches numbers and operators
+            # This error is never raised
+            # because the regex only matches numbers and operators
             if "#" not in tokens[len(tokens) - 1]:
                 raise ValueError(
                     "[ERROR] LastTokenMustBeNumber\t"

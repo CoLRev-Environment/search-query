@@ -23,7 +23,7 @@ class QueryStringParser(ABC):
     fatal_linter_err: bool
 
     def __init__(
-        self, query_str: str, search_fields: str, mode: LinterMode = LinterMode.STRICT
+        self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT
     ) -> None:
         self.query_str = query_str
         self.tokens = []
@@ -154,7 +154,7 @@ class QueryListParser:
         query_list: str,
         parser_class: type[QueryStringParser],
         search_fields: str,
-        linter_mode: LinterMode = LinterMode.STRICT,
+        linter_mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
