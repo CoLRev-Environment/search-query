@@ -11,7 +11,8 @@ from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
-from search_query.constants import WOSRegex
+from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.constants import WOSSearchFieldList
 from search_query.exception import FatalLintingException
 from search_query.linter_wos import QueryLinter
@@ -26,6 +27,33 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
+    SEARCH_TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
+    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
+    PROXIMITY_OPERATOR_REGEX = r"\b(NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
+    SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
+    PARENTHESIS_REGEX = r"[\(\)]"
+    SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
+    YEAR_REGEX = r"^\d{4}(-\d{4})?$"
+    ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
+    ISBN_REGEX = (
+        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
+    )
+    DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
+
+    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
+
+    # Combine all regex patterns into a single pattern
+    pattern = "|".join(
+        [
+            SEARCH_FIELD_REGEX,
+            LOGIC_OPERATOR_REGEX,
+            PROXIMITY_OPERATOR_REGEX,
+            SEARCH_TERM_REGEX,
+            PARENTHESIS_REGEX,
+            # self.SEARCH_FIELDS_REGEX,
+        ]
+    )
+
     def __init__(
         self,
         query_str: str,
@@ -36,49 +64,44 @@ class WOSParser(QueryStringParser):
         super().__init__(query_str=query_str, search_fields=search_fields, mode=mode)
         self.query_linter = QueryLinter(parser=self)
 
-    # Combine all regex patterns into a single pattern
-    pattern = "|".join(
-        [
-            WOSRegex.SEARCH_FIELD_REGEX,
-            WOSRegex.OPERATOR_REGEX,
-            WOSRegex.TERM_REGEX,
-            WOSRegex.PARENTHESIS_REGEX,
-            # WOSRegex.SEARCH_FIELDS_REGEX,
-        ]
-    )
-
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
         # Parse tokens and positions based on regex pattern
         compile_pattern = re.compile(pattern=self.pattern)
-        matches = compile_pattern.finditer(self.query_str)
 
-        for match in matches:
-            self.tokens.append((match.group(), match.span()))
+        for match in compile_pattern.finditer(self.query_str):
+            value = match.group()
+            position = match.span()
+
+            # Determine token type
+            if re.fullmatch(self.PARENTHESIS_REGEX, value):
+                if value == "(":
+                    token_type = TokenTypes.PARENTHESIS_OPEN
+                else:
+                    token_type = TokenTypes.PARENTHESIS_CLOSED
+            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, value):
+                token_type = TokenTypes.LOGIC_OPERATOR
+            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, value):
+                token_type = TokenTypes.PROXIMITY_OPERATOR
+            elif re.fullmatch(self.SEARCH_FIELD_REGEX, value):
+                token_type = TokenTypes.FIELD
+            elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
+                token_type = TokenTypes.SEARCH_TERM
+            else:
+                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, position)
+                continue
+
+            self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
-
-        self.get_token_types(tokens=self.tokens, legend=False)
 
     # Implement and override methods of parent class (as needed)
     def is_search_field(self, token: str) -> bool:
         """Token is search field"""
         return (
-            bool(re.match(WOSRegex.SEARCH_FIELD_REGEX, token))
+            bool(re.match(self.SEARCH_FIELD_REGEX, token))
             or token in WOSSearchFieldList.language_list
-        )
-
-    def is_operator(self, token: str) -> bool:
-        """Token is operator"""
-        return bool(re.match(WOSRegex.OPERATOR_REGEX, token, re.IGNORECASE))
-
-    def is_term(self, token: str) -> bool:
-        """Check if a token is a term."""
-        return (
-            not self.is_parenthesis(token)
-            and not self.is_search_field(token)
-            and not self.is_operator(token)
         )
 
     def parse_query_tree(
@@ -91,7 +114,7 @@ class WOSParser(QueryStringParser):
         if self.search_fields:
             found_list = []
             print("\n[Info:] Search Fields given: " + self.search_fields)
-            matches = re.findall(WOSRegex.SEARCH_FIELDS_REGEX, self.search_fields)
+            matches = re.findall(self.SEARCH_FIELDS_REGEX, self.search_fields)
 
             for match in matches:
                 match = self.check_search_fields(
@@ -112,23 +135,23 @@ class WOSParser(QueryStringParser):
             index: int,
             search_field: typing.Optional[SearchField] = None,
             superior_search_field: typing.Optional[SearchField] = None,
-            current_negation: bool = None,
+            current_negation: bool = False,
         ) -> typing.Tuple[Query, int]:
             """Parse tokens starting at the given index,
             handling parentheses, operators, search fields and terms recursively."""
             children = []
             current_operator = None
-            default_near_distance = False
+
             if current_negation:
                 current_operator = "NOT"
 
             while index < len(tokens):
-                token, span = tokens[index]
+                token = tokens[index]
 
                 # Handle nested expressions within parentheses
-                if token == "(":
-                    if self.is_search_field(tokens[index - 1][0]):
-                        superior_search_field = tokens[index - 1][0]
+                if token.type == TokenTypes.PARENTHESIS_OPEN:
+                    if tokens[index - 1].type == TokenTypes.FIELD:
+                        superior_search_field = tokens[index - 1].value
 
                     # Parse the expression inside the parentheses
                     sub_expr, index = parse_expression(
@@ -158,7 +181,7 @@ class WOSParser(QueryStringParser):
                     current_negation = False
 
                 # Handle closing parentheses
-                elif token == ")":
+                elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                     superior_search_field = None
                     return (
                         self.handle_closing_parenthesis(
@@ -169,7 +192,7 @@ class WOSParser(QueryStringParser):
                     )
 
                 # Handle operators
-                elif self.is_operator(token):
+                elif token.type == TokenTypes.LOGIC_OPERATOR:
                     # Safe the children if there is a change
                     # of operator within the current parentheses
                     if current_operator and current_operator != token.upper():
@@ -183,38 +206,36 @@ class WOSParser(QueryStringParser):
                     (
                         current_operator,
                         current_negation,
-                        default_near_distance,
                     ) = self.handle_operator(
                         token=token,
-                        span=span,
                         current_operator=current_operator,
                         current_negation=current_negation,
-                        default_near_distance=default_near_distance,
                     )
 
                 # Handle search fields
                 elif (self.is_search_field(token)) or (
                     token in WOSSearchFieldList.language_list
                 ):
-                    search_field = SearchField(value=token, position=span)
+                    search_field = SearchField(
+                        value=token.value, position=token.position
+                    )
 
                 # Handle terms
                 else:
                     # Check if the token is a search field which has constraints
                     # Check if the token is a year
-                    if re.findall(WOSRegex.YEAR_REGEX, token):
+                    if re.findall(self.YEAR_REGEX, token):
                         if search_field.value in WOSSearchFieldList.year_published_list:
                             children = self.handle_year_search(
-                                token, span, children, current_operator
+                                token, children, current_operator
                             )
                             index += 1
                             continue
-                        else:
-                            # Year detected without search field
-                            print(
-                                "[INFO:] Year detected "
-                                "without search field at position " + str(span)
-                            )
+                        # Year detected without search field
+                        print(
+                            "[INFO:] Year detected "
+                            "without search field at position " + str(token.position)
+                        )
 
                     # Set search field to superior search field
                     # if no search field is given
@@ -223,20 +244,16 @@ class WOSParser(QueryStringParser):
 
                     # Set search field to ALL if no search field is given
                     if not search_field:
-                        search_field = SearchField("Misc", position=None)
+                        search_field = SearchField("All", position=None)
 
                     # Check if the token is ISSN or ISBN
                     if search_field.value in WOSSearchFieldList.issn_isbn_list:
-                        if self.query_linter.check_issn_isbn_format(
-                            search_field=search_field, token=token
-                        ):
+                        if self.query_linter.check_issn_isbn_format(token=token):
                             self.fatal_linter_err = True
 
                     # Check if the token is a doi
                     if search_field.value in WOSSearchFieldList.doi_list:
-                        if self.query_linter.check_doi_format(
-                            search_field=search_field, token=token
-                        ):
+                        if self.query_linter.check_doi_format(token=token):
                             self.fatal_linter_err = True
 
                     # Add term nodes
@@ -246,7 +263,7 @@ class WOSParser(QueryStringParser):
                         value=token,
                         operator=False,
                         search_field=search_field,
-                        position=span,
+                        position=token.position,
                         children=children,
                         current_operator=current_operator,
                         current_negation=current_negation,
@@ -332,37 +349,38 @@ class WOSParser(QueryStringParser):
             return children[0]
 
         # Return the operator and children if there is an operator
-        elif current_operator:
+        if current_operator:
             return Query(
                 value=current_operator,
                 operator=True,
                 children=children,
             )
-        else:
-            # Return the children if there are multiple children
-            return children
+        # Return the children if there are multiple children
+        return children
 
     def handle_operator(
         self,
-        token: str,
-        span: tuple,
+        token: Token,
         current_operator: str,
         current_negation: bool,
-        default_near_distance: bool,
     ):
         """Handle operators."""
+
         # Set the current operator to the token
-        current_operator = token.upper()
+        current_operator = token.value.upper()
 
         # Add linter messages for operators that are not uppercase
-        if token.islower():
-            self.add_linter_message(QueryErrorCode.OPERATOR_CAPITALIZATION, pos=span)
+        if token.value.islower():
+            self.add_linter_message(
+                QueryErrorCode.OPERATOR_CAPITALIZATION, pos=token.position
+            )
 
         # Set default near_distance if not set in the search string
         if current_operator == "NEAR":
             # Add linter message for NEAR operator without distance
-            self.add_linter_message(QueryErrorCode.IMPLICIT_NEAR_VALUE, pos=span)
-            default_near_distance = True
+            self.add_linter_message(
+                QueryErrorCode.IMPLICIT_NEAR_VALUE, pos=token.position
+            )
             current_operator = "NEAR/15"
 
         # Set a flag if the token is NOT and change to AND
@@ -370,7 +388,7 @@ class WOSParser(QueryStringParser):
             current_negation = True
             current_operator = "AND"
 
-        return current_operator, current_negation, default_near_distance
+        return current_operator, current_negation
 
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
@@ -380,14 +398,20 @@ class WOSParser(QueryStringParser):
         combined_tokens = []
         i = 0
         j = 0
+
         while i < len(self.tokens):
             if len(combined_tokens) > 0:
-                if self.is_term(self.tokens[i][0]) and self.is_term(
-                    combined_tokens[j - 1][0]
+                if (
+                    self.tokens[i].type == TokenTypes.SEARCH_TERM
+                    and combined_tokens[j - 1].type == TokenTypes.SEARCH_TERM
                 ):
-                    combined_token = (
-                        combined_tokens[j - 1][0] + " " + self.tokens[i][0],
-                        (combined_tokens[j - 1][1][0], self.tokens[i][1][1]),
+                    combined_token = Token(
+                        value=combined_tokens[j - 1].value + " " + self.tokens[i].value,
+                        type=TokenTypes.SEARCH_TERM,
+                        position=(
+                            combined_tokens[j - 1].position[0],
+                            self.tokens[i].position[1],
+                        ),
                     )
                     combined_tokens.pop()
                     combined_tokens.append(combined_token)
@@ -396,12 +420,16 @@ class WOSParser(QueryStringParser):
 
             if (
                 i + 1 < len(self.tokens)
-                and self.is_term(self.tokens[i][0])
-                and self.is_term(self.tokens[i + 1][0])
+                and self.tokens[i].type == TokenTypes.SEARCH_TERM
+                and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
             ):
-                combined_token = (
-                    self.tokens[i][0] + " " + self.tokens[i + 1][0],
-                    (self.tokens[i][1][0], self.tokens[i + 1][1][1]),
+                combined_token = Token(
+                    value=self.tokens[i].value + " " + self.tokens[i + 1].value,
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(
+                        self.tokens[i].position[0],
+                        self.tokens[i + 1].position[1],
+                    ),
                 )
                 combined_tokens.append(combined_token)
                 i += 2
@@ -416,7 +444,7 @@ class WOSParser(QueryStringParser):
     def append_children(
         self,
         children: list,
-        sub_expr,
+        sub_expr: Query,
         current_operator: str,
     ) -> list:
         """Check where to append the sub expression."""
@@ -459,38 +487,40 @@ class WOSParser(QueryStringParser):
         return children
 
     def handle_year_search(
-        self, token: str, span: tuple, children: list, current_operator: str
+        self, token: Token, children: list, current_operator: str
     ) -> list:
         """Handle the year search field."""
         # Check if a wildcard is used in the year search field
-        if any(char in token for char in ["*", "?", "$"]):
+        if any(char in token.value for char in ["*", "?", "$"]):
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_IN_YEAR,
-                pos=span,
+                pos=token.position,
             )
             # TODO : use any(x.is_fatal() for x in QueryErrorCodes)
 
         # Check if the yearspan is not more than 5 years
-        if len(token) > 4:
-            if int(token[5:9]) - int(token[0:4]) > 5:
+        if len(token.value) > 4:
+            if int(token.value[5:9]) - int(token.value[0:4]) > 5:
                 # Change the year span to five years
-                token = str(int(token[5:9]) - 5) + "-" + token[5:9]
+                token.value = str(int(token.value[5:9]) - 5) + "-" + token.value[5:9]
 
-                self.add_linter_message(QueryErrorCode.YEAR_SPAN_VIOLATION, pos=span)
+                self.add_linter_message(
+                    QueryErrorCode.YEAR_SPAN_VIOLATION, pos=token.position
+                )
 
         search_field = SearchField(
             value=Fields.YEAR,
-            position=span,
+            position=token.position,
         )
 
         # Add the year search field to the list of children
         return self.add_term_node(
             tokens=[],
             index=0,
-            value=token,
+            value=token.value,
             operator=False,
             search_field=search_field,
-            position=span,
+            position=token.position,
             children=children,
             current_operator=current_operator,
         )
@@ -499,13 +529,13 @@ class WOSParser(QueryStringParser):
         self,
         tokens: list,
         index: int,
-        value,
-        operator,
+        value: str,
+        operator: bool,
         search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
         current_operator: str = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
-        current_negation: bool = None,
+        current_negation: bool = False,
     ) -> typing.Optional[typing.List[typing.Union[str, Query]]]:
         """Adds the term node to the Query"""
 
@@ -530,13 +560,13 @@ class WOSParser(QueryStringParser):
                 if "NEAR" in current_operator and "NEAR" in children[0].value:
                     # Get previous term to append
                     while index > 0:
-                        if self.is_term(tokens[index - 1][0]):
+                        if tokens[index - 1].type == TokenTypes.SEARCH_TERM:
                             term_node = Query(
                                 value=current_operator,
                                 operator=True,
                                 children=[
                                     Query(
-                                        value=tokens[index - 1][0],
+                                        value=tokens[index - 1].value,
                                         operator=False,
                                         search_field=search_field,
                                     ),
@@ -702,8 +732,8 @@ class WOSParser(QueryStringParser):
 
     def check_search_fields_from_json(
         self,
-        search_field,
-        position,
+        search_field: str,
+        position: tuple,
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
         if isinstance(search_field, SearchField):
@@ -770,38 +800,39 @@ class WOSParser(QueryStringParser):
                 self.check_nested_operators(child)
         return query
 
-    def pre_linting(self):
+    def pre_linting(self) -> None:
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
-        self.query_linter.pre_linting(tokens=self.tokens, search_str=self.query_str)
+        self.query_linter.pre_linting()
         self.fatal_linter_err = any(e.is_fatal() for e in self.linter_messages)
 
-    def insert_parentheses(self, tokens, index, span) -> None:
-        """Insert parentheses in the query string."""
-        first_parenthesis_inserted = False
-        last_parenthesis_inserted = False
-        # Find previous operator
-        for i in range(index - 1, 0, -1):
-            if self.is_operator(tokens[i][0]):
-                self.tokens.insert(
-                    i + 1, ("(", (tokens[i][1][1] + 1, tokens[i][1][1] + 2))
-                )
-                first_parenthesis_inserted = True
-                break
-        # Find next operator
-        for i in range(index + 2, len(tokens)):
-            if self.is_operator(tokens[i][0]):
-                self.tokens.insert(
-                    i - 1, (")", (tokens[i][1][1] - 2, tokens[i][1][1] - 1))
-                )
-                last_parenthesis_inserted = True
-                break
+    # Note: never called?
+    # def insert_parentheses(self, tokens, index, span) -> None:
+    #     """Insert parentheses in the query string."""
+    #     first_parenthesis_inserted = False
+    #     last_parenthesis_inserted = False
+    #     # Find previous operator
+    #     for i in range(index - 1, 0, -1):
+    #         if self.is_operator(tokens[i][0]):
+    #             self.tokens.insert(
+    #                 i + 1, ("(", (tokens[i][1][1] + 1, tokens[i][1][1] + 2))
+    #             )
+    #             first_parenthesis_inserted = True
+    #             break
+    #     # Find next operator
+    #     for i in range(index + 2, len(tokens)):
+    #         if self.is_operator(tokens[i][0]):
+    #             self.tokens.insert(
+    #                 i - 1, (")", (tokens[i][1][1] - 2, tokens[i][1][1] - 1))
+    #             )
+    #             last_parenthesis_inserted = True
+    #             break
 
-        if not first_parenthesis_inserted:
-            self.tokens.insert((0, ("(", (0, 1))))
+    #     if not first_parenthesis_inserted:
+    #         self.tokens.insert((0, ("(", (0, 1))))
 
-        if not last_parenthesis_inserted:
-            self.tokens.append((")", (span[1] + 1, span[1] + 2)))
+    #     if not last_parenthesis_inserted:
+    #         self.tokens.append((")", (span[1] + 1, span[1] + 2)))
 
     def parse(self) -> Query:
         """Parse a query string."""

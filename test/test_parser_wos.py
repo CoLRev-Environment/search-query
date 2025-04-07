@@ -4,6 +4,8 @@ import unittest
 
 from search_query.constants import Fields
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -53,11 +55,11 @@ class TestWOSParser(unittest.TestCase):
         """
         self.parser.tokenize()
         expected_tokens = [
-            ("TI=", (0, 3)),
-            ("example", (3, 10)),
-            ("AND", (11, 14)),
-            ("AU=", (15, 18)),
-            ("John Doe", (18, 26)),
+            Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(3, 10)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(11, 14)),
+            Token(value="AU=", type=TokenTypes.FIELD, position=(15, 18)),
+            Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(18, 26)),
         ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
@@ -79,11 +81,13 @@ class TestWOSParser(unittest.TestCase):
         self.parser.query_str = "TI=example example2 AND AU=John Doe"
         self.parser.tokenize()
         expected_tokens = [
-            ("TI=", (0, 3)),
-            ("example example2", (3, 19)),
-            ("AND", (20, 23)),
-            ("AU=", (24, 27)),
-            ("John Doe", (27, 35)),
+            Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
+            Token(
+                value="example example2", type=TokenTypes.SEARCH_TERM, position=(3, 19)
+            ),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(20, 23)),
+            Token(value="AU=", type=TokenTypes.FIELD, position=(24, 27)),
+            Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(27, 35)),
         ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
@@ -108,11 +112,15 @@ class TestWOSParser(unittest.TestCase):
         self.parser.query_str = "TI=example example2 example3 AND AU=John Doe"
         self.parser.tokenize()
         expected_tokens = [
-            ("TI=", (0, 3)),
-            ("example example2 example3", (3, 28)),
-            ("AND", (29, 32)),
-            ("AU=", (33, 36)),
-            ("John Doe", (36, 44)),
+            Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
+            Token(
+                value="example example2 example3",
+                type=TokenTypes.SEARCH_TERM,
+                position=(3, 28),
+            ),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
+            Token(value="AU=", type=TokenTypes.FIELD, position=(33, 36)),
+            Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(36, 44)),
         ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
@@ -137,119 +145,13 @@ class TestWOSParser(unittest.TestCase):
         self.parser.query_str = "TI=ex$mple* AND AU=John?Doe"
         self.parser.tokenize()
         expected_tokens = [
-            ("TI=", (0, 3)),
-            ("ex$mple*", (3, 11)),
-            ("AND", (12, 15)),
-            ("AU=", (16, 19)),
-            ("John?Doe", (19, 27)),
+            Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
+            Token(value="ex$mple*", type=TokenTypes.SEARCH_TERM, position=(3, 11)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(12, 15)),
+            Token(value="AU=", type=TokenTypes.FIELD, position=(16, 19)),
+            Token(value="John?Doe", type=TokenTypes.SEARCH_TERM, position=(19, 27)),
         ]
         self.assertEqual(self.parser.tokens, expected_tokens)
-
-    def test_is_search_field(self) -> None:
-        """
-        Test the `is_search_field` method of the parser.
-
-        This test verifies that the `is_search_field` method correctly identifies
-        whether a given token is a search field.
-
-        The test checks various tokens, including valid search fields, invalid search fields,
-        and tokens from the `language_list`.
-
-        Asserts:
-            self.assertTrue(self.parser.is_search_field(token)) -> None :
-                Checks if the token is correctly identified as a search field.
-            self.assertFalse(self.parser.is_search_field(token)) -> None :
-                Checks if the token is correctly identified as not a search field.
-        """
-        # Valid search fields
-        valid_search_fields = [
-            "TI=",
-            "ti=",
-            "AB=",
-            "ab=",
-            "AU=",
-            "au=",
-            "TS=",
-            "ts=",
-            "LA=",
-            "la=",
-            "PY=",
-            "py=",
-        ]
-        for token in valid_search_fields:
-            self.assertTrue(self.parser.is_search_field(token))
-
-        # Invalid search fields
-        invalid_search_fields = ["INVALID", "123", "random", "field"]
-        for token in invalid_search_fields:
-            self.assertFalse(self.parser.is_search_field(token))
-
-    def test_is_operator(self) -> None:
-        """
-        Test the `is_operator` method of the parser.
-
-        This test verifies that the `is_operator` method correctly identifies
-        whether a given token is an operator.
-
-        The test checks various tokens, including valid operators and invalid operators.
-
-        Asserts:
-            self.assertTrue(self.parser.is_operator(token)) -> None :
-                Checks if the token is correctly identified as an operator.
-            self.assertFalse(self.parser.is_operator(token)) -> None :
-                Checks if the token is correctly identified as not an operator.
-        """
-        # Valid operators
-        valid_operators = ["AND", "OR", "NOT", "NEAR", "NEAR/6", "NEAR/20"]
-        for token in valid_operators:
-            self.assertTrue(self.parser.is_operator(token))
-
-        # Invalid operators
-        invalid_operators = ["INVALID", "123", "random", "field"]
-        for token in invalid_operators:
-            self.assertFalse(self.parser.is_operator(token))
-
-    def test_is_term(self) -> None:
-        """
-        Test the `is_term` method of the parser.
-
-        This test verifies that the `is_term` method correctly identifies
-        whether a given token is a term.
-
-        The test checks various tokens, including valid terms,
-        search fields, operators, and parentheses.
-
-        Asserts:
-            self.assertTrue(self.parser.is_term(token)) -> None :
-                Checks if the token is correctly identified as a term.
-            self.assertFalse(self.parser.is_term(token)) -> None :
-                Checks if the token is correctly identified as not a term.
-        """
-        # Valid terms
-        valid_terms = [
-            "John-Doe",
-            "John Doe",
-            "ex$mple*",
-            "John?Doe",
-            "example example2 example3",
-        ]
-        for token in valid_terms:
-            self.assertTrue(self.parser.is_term(token))
-
-        # Search fields
-        search_fields = ["TI=", "AB=", "AU=", "TS=", "LA=", "PY="]
-        for token in search_fields:
-            self.assertFalse(self.parser.is_term(token))
-
-        # Operators
-        operators = ["AND", "OR", "NOT", "NEAR", "NEAR/6", "NEAR/20"]
-        for token in operators:
-            self.assertFalse(self.parser.is_term(token))
-
-        # Parentheses
-        parentheses = ["(", ")"]
-        for token in parentheses:
-            self.assertFalse(self.parser.is_term(token))
 
     def test_handle_closing_parenthesis_single_child(self) -> None:
         """
@@ -303,23 +205,17 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_operator` method correctly handles
         an uppercase operator and returns the expected values.
         """
-        token = "AND"
-        span = (0, 3)
+        token = Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
         current_operator = None
         current_negation = False
-        default_near_distance = False
 
         (
             result_operator,
             result_negation,
-            result_near_distance,
-        ) = self.parser.handle_operator(
-            token, span, current_operator, current_negation, default_near_distance
-        )
+        ) = self.parser.handle_operator(token, current_operator, current_negation)
 
-        self.assertEqual(result_operator, token)
+        self.assertEqual(result_operator, "AND")
         self.assertFalse(result_negation)
-        self.assertFalse(result_near_distance)
 
     def test_handle_operator_near_with_distance(self) -> None:
         """
@@ -328,23 +224,19 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_operator` method correctly handles
         a NEAR operator with a given distance and returns the expected values.
         """
-        token = "NEAR/2"
-        span = (0, 6)
+        token = Token(
+            value="NEAR/2", type=TokenTypes.PROXIMITY_OPERATOR, position=(0, 6)
+        )
         current_operator = None
         current_negation = False
-        default_near_distance = False
 
         (
             result_operator,
             result_negation,
-            result_near_distance,
-        ) = self.parser.handle_operator(
-            token, span, current_operator, current_negation, default_near_distance
-        )
+        ) = self.parser.handle_operator(token, current_operator, current_negation)
 
-        self.assertEqual(result_operator, token)
+        self.assertEqual(result_operator, "NEAR/2")
         self.assertFalse(result_negation)
-        self.assertFalse(result_near_distance)
 
     def test_handle_operator_lowercase(self) -> None:
         """
@@ -353,23 +245,17 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_operator` method correctly handles
         a lowercase operator, adds a linter message, and returns the expected values.
         """
-        token = "and"
-        span = (0, 3)
+        token = Token(value="and", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
         current_operator = None
         current_negation = False
-        default_near_distance = False
 
         (
             result_operator,
             result_negation,
-            result_near_distance,
-        ) = self.parser.handle_operator(
-            token, span, current_operator, current_negation, default_near_distance
-        )
+        ) = self.parser.handle_operator(token, current_operator, current_negation)
 
         self.assertEqual(result_operator, "AND")
         self.assertFalse(result_negation)
-        self.assertFalse(result_near_distance)
         self.assertIn(
             {
                 "code": "W0005",
@@ -388,23 +274,17 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_operator` method correctly handles
         the NEAR operator without distance, adds a linter message, and returns the expected values.
         """
-        token = "NEAR"
-        span = (0, 4)
+        token = Token(value="NEAR", type=TokenTypes.PROXIMITY_OPERATOR, position=(0, 4))
         current_operator = None
         current_negation = False
-        default_near_distance = False
 
         (
             result_operator,
             result_negation,
-            result_near_distance,
-        ) = self.parser.handle_operator(
-            token, span, current_operator, current_negation, default_near_distance
-        )
+        ) = self.parser.handle_operator(token, current_operator, current_negation)
 
         self.assertEqual(result_operator, "NEAR/15")
         self.assertFalse(result_negation)
-        self.assertTrue(result_near_distance)
         self.assertIn(
             {
                 "code": "W1000",
@@ -423,23 +303,17 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_operator` method correctly handles
         the NOT operator, sets the negation flag, and changes the operator to AND.
         """
-        token = "NOT"
-        span = (0, 3)
+        token = Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
         current_operator = None
         current_negation = False
-        default_near_distance = False
 
         (
             result_operator,
             result_negation,
-            result_near_distance,
-        ) = self.parser.handle_operator(
-            token, span, current_operator, current_negation, default_near_distance
-        )
+        ) = self.parser.handle_operator(token, current_operator, current_negation)
 
         self.assertEqual(result_operator, "AND")
         self.assertTrue(result_negation)
-        self.assertFalse(result_near_distance)
 
     def test_combine_subsequent_terms_single_term(self) -> None:
         """
@@ -448,9 +322,13 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `combine_subsequent_terms` method correctly handles
         a list of tokens with a single term and does not combine it with anything.
         """
-        self.parser.tokens = [("example", (0, 7))]
+        self.parser.tokens = [
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))
+        ]
         self.parser.combine_subsequent_terms()
-        expected_tokens = [("example", (0, 7))]
+        expected_tokens = [
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))
+        ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
     def test_combine_subsequent_terms_multiple_terms(self) -> None:
@@ -460,9 +338,16 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `combine_subsequent_terms` method correctly combines
         subsequent terms into a single token.
         """
-        self.parser.tokens = [("example", (0, 7)), ("example2", (8, 16))]
+        self.parser.tokens = [
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(8, 16)),
+        ]
         self.parser.combine_subsequent_terms()
-        expected_tokens = [("example example2", (0, 16))]
+        expected_tokens = [
+            Token(
+                value="example example2", type=TokenTypes.SEARCH_TERM, position=(0, 16)
+            )
+        ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
     def test_combine_subsequent_terms_with_operators(self) -> None:
@@ -473,15 +358,15 @@ class TestWOSParser(unittest.TestCase):
         subsequent terms into a single token and does not combine terms with operators.
         """
         self.parser.tokens = [
-            ("example", (0, 7)),
-            ("AND", (8, 11)),
-            ("example2", (12, 20)),
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(8, 11)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(12, 20)),
         ]
         self.parser.combine_subsequent_terms()
         expected_tokens = [
-            ("example", (0, 7)),
-            ("AND", (8, 11)),
-            ("example2", (12, 20)),
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(8, 11)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(12, 20)),
         ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
@@ -492,9 +377,16 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `combine_subsequent_terms` method correctly combines
         subsequent terms containing special characters into a single token.
         """
-        self.parser.tokens = [("ex$mple", (0, 7)), ("example2", (8, 16))]
+        self.parser.tokens = [
+            Token(value="ex$mple", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(8, 16)),
+        ]
         self.parser.combine_subsequent_terms()
-        expected_tokens = [("ex$mple example2", (0, 16))]
+        expected_tokens = [
+            Token(
+                value="ex$mple example2", type=TokenTypes.SEARCH_TERM, position=(0, 16)
+            )
+        ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
     def test_combine_subsequent_terms_with_mixed_case(self) -> None:
@@ -504,9 +396,16 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `combine_subsequent_terms` method correctly combines
         subsequent terms in mixed case into a single token.
         """
-        self.parser.tokens = [("Example", (0, 7)), ("example2", (8, 16))]
+        self.parser.tokens = [
+            Token(value="Example", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(8, 16)),
+        ]
         self.parser.combine_subsequent_terms()
-        expected_tokens = [("Example example2", (0, 16))]
+        expected_tokens = [
+            Token(
+                value="Example example2", type=TokenTypes.SEARCH_TERM, position=(0, 16)
+            )
+        ]
         self.assertEqual(self.parser.tokens, expected_tokens)
 
     def test_append_children_with_same_operator(self) -> None:
@@ -783,14 +682,14 @@ class TestWOSParser(unittest.TestCase):
 
         # TODO : discuss this. Would -1,-1 be a better option?
         self.parser.add_linter_message(
-            QueryErrorCode.SEARCH_FIELD_NOT_FOUND, pos=[-1, -1]
+            QueryErrorCode.SEARCH_FIELD_NOT_FOUND, pos=(-1, -1)
         )
         expected_message = {
             "code": "E0004",
             "label": "search-field-not-found",
             "message": "Search Field specified was not found in Search Fields from JSON.",
             "is_fatal": False,
-            "pos": [-1, -1],
+            "pos": (-1, -1),
         }
         self.assertIn(expected_message, self.parser.linter_messages)
 
@@ -801,12 +700,11 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_year_search` method correctly handles
         a valid year span and adds the year search field to the list of children.
         """
-        token = "2015-2019"
-        span = (0, 9)
+        token = Token(value="2015-2019", type=TokenTypes.SEARCH_TERM, position=(0, 9))
         children = []
         current_operator = "AND"
 
-        result = self.parser.handle_year_search(token, span, children, current_operator)
+        result = self.parser.handle_year_search(token, children, current_operator)
         expected_result = [
             Query(
                 value="AND",
@@ -815,8 +713,10 @@ class TestWOSParser(unittest.TestCase):
                     Query(
                         value=token,
                         operator=False,
-                        search_field=SearchField(value=Fields.YEAR, position=span),
-                        position=span,
+                        search_field=SearchField(
+                            value=Fields.YEAR, position=token.position
+                        ),
+                        position=token.position,
                     )
                 ],
             )
@@ -838,13 +738,12 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_year_search` method correctly handles
         an invalid year span by changing it to a valid span and adding a linter message.
         """
-        token = "2010-2020"
-        span = (0, 9)
+        token = Token(value="2010-2020", type=TokenTypes.SEARCH_TERM, position=(0, 9))
         children = []
         current_operator = "AND"
         self.parser.linter_messages.clear()
 
-        result = self.parser.handle_year_search(token, span, children, current_operator)
+        result = self.parser.handle_year_search(token, children, current_operator)
         expected_result = [
             Query(
                 value="AND",
@@ -853,8 +752,10 @@ class TestWOSParser(unittest.TestCase):
                     Query(
                         value="2015-2020",
                         operator=False,
-                        search_field=SearchField(value=Fields.YEAR, position=span),
-                        position=span,
+                        search_field=SearchField(
+                            value=Fields.YEAR, position=token.position
+                        ),
+                        position=token.position,
                     )
                 ],
             )
@@ -887,22 +788,23 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `handle_year_search` method correctly handles
         a single year and adds the year search field to the list of children.
         """
-        token = "2015"
-        span = (0, 4)
+        token = Token(value="2015", type=TokenTypes.SEARCH_TERM, position=(0, 4))
         children = []
         current_operator = "AND"
 
-        result = self.parser.handle_year_search(token, span, children, current_operator)
+        result = self.parser.handle_year_search(token, children, current_operator)
         expected_result = [
             Query(
                 value="AND",
                 operator=True,
                 children=[
                     Query(
-                        value=token,
+                        value=token.value,
                         operator=False,
-                        search_field=SearchField(value=Fields.YEAR, position=span),
-                        position=span,
+                        search_field=SearchField(
+                            value=Fields.YEAR, position=token.position
+                        ),
+                        position=token.position,
                     )
                 ],
             )
@@ -928,7 +830,7 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_term_node` method correctly adds
         a term node to the list of children when there is no current operator.
         """
-        tokens = [("example", (0, 7))]
+        tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
         index = 0
         value = "example"
         operator = False
@@ -969,7 +871,7 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_term_node` method correctly adds
         a term node to the list of children when there is a current operator.
         """
-        tokens = [("example", (0, 7))]
+        tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
         index = 0
         value = "example"
         operator = False
@@ -1025,7 +927,11 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_term_node` method correctly adds
         a term node to the list of children when there is a NEAR operator.
         """
-        tokens = [("example", (0, 7)), ("example2", (8, 16)), ("example3", (17, 25))]
+        tokens = [
+            Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7)),
+            Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(8, 16)),
+            Token(value="example3", type=TokenTypes.SEARCH_TERM, position=(17, 25)),
+        ]
         index = 1
         value = "example2"
         operator = False
@@ -1133,7 +1039,7 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_term_node` method correctly adds
         a term node to the existing list of children.
         """
-        tokens = [("example", (0, 7))]
+        tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
         index = 0
         value = "example"
         operator = False
@@ -1193,7 +1099,7 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `add_term_node` method correctly adds
         a term node to the list of children when there is a current negation.
         """
-        tokens = [("example", (0, 7))]
+        tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
         index = 0
         value = "example"
         operator = False

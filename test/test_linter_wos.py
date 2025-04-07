@@ -1,9 +1,10 @@
 """Web-of-Science linter unit tests."""
 import unittest
 
+from search_query.constants import Token
+from search_query.constants import TokenTypes
 from search_query.linter_wos import QueryLinter
 from search_query.parser_wos import WOSParser
-from search_query.query import SearchField
 
 # ruff: noqa: E501
 # flake8: noqa: E501
@@ -187,12 +188,11 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate two operators in a row.
             - The position in the linter message should be (5, 6).
         """
-        tokens = [("term1", (0, 5)), ("AND", (5, 8)), ("OR", (8, 10))]
 
         parser = WOSParser("term1 AND OR")
+        parser.tokenize()
         linter = QueryLinter(parser)
-
-        linter.check_order_of_tokens(tokens, "AND", (5, 8), 1)
+        linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -201,7 +201,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "label": "invalid-token-sequence-two-operators",
                 "message": "Invalid token sequence: two operators in a row.",
-                "pos": (8, 10),
+                "pos": (10, 12),
             },
         )
 
@@ -221,20 +221,33 @@ class TestQueryLinter(unittest.TestCase):
             - The message in the linter message should indicate two search fields in a row.
             - The position in the linter message should be (5, 10).
         """
-        tokens = [("term1", (0, 5)), ("au=", (5, 10)), ("ti=", (10, 15))]
+        [
+            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
+            Token(value="au=", type=TokenTypes.FIELD, position=(5, 10)),
+            Token(value="ti=", type=TokenTypes.FIELD, position=(10, 15)),
+        ]
 
         parser = WOSParser("term1 au= ti=")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        linter.check_order_of_tokens(tokens, "au=", (5, 10), 1)
-        self.assertEqual(len(parser.linter_messages), 1)
+        linter.check_order_of_tokens()
+        self.assertEqual(len(parser.linter_messages), 2)
         self.assertEqual(
             parser.linter_messages[0],
+            # TODO : this shows that the message can be ambiguous
+            {
+                "code": "F1009",
+                "label": "invalid-token-sequence-missing-operator",
+                "message": "Invalid token sequence: missing operator.",
+                "is_fatal": True,
+                "pos": (0, 5),
+            },
             {
                 "code": "F1005",
-                "is_fatal": True,
                 "label": "invalid-token-sequence-two-search-fields",
                 "message": "Invalid token sequence: two search fields in a row.",
-                "pos": (10, 15),
+                "is_fatal": True,
+                "pos": (10, 13),
             },
         )
 
@@ -256,9 +269,9 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         parser = WOSParser("term1 (query)")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        tokens = [("term1", (0, 5)), ("(", (5, 6))]
-        linter.check_order_of_tokens(tokens, "term1", (0, 5), 0)
+        linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -290,9 +303,9 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         parser = WOSParser(") (query)")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        tokens = [(")", (0, 5)), ("(", (5, 6))]
-        linter.check_order_of_tokens(tokens, ")", (0, 5), 0)
+        linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -301,7 +314,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "label": "invalid-token-sequence-missing-operator",
                 "message": "Invalid token sequence: missing operator.",
-                "pos": (0, 5),
+                "pos": (0, 1),
             },
         )
 
@@ -322,10 +335,10 @@ class TestQueryLinter(unittest.TestCase):
                 indicate a missing operator between term and search field.
             - The position in the linter message should be (5, 10).
         """
-        tokens = [("term1", (0, 5)), ("au=", (5, 8))]
         parser = WOSParser("term1 au=")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        linter.check_order_of_tokens(tokens, "term1", (0, 5), 0)
+        linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -351,9 +364,9 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 NEAR/10 term2")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        tokens = [("term1", (0, 5)), ("NEAR/10", (5, 12))]
-        linter.check_near_distance_in_range(tokens, 1)
+        linter.check_near_distance_in_range(1)
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_near_distance_out_of_range(self) -> None:
@@ -372,9 +385,9 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 13).
         """
         parser = WOSParser("term1 NEAR/20 term2")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        tokens = [("term1", (0, 5)), ("NEAR/20", (5, 13))]
-        linter.check_near_distance_in_range(tokens, 1)
+        linter.check_near_distance_in_range(1)
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -383,7 +396,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "label": "near-distance-too-large",
                 "message": "NEAR distance is too large (max: 15).",
-                "pos": (5, 13),
+                "pos": (6, 13),
             },
         )
 
@@ -400,9 +413,9 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 NEAR term2")
+        parser.tokenize()
         linter = QueryLinter(parser)
-        tokens = [("term1", (0, 5)), ("NEAR", (5, 9))]
-        linter.check_near_distance_in_range(tokens, 1)
+        linter.check_near_distance_in_range(0)
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_no_unsupported_wildcards(self) -> None:
@@ -418,7 +431,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 term2")
         linter = QueryLinter(parser)
-        linter.check_unsupported_wildcards("term1 term2")
+        linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_unsupported_wildcards(self) -> None:
@@ -437,7 +450,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 !term2")
         linter = QueryLinter(parser)
-        linter.check_unsupported_wildcards("term1 !term2")
+        linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -465,8 +478,11 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         parser = WOSParser('term1 "?" term2')
+        parser.tokenize()
         linter = QueryLinter(parser)
-        linter.check_unsupported_wildcards('term1 "?" term2')
+        linter.check_wildcards(
+            Token(value='"?"', type=TokenTypes.SEARCH_TERM, position=(0, 3))
+        )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -475,7 +491,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "label": "wildcard-standalone",
                 "message": "Wildcard cannot be standalone.",
-                "pos": (7, 8),
+                "pos": (0, 3),
             },
         )
 
@@ -492,7 +508,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 te?m2")
         linter = QueryLinter(parser)
-        linter.check_unsupported_wildcards("term1 te?m2")
+        linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_no_unsupported_right_hand_wildcards(self) -> None:
@@ -508,7 +524,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 term2*")
         linter = QueryLinter(parser)
-        linter.check_unsupported_right_hand_wildcards("term2*", 5, (6, 7))
+        linter.check_unsupported_right_hand_wildcards(
+            Token(value="term2*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 5
+        )
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_unsupported_right_hand_wildcard_after_special_character(self) -> None:
@@ -530,7 +548,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 term2!*")
         linter = QueryLinter(parser)
-        linter.check_unsupported_right_hand_wildcards("term2!*", 6, (6, 7))
+        linter.check_unsupported_right_hand_wildcards(
+            Token(value="term2!*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 6
+        )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -565,7 +585,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("te*")
         linter = QueryLinter(parser)
-        linter.check_unsupported_right_hand_wildcards("te*", 2, (0, 2))
+        linter.check_unsupported_right_hand_wildcards(
+            Token(value="te*", type=TokenTypes.SEARCH_TERM, position=(0, 2)), 2
+        )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -591,7 +613,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 term2")
         linter = QueryLinter(parser)
-        linter.check_format_left_hand_wildcards("term2", (6, 11))
+        linter.check_format_left_hand_wildcards(
+            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(6, 11))
+        )
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_valid_left_hand_wildcard(self) -> None:
@@ -607,7 +631,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 *term2")
         linter = QueryLinter(parser)
-        linter.check_format_left_hand_wildcards("*term2", (6, 12))
+        linter.check_format_left_hand_wildcards(
+            Token(value="*term2", type=TokenTypes.SEARCH_TERM, position=(6, 12))
+        )
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_invalid_left_hand_wildcard(self) -> None:
@@ -627,7 +653,9 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("*te")
         linter = QueryLinter(parser)
-        linter.check_format_left_hand_wildcards("*te", (0, 2))
+        linter.check_format_left_hand_wildcards(
+            Token(value="*te", type=TokenTypes.SEARCH_TERM, position=(0, 2))
+        )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -654,7 +682,7 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("1234-5678")
         linter = QueryLinter(parser)
         linter.check_issn_isbn_format(
-            "1234-5678", SearchField(value="is=", position=(0, 3))
+            Token(value="1234-5678", type=TokenTypes.SEARCH_TERM, position=(0, 3))
         )
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -675,7 +703,7 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("1234-567")
         linter = QueryLinter(parser)
         linter.check_issn_isbn_format(
-            "1234-567", SearchField(value="is=", position=(0, 3))
+            Token(value="1234-567", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -703,7 +731,9 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("978-3-16-148410-0")
         linter = QueryLinter(parser)
         linter.check_issn_isbn_format(
-            "978-3-16-148410-0", SearchField(value="is=", position=(0, 3))
+            Token(
+                value="978-3-16-148410-0", type=TokenTypes.SEARCH_TERM, position=(0, 3)
+            ),
         )
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -724,7 +754,9 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("978-3-16-148410")
         linter = QueryLinter(parser)
         linter.check_issn_isbn_format(
-            "978-3-16-148410", SearchField(value="is=", position=(0, 3))
+            Token(
+                value="978-3-16-148410", type=TokenTypes.SEARCH_TERM, position=(0, 3)
+            ),
         )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -752,7 +784,7 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("10.1000/xyz123")
         linter = QueryLinter(parser)
         linter.check_doi_format(
-            "10.1000/xyz123", SearchField(value="do=", position=(0, 3))
+            Token(value="10.1000/xyz123", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -773,7 +805,7 @@ class TestQueryLinter(unittest.TestCase):
         parser = WOSParser("12.1000/xyz")
         linter = QueryLinter(parser)
         linter.check_doi_format(
-            "12.1000/xyz", SearchField(value="do=", position=(0, 3))
+            Token(value="12.1000/xyz", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -810,11 +842,11 @@ class TestQueryLinter(unittest.TestCase):
         """
 
         tokens = [
-            ("term1", (0, 5)),
-            ("AND", (5, 8)),
-            ("term2", (8, 13)),
-            ("OR", (13, 15)),
-            ("term3", (15, 20)),
+            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
+            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(8, 13)),
+            Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(13, 15)),
+            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(15, 20)),
         ]
         parser = WOSParser("term1 AND term2 OR term3")
         linter = QueryLinter(parser)
@@ -846,11 +878,11 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (13, 17).
         """
         tokens = [
-            ("term1", (0, 5)),
-            ("AND", (5, 8)),
-            ("term2", (8, 13)),
-            ("NEAR", (13, 17)),
-            ("term3", (17, 22)),
+            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
+            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(8, 13)),
+            Token(value="NEAR", type=TokenTypes.LOGIC_OPERATOR, position=(13, 17)),
+            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(17, 22)),
         ]
         parser = WOSParser("term1 AND term2 NEAR term3")
         linter = QueryLinter(parser)
@@ -889,13 +921,13 @@ class TestQueryLinter(unittest.TestCase):
         """
 
         tokens = [
-            ("term1", (0, 5)),
-            ("AND", (5, 8)),
-            ("(", (8, 9)),
-            ("term2", (9, 14)),
-            ("OR", (14, 16)),
-            ("term3", (16, 21)),
-            (")", (21, 22)),
+            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
+            Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(8, 9)),
+            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(9, 14)),
+            Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(14, 16)),
+            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(16, 21)),
+            Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(21, 22)),
         ]
         parser = WOSParser("term1 AND (term2 OR term3)")
         linter = QueryLinter(parser)
@@ -928,11 +960,11 @@ class TestQueryLinter(unittest.TestCase):
         """
 
         tokens = [
-            ("term1", (0, 5)),
-            ("NEAR/5", (5, 11)),
-            ("term2", (11, 16)),
-            ("AND", (16, 19)),
-            ("term3", (19, 24)),
+            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
+            Token(value="NEAR/5", type=TokenTypes.LOGIC_OPERATOR, position=(5, 11)),
+            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(11, 16)),
+            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(16, 19)),
+            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(19, 24)),
         ]
         parser = WOSParser("term1 NEAR/5 term2 AND term3")
         linter = QueryLinter(parser)

@@ -2,7 +2,9 @@
 """Constants for search-query"""
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
+from dataclasses import dataclass
 from enum import Enum
+from typing import Tuple
 
 # noqa: E501
 
@@ -17,7 +19,7 @@ class PLATFORM(Enum):
     PRE_NOTATION = "pre_notation"
 
 
-class TokenTypes:
+class TokenTypes(Enum):
     """Token types"""
 
     LOGIC_OPERATOR = "LOGIC_OPERATOR"
@@ -26,6 +28,15 @@ class TokenTypes:
     SEARCH_TERM = "SEARCH_TERM"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
+
+
+@dataclass
+class Token:
+    """Token class"""
+
+    value: str
+    type: TokenTypes
+    position: Tuple[int, int]
 
 
 class Operators:
@@ -173,23 +184,6 @@ class LinterMode:
 
     STRICT = "strict"
     NONSTRICT = "non-strict"
-
-
-class WOSRegex:
-    """Regex for WOS"""
-
-    TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
-    OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not|NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
-    SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
-    PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
-    YEAR_REGEX = r"^\d{4}(-\d{4})?$"
-    UNSUPPORTED_WILDCARD_REGEX = r"\!+"
-    ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
-    ISBN_REGEX = (
-        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
-    )
-    DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
 
 class WOSSearchFieldList:
@@ -848,6 +842,8 @@ class QueryErrorCode(Enum):
         "",
     )
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

@@ -6,6 +6,8 @@ from search_query.constants import Operators
 from search_query.query import Query
 from search_query.query import SearchField
 
+# pylint: disable=R0801
+
 
 class NotQuery(Query):
     """NOT Query"""
