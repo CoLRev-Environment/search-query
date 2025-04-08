@@ -269,12 +269,6 @@ class PubmedParser(QueryStringParser):
             self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
             return
 
-        # Translate search fields to standard field constants.
-        if query.search_field.value in self.FIELD_TRANSLATION_MAP:
-            query.search_field.value = self.FIELD_TRANSLATION_MAP[
-                query.search_field.value
-            ]
-
     def parse_user_provided_fields(self, field_values: str) -> list:
         """Extract and translate user-provided search fields and return them as a list"""
         if not field_values:
