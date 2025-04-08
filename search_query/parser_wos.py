@@ -104,239 +104,210 @@ class WOSParser(QueryStringParser):
             or token in WOSSearchFieldList.language_list
         )
 
+    # Parse a query tree from tokens recursively
     def parse_query_tree(
         self,
         tokens: list,
-    ) -> Query:
-        """Parse a query from a list of tokens."""
+        index: int = 0,
+        search_field: typing.Optional[SearchField] = None,
+        superior_search_field: typing.Optional[SearchField] = None,
+        current_negation: bool = False,
+    ) -> typing.Tuple[Query, int]:
+        """Parse tokens starting at the given index,
+        handling parentheses, operators, search fields and terms recursively."""
+        children = []
+        current_operator = None
 
-        # Search fields are given in the search_fields string
-        if self.search_fields:
-            found_list = []
-            print("\n[Info:] Search Fields given: " + self.search_fields)
-            matches = re.findall(self.SEARCH_FIELDS_REGEX, self.search_fields)
+        if current_negation:
+            current_operator = "NOT"
 
-            for match in matches:
-                match = self.check_search_fields(
-                    match,
+        while index < len(tokens):
+            token = tokens[index]
+
+            # Handle nested expressions within parentheses
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                if tokens[index - 1].type == TokenTypes.FIELD:
+                    superior_search_field = tokens[index - 1].value
+
+                # Parse the expression inside the parentheses
+                sub_expr, index = self.parse_query_tree(
+                    tokens=tokens,
+                    index=index + 1,
+                    search_field=search_field,
+                    superior_search_field=superior_search_field,
+                    current_negation=current_negation,
                 )
 
-                # Check if the search field is not in the list of search fields
-                if match not in found_list:
-                    self.search_fields_list.append(
-                        SearchField(value=match, position=None)
-                    )
-                    found_list.append(match)
-                    print("[Info:] Search Field accepted: " + match)
-
-        # Parse a query tree from tokens recursively
-        def parse_expression(
-            tokens: list,
-            index: int,
-            search_field: typing.Optional[SearchField] = None,
-            superior_search_field: typing.Optional[SearchField] = None,
-            current_negation: bool = False,
-        ) -> typing.Tuple[Query, int]:
-            """Parse tokens starting at the given index,
-            handling parentheses, operators, search fields and terms recursively."""
-            children = []
-            current_operator = None
-
-            if current_negation:
-                current_operator = "NOT"
-
-            while index < len(tokens):
-                token = tokens[index]
-
-                # Handle nested expressions within parentheses
-                if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    if tokens[index - 1].type == TokenTypes.FIELD:
-                        superior_search_field = tokens[index - 1].value
-
-                    # Parse the expression inside the parentheses
-                    sub_expr, index = parse_expression(
-                        tokens=tokens,
-                        index=index + 1,
-                        search_field=search_field,
-                        superior_search_field=superior_search_field,
-                        current_negation=current_negation,
-                    )
-
-                    if isinstance(sub_expr, list):
-                        # Add all children from the parsed expression
-                        # to the list of children
-                        for child in sub_expr:
-                            children = self.append_children(
-                                children=children,
-                                sub_expr=child,
-                                current_operator=current_operator,
-                            )
-                    else:
-                        # Add the parsed expression to the list of children
+                if isinstance(sub_expr, list):
+                    # Add all children from the parsed expression
+                    # to the list of children
+                    for child in sub_expr:
                         children = self.append_children(
                             children=children,
-                            sub_expr=sub_expr,
+                            sub_expr=child,
                             current_operator=current_operator,
                         )
-                    current_negation = False
-
-                # Handle closing parentheses
-                elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                    superior_search_field = None
-                    return (
-                        self.handle_closing_parenthesis(
-                            children=children,
-                            current_operator=current_operator,
-                        ),
-                        index,
-                    )
-
-                # Handle operators
-                elif token.type == TokenTypes.LOGIC_OPERATOR:
-                    # Safe the children if there is a change
-                    # of operator within the current parentheses
-                    if current_operator and current_operator != token.upper():
-                        children = self.safe_children(
-                            children=children,
-                            current_operator=current_operator,
-                        )
-
-                    # Handle the operator
-                    # and update all changes within the handler
-                    (
-                        current_operator,
-                        current_negation,
-                    ) = self.handle_operator(
-                        token=token,
-                        current_operator=current_operator,
-                        current_negation=current_negation,
-                    )
-
-                # Handle search fields
-                elif (self.is_search_field(token)) or (
-                    token in WOSSearchFieldList.language_list
-                ):
-                    search_field = SearchField(
-                        value=token.value, position=token.position
-                    )
-
-                # Handle terms
                 else:
-                    # Check if the token is a search field which has constraints
-                    # Check if the token is a year
-                    if re.findall(self.YEAR_REGEX, token):
-                        if search_field.value in WOSSearchFieldList.year_published_list:
-                            children = self.handle_year_search(
-                                token, children, current_operator
-                            )
-                            index += 1
-                            continue
-                        # Year detected without search field
-                        print(
-                            "[INFO:] Year detected "
-                            "without search field at position " + str(token.position)
-                        )
+                    # Add the parsed expression to the list of children
+                    children = self.append_children(
+                        children=children,
+                        sub_expr=sub_expr,
+                        current_operator=current_operator,
+                    )
+                current_negation = False
 
-                    # Set search field to superior search field
-                    # if no search field is given
-                    if not search_field and superior_search_field:
-                        search_field = superior_search_field
-
-                    # Set search field to ALL if no search field is given
-                    if not search_field:
-                        search_field = SearchField("All", position=None)
-
-                    # Check if the token is ISSN or ISBN
-                    if search_field.value in WOSSearchFieldList.issn_isbn_list:
-                        if self.query_linter.check_issn_isbn_format(token=token):
-                            self.fatal_linter_err = True
-
-                    # Check if the token is a doi
-                    if search_field.value in WOSSearchFieldList.doi_list:
-                        if self.query_linter.check_doi_format(token=token):
-                            self.fatal_linter_err = True
-
-                    # Add term nodes
-                    children = self.add_term_node(
-                        tokens=tokens,
-                        index=index,
-                        value=token,
-                        operator=False,
-                        search_field=search_field,
-                        position=token.position,
+            # Handle closing parentheses
+            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
+                superior_search_field = None
+                return (
+                    self.handle_closing_parenthesis(
                         children=children,
                         current_operator=current_operator,
-                        current_negation=current_negation,
-                    )
-
-                    current_operator = None
-                    search_field_for_check = None
-
-                    if isinstance(search_field, SearchField):
-                        search_field_for_check = search_field.value
-                    else:
-                        search_field_for_check = search_field
-
-                    if not (
-                        superior_search_field
-                        and superior_search_field == search_field_for_check
-                    ):
-                        search_field = None
-
-                index += 1
-
-            # Return options if there are no more tokens
-            # Return the children if there is only one child
-            if len(children) == 1:
-                return children[0], index
-
-            # Return the operator and children if there is an operator
-            if current_operator:
-                return (
-                    Query(value=current_operator, operator=True, children=children),
+                    ),
                     index,
                 )
 
-            # Return the children if there are multiple children
-            if self.is_operator(children[0].value):
-                # Check if the operator of the first child
-                # is not the same as the second child
-                if children[0].value != children[1].value:
-                    for child in children:
-                        if not children.index(child) == 0:
-                            # Check if the search field is in the language/year list
-                            if children[children.index(child)].search_field.value and (
-                                children[children.index(child)].search_field.value
-                                in WOSSearchFieldList.language_list
-                                or children[children.index(child)].search_field.value
-                                in WOSSearchFieldList.year_published_list
-                            ):
-                                children[0].children.append(child)
-                                children.pop(children.index(child))
-                    return children[0], index
-
-                # Check if the operator of the first child is the same
-                # as the second child
-                if children[0].value == children[1].value:
-                    operator_children = []
-                    for child in children:
-                        for grandchild in child.children:
-                            operator_children.append(grandchild)
-
-                    return (
-                        Query(
-                            value=children[0].value,
-                            operator=True,
-                            children=operator_children,
-                        ),
-                        index,
+            # Handle operators
+            elif token.type == TokenTypes.LOGIC_OPERATOR:
+                # Safe the children if there is a change
+                # of operator within the current parentheses
+                if current_operator and current_operator != token.upper():
+                    children = self.safe_children(
+                        children=children,
+                        current_operator=current_operator,
                     )
 
-            # Raise an error if the code gets here
-            raise NotImplementedError("Error in parsing the query tree")
+                # Handle the operator
+                # and update all changes within the handler
+                (
+                    current_operator,
+                    current_negation,
+                ) = self.handle_operator(
+                    token=token,
+                    current_operator=current_operator,
+                    current_negation=current_negation,
+                )
 
-        root_query, _ = parse_expression(tokens=tokens, index=0, search_field=None)
-        return root_query
+            # Handle search fields
+            elif (self.is_search_field(token)) or (
+                token in WOSSearchFieldList.language_list
+            ):
+                search_field = SearchField(value=token.value, position=token.position)
+
+            # Handle terms
+            else:
+                # Check if the token is a search field which has constraints
+                # Check if the token is a year
+                if re.findall(self.YEAR_REGEX, token):
+                    if search_field.value in WOSSearchFieldList.year_published_list:
+                        children = self.handle_year_search(
+                            token, children, current_operator
+                        )
+                        index += 1
+                        continue
+                    # Year detected without search field
+                    print(
+                        "[INFO:] Year detected "
+                        "without search field at position " + str(token.position)
+                    )
+
+                # Set search field to superior search field
+                # if no search field is given
+                if not search_field and superior_search_field:
+                    search_field = superior_search_field
+
+                # Set search field to ALL if no search field is given
+                if not search_field:
+                    search_field = SearchField("All", position=None)
+
+                # Check if the token is ISSN or ISBN
+                if search_field.value in WOSSearchFieldList.issn_isbn_list:
+                    if self.query_linter.check_issn_isbn_format(token=token):
+                        self.fatal_linter_err = True
+
+                # Check if the token is a doi
+                if search_field.value in WOSSearchFieldList.doi_list:
+                    if self.query_linter.check_doi_format(token=token):
+                        self.fatal_linter_err = True
+
+                # Add term nodes
+                children = self.add_term_node(
+                    tokens=tokens,
+                    index=index,
+                    value=token,
+                    operator=False,
+                    search_field=search_field,
+                    position=token.position,
+                    children=children,
+                    current_operator=current_operator,
+                    current_negation=current_negation,
+                )
+
+                current_operator = None
+                search_field_for_check = None
+
+                if isinstance(search_field, SearchField):
+                    search_field_for_check = search_field.value
+                else:
+                    search_field_for_check = search_field
+
+                if not (
+                    superior_search_field
+                    and superior_search_field == search_field_for_check
+                ):
+                    search_field = None
+
+            index += 1
+
+        # Return options if there are no more tokens
+        # Return the children if there is only one child
+        if len(children) == 1:
+            return children[0], index
+
+        # Return the operator and children if there is an operator
+        if current_operator:
+            return (
+                Query(value=current_operator, operator=True, children=children),
+                index,
+            )
+
+        # Return the children if there are multiple children
+        if self.is_operator(children[0].value):
+            # Check if the operator of the first child
+            # is not the same as the second child
+            if children[0].value != children[1].value:
+                for child in children:
+                    if not children.index(child) == 0:
+                        # Check if the search field is in the language/year list
+                        if children[children.index(child)].search_field.value and (
+                            children[children.index(child)].search_field.value
+                            in WOSSearchFieldList.language_list
+                            or children[children.index(child)].search_field.value
+                            in WOSSearchFieldList.year_published_list
+                        ):
+                            children[0].children.append(child)
+                            children.pop(children.index(child))
+                return children[0], index
+
+            # Check if the operator of the first child is the same
+            # as the second child
+            if children[0].value == children[1].value:
+                operator_children = []
+                for child in children:
+                    for grandchild in child.children:
+                        operator_children.append(grandchild)
+
+                return (
+                    Query(
+                        value=children[0].value,
+                        operator=True,
+                        children=operator_children,
+                    ),
+                    index,
+                )
+
+        # Raise an error if the code gets here
+        raise NotImplementedError("Error in parsing the query tree")
 
     def handle_closing_parenthesis(
         self,
@@ -601,6 +572,26 @@ class WOSParser(QueryStringParser):
     def translate_search_fields(self, query: Query) -> Query:
         """Translate search fields."""
 
+        # Search fields are given in the search_fields string
+        if self.search_fields:
+            found_list = []
+            print("\n[Info:] Search Fields given: " + self.search_fields)
+            matches = re.findall(self.SEARCH_FIELDS_REGEX, self.search_fields)
+
+            for match in matches:
+                match = self.check_search_fields(
+                    match,
+                )
+
+                # Check if the search field is not in the list of search fields
+                if match not in found_list:
+                    self.search_fields_list.append(
+                        SearchField(value=match, position=None)
+                    )
+                    found_list.append(match)
+                    print("[Info:] Search Field accepted: " + match)
+            # TODO : if no matches: linter message?
+
         children = []
 
         # Recursively translate the search fields of child nodes
@@ -847,7 +838,7 @@ class WOSParser(QueryStringParser):
 
         if not self.fatal_linter_err:
             # Parse the query string, build the query tree and translate search fields
-            query = self.parse_query_tree(self.tokens)
+            query, _ = self.parse_query_tree(self.tokens)
             query = self.translate_search_fields(query)
             query = self.check_nested_operators(query)
         else:
