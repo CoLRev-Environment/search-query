@@ -189,8 +189,8 @@ class WOSParser(QueryStringParser):
                 )
 
             # Handle search fields
-            elif (self.is_search_field(token)) or (
-                token in WOSSearchFieldList.language_list
+            elif token.type == TokenTypes.FIELD or (
+                token.value in WOSSearchFieldList.language_list
             ):
                 search_field = SearchField(value=token.value, position=token.position)
 
