@@ -89,8 +89,7 @@ class WOSParser(QueryStringParser):
             elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
-                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, position)
-                continue
+                token_type = TokenTypes.UNKNOWN
 
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
@@ -115,7 +114,7 @@ class WOSParser(QueryStringParser):
     ) -> typing.Tuple[Query, int]:
         """Parse tokens starting at the given index,
         handling parentheses, operators, search fields and terms recursively."""
-        children = []
+        children: typing.List[Query] = []
         current_operator = None
 
         if current_negation:
@@ -130,7 +129,7 @@ class WOSParser(QueryStringParser):
                     superior_search_field = tokens[index - 1].value
 
                 # Parse the expression inside the parentheses
-                sub_expr, index = self.parse_query_tree(
+                sub_query, index = self.parse_query_tree(
                     tokens=tokens,
                     index=index + 1,
                     search_field=search_field,
@@ -141,7 +140,7 @@ class WOSParser(QueryStringParser):
                 # Add the parsed expression to the list of children
                 children = self.append_children(
                     children=children,
-                    sub_expr=sub_expr,
+                    sub_query=sub_query,
                     current_operator=current_operator,
                 )
                 current_negation = False
@@ -161,8 +160,8 @@ class WOSParser(QueryStringParser):
             elif token.type == TokenTypes.LOGIC_OPERATOR:
                 # Safe the children if there is a change
                 # of operator within the current parentheses
-                if current_operator and current_operator != token.upper():
-                    children = self.safe_children(
+                if current_operator and current_operator != token.value.upper():
+                    children = self.wrap_with_operator_node(
                         children=children,
                         current_operator=current_operator,
                     )
@@ -329,20 +328,6 @@ class WOSParser(QueryStringParser):
         # Set the current operator to the token
         current_operator = token.value.upper()
 
-        # Add linter messages for operators that are not uppercase
-        if token.value.islower():
-            self.add_linter_message(
-                QueryErrorCode.OPERATOR_CAPITALIZATION, pos=token.position
-            )
-
-        # Set default near_distance if not set in the search string
-        if current_operator == "NEAR":
-            # Add linter message for NEAR operator without distance
-            self.add_linter_message(
-                QueryErrorCode.IMPLICIT_NEAR_VALUE, pos=token.position
-            )
-            current_operator = "NEAR/15"
-
         # Set a flag if the token is NOT and change to AND
         if current_operator == "NOT":
             current_negation = True
@@ -403,8 +388,8 @@ class WOSParser(QueryStringParser):
 
     def append_children(
         self,
-        children: list,
-        sub_expr: Query,
+        children: typing.List[Query],
+        sub_query: Query,
         current_operator: str,
     ) -> list:
         """Check where to append the sub expression."""
@@ -412,37 +397,37 @@ class WOSParser(QueryStringParser):
             # Check if the current operator is the same as the last child
             # and if the last child is the same as the last child of the sub expression
             if (
-                current_operator == sub_expr.value
-                and sub_expr.value == children[-1].value
+                current_operator == sub_query.value
+                and sub_query.value == children[-1].value
             ):
                 # Append the children of the sub expression to the last child
-                for child in sub_expr.children:
+                for child in sub_query.children:
                     children[-1].children.append(child)
 
             # Check if the last child is an operator and the sub expression is a term
             # and the current operator is the same as the last child
             elif (
-                current_operator == sub_expr.value
-                or self.is_term(sub_expr.value)
+                current_operator == sub_query.value
+                or self.is_term(sub_query.value)
                 and self.is_operator(children[0].value)
-                and sub_expr.children
+                and sub_query.children
             ):
                 # Append the sub expression to the last child
-                for child in sub_expr.children:
+                for child in sub_query.children:
                     children.append(child)
-            # Check if the sub_expr is an operator or the sub expression is a term
+            # Check if the sub_query is an operator or the sub expression is a term
             # and the current operator is the same as the last child
             elif (
-                self.is_operator(sub_expr.value) or self.is_term(sub_expr.value)
+                self.is_operator(sub_query.value) or self.is_term(sub_query.value)
             ) and current_operator == children[0].value:
                 # Append the sub expression to the last child
-                children[-1].children.append(sub_expr)
+                children[-1].children.append(sub_query)
             else:
                 # Append the sub expression to the list of children
-                children.append(sub_expr)
+                children.append(sub_query)
         else:
             # Append the sub expression to the list of children
-            children.append(sub_expr)
+            children.append(sub_query)
 
         return children
 
@@ -450,23 +435,6 @@ class WOSParser(QueryStringParser):
         self, token: Token, children: list, current_operator: str
     ) -> typing.List[Query]:
         """Handle the year search field."""
-        # Check if a wildcard is used in the year search field
-        if any(char in token.value for char in ["*", "?", "$"]):
-            self.add_linter_message(
-                QueryErrorCode.WILDCARD_IN_YEAR,
-                pos=token.position,
-            )
-            # TODO : use any(x.is_fatal() for x in QueryErrorCodes)
-
-        # Check if the yearspan is not more than 5 years
-        if len(token.value) > 4:
-            if int(token.value[5:9]) - int(token.value[0:4]) > 5:
-                # Change the year span to five years
-                token.value = str(int(token.value[5:9]) - 5) + "-" + token.value[5:9]
-
-                self.add_linter_message(
-                    QueryErrorCode.YEAR_SPAN_VIOLATION, pos=token.position
-                )
 
         search_field = SearchField(
             value=Fields.YEAR,
@@ -724,7 +692,7 @@ class WOSParser(QueryStringParser):
                     pos=position,
                 )
 
-    def safe_children(self, children: list, current_operator: str) -> list:
+    def wrap_with_operator_node(self, children: list, current_operator: str) -> list:
         """Safe children, when there is a change of
         operator within the current parentheses."""
         safe_children = []
@@ -768,34 +736,6 @@ class WOSParser(QueryStringParser):
         self.query_linter.pre_linting()
         self.fatal_linter_err = any(e.is_fatal() for e in self.linter_messages)
 
-    # Note: never called?
-    # def insert_parentheses(self, tokens, index, span) -> None:
-    #     """Insert parentheses in the query string."""
-    #     first_parenthesis_inserted = False
-    #     last_parenthesis_inserted = False
-    #     # Find previous operator
-    #     for i in range(index - 1, 0, -1):
-    #         if self.is_operator(tokens[i][0]):
-    #             self.tokens.insert(
-    #                 i + 1, ("(", (tokens[i][1][1] + 1, tokens[i][1][1] + 2))
-    #             )
-    #             first_parenthesis_inserted = True
-    #             break
-    #     # Find next operator
-    #     for i in range(index + 2, len(tokens)):
-    #         if self.is_operator(tokens[i][0]):
-    #             self.tokens.insert(
-    #                 i - 1, (")", (tokens[i][1][1] - 2, tokens[i][1][1] - 1))
-    #             )
-    #             last_parenthesis_inserted = True
-    #             break
-
-    #     if not first_parenthesis_inserted:
-    #         self.tokens.insert((0, ("(", (0, 1))))
-
-    #     if not last_parenthesis_inserted:
-    #         self.tokens.append((")", (span[1] + 1, span[1] + 2)))
-
     def parse(self) -> Query:
         """Parse a query string."""
         # Remove all previous linter messages
@@ -835,7 +775,11 @@ class WOSParser(QueryStringParser):
             # Raise an exception
             # if the linter is in strict mode
             # or if a fatal error has occurred
-            if self.mode == "strict" or self.fatal_linter_err and self.linter_messages:
+            if (
+                self.mode == LinterMode.STRICT
+                or self.fatal_linter_err
+                and self.linter_messages
+            ):
                 raise FatalLintingException(
                     message="LinterDetected",
                     query_string=self.query_str,

@@ -224,64 +224,6 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result_operator, "NEAR/2")
         self.assertFalse(result_negation)
 
-    def test_handle_operator_lowercase(self) -> None:
-        """
-        Test the `handle_operator` method with a lowercase operator.
-
-        This test verifies that the `handle_operator` method correctly handles
-        a lowercase operator, adds a linter message, and returns the expected values.
-        """
-        token = Token(value="and", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
-        current_operator = None
-        current_negation = False
-
-        (
-            result_operator,
-            result_negation,
-        ) = self.parser.handle_operator(token, current_operator, current_negation)
-
-        self.assertEqual(result_operator, "AND")
-        self.assertFalse(result_negation)
-        self.assertIn(
-            {
-                "code": "W0005",
-                "label": "operator-capitalization",
-                "message": "Operators should be capitalized",
-                "is_fatal": False,
-                "pos": (0, 3),
-            },
-            self.parser.linter_messages,
-        )
-
-    def test_handle_operator_near_without_distance(self) -> None:
-        """
-        Test the `handle_operator` method with the NEAR operator without distance.
-
-        This test verifies that the `handle_operator` method correctly handles
-        the NEAR operator without distance, adds a linter message, and returns the expected values.
-        """
-        token = Token(value="NEAR", type=TokenTypes.PROXIMITY_OPERATOR, position=(0, 4))
-        current_operator = None
-        current_negation = False
-
-        (
-            result_operator,
-            result_negation,
-        ) = self.parser.handle_operator(token, current_operator, current_negation)
-
-        self.assertEqual(result_operator, "NEAR/15")
-        self.assertFalse(result_negation)
-        self.assertIn(
-            {
-                "code": "W1000",
-                "label": "implicit-near-value",
-                "message": "The value of NEAR operator is implicit",
-                "is_fatal": False,
-                "pos": (0, 4),
-            },
-            self.parser.linter_messages,
-        )
-
     def test_handle_operator_not(self) -> None:
         """
         Test the `handle_operator` method with the NOT operator.
@@ -715,56 +657,6 @@ class TestWOSParser(unittest.TestCase):
         )
         self.assertEqual(
             result[0].children[0].position, expected_result[0].children[0].position
-        )
-
-    def test_handle_year_search_invalid_year_span(self) -> None:
-        """
-        Test the `handle_year_search` method with an invalid year span.
-
-        This test verifies that the `handle_year_search` method correctly handles
-        an invalid year span by changing it to a valid span and adding a linter message.
-        """
-        token = Token(value="2010-2020", type=TokenTypes.SEARCH_TERM, position=(0, 9))
-        children = []
-        current_operator = "AND"
-        self.parser.linter_messages.clear()
-
-        result = self.parser.handle_year_search(token, children, current_operator)
-        expected_result = [
-            Query(
-                value="AND",
-                operator=True,
-                children=[
-                    Query(
-                        value="2015-2020",
-                        operator=False,
-                        search_field=SearchField(
-                            value=Fields.YEAR, position=token.position
-                        ),
-                        position=token.position,
-                    )
-                ],
-            )
-        ]
-
-        self.assertEqual(result[0].value, expected_result[0].value)
-        self.assertEqual(result[0].operator, expected_result[0].operator)
-        self.assertEqual(
-            result[0].children[0].search_field.value,
-            expected_result[0].children[0].search_field.value,
-        )
-        self.assertEqual(
-            result[0].children[0].position, expected_result[0].children[0].position
-        )
-        self.assertIn(
-            {
-                "code": "W1001",
-                "label": "year-span-violation",
-                "message": "Year span must be five or less.",
-                "is_fatal": False,
-                "pos": (0, 9),
-            },
-            self.parser.linter_messages,
         )
 
     def test_handle_year_search_single_year(self) -> None:
@@ -1297,7 +1189,7 @@ class TestWOSParser(unittest.TestCase):
         """
         children = [Query(value="example", operator=False)]
         current_operator = "AND"
-        result = self.parser.safe_children(children, current_operator)
+        result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
             Query(value=current_operator, operator=True, children=children)
         ]
@@ -1322,7 +1214,7 @@ class TestWOSParser(unittest.TestCase):
             Query(value="example2", operator=False),
         ]
         current_operator = "OR"
-        result = self.parser.safe_children(children, current_operator)
+        result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
             Query(value=current_operator, operator=True, children=children)
         ]
@@ -1350,7 +1242,7 @@ class TestWOSParser(unittest.TestCase):
         """
         children = []
         current_operator = "AND"
-        result = self.parser.safe_children(children, current_operator)
+        result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
             Query(value=current_operator, operator=True, children=children)
         ]

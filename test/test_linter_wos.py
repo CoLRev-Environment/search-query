@@ -980,6 +980,93 @@ class TestQueryLinter(unittest.TestCase):
             },
         )
 
+    def test_handle_near_without_distance(self) -> None:
+        """
+        Test case for handling the NEAR operator without a specified distance.
+        """
+
+        parser = WOSParser("term1 NEAR term2")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+
+        linter.check_implicit_near()
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "W1000",
+                "is_fatal": False,
+                "label": "implicit-near-value",
+                "message": "The value of NEAR operator is implicit",
+                "pos": (6, 10),
+            },
+        )
+        self.assertEqual(parser.tokens[1].value, "NEAR/15")
+
+    def test_handle_operator_lowercase(self) -> None:
+        """
+        Test case for handling lowercase operators in the query string.
+        """
+
+        parser = WOSParser("term1 and term2")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+
+        linter.check_operator_capitalization()
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "W0005",
+                "is_fatal": False,
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "pos": (6, 9),
+            },
+        )
+        self.assertEqual(parser.tokens[1].value, "AND")
+
+    def test_year_format(self) -> None:
+        """
+        Test case for checking the year format in the query string.
+        """
+
+        parser = WOSParser("term1 and PY=202*")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+
+        linter.check_year_format()
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "F1001",
+                "is_fatal": True,
+                "label": "wildcard-in-year",
+                "message": "Wildcard characters (*, ?, $) not supported in year search.",
+                "pos": (13, 17),
+            },
+        )
+
+    def test_year_span_violation(self) -> None:
+        """
+        Test case for checking the year span violation in the query string.
+        """
+
+        parser = WOSParser("term1 and PY=1900-2000")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+
+        linter.check_year_format()
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "W1001",
+                "is_fatal": False,
+                "label": "year-span-violation",
+                "message": "Year span must be five or less.",
+                "pos": (13, 22),
+            },
+        )
+        self.assertEqual(parser.tokens[3].value, "1995-2000")
+
 
 if __name__ == "__main__":
     unittest.main()

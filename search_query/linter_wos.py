@@ -5,6 +5,8 @@ import typing
 
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
+from search_query.constants import TokenTypes
+from search_query.constants import WOSSearchFieldList
 
 if typing.TYPE_CHECKING:
     import search_query.parser_wos
@@ -31,6 +33,11 @@ class QueryLinter:
 
     def pre_linting(self) -> None:
         """Performs a pre-linting"""
+
+        self.check_unknown_token_types()
+        self.check_operator_capitalization()
+        self.check_implicit_near()
+        self.check_year_format()
 
         if len(self.parser.tokens) < 2:
             if '"' in self.parser.tokens[0][0]:
@@ -89,6 +96,61 @@ class QueryLinter:
             )
 
         self.check_unmatched_parentheses()
+
+    def check_unknown_token_types(self) -> None:
+        for token in self.parser.tokens:
+            if token.type == TokenTypes.UNKNOWN:
+                self.parser.add_linter_message(
+                    QueryErrorCode.TOKENIZING_FAILED, token.position
+                )
+
+    def check_operator_capitalization(self) -> None:
+        """Check if operators are capitalized."""
+        for token in self.parser.tokens:
+            if re.match(self.parser.OPERATOR_REGEX, token.value):
+                if token.value != token.value.upper():
+                    self.parser.add_linter_message(
+                        QueryErrorCode.OPERATOR_CAPITALIZATION,
+                        pos=token.position,
+                    )
+                    token.value = token.value.upper()
+
+    def check_implicit_near(self) -> None:
+        """Check for implicit NEAR operator."""
+        for token in self.parser.tokens:
+            if token.value == "NEAR":
+                self.parser.add_linter_message(
+                    QueryErrorCode.IMPLICIT_NEAR_VALUE,
+                    pos=token.position,
+                )
+                token.value = "NEAR/15"
+                # TODO : TBD: adjust token position?
+
+    def check_year_format(self) -> None:
+        for index, token in enumerate(self.parser.tokens):
+            if token.value in WOSSearchFieldList.year_published_list:
+                year_token = self.parser.tokens[index + 1]
+                print(year_token)
+
+                if any(char in year_token.value for char in ["*", "?", "$"]):
+                    self.parser.add_linter_message(
+                        QueryErrorCode.WILDCARD_IN_YEAR,
+                        pos=year_token.position,
+                    )
+
+                # Check if the yearspan is not more than 5 years
+                if len(year_token.value) > 4:
+                    if int(year_token.value[5:9]) - int(year_token.value[0:4]) > 5:
+                        # Change the year span to five years
+                        year_token.value = (
+                            str(int(year_token.value[5:9]) - 5)
+                            + "-"
+                            + year_token.value[5:9]
+                        )
+
+                        self.parser.add_linter_message(
+                            QueryErrorCode.YEAR_SPAN_VIOLATION, pos=year_token.position
+                        )
 
     def check_unmatched_parentheses(self) -> None:
         """Check for unmatched parentheses in the query."""
