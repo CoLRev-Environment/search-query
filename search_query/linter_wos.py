@@ -273,7 +273,7 @@ class QueryLinter:
                 pos=token.position,
             )
 
-    def check_issn_isbn_format(self, token: Token) -> bool:
+    def check_issn_isbn_format(self, token: Token) -> None:
         """Check for the correct format of ISSN and ISBN."""
         token_vale = token.value.replace('"', "")
         if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
@@ -284,10 +284,8 @@ class QueryLinter:
                 QueryErrorCode.ISBN_FORMAT_INVALID,
                 pos=token.position,
             )
-            return True
-        return False
 
-    def check_doi_format(self, token: Token) -> bool:
+    def check_doi_format(self, token: Token) -> None:
         """Check for the correct format of DOI."""
         token_value = token.value.replace('"', "").upper()
         if not re.match(self.parser.DOI_REGEX, token_value):
@@ -296,8 +294,6 @@ class QueryLinter:
                 QueryErrorCode.DOI_FORMAT_INVALID,
                 pos=token.position,
             )
-            return True
-        return False
 
     def handle_multiple_same_level_operators(self, tokens: list, index: int) -> int:
         """Handle multiple same level operators."""

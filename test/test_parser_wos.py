@@ -184,20 +184,6 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result.operator, expected_result.operator)
         self.assertEqual(result.children, expected_result.children)
 
-    def test_handle_closing_parenthesis_multiple_children_no_operator(self) -> None:
-        """
-        Test the `handle_closing_parenthesis` method with multiple children and no operator.
-
-        This test verifies that the `handle_closing_parenthesis` method correctly returns
-        the list of children when there are multiple children and no operator.
-        """
-        children = [
-            Query(value="example1", operator=False),
-            Query(value="example2", operator=False),
-        ]
-        result = self.parser.handle_closing_parenthesis(children, current_operator=None)
-        self.assertEqual(result, children)
-
     def test_handle_operator_uppercase(self) -> None:
         """
         Test the `handle_operator` method with an uppercase operator.

@@ -212,13 +212,11 @@ class WOSParser(QueryStringParser):
 
                 # Check if the token is ISSN or ISBN
                 if search_field.value in WOSSearchFieldList.issn_isbn_list:
-                    if self.query_linter.check_issn_isbn_format(token=token):
-                        self.fatal_linter_err = True
+                    self.query_linter.check_issn_isbn_format(token)
 
                 # Check if the token is a doi
                 if search_field.value in WOSSearchFieldList.doi_list:
-                    if self.query_linter.check_doi_format(token=token):
-                        self.fatal_linter_err = True
+                    self.query_linter.check_doi_format(token)
 
                 # Add term nodes
                 children = self.add_term_node(
@@ -298,7 +296,7 @@ class WOSParser(QueryStringParser):
         self,
         children: list,
         current_operator: str,
-    ):
+    ) -> Query:
         """Handle closing parentheses."""
         # Return the children if there is only one child
         if len(children) == 1:
@@ -311,15 +309,21 @@ class WOSParser(QueryStringParser):
                 operator=True,
                 children=children,
             )
-        # Return the children if there are multiple children
-        return children
+
+        # Multiple children without operator are not allowed
+        # This should already be caught in the token validation
+        raise ValueError(
+            "[ERROR] Multiple children without operator are not allowed."
+            + "\nFound: "
+            + str(children)
+        )
 
     def handle_operator(
         self,
         token: Token,
         current_operator: str,
         current_negation: bool,
-    ):
+    ) -> typing.Tuple[str, bool]:
         """Handle operators."""
 
         # Set the current operator to the token
@@ -444,7 +448,7 @@ class WOSParser(QueryStringParser):
 
     def handle_year_search(
         self, token: Token, children: list, current_operator: str
-    ) -> list:
+    ) -> typing.List[Query]:
         """Handle the year search field."""
         # Check if a wildcard is used in the year search field
         if any(char in token.value for char in ["*", "?", "$"]):
@@ -490,9 +494,9 @@ class WOSParser(QueryStringParser):
         search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
         current_operator: str = None,
-        children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
+        children: typing.Optional[typing.List[Query]] = None,
         current_negation: bool = False,
-    ) -> typing.Optional[typing.List[typing.Union[str, Query]]]:
+    ) -> typing.List[Query]:
         """Adds the term node to the Query"""
 
         # Create a new term node
@@ -504,13 +508,7 @@ class WOSParser(QueryStringParser):
         if current_operator:
             if (
                 not children
-                or (
-                    (
-                        isinstance(children[-1], Query)
-                        and (children[-1].value != current_operator)
-                    )
-                    and not current_negation
-                )
+                or ((children[-1].value != current_operator) and not current_negation)
                 or "NEAR" in current_operator
             ):
                 if "NEAR" in current_operator and "NEAR" in children[0].value:
@@ -606,10 +604,9 @@ class WOSParser(QueryStringParser):
 
                         query.search_field = search_field_item
 
-                        if isinstance(search_field_item.value, str):
-                            translated_field = self.FIELD_TRANSLATION_MAP.get(
-                                search_field_item.value, None
-                            )
+                        translated_field = self.FIELD_TRANSLATION_MAP.get(
+                            search_field_item.value, None
+                        )
 
                         # Translate only if a mapping exists
                         # else use default search field [ALL=]
@@ -651,10 +648,7 @@ class WOSParser(QueryStringParser):
 
             if not query.operator:
                 original_field = self.get_search_field_key(query.search_field)
-                if isinstance(original_field, str):
-                    translated_field = self.FIELD_TRANSLATION_MAP.get(
-                        original_field, None
-                    )
+                translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
 
                 # Translate only if a mapping exists
                 # else use default search field [ALL=]
@@ -678,10 +672,12 @@ class WOSParser(QueryStringParser):
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         pos=query.position,
                     )
-                    query.search_field = Fields.ALL
+                    query.search_field = SearchField(
+                        value=Fields.ALL, position=query.position
+                    )
 
         if not query.search_field and not translated_field and not query.operator:
-            query.search_field = Fields.ALL
+            query.search_field = SearchField(value=Fields.ALL, position=query.position)
 
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
@@ -700,26 +696,24 @@ class WOSParser(QueryStringParser):
 
     def check_search_fields_from_json(
         self,
-        search_field: str,
+        search_field: SearchField,
         position: tuple,
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
-        if isinstance(search_field, SearchField):
-            search_field = search_field.value
 
-        if not search_field == "Misc":
+        if not search_field.value == "Misc":
             diffrent_search_field = []
             for search_field_item in self.search_fields_list:
-                if search_field == search_field_item.value:
+                if search_field.value == search_field_item.value:
                     # TODO : warning (message) for linter?
                     print(
                         "[INFO:] Data redudancy. "
                         "Same Search Field in Search and Search Fields."
                     )
 
-                if self.get_search_field_key(search_field) == self.get_search_field_key(
-                    search_field_item.value
-                ):
+                if self.get_search_field_key(
+                    search_field.value
+                ) == self.get_search_field_key(search_field_item.value):
                     diffrent_search_field.append("False")
                 else:
                     diffrent_search_field.append("True")
