@@ -138,22 +138,12 @@ class WOSParser(QueryStringParser):
                     current_negation=current_negation,
                 )
 
-                if isinstance(sub_expr, list):
-                    # Add all children from the parsed expression
-                    # to the list of children
-                    for child in sub_expr:
-                        children = self.append_children(
-                            children=children,
-                            sub_expr=child,
-                            current_operator=current_operator,
-                        )
-                else:
-                    # Add the parsed expression to the list of children
-                    children = self.append_children(
-                        children=children,
-                        sub_expr=sub_expr,
-                        current_operator=current_operator,
-                    )
+                # Add the parsed expression to the list of children
+                children = self.append_children(
+                    children=children,
+                    sub_expr=sub_expr,
+                    current_operator=current_operator,
+                )
                 current_negation = False
 
             # Handle closing parentheses
@@ -244,12 +234,7 @@ class WOSParser(QueryStringParser):
                 )
 
                 current_operator = None
-                search_field_for_check = None
-
-                if isinstance(search_field, SearchField):
-                    search_field_for_check = search_field.value
-                else:
-                    search_field_for_check = search_field
+                search_field_for_check = search_field.value
 
                 if not (
                     superior_search_field
@@ -579,7 +564,7 @@ class WOSParser(QueryStringParser):
             matches = re.findall(self.SEARCH_FIELDS_REGEX, self.search_fields)
 
             for match in matches:
-                match = self.check_search_fields(
+                match = self.get_search_field_key(
                     match,
                 )
 
@@ -665,7 +650,7 @@ class WOSParser(QueryStringParser):
                         )
 
             if not query.operator:
-                original_field = self.check_search_fields(query.search_field)
+                original_field = self.get_search_field_key(query.search_field)
                 if isinstance(original_field, str):
                     translated_field = self.FIELD_TRANSLATION_MAP.get(
                         original_field, None
@@ -706,14 +691,6 @@ class WOSParser(QueryStringParser):
 
         return query
 
-    def check_search_fields(self, search_field) -> str:
-        """Translate a search field into base search field."""
-        if isinstance(search_field, SearchField):
-            search_field = search_field.value
-
-        # Check if the given search field is in one of the lists of search fields
-        return self.get_search_field_key(search_field=search_field)
-
     def get_search_field_key(self, search_field: str) -> str:
         """Get the key of the search field."""
         for key, value_list in WOSSearchFieldList.search_field_dict.items():
@@ -740,7 +717,7 @@ class WOSParser(QueryStringParser):
                         "Same Search Field in Search and Search Fields."
                     )
 
-                if self.check_search_fields(search_field) == self.check_search_fields(
+                if self.get_search_field_key(search_field) == self.get_search_field_key(
                     search_field_item.value
                 ):
                     diffrent_search_field.append("False")
@@ -890,7 +867,7 @@ class WOSListParser(QueryListParser):
         """Parse the list of queries."""
         # the parse() method of QueryListParser is called to parse the list of queries
         query_dict = self.parse_dict()
-        queries = []
+        queries: typing.List[Query] = []
         combine_queries = {}
 
         for node_nr, node_content in query_dict.items():
@@ -921,22 +898,23 @@ class WOSListParser(QueryListParser):
         ):
             raise ValueError(
                 "[ERROR] The last item of the list must be a combining string."
-                + "\nFound: "
-                + query
+                # + "\nFound: "
+                # + query
             )
 
         for index, query in combine_queries.items():
-            children = []
+            children: typing.List[Query] = []
             res_children = []
             operator = None
             tokens = self.tokenize_combining_list_elem(query)
 
             # Check if the last token is a operator
-            if tokens[len(tokens) - 1] in ["AND", "OR"]:
+            last_token = tokens[len(tokens) - 1]
+            if last_token in ["AND", "OR"]:
                 raise ValueError(
                     "[ERROR] The last token of a combining list item must be a number."
                     + "\nFound: "
-                    + query
+                    + last_token
                     + "\nFor combinations like this '#4 AND DT=(Article)'"
                     + " split the query into two seperate list items and"
                     + " add them together in the next list item:"

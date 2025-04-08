@@ -1159,7 +1159,7 @@ class TestWOSParser(unittest.TestCase):
         """
         title_fields = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
         for field in title_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "TI=")
 
     def test_check_search_fields_abstract(self) -> None:
@@ -1180,7 +1180,7 @@ class TestWOSParser(unittest.TestCase):
             "ABSTRACT",
         ]
         for field in abstract_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "AB=")
 
     def test_check_search_fields_author(self) -> None:
@@ -1201,7 +1201,7 @@ class TestWOSParser(unittest.TestCase):
             "AUTHOR",
         ]
         for field in author_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "AU=")
 
     def test_check_search_fields_topic(self) -> None:
@@ -1224,7 +1224,7 @@ class TestWOSParser(unittest.TestCase):
             "Topic TS",
         ]
         for field in topic_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "TS=")
 
     def test_check_search_fields_language(self) -> None:
@@ -1245,7 +1245,7 @@ class TestWOSParser(unittest.TestCase):
             "LANGUAGE",
         ]
         for field in language_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "LA=")
 
     def test_check_search_fields_year(self) -> None:
@@ -1265,7 +1265,7 @@ class TestWOSParser(unittest.TestCase):
             "PUBLICATION YEAR",
         ]
         for field in year_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "PY=")
 
     def test_check_search_fields_misc(self) -> None:
@@ -1277,7 +1277,7 @@ class TestWOSParser(unittest.TestCase):
         """
         misc_fields = ["INVALID", "123", "random", "field"]
         for field in misc_fields:
-            result = self.parser.check_search_fields(field)
+            result = self.parser.get_search_field_key(field)
             self.assertEqual(result, "Misc")
 
     def test_check_search_fields_from_json_with_non_matching_field(self) -> None:
