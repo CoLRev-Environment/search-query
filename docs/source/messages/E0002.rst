@@ -1,14 +1,14 @@
 .. _E0002:
 
-E0002 — search-field-missing
-============================
+E0002 — search-field-contradiction
+==================================
 
 **Error Code**: E0002
 
-**Message**: ``Expected search field is missing``
+**Message**: ``Contradictory search fields specified``
 
 **Scope**: all
 
-**Description**: Expected search field is missing
+**Description**: Contradictory search fields specified
 
 **Back to**: :ref:`query-error-messages`

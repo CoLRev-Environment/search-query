@@ -1,25 +1,22 @@
-.. _F0002:
+.. _F1002:
 
-F0002 — unbalanced-parentheses
-==============================
+F1002 — unmatched-opening-parenthesis
+=====================================
 
-**Error Code**: F0002
+**Error Code**: F1002
 
-**Message**: ``Parentheses are unbalanced in the query``
+**Message**: ``Unmatched opening parenthesis``
 
 **Scope**: all
 
 **Typical fix**: Check the parentheses in the query
-
 **Problematic query**:
-
 .. code-block:: python
 
     (a AND b OR c
-
 **Correct query**:
-
 .. code-block:: python
+
 
     (a AND b) OR c
 
