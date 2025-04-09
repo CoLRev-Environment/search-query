@@ -10,7 +10,6 @@ from search_query.constants import LinterMode
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.constants import WOSSearchFieldList
@@ -187,7 +186,7 @@ class WOSParser(QueryStringParser):
             else:
                 # Check if the token is a search field which has constraints
                 # Check if the token is a year
-                if re.findall(self.YEAR_REGEX, token):
+                if re.findall(self.YEAR_REGEX, token.value):
                     if search_field.value in WOSSearchFieldList.year_published_list:
                         children = self.handle_year_search(
                             token, children, current_operator
@@ -221,7 +220,7 @@ class WOSParser(QueryStringParser):
                 children = self.add_term_node(
                     tokens=tokens,
                     index=index,
-                    value=token,
+                    value=token.value,
                     operator=False,
                     search_field=search_field,
                     position=token.position,
@@ -520,177 +519,26 @@ class WOSParser(QueryStringParser):
 
         return children
 
-    def translate_search_fields(self, query: Query) -> Query:
-        """Translate search fields."""
-
-        # Search fields are given in the search_fields string
-        if self.search_fields:
-            found_list = []
-            print("\n[Info:] Search Fields given: " + self.search_fields)
-            matches = re.findall(self.SEARCH_FIELDS_REGEX, self.search_fields)
-
-            for match in matches:
-                match = self.get_search_field_key(
-                    match,
-                )
-
-                # Check if the search field is not in the list of search fields
-                if match not in found_list:
-                    self.search_fields_list.append(
-                        SearchField(value=match, position=None)
-                    )
-                    found_list.append(match)
-                    print("[Info:] Search Field accepted: " + match)
-            # TODO : if no matches: linter message?
-
-        children = []
-
-        # Recursively translate the search fields of child nodes
-        if query.children:
-            for child in query.children:
-                children.append(self.translate_search_fields(child))
-            query.children = children
-
-        translated_field = None
-        query_search_field_list = []
-        if query.search_field:
-            # Check given Search Fields from JSON
-            if self.search_fields_list:
-                self.check_search_fields_from_json(
-                    search_field=query.search_field, position=query.position
-                )
-
-                if query.search_field.value == "Misc" and self.search_fields_list:
-                    for search_field_item in self.search_fields_list:
-                        if search_field_item.value == "Misc":
-                            search_field_item.value = Fields.ALL
-                            self.add_linter_message(
-                                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                                # note='Set to "ALL=".',
-                                pos=query.position,
-                            )
-
-                        query.search_field = search_field_item
-
-                        translated_field = self.FIELD_TRANSLATION_MAP.get(
-                            search_field_item.value, None
-                        )
-
-                        # Translate only if a mapping exists
-                        # else use default search field [ALL=]
-                        if translated_field:
-                            query.search_field = translated_field
-
-                            # Just print the message because search fields
-                            # in "xx" format are not supported
-                            print(
-                                "[INFO:] Search Field "
-                                + translated_field
-                                + " has been detected."
-                                + " At the position "
-                                + str(query.position)
-                            )
-
-                        query_search_field_list.append(
-                            Query(
-                                value=query.value,
-                                operator=False,
-                                position=query.position,
-                                search_field=query.search_field,
-                            )
-                        )
-
-                        # TODO : let's discuss this to make sure the message is correct.
-                        self.add_linter_message(
-                            QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
-                            # msg="Search Fields have been extracted from JSON.",
-                            pos=query.position,
-                        )
-
-                    if len(query_search_field_list) > 1:
-                        query = Query(
-                            value=Operators.OR,
-                            operator=True,
-                            children=query_search_field_list,
-                        )
-
-            if not query.operator:
-                original_field = self.get_search_field_key(query.search_field)
-                translated_field = self.FIELD_TRANSLATION_MAP.get(original_field, None)
-
-                # Translate only if a mapping exists
-                # else use default search field [ALL=]
-                if translated_field:
-                    query.search_field = translated_field
-
-                    # Just print the message because search fields
-                    # in "xx" format are not supported
-                    print(
-                        "[INFO:] Search Field "
-                        + translated_field
-                        + " has been detected."
-                        + " At the position "
-                        + str(query.position)
-                    )
-                else:
-                    self.add_linter_message(
-                        # TODO : check whether this is accurate:
-                        # msg="Search Field not set or not supported."
-                        # fix= Using default of the database (ALL)
-                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                        pos=query.position,
-                    )
-                    query.search_field = SearchField(
-                        value=Fields.ALL, position=query.position
-                    )
-
-        if not query.search_field and not translated_field and not query.operator:
-            query.search_field = SearchField(value=Fields.ALL, position=query.position)
-
-            self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
-                # msg='Set to "ALL=".',
-                pos=query.position,
-            )
-
-        return query
-
-    def get_search_field_key(self, search_field: str) -> str:
+    def _map_default_field(self, search_field: str) -> str:
         """Get the key of the search field."""
         for key, value_list in WOSSearchFieldList.search_field_dict.items():
             if search_field in value_list:
-                return key
-        return "Misc"
+                translated_field = self.FIELD_TRANSLATION_MAP[key]
+                return translated_field
+        return search_field
 
-    def check_search_fields_from_json(
-        self,
-        search_field: SearchField,
-        position: tuple,
-    ) -> None:
-        """Check if the search field is in the list of search fields from JSON."""
+    def translate_search_fields(self, query: Query) -> None:
+        """Translate search fields."""
 
-        if not search_field.value == "Misc":
-            diffrent_search_field = []
-            for search_field_item in self.search_fields_list:
-                if search_field.value == search_field_item.value:
-                    # TODO : warning (message) for linter?
-                    print(
-                        "[INFO:] Data redudancy. "
-                        "Same Search Field in Search and Search Fields."
-                    )
+        if query.children:
+            for query in query.children:
+                self.translate_search_fields(query)
+            return
 
-                if self.get_search_field_key(
-                    search_field.value
-                ) == self.get_search_field_key(search_field_item.value):
-                    diffrent_search_field.append("False")
-                else:
-                    diffrent_search_field.append("True")
+        query.search_field.value = self._map_default_field(query.search_field.value)
 
-            if "False" not in diffrent_search_field:
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_NOT_FOUND,
-                    pos=position,
-                )
+        # at this point it may be necessary to split (OR) queries for combined search fields
+        # see _expand_combined_fields() in pubmed
 
     def wrap_with_operator_node(self, children: list, current_operator: str) -> list:
         """Safe children, when there is a change of
@@ -706,10 +554,10 @@ class WOSParser(QueryStringParser):
 
         return safe_children
 
-    def check_nested_operators(self, query: Query) -> Query:
+    def flatten_nested_operators(self, query: Query) -> None:
         """Check if there are double nested operators."""
-        del_children = []
 
+        del_children = []
         if query.operator:
             for child in query.children:
                 if child.operator:
@@ -727,31 +575,27 @@ class WOSParser(QueryStringParser):
 
         if query.children:
             for child in query.children:
-                self.check_nested_operators(child)
-        return query
+                self.flatten_nested_operators(child)
 
     def pre_linting(self) -> None:
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
         self.query_linter.pre_linting()
-        self.fatal_linter_err = any(e.is_fatal() for e in self.linter_messages)
+        self.fatal_linter_err = any(e["is_fatal"] for e in self.linter_messages)
 
     def parse(self) -> Query:
         """Parse a query string."""
-        # Remove all previous linter messages
+
         self.linter_messages.clear()
-
-        # Tokenize the query string
         self.tokenize()
-
-        # Pre-linting of the query string
         self.pre_linting()
 
         if not self.fatal_linter_err:
-            # Parse the query string, build the query tree and translate search fields
             query, _ = self.parse_query_tree(self.tokens)
-            query = self.translate_search_fields(query)
-            query = self.check_nested_operators(query)
+            # raise Exception
+            self.translate_search_fields(query)
+            # TODO : optional?
+            self.flatten_nested_operators(query)
         else:
             print("\n[FATAL:] Fatal error detected in pre-linting")
 
@@ -765,11 +609,11 @@ class WOSParser(QueryStringParser):
             for msg in self.linter_messages:
                 print(
                     "[Linter:] "
-                    + msg["rule"]
+                    + msg["label"]
                     + "\t"
                     + msg["message"]
                     + " At position "
-                    + str(msg["position"])
+                    + str(msg["pos"])
                 )
 
             # Raise an exception

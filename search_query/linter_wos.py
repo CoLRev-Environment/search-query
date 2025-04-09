@@ -34,10 +34,12 @@ class QueryLinter:
     def pre_linting(self) -> None:
         """Performs a pre-linting"""
 
+        self.check_search_fields_from_json()
         self.check_unknown_token_types()
         self.check_operator_capitalization()
         self.check_implicit_near()
         self.check_year_format()
+        self.check_fields()
 
         if len(self.parser.tokens) < 2:
             if '"' in self.parser.tokens[0][0]:
@@ -47,7 +49,7 @@ class QueryLinter:
                     pos=self.parser.tokens[0][1],
                 )
 
-        if self.parser.tokens[0][0] in [
+        if self.parser.tokens[0].value in [
             "Web of Science",
             "wos",
             "WoS",
@@ -71,13 +73,13 @@ class QueryLinter:
         while index < len(self.parser.tokens) - 1:
             token = self.parser.tokens[index]
 
-            if "NEAR" in token:
+            if "NEAR" in token.value:
                 self.check_near_distance_in_range(index=index)
 
-            if re.match(self.parser.YEAR_REGEX, token):
+            if re.match(self.parser.YEAR_REGEX, token.value):
                 year_search_field_detected = True
 
-            if re.match(self.parser.SEARCH_FIELD_REGEX, token):
+            if re.match(self.parser.SEARCH_FIELD_REGEX, token.value):
                 count_search_fields += 1
 
             self.check_wildcards(token=token)
@@ -97,7 +99,47 @@ class QueryLinter:
 
         self.check_unmatched_parentheses()
 
+    def check_search_fields_from_json(
+        self,
+    ) -> None:
+        """Check if the search field is in the list of search fields from JSON."""
+
+        if self.parser.search_fields == "":
+            # message: should be set explicitly (-> set default?)
+            pass
+
+        for index, token in enumerate(self.parser.tokens):
+            if index == 0:
+                if (
+                    token.type == TokenTypes.FIELD
+                    and token.value != self.parser.search_fields
+                ):
+                    # print(f"disagree: {token.value} != {self.parser.search_fields}")
+                    self.parser.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
+                        pos=token.position,
+                    )
+            # TODO : contradition could also be in following tokens (at level-0 of parentheses)
+
+            # # TODO : warning (message) for linter?
+            # print(
+            #     "[INFO:] Data redudancy. "
+            #     "Same Search Field in Search and Search Fields."
+            # )
+
+    def check_fields(self) -> None:
+        """Check for the correct format of fields."""
+        valid_fields = set().union(*WOSSearchFieldList.search_field_dict.values())
+        for token in self.parser.tokens:
+            if token.type == TokenTypes.FIELD:
+                if token.value not in valid_fields:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.UNSUPPORTED_SEARCH_FIELD,
+                        pos=token.position,
+                    )
+
     def check_unknown_token_types(self) -> None:
+        """Check for unknown token types."""
         for token in self.parser.tokens:
             if token.type == TokenTypes.UNKNOWN:
                 self.parser.add_linter_message(
@@ -127,6 +169,7 @@ class QueryLinter:
                 # TODO : TBD: adjust token position?
 
     def check_year_format(self) -> None:
+        """Check for the correct format of year."""
         for index, token in enumerate(self.parser.tokens):
             if token.value in WOSSearchFieldList.year_published_list:
                 year_token = self.parser.tokens[index + 1]

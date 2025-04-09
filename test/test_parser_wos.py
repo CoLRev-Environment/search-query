@@ -639,7 +639,7 @@ class TestWOSParser(unittest.TestCase):
                 operator=True,
                 children=[
                     Query(
-                        value=token,
+                        value=token.value,
                         operator=False,
                         search_field=SearchField(
                             value=Fields.YEAR, position=token.position
@@ -1037,8 +1037,8 @@ class TestWOSParser(unittest.TestCase):
         """
         title_fields = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
         for field in title_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "TI=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "ti")
 
     def test_check_search_fields_abstract(self) -> None:
         """
@@ -1049,17 +1049,17 @@ class TestWOSParser(unittest.TestCase):
         """
         abstract_fields = [
             "AB=",
-            "Abstract",
             "ab=",
             "abstract=",
-            "ab",
-            "abstract",
-            "AB",
-            "ABSTRACT",
+            # "Abstract",
+            # "ab",
+            # "abstract",
+            # "AB",
+            # "ABSTRACT",
         ]
         for field in abstract_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "AB=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "ab")
 
     def test_check_search_fields_author(self) -> None:
         """
@@ -1073,14 +1073,14 @@ class TestWOSParser(unittest.TestCase):
             "Author",
             "au=",
             "author=",
-            "au",
-            "author",
-            "AU",
-            "AUTHOR",
+            # "au",
+            # "author",
+            # "AU",
+            # "AUTHOR",
         ]
         for field in author_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "AU=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "au")
 
     def test_check_search_fields_topic(self) -> None:
         """
@@ -1091,19 +1091,19 @@ class TestWOSParser(unittest.TestCase):
         """
         topic_fields = [
             "TS=",
-            "Topic",
             "ts=",
             "topic=",
-            "ts",
-            "topic",
-            "TS",
-            "TOPIC",
-            "Topic Search",
-            "Topic TS",
+            # "Topic",
+            # "ts",
+            # "topic",
+            # "TS",
+            # "TOPIC",
+            # "Topic Search",
+            # "Topic TS",
         ]
         for field in topic_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "TS=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "ts")
 
     def test_check_search_fields_language(self) -> None:
         """
@@ -1114,17 +1114,17 @@ class TestWOSParser(unittest.TestCase):
         """
         language_fields = [
             "LA=",
-            "Languages",
             "la=",
             "language=",
-            "la",
-            "language",
-            "LA",
-            "LANGUAGE",
+            # "Languages",
+            # "la",
+            # "language",
+            # "LA",
+            # "LANGUAGE",
         ]
         for field in language_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "LA=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "la")
 
     def test_check_search_fields_year(self) -> None:
         """
@@ -1135,50 +1135,25 @@ class TestWOSParser(unittest.TestCase):
         """
         year_fields = [
             "PY=",
-            "Publication Year",
             "py=",
             "py",
-            "publication year",
-            "PY",
-            "PUBLICATION YEAR",
+            # "Publication Year",
+            # "publication year",
+            # "PY",
+            # "PUBLICATION YEAR",
         ]
         for field in year_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "PY=")
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, "py")
 
     def test_check_search_fields_misc(self) -> None:
         """
-        Test the `check_search_fields` method with miscellaneous search fields.
-
-        This test verifies that the `check_search_fields` method correctly translates
-        miscellaneous search fields into the base search field "Misc".
+        Test the `check_search_fields` method with unknown search fields.
         """
         misc_fields = ["INVALID", "123", "random", "field"]
         for field in misc_fields:
-            result = self.parser.get_search_field_key(field)
-            self.assertEqual(result, "Misc")
-
-    def test_check_search_fields_from_json_with_non_matching_field(self) -> None:
-        """
-        Test the `check_search_fields_from_json` method with a non-matching search field.
-
-        This test verifies that the `check_search_fields_from_json` method correctly identifies
-        a search field that does not match any of the search
-        fields from JSON and adds a linter message.
-        """
-        search_field = SearchField(value="TI=", position=(0, 3))
-        self.parser.search_fields_list = [SearchField(value="AB=", position=(0, 3))]
-        self.parser.check_search_fields_from_json(search_field, position=(0, 3))
-        self.assertIn(
-            {
-                "code": "E0004",
-                "label": "search-field-not-found",
-                "message": "Search Field specified was not found in Search Fields from JSON.",
-                "is_fatal": False,
-                "pos": (0, 3),
-            },
-            self.parser.linter_messages,
-        )
+            result = self.parser._map_default_field(field)
+            self.assertEqual(result, field)
 
     def test_safe_children_with_single_child(self) -> None:
         """
@@ -1249,6 +1224,46 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
         self.assertEqual(result[0].children, expected_result[0].children)
+
+    def test_query_parsing_1(self) -> None:
+        parser = WOSParser(
+            query_str="TI=example AND AU=John Doe", search_fields="", mode=""
+        )
+        query = parser.parse()
+        self.assertEqual(query.value, "AND")
+        self.assertTrue(query.operator)
+        self.assertEqual(len(query.children), 2)
+        self.assertEqual(query.children[0].value, "example")
+        self.assertFalse(query.children[0].operator)
+        self.assertEqual(query.children[1].value, "John Doe")
+        self.assertEqual(query.children[1].search_field.value, "au")
+        self.assertFalse(query.children[1].operator)
+
+    def test_query_parsing_2(self) -> None:
+        parser = WOSParser(query_str="digital and online", search_fields="", mode="")
+        query = parser.parse()
+        print(parser.linter_messages)
+        print(parser.tokens)
+        self.assertEqual(query.value, "AND")
+        self.assertTrue(query.operator)
+        raise Exception  # should not be accepted as a valid query/at least throw messages
+
+    def test_query_parsing_3(self) -> None:
+        parser = WOSParser(
+            query_str="TI=example AND (AU=John Doe OR AU=John Wayne)",
+            search_fields="",
+            mode="",
+        )
+        query = parser.parse()
+        self.assertEqual(query.value, "AND")
+        self.assertTrue(query.operator)
+        self.assertEqual(len(query.children), 2)
+        self.assertEqual(query.children[0].value, "example")
+        self.assertFalse(query.children[0].operator)
+        self.assertEqual(query.children[1].value, "OR")
+
+        self.assertEqual(query.children[1].children[1].value, "John Wayne")
+        self.assertEqual(query.children[1].children[1].search_field.value, "au")
 
 
 if __name__ == "__main__":

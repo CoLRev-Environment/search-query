@@ -817,21 +817,9 @@ class QueryErrorCode(Enum):
     UNSUPPORTED_SEARCH_FIELD = (
         [PLATFORM.WOS],
         "W1002",
-        "year-span-violation",
-        "Year span must be five or less.",
-        """**Typical fix**: The parser automatically sets the year span to 5.
-
-**Problematic query**:
-
-.. code-block:: python
-
-    A AND PY=2000-2020
-
-**Correct query**:
-
-.. code-block:: python
-
-    A AND PY=2015-2020""",
+        "unsupported-search-field",
+        "Unsupported search field",
+        "",
     )
     OPERATOR_CHANGED_AT_SAME_LEVEL = (
         ["all"],

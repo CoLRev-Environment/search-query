@@ -1045,6 +1045,27 @@ class TestQueryLinter(unittest.TestCase):
             },
         )
 
+    def test_invalid_field(self) -> None:
+        """
+        Test invalid field in the query string.
+        """
+
+        parser = WOSParser("term1 and IY=digital")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+
+        linter.check_fields()
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "W1002",
+                "label": "unsupported-search-field",
+                "message": "Unsupported search field",
+                "is_fatal": False,
+                "pos": (10, 13),
+            },
+        )
+
     def test_year_span_violation(self) -> None:
         """
         Test case for checking the year span violation in the query string.
@@ -1066,6 +1087,29 @@ class TestQueryLinter(unittest.TestCase):
             },
         )
         self.assertEqual(parser.tokens[3].value, "1995-2000")
+
+    def test_check_search_fields_from_json_with_non_matching_field(self) -> None:
+        """
+        Test the `check_search_fields_from_json` method with a non-matching search field.
+
+        This test verifies that the `check_search_fields_from_json` method correctly identifies
+        a search field that does not match any of the search
+        fields from JSON and adds a linter message.
+        """
+        parser = WOSParser("TI=digital", search_fields="AB=")
+        parser.tokenize()
+        linter = QueryLinter(parser)
+        linter.check_search_fields_from_json()
+        self.assertIn(
+            {
+                "code": "E0001",
+                "label": "search-field-contradiction",
+                "message": "Contradictory search fields specified",
+                "is_fatal": False,
+                "pos": (0, 3),
+            },
+            parser.linter_messages,
+        )
 
 
 if __name__ == "__main__":
