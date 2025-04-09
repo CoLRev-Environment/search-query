@@ -114,7 +114,7 @@ class WOSParser(QueryStringParser):
         """Parse tokens starting at the given index,
         handling parentheses, operators, search fields and terms recursively."""
         children: typing.List[Query] = []
-        current_operator = None
+        current_operator = ""
 
         if current_negation:
             current_operator = "NOT"
@@ -186,18 +186,13 @@ class WOSParser(QueryStringParser):
             else:
                 # Check if the token is a search field which has constraints
                 # Check if the token is a year
-                if re.findall(self.YEAR_REGEX, token.value):
+                if re.findall(self.YEAR_REGEX, token.value) and search_field:
                     if search_field.value in WOSSearchFieldList.year_published_list:
                         children = self.handle_year_search(
                             token, children, current_operator
                         )
                         index += 1
                         continue
-                    # Year detected without search field
-                    print(
-                        "[INFO:] Year detected "
-                        "without search field at position " + str(token.position)
-                    )
 
                 # Set search field to superior search field
                 # if no search field is given
@@ -229,7 +224,7 @@ class WOSParser(QueryStringParser):
                     current_negation=current_negation,
                 )
 
-                current_operator = None
+                current_operator = ""
                 search_field_for_check = search_field.value
 
                 if not (
@@ -251,41 +246,6 @@ class WOSParser(QueryStringParser):
                 Query(value=current_operator, operator=True, children=children),
                 index,
             )
-
-        # Return the children if there are multiple children
-        if self.is_operator(children[0].value):
-            # Check if the operator of the first child
-            # is not the same as the second child
-            if children[0].value != children[1].value:
-                for child in children:
-                    if not children.index(child) == 0:
-                        # Check if the search field is in the language/year list
-                        if children[children.index(child)].search_field.value and (
-                            children[children.index(child)].search_field.value
-                            in WOSSearchFieldList.language_list
-                            or children[children.index(child)].search_field.value
-                            in WOSSearchFieldList.year_published_list
-                        ):
-                            children[0].children.append(child)
-                            children.pop(children.index(child))
-                return children[0], index
-
-            # Check if the operator of the first child is the same
-            # as the second child
-            if children[0].value == children[1].value:
-                operator_children = []
-                for child in children:
-                    for grandchild in child.children:
-                        operator_children.append(grandchild)
-
-                return (
-                    Query(
-                        value=children[0].value,
-                        operator=True,
-                        children=operator_children,
-                    ),
-                    index,
-                )
 
         # Raise an error if the code gets here
         raise NotImplementedError("Error in parsing the query tree")
@@ -460,7 +420,7 @@ class WOSParser(QueryStringParser):
         operator: bool,
         search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
-        current_operator: str = None,
+        current_operator: str = "",
         children: typing.Optional[typing.List[Query]] = None,
         current_negation: bool = False,
     ) -> typing.List[Query]:
@@ -531,8 +491,8 @@ class WOSParser(QueryStringParser):
         """Translate search fields."""
 
         if query.children:
-            for query in query.children:
-                self.translate_search_fields(query)
+            for child in query.children:
+                self.translate_search_fields(child)
             return
 
         query.search_field.value = self._map_default_field(query.search_field.value)
