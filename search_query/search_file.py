@@ -4,72 +4,62 @@ from __future__ import annotations
 
 import json
 import re
-import typing
+from pathlib import Path
+from typing import Optional
 
 # pylint: disable=too-few-public-methods
 
 
 class SearchFile:
-    """SearchFile model."""
+    """SearchFile class."""
 
-    record_info: typing.Dict[str, str]
-    authors: typing.List[dict]
-    date: dict
-    platform: str
-    database: typing.List[str]
-    search_string: str
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        search_string: str,
+        platform: str,
+        authors: Optional[list[dict]] = None,
+        record_info: Optional[dict] = None,
+        date: Optional[dict] = None,
+        filepath: Optional[str | Path] = None,
+        **kwargs: dict,
+    ) -> None:
+        self.search_string = search_string
+        self.platform = platform
+        self.authors = authors or []
+        self.record_info = record_info or {}
+        self.date = date or {}
+        self._filepath = Path(filepath) if filepath else None
 
-    # Optionals
-    parsed: typing.Optional[dict] = None
-    string_name: typing.Optional[str] = None
-    keywords: typing.Optional[str] = None
-    related_records: typing.Optional[str] = None
-    parent_record: typing.Optional[str] = None
-    database_time_coverage: typing.Optional[str] = None
-    search_language: typing.Optional[str] = None
-    settings: typing.Optional[str] = None
-    quality_assurance: typing.Optional[str] = None
-    validation_report: typing.Optional[str] = None
-    peer_review: typing.Optional[str] = None
-    description: typing.Optional[str] = None
-    review_question: typing.Optional[str] = None
-    review_type: typing.Optional[str] = None
-    linked_protocol: typing.Optional[str] = None
-    linked_report: typing.Optional[str] = None
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    def __init__(self, filepath: str) -> None:
-        with open(filepath, encoding="utf-8") as file:
-            data = json.load(file)
+        self._validate_authors(self.to_dict())
 
-        self._validate(data)
+    def save(self, filepath: Optional[str | Path] = None) -> None:
+        """Save the search file to a JSON file."""
+        path = Path(filepath) if filepath else self._filepath
+        if path is None:
+            raise ValueError("No filepath provided and no previous filepath stored.")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=4, ensure_ascii=False)
 
-        self.record_info = data["record_info"]
-        self.authors = data["authors"]
-        self.date = data["date"]
-        self.platform = data["platform"]
-        self.database = data["database"]
-        self.search_string = data["search_string"]
-        if "parsed" in data:
-            self.parsed = data["parsed"]
-
-    def _validate(self, data: dict) -> None:
-        # Note: validate without pydantic to keep zero dependencies
-
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dictionary.")
-
-        self._validate_authors(data)
-
-        if "record_info" not in data:
-            raise ValueError("Data must have a 'record_info' key.")
-        if "date" not in data:
-            raise ValueError("Data must have a 'date' key.")
-        if "platform" not in data:
-            raise ValueError("Data must have a 'platform' key.")
-        if "database" not in data:
-            raise ValueError("Data must have a 'database' key.")
-        if "search_string" not in data:
-            raise ValueError("Data must have a 'search_string' key.")
+    def to_dict(self) -> dict:
+        """Convert the search file to a dictionary."""
+        data = {
+            "search_string": self.search_string,
+            "platform": self.platform,
+            "authors": self.authors,
+            "record_info": self.record_info,
+            "date": self.date,
+        }
+        extras = {
+            k: v
+            for k, v in self.__dict__.items()
+            if k not in data and not k.startswith("_") and v is not None
+        }
+        data.update(extras)
+        return data
 
     def _validate_authors(self, data: dict) -> None:
         if "authors" not in data:
@@ -95,3 +85,20 @@ class SearchFile:
                     raise TypeError("Email must be a string.")
                 if not re.match(r"^\S+@\S+\.\S+$", author["email"]):
                     raise ValueError("Invalid email.")
+
+
+def load_search_file(filepath: str | Path) -> SearchFile:
+    """Load a search file from a JSON file."""
+    path = Path(filepath)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    if "search_string" not in data or "platform" not in data:
+        raise ValueError("File must contain at least 'search_string' and 'platform'.")
+
+    return SearchFile(
+        search_string=data.pop("search_string"),
+        platform=data.pop("platform"),
+        filepath=path,
+        **data,
+    )

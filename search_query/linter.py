@@ -28,7 +28,7 @@ def pre_commit_hook() -> int:
     file_path = sys.argv[1]
 
     try:
-        search_file = SearchFile(file_path)
+        search_file = SearchFile(file_path, platform="unknown")
         platform = search_query.parser.get_platform(search_file.platform)
     except Exception as e:  # pylint: disable=broad-except
         print(e)
