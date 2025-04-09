@@ -39,6 +39,7 @@ class Token:
     type: TokenTypes
     position: Tuple[int, int]
 
+
 class Operators:
     """Operators"""
 
@@ -648,120 +649,12 @@ class QueryErrorCode(Enum):
         "Invalid token sequence: missing operator.",
         "",
     )
-    WILDCARD_IN_YEAR = (
+
+    WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
-        "F1001",
-        "wildcard-in-year",
-        "Wildcard characters (*, ?, $) not supported in year search.",
-        """**Typical fix**: Replace with year range.
-
-**Problematic query**:
-
-.. code-block:: python
-
-    A AND year=201*
-
-**Correct query**:
-
-.. code-block:: python
-
-    A AND (year >= 2010 AND year < 2020)""",
-    )
-    UNSUPPORTED_WILDCARD = (
-        [PLATFORM.WOS],
-        "F1002",
-        "unsupported-wildcard",
+        "F2001",
+        "wildcard-unsupported",
         "Unsupported wildcard in search string.",
-        "",
-    )
-    WILDCARD_RIGHT_SHORT_LENGTH = (
-        [PLATFORM.WOS],
-        "F1003",
-        "wildcard-short-length",
-        "Right-hand wildcard must preceded by at least three characters.",
-        "",
-    )
-    WILDCARD_AFTER_SPECIAL_CHAR = (
-        [PLATFORM.WOS],
-        "F1004",
-        "wildcard-after-special-char",
-        "Wildcard cannot be preceded by special characters.",
-        "",
-    )
-
-    # TODO : consolidate with INVALID_TOKEN_SEQUENCE (EBSCO) is non-fatal?!
-    INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS = (
-        [PLATFORM.EBSCO],
-        "F1005",
-        "invalid-token-sequence-two-search-fields",
-        "Invalid token sequence: two search fields in a row.",
-        "",
-    )
-    INVALID_TOKEN_SEQUENCE_TWO_OPERATORS = (
-        [PLATFORM.EBSCO],
-        "F1006",
-        "invalid-token-sequence-two-operators",
-        "Invalid token sequence: two operators in a row.",
-        "",
-    )
-    NEAR_DISTANCE_TOO_LARGE = (
-        [PLATFORM.WOS],
-        "F1007",
-        "near-distance-too-large",
-        "NEAR distance is too large (max: 15).",
-        "",
-    )
-    WILDCARD_STANDALONE = (
-        [PLATFORM.WOS],
-        "F1008",
-        "wildcard-standalone",
-        "Wildcard cannot be standalone.",
-        "",
-    )
-    INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR = (
-        [PLATFORM.WOS],
-        "F1009",
-        "invalid-token-sequence-missing-operator",
-        "Invalid token sequence: missing operator.",
-        "",
-    )
-    WILDCARD_LEFT_SHORT_LENGTH = (
-        [PLATFORM.WOS],
-        "F1010",
-        "wildcard-left-short-length",
-        "Left-hand wildcard must be preceded by at least three characters.",
-        "",
-    )
-    ISBN_FORMAT_INVALID = (
-        [PLATFORM.WOS],
-        "F1011",
-        "isbn-format-invalid",
-        "Invalid ISBN format.",
-        "",
-    )
-    DOI_FORMAT_INVALID = (
-        [PLATFORM.WOS],
-        "F1012",
-        "doi-format-invalid",
-        "Invalid DOI format.",
-        "",
-    )
-    YEAR_WITHOUT_SEARCH_FIELD = (
-        [PLATFORM.WOS],
-        "F1013",
-        "year-without-search-field",
-        "Year detected without specified search field.",
-        "",
-    )
-
-    # -------------------------------------------------------
-    # Errors (prefix: E)
-    # -------------------------------------------------------
-    SEARCH_FIELD_CONTRADICTION = (
-        ["all"],
-        "E0001",
-        "search-field-contradiction",
-        "Contradictory search fields specified",
         "",
     )
     WILDCARD_IN_YEAR = (
@@ -856,29 +749,6 @@ class QueryErrorCode(Enum):
         "F2011",
         "search-field-unsupported",
         "Search field is not supported for this database",
-        "",
-    )
-    # TODO : clarify (WOS only?)
-    # TODO : merge with SEARCH_FIELD_NOT_SPECIFIED
-    SEARCH_FIELD_NOT_FOUND = (
-        ["all"],
-        "E0004",
-        "search-field-not-found",
-        "Search Field specified was not found in Search Fields from JSON.",
-        "",
-    )
-    QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
-        [PLATFORM.WOS],
-        "E0005",
-        "query-starts-with-platform-identifier",
-        "Query starts with platform identifier",
-        "",
-    )
-    QUERY_IN_QUOTES = (
-        [PLATFORM.WOS],
-        "E0006",
-        "query-in-quotes",
-        "The whole Search string is in quotes.",
         "",
     )
 
@@ -998,13 +868,6 @@ class QueryErrorCode(Enum):
 .. code-block:: python
 
     A NEAR/15 B""",
-    )
-    UNSUPPORTED_SEARCH_FIELD = (
-        [PLATFORM.WOS],
-        "W1002",
-        "unsupported-search-field",
-        "Unsupported search field",
-        "",
     )
     # Note : merged QUERY_PRECEDENCE and OPERATOR_CHANGED_AT_SAME_LEVEL into:
     IMPLICIT_PRECEDENCE = (

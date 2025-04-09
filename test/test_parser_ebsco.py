@@ -242,10 +242,7 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
 )
 def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "", mode="non-strict")
-    try:
-        ebsco_parser.parse()
-    except Exception:
-        pass
+    ebsco_parser.parse()
     assert ebsco_parser.linter_messages == linter_messages
 
 

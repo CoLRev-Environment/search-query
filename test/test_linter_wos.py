@@ -74,7 +74,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F0004",
+                "code": "F1002",
                 "is_fatal": True,
                 "label": "unmatched-opening-parenthesis",
                 "message": "Unmatched opening parenthesis",
@@ -105,7 +105,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F0005",
+                "code": "F1003",
                 "is_fatal": True,
                 "label": "unmatched-closing-parenthesis",
                 "message": "Unmatched closing parenthesis",
@@ -132,7 +132,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F0005",
+                "code": "F1003",
                 "is_fatal": True,
                 "label": "unmatched-closing-parenthesis",
                 "message": "Unmatched closing parenthesis",
@@ -164,7 +164,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F0004",
+                "code": "F1002",
                 "is_fatal": True,
                 "label": "unmatched-opening-parenthesis",
                 "message": "Unmatched opening parenthesis",
@@ -197,7 +197,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1006",
+                "code": "F1011",
                 "is_fatal": True,
                 "label": "invalid-token-sequence-two-operators",
                 "message": "Invalid token sequence: two operators in a row.",
@@ -236,7 +236,7 @@ class TestQueryLinter(unittest.TestCase):
             parser.linter_messages[0],
             # TODO : this shows that the message can be ambiguous
             {
-                "code": "F1009",
+                "code": "F1012",
                 "label": "invalid-token-sequence-missing-operator",
                 "message": "Invalid token sequence: missing operator.",
                 "is_fatal": True,
@@ -276,7 +276,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1009",
+                "code": "F1012",
                 "is_fatal": True,
                 "label": "invalid-token-sequence-missing-operator",
                 "message": "Invalid token sequence: missing operator.",
@@ -310,7 +310,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1009",
+                "code": "F1012",
                 "is_fatal": True,
                 "label": "invalid-token-sequence-missing-operator",
                 "message": "Invalid token sequence: missing operator.",
@@ -343,7 +343,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1009",
+                "code": "F1012",
                 "is_fatal": True,
                 "label": "invalid-token-sequence-missing-operator",
                 "message": "Invalid token sequence: missing operator.",
@@ -392,7 +392,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1007",
+                "code": "F2007",
                 "is_fatal": True,
                 "label": "near-distance-too-large",
                 "message": "NEAR distance is too large (max: 15).",
@@ -455,8 +455,8 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1002",
-                "label": "unsupported-wildcard",
+                "code": "F2001",
+                "label": "wildcard-unsupported",
                 "message": "Unsupported wildcard in search string.",
                 "is_fatal": True,
                 "pos": (6, 7),
@@ -487,7 +487,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1008",
+                "code": "F2006",
                 "is_fatal": True,
                 "label": "wildcard-standalone",
                 "message": "Wildcard cannot be standalone.",
@@ -555,7 +555,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1004",
+                "code": "F2005",
                 "is_fatal": True,
                 "label": "wildcard-after-special-char",
                 "message": "Wildcard cannot be preceded by special characters.",
@@ -592,9 +592,9 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1003",
+                "code": "F2003",
                 "is_fatal": True,
-                "label": "wildcard-short-length",
+                "label": "wildcard-right-short-length",
                 "message": "Right-hand wildcard must preceded by at least three characters.",
                 "pos": (0, 2),
             },
@@ -660,7 +660,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1010",
+                "code": "F2004",
                 "is_fatal": True,
                 "label": "wildcard-left-short-length",
                 "message": "Left-hand wildcard must be preceded by at least three characters.",
@@ -709,7 +709,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1011",
+                "code": "F2008",
                 "is_fatal": True,
                 "label": "isbn-format-invalid",
                 "message": "Invalid ISBN format.",
@@ -762,7 +762,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1011",
+                "code": "F2008",
                 "is_fatal": True,
                 "label": "isbn-format-invalid",
                 "message": "Invalid ISBN format.",
@@ -811,7 +811,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1012",
+                "code": "F2009",
                 "is_fatal": True,
                 "label": "doi-format-invalid",
                 "message": "Invalid DOI format.",
@@ -854,9 +854,9 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1003",
+                "code": "W0007",
                 "is_fatal": False,
-                "label": "operator-changed-at-same-level",
+                "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
                 "pos": (13, 15),
             },
@@ -891,9 +891,9 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1003",
+                "code": "W0007",
                 "is_fatal": False,
-                "label": "operator-changed-at-same-level",
+                "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
                 "pos": (13, 17),
             },
@@ -972,9 +972,9 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1003",
+                "code": "W0007",
                 "is_fatal": False,
-                "label": "operator-changed-at-same-level",
+                "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
                 "pos": (16, 19),
             },
@@ -993,7 +993,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1000",
+                "code": "W0006",
                 "is_fatal": False,
                 "label": "implicit-near-value",
                 "message": "The value of NEAR operator is implicit",
@@ -1037,7 +1037,7 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1001",
+                "code": "F2002",
                 "is_fatal": True,
                 "label": "wildcard-in-year",
                 "message": "Wildcard characters (*, ?, $) not supported in year search.",
@@ -1058,10 +1058,10 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1002",
-                "label": "unsupported-search-field",
-                "message": "Unsupported search field",
-                "is_fatal": False,
+                "code": "F2011",
+                "label": "search-field-unsupported",
+                "message": "Search field is not supported for this database",
+                "is_fatal": True,
                 "pos": (10, 13),
             },
         )
@@ -1079,8 +1079,8 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "W1001",
-                "is_fatal": False,
+                "code": "F2010",
+                "is_fatal": True,
                 "label": "year-span-violation",
                 "message": "Year span must be five or less.",
                 "pos": (13, 22),
@@ -1096,13 +1096,13 @@ class TestQueryLinter(unittest.TestCase):
         a search field that does not match any of the search
         fields from JSON and adds a linter message.
         """
-        parser = WOSParser("TI=digital", search_fields="AB=")
+        parser = WOSParser("TI=digital", search_field_general="AB=")
         parser.tokenize()
         linter = QueryLinter(parser)
         linter.check_search_fields_from_json()
         self.assertIn(
             {
-                "code": "E0001",
+                "code": "E0002",
                 "label": "search-field-contradiction",
                 "message": "Contradictory search fields specified",
                 "is_fatal": False,

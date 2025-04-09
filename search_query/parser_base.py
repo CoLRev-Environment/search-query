@@ -23,13 +23,16 @@ class QueryStringParser(ABC):
     PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
 
     def __init__(
-        self, query_str: str, search_fields: str = "", mode: str = LinterMode.STRICT
+        self,
+        query_str: str,
+        search_field_general: str = "",
+        mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode
-        self.search_fields = search_fields
-        self.search_fields_list = []
+        # The external search_fields (in the JSON file: "search_field")
+        self.search_field_general = search_field_general
         self.fatal_linter_err = False
         self.linter_messages: typing.List[dict] = []
 

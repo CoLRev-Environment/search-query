@@ -56,11 +56,13 @@ class WOSParser(QueryStringParser):
     def __init__(
         self,
         query_str: str,
-        search_fields: str = "",
+        search_field_general: str = "",
         mode: str = LinterMode.STRICT,
     ) -> None:
         """Initialize the parser."""
-        super().__init__(query_str=query_str, search_fields=search_fields, mode=mode)
+        super().__init__(
+            query_str=query_str, search_field_general=search_field_general, mode=mode
+        )
         self.query_linter = QueryLinter(parser=self)
 
     def tokenize(self) -> None:
@@ -439,6 +441,7 @@ class WOSParser(QueryStringParser):
                 or "NEAR" in current_operator
             ):
                 if "NEAR" in current_operator and "NEAR" in children[0].value:
+                    current_operator, distance = current_operator.split("/")
                     # Get previous term to append
                     while index > 0:
                         if tokens[index - 1].type == TokenTypes.SEARCH_TERM:
@@ -453,6 +456,7 @@ class WOSParser(QueryStringParser):
                                     ),
                                     term_node,
                                 ],
+                                distance=int(distance),
                             )
                             break
                         index -= 1

@@ -34,7 +34,9 @@ class TestWOSParser(unittest.TestCase):
 
     def setUp(self) -> None:
         self.query_str = "TI=example AND AU=John Doe"
-        self.parser = WOSParser(query_str=self.query_str, search_fields="", mode="")
+        self.parser = WOSParser(
+            query_str=self.query_str, search_field_general="", mode=""
+        )
 
     def test_tokenize(self) -> None:
         """
@@ -600,27 +602,6 @@ class TestWOSParser(unittest.TestCase):
         self.assertIn(expected_message1, self.parser.linter_messages)
         self.assertIn(expected_message2, self.parser.linter_messages)
 
-    def test_add_linter_message_no_position(self) -> None:
-        """
-        Test the `add_linter_message` method with no position.
-
-        This test verifies that the `add_linter_message` method correctly adds
-        a linter message with no position to the `linter_messages` list.
-        """
-
-        # TODO : discuss this. Would -1,-1 be a better option?
-        self.parser.add_linter_message(
-            QueryErrorCode.SEARCH_FIELD_NOT_FOUND, pos=(-1, -1)
-        )
-        expected_message = {
-            "code": "E0004",
-            "label": "search-field-not-found",
-            "message": "Search Field specified was not found in Search Fields from JSON.",
-            "is_fatal": False,
-            "pos": (-1, -1),
-        }
-        self.assertIn(expected_message, self.parser.linter_messages)
-
     def test_handle_year_search_valid_year_span(self) -> None:
         """
         Test the `handle_year_search` method with a valid year span.
@@ -818,7 +799,7 @@ class TestWOSParser(unittest.TestCase):
         current_operator = "NEAR/5"
         children = [
             Query(
-                value="NEAR/5",
+                value="NEAR",
                 operator=True,
                 children=[
                     Query(
@@ -834,6 +815,7 @@ class TestWOSParser(unittest.TestCase):
                         position=(8, 16),
                     ),
                 ],
+                distance=5,
             )
         ]
 
@@ -853,7 +835,7 @@ class TestWOSParser(unittest.TestCase):
                 operator=True,
                 children=[
                     Query(
-                        value="NEAR/5",
+                        value="NEAR",
                         operator=True,
                         children=[
                             Query(
@@ -869,6 +851,7 @@ class TestWOSParser(unittest.TestCase):
                                 position=(8, 16),
                             ),
                         ],
+                        distance=5,
                     ),
                     Query(
                         value="example2",
@@ -1227,7 +1210,7 @@ class TestWOSParser(unittest.TestCase):
 
     def test_query_parsing_1(self) -> None:
         parser = WOSParser(
-            query_str="TI=example AND AU=John Doe", search_fields="", mode=""
+            query_str="TI=example AND AU=John Doe", search_field_general="", mode=""
         )
         query = parser.parse()
         self.assertEqual(query.value, "AND")
@@ -1240,7 +1223,9 @@ class TestWOSParser(unittest.TestCase):
         self.assertFalse(query.children[1].operator)
 
     def test_query_parsing_2(self) -> None:
-        parser = WOSParser(query_str="digital and online", search_fields="", mode="")
+        parser = WOSParser(
+            query_str="digital and online", search_field_general="", mode=""
+        )
         query = parser.parse()
         print(parser.linter_messages)
         print(parser.tokens)
@@ -1251,7 +1236,7 @@ class TestWOSParser(unittest.TestCase):
     def test_query_parsing_3(self) -> None:
         parser = WOSParser(
             query_str="TI=example AND (AU=John Doe OR AU=John Wayne)",
-            search_fields="",
+            search_field_general="",
             mode="",
         )
         query = parser.parse()

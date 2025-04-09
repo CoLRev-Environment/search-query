@@ -104,7 +104,7 @@ class QueryLinter:
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
 
-        if self.parser.search_fields == "":
+        if self.parser.search_field_general == "":
             # message: should be set explicitly (-> set default?)
             pass
 
@@ -112,9 +112,8 @@ class QueryLinter:
             if index == 0:
                 if (
                     token.type == TokenTypes.FIELD
-                    and token.value != self.parser.search_fields
+                    and token.value != self.parser.search_field_general
                 ):
-                    # print(f"disagree: {token.value} != {self.parser.search_fields}")
                     self.parser.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
                         pos=token.position,
@@ -134,7 +133,7 @@ class QueryLinter:
             if token.type == TokenTypes.FIELD:
                 if token.value not in valid_fields:
                     self.parser.add_linter_message(
-                        QueryErrorCode.UNSUPPORTED_SEARCH_FIELD,
+                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         pos=token.position,
                     )
 
@@ -317,7 +316,7 @@ class QueryLinter:
         # Web of Science does not support "!"
         for match in re.finditer(r"\!+", self.search_str):
             self.parser.add_linter_message(
-                QueryErrorCode.UNSUPPORTED_WILDCARD,
+                QueryErrorCode.WILDCARD_UNSUPPORTED,
                 pos=(match.start(), match.end()),
             )
 
@@ -426,7 +425,7 @@ class QueryLinter:
                 and token.value.upper() != "NOT"
             ):
                 self.parser.add_linter_message(
-                    QueryErrorCode.OPERATOR_CHANGED_AT_SAME_LEVEL,
+                    QueryErrorCode.IMPLICIT_PRECEDENCE,
                     pos=token.position,
                 )
 

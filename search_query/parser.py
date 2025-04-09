@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
-from search_query.parser_wos import WOSListParser
-from search_query.parser_wos import WOSParser
 from search_query.parser_ebsco import EBSCOListParser
 from search_query.parser_ebsco import EBSCOParser
+from search_query.parser_wos import WOSListParser
+from search_query.parser_wos import WOSParser
 from search_query.query import Query
 
 # from search_query.parser_pubmed import PubmedListParser
