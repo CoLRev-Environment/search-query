@@ -40,6 +40,15 @@ class Token:
     position: Tuple[int, int]
 
 
+@dataclass
+class Token:
+    """Token class"""
+
+    value: str
+    type: TokenTypes
+    position: Tuple[int, int]
+
+
 class Operators:
     """Operators"""
 
