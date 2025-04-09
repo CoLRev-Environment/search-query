@@ -291,7 +291,6 @@ class QueryStringParser(ABC):
                 art_par += 1
 
         if index == len(self.tokens):
-            print(output)
             output = self.flatten_redundant_artificial_nesting(output)
             self.tokens = output
 

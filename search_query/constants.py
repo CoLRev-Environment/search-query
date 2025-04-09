@@ -467,7 +467,7 @@ class QueryErrorCode(Enum):
         "W0006",
         "implicit-near-value",
         "The value of NEAR operator is implicit",
-        """**Typical fix**: The parser automatically sets implicit NEAR values to the default of 15.
+        """**Typical fix**: The parser automatically sets NEAR values to 15 (default).
 
 **Problematic query**:
 
@@ -486,7 +486,9 @@ class QueryErrorCode(Enum):
         ["all", PLATFORM.PUBMED],
         "W0007",
         "implicit-precedence",
-        "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        "Operator changed at the same level "
+        "(currently relying on implicit operator precedence, "
+        "explicit parentheses are recommended)",
         "",
     )
 
