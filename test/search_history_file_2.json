@@ -1,0 +1,9 @@
+{
+    "record_info": {},
+    "authors": [{"name": "Fleischmann, T.", "ORCID": "0000-0000-0000-1111"}],
+    "date": {"data_entry": "2019.07.01", "search_conducted": "2019.07.01"},
+    "platform": "ebsco",
+    "database": ["SCI-EXPANDED", "SSCI", "A&HCI"],
+    "search_string": "AB \"Information System\" AND (TX Management* OR TX \"Transaction Management\") OR AB \"Information Transaction Management\"",
+    "parsed": "AB \"Information System\" AND (TX Management* OR TX \"Transaction Management\") OR AB \"Information Transaction Management\""
+}

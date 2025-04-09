@@ -14,7 +14,7 @@ class PLATFORM(Enum):
 
     WOS = "wos"
     PUBMED = "pubmed"
-    EBSCO = "ebsco"
+    EBSCO = "ebscohost"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
 
@@ -46,6 +46,7 @@ class Operators:
     OR = "OR"
     NOT = "NOT"
     NEAR = "NEAR"
+    WITHIN = "WITHIN"
 
 
 class Fields:
@@ -55,6 +56,13 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    KEYWORDS = "kw"
+    SUBJECT_TERMS = "st"
+    SOURCE = "so"
+    ISSN = "is"
+    ISBN = "ib"
+    LANGUAGE = "la"
+    DESCRIPTORS = "de"
 
     @classmethod
     def all(cls) -> list:
@@ -89,7 +97,17 @@ PLATFORM_FIELD_MAP = {
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
-        Fields.TITLE: "TI ",
+        Fields.TITLE: "TI",
+        Fields.ABSTRACT: "AB",
+        Fields.ALL: "TX",
+        Fields.AUTHOR_KEYWORDS: "AU",
+        Fields.SUBJECT_TERMS: "SU",
+        Fields.SOURCE: "SO",
+        Fields.ISSN: "IS",
+        Fields.ISBN: "IB",
+        Fields.LANGUAGE: "LA",
+        Fields.KEYWORDS: "KW",
+        Fields.DESCRIPTORS: "DE",
     },
 }
 
@@ -182,6 +200,14 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
+    INVALID_TOKEN_SEQUENCE = (
+        [PLATFORM.EBSCO],
+        "E0004",
+        "invalid-token-sequence",
+        "The sequence of tokens is invalid "
+        "([token_type] followed by [token_type] is not allowed)",
+        "",
+    )
 
     # Warnings (prefix: W)
     SEARCH_FIELD_REDUNDANT = (
@@ -212,7 +238,15 @@ class QueryErrorCode(Enum):
         "Query structure is more complex than necessary",
         "",
     )
+    OPERATOR_CAPITALIZATION = (
+        ["all"],
+        "W0005",
+        "operator-capitalization",
+        "Operator should be in upper case",
+        "",
+    )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:
