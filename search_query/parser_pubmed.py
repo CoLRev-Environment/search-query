@@ -279,7 +279,7 @@ class PubmedParser(QueryStringParser):
                 self.translate_search_fields(query)
             return
 
-        query.search_field.value = self._map_default_field(query.search_field.value)
+        query.search_field.value = self._map_search_field(query.search_field.value)
 
         # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
         if query.search_field.value == "[tiab]":
@@ -298,7 +298,7 @@ class PubmedParser(QueryStringParser):
         for index, value in enumerate(field_values):
             value = "[" + value.lower() + "]"
 
-            value = self._map_default_field(value)
+            value = self._map_search_field(value)
 
             if value in {"[title and abstract]", "[tiab]"}:
                 value = Fields.TITLE
@@ -307,19 +307,20 @@ class PubmedParser(QueryStringParser):
             if value in {"[subject headings]"}:
                 value = Fields.MESH_TERM
 
-            if value in self.FIELD_TRANSLATION_MAP:
-                value = self.FIELD_TRANSLATION_MAP[value]
-
             field_values[index] = value
 
         return field_values
 
-    def _map_default_field(self, field_value) -> str:
-        """Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")"""
-        if field_value.lower() in self.DEFAULT_FIELD_MAP:
-            return self.DEFAULT_FIELD_MAP.get(field_value.lower())
-        else:
-            return field_value.lower()
+    def _map_search_field(self, field_value) -> str:
+        """Translate a search field"""
+        field_value = field_value.lower()
+        # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
+        if field_value in self.DEFAULT_FIELD_MAP:
+            field_value = self.DEFAULT_FIELD_MAP.get(field_value)
+        # Convert search fields to default field constants
+        if field_value in self.FIELD_TRANSLATION_MAP:
+            field_value = self.FIELD_TRANSLATION_MAP.get(field_value)
+        return field_value
 
     def _expand_combined_fields(self, query: Query, search_fields: list) -> None:
         """Expand queries with combined search fields into an OR query"""
@@ -557,6 +558,7 @@ class PubmedParser(QueryStringParser):
         match = re.match(self.PROXIMITY_REGEX, field_token.value)
         if match:
             field_value, prox_value = match.groups()
+            field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
@@ -572,14 +574,13 @@ class PubmedParser(QueryStringParser):
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
 
-                field_value = self._map_default_field(field_value.lower())
-                if field_value not in {"tiab", "ti", "ad"}:
+                if self._map_search_field(field_value) not in {"tiab", Fields.TITLE, Fields.AFFILIATION}:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
 
             # Update search field token
-            tokens[index].value = "[" + field_value + "]"
+            tokens[index].value = field_value
         else:
             self.add_linter_message(
                 QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
@@ -644,11 +645,11 @@ class PubmedParser(QueryStringParser):
                     ):
                         continue
 
-                    field_value_1 = self._map_default_field(
-                        terms[k].search_field.value.lower()
+                    field_value_1 = self._map_search_field(
+                        terms[k].search_field.value
                     )
-                    field_value_2 = self._map_default_field(
-                        terms[i].search_field.value.lower()
+                    field_value_2 = self._map_search_field(
+                        terms[i].search_field.value
                     )
 
                     if field_value_1 == field_value_2 and (
