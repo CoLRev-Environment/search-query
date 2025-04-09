@@ -159,7 +159,7 @@ class EBSCOParser(QueryStringParser):
         validator.check_search_field_general(strict=self.mode)
 
         previous_token_type = None
-        token_type = None
+        token_type = TokenTypes.UNKNOWN
 
         for match in re.finditer(self.pattern, self.query_str):
             value = match.group()

@@ -21,6 +21,7 @@ class SearchFile:
         authors: Optional[list[dict]] = None,
         record_info: Optional[dict] = None,
         date: Optional[dict] = None,
+        search_field: Optional[str] = None,
         filepath: Optional[str | Path] = None,
         **kwargs: dict,
     ) -> None:
@@ -29,6 +30,7 @@ class SearchFile:
         self.authors = authors or []
         self.record_info = record_info or {}
         self.date = date or {}
+        self.search_field = search_field or ""
         self._filepath = Path(filepath) if filepath else None
 
         for key, value in kwargs.items():

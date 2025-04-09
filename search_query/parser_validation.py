@@ -9,6 +9,9 @@ import search_query.parser_base
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 
+if typing.TYPE_CHECKING:
+    import search_query.parser_ebsco
+
 
 # Could indeed be a general Validator class
 class QueryStringValidator:
@@ -141,7 +144,7 @@ class EBSCOQueryStringValidator:
 
     def validate_token_position(
         self,
-        token_type: str,
+        token_type: TokenTypes,
         previous_token_type: typing.Optional[TokenTypes],
         position: typing.Optional[tuple[int, int]],
     ) -> None:

@@ -7,7 +7,7 @@ import sys
 import search_query.parser
 from search_query.constants import Colors
 from search_query.constants import ExitCodes
-from search_query.search_file import SearchFile
+from search_query.search_file import load_search_file
 from search_query.utils import format_query_string_pos
 
 
@@ -29,7 +29,7 @@ def pre_commit_hook() -> int:
     file_path = sys.argv[1]
 
     try:
-        search_file = SearchFile(file_path)
+        search_file = load_search_file(file_path)
         platform = search_query.parser.get_platform(search_file.platform)
     except Exception as e:  # pylint: disable=broad-except
         print(e)
@@ -45,7 +45,7 @@ def pre_commit_hook() -> int:
     linter_messages = run_linter(
         search_file.search_string,
         platform=search_file.platform,
-        search_field_general=search_file.search_field_general,
+        search_field_general=search_file.search_field,
     )
 
     if linter_messages:
