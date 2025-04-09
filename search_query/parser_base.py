@@ -382,14 +382,15 @@ class QueryListParser:
 
     def __init__(
         self,
+        *,
         query_list: str,
         parser_class: type[QueryStringParser],
-        search_fields: str,
+        search_field_general: str,
         linter_mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
-        self.search_fields = search_fields
+        self.search_field_general = search_field_general
         self.linter_mode = linter_mode
 
     def parse_dict(self) -> dict:

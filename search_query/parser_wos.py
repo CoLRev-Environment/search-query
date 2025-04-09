@@ -107,7 +107,6 @@ class WOSParser(QueryStringParser):
     # Parse a query tree from tokens recursively
     def parse_query_tree(
         self,
-        tokens: list,
         index: int = 0,
         search_field: typing.Optional[SearchField] = None,
         superior_search_field: typing.Optional[SearchField] = None,
@@ -121,17 +120,16 @@ class WOSParser(QueryStringParser):
         if current_negation:
             current_operator = "NOT"
 
-        while index < len(tokens):
-            token = tokens[index]
+        while index < len(self.tokens):
+            token = self.tokens[index]
 
             # Handle nested expressions within parentheses
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                if tokens[index - 1].type == TokenTypes.FIELD:
-                    superior_search_field = tokens[index - 1].value
+                if self.tokens[index - 1].type == TokenTypes.FIELD:
+                    superior_search_field = self.tokens[index - 1].value
 
                 # Parse the expression inside the parentheses
                 sub_query, index = self.parse_query_tree(
-                    tokens=tokens,
                     index=index + 1,
                     search_field=search_field,
                     superior_search_field=superior_search_field,
@@ -215,7 +213,6 @@ class WOSParser(QueryStringParser):
 
                 # Add term nodes
                 children = self.add_term_node(
-                    tokens=tokens,
                     index=index,
                     value=token.value,
                     operator=False,
@@ -245,7 +242,7 @@ class WOSParser(QueryStringParser):
         # Return the operator and children if there is an operator
         if current_operator:
             return (
-                Query(value=current_operator, operator=True, children=children),
+                Query(value=current_operator, operator=True, children=list(children)),
                 index,
             )
 
@@ -301,7 +298,7 @@ class WOSParser(QueryStringParser):
         # Combine subsequent terms (without quotes)
         # This would be more challenging in the regex
         # Changed the implementation to combine multiple terms
-        combined_tokens = []
+        combined_tokens: typing.List[Token] = []
         i = 0
         j = 0
 
@@ -404,7 +401,6 @@ class WOSParser(QueryStringParser):
 
         # Add the year search field to the list of children
         return self.add_term_node(
-            tokens=[],
             index=0,
             value=token.value,
             operator=False,
@@ -416,7 +412,6 @@ class WOSParser(QueryStringParser):
 
     def add_term_node(
         self,
-        tokens: list,
         index: int,
         value: str,
         operator: bool,
@@ -427,7 +422,8 @@ class WOSParser(QueryStringParser):
         current_negation: bool = False,
     ) -> typing.List[Query]:
         """Adds the term node to the Query"""
-
+        if not children:
+            children = []
         # Create a new term node
         term_node = Query(
             value=value, operator=operator, search_field=search_field, position=position
@@ -444,13 +440,13 @@ class WOSParser(QueryStringParser):
                     current_operator, distance = current_operator.split("/")
                     # Get previous term to append
                     while index > 0:
-                        if tokens[index - 1].type == TokenTypes.SEARCH_TERM:
+                        if self.tokens[index - 1].type == TokenTypes.SEARCH_TERM:
                             term_node = Query(
                                 value=current_operator,
                                 operator=True,
                                 children=[
                                     Query(
-                                        value=tokens[index - 1].value,
+                                        value=self.tokens[index - 1].value,
                                         operator=False,
                                         search_field=search_field,
                                     ),
@@ -499,9 +495,11 @@ class WOSParser(QueryStringParser):
                 self.translate_search_fields(child)
             return
 
-        query.search_field.value = self._map_default_field(query.search_field.value)
+        if query.search_field:
+            query.search_field.value = self._map_default_field(query.search_field.value)
 
-        # at this point it may be necessary to split (OR) queries for combined search fields
+        # at this point it may be necessary to split (OR)
+        # queries for combined search fields
         # see _expand_combined_fields() in pubmed
 
     def wrap_with_operator_node(self, children: list, current_operator: str) -> list:
@@ -555,7 +553,7 @@ class WOSParser(QueryStringParser):
         self.pre_linting()
 
         if not self.fatal_linter_err:
-            query, _ = self.parse_query_tree(self.tokens)
+            query, _ = self.parse_query_tree()
             # raise Exception
             self.translate_search_fields(query)
             # TODO : optional?
@@ -603,8 +601,15 @@ class WOSListParser(QueryListParser):
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
     LIST_COMBINE_REGEX = r"#\d+|AND|OR"
 
-    def __init__(self, query_list: str, search_fields: str, linter_mode: str) -> None:
-        super().__init__(query_list, WOSParser, search_fields, linter_mode)
+    def __init__(
+        self, query_list: str, search_field_general: str, linter_mode: str
+    ) -> None:
+        super().__init__(
+            query_list=query_list,
+            parser_class=WOSParser,
+            search_field_general=search_field_general,
+            linter_mode=linter_mode,
+        )
 
     def get_token_str(self, token_nr: str) -> str:
         return f"#{token_nr}"
@@ -622,11 +627,11 @@ class WOSListParser(QueryListParser):
 
             if "#" in node_content["node_content"]:
                 combine_queries[node_nr] = node_content["node_content"]
-                queries.append("Filler for combine queries")
+                queries.append(Query("Filler for combine queries"))
             else:
                 query_parser = self.parser_class(
                     query_str=node_content["node_content"],
-                    search_fields=self.search_fields,
+                    search_field_general=self.search_field_general,
                     mode=self.linter_mode,
                 )
                 query = query_parser.parse()
@@ -648,11 +653,11 @@ class WOSListParser(QueryListParser):
                 # + query
             )
 
-        for index, query in combine_queries.items():
+        for index, query_str in combine_queries.items():
             children: typing.List[Query] = []
             res_children = []
-            operator = None
-            tokens = self.tokenize_combining_list_elem(query)
+            operator = ""
+            tokens = self.tokenize_combining_list_elem(query_str)
 
             # Check if the last token is a operator
             last_token = tokens[len(tokens) - 1]
@@ -698,8 +703,9 @@ class WOSListParser(QueryListParser):
                 else:
                     res_children.append(child)
 
+            assert operator != ""
             queries[int(index) - 1] = Query(
-                value=operator, operator=True, children=res_children
+                value=operator, operator=True, children=list(res_children)
             )
 
         return queries[len(queries) - 1]

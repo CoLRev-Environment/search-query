@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Web-of-Science query parser unit tests."""
+import typing
 import unittest
 
 from search_query.constants import Fields
@@ -163,7 +164,7 @@ class TestWOSParser(unittest.TestCase):
         the single child when there is only one child in the list.
         """
         children = [Query(value="example", operator=False)]
-        result = self.parser.handle_closing_parenthesis(children, current_operator=None)
+        result = self.parser.handle_closing_parenthesis(children, current_operator="")
         self.assertEqual(result, children[0])
 
     def test_handle_closing_parenthesis_with_operator(self) -> None:
@@ -180,7 +181,7 @@ class TestWOSParser(unittest.TestCase):
         current_operator = "AND"
         result = self.parser.handle_closing_parenthesis(children, current_operator)
         expected_result = Query(
-            value=current_operator, operator=True, children=children
+            value=current_operator, operator=True, children=list(children)
         )
         self.assertEqual(result.value, expected_result.value)
         self.assertEqual(result.operator, expected_result.operator)
@@ -194,7 +195,7 @@ class TestWOSParser(unittest.TestCase):
         an uppercase operator and returns the expected values.
         """
         token = Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
-        current_operator = None
+        current_operator = ""
         current_negation = False
 
         (
@@ -215,7 +216,7 @@ class TestWOSParser(unittest.TestCase):
         token = Token(
             value="NEAR/2", type=TokenTypes.PROXIMITY_OPERATOR, position=(0, 6)
         )
-        current_operator = None
+        current_operator = ""
         current_negation = False
 
         (
@@ -234,7 +235,7 @@ class TestWOSParser(unittest.TestCase):
         the NOT operator, sets the negation flag, and changes the operator to AND.
         """
         token = Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
-        current_operator = None
+        current_operator = ""
         current_negation = False
 
         (
@@ -479,7 +480,7 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `append_children` method correctly appends
         the sub expression to the list of children when the children list is empty.
         """
-        children = []
+        children: typing.List[Query] = []
         sub_expr = Query(value="example1", operator=False)
         current_operator = "AND"
 
@@ -610,7 +611,7 @@ class TestWOSParser(unittest.TestCase):
         a valid year span and adds the year search field to the list of children.
         """
         token = Token(value="2015-2019", type=TokenTypes.SEARCH_TERM, position=(0, 9))
-        children = []
+        children: typing.List[Query] = []
         current_operator = "AND"
 
         result = self.parser.handle_year_search(token, children, current_operator)
@@ -633,8 +634,8 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
         self.assertEqual(
-            result[0].children[0].search_field.value,
-            expected_result[0].children[0].search_field.value,
+            result[0].children[0].search_field.value,  # type: ignore
+            expected_result[0].children[0].search_field.value,  # type: ignore
         )
         self.assertEqual(
             result[0].children[0].position, expected_result[0].children[0].position
@@ -648,7 +649,7 @@ class TestWOSParser(unittest.TestCase):
         a single year and adds the year search field to the list of children.
         """
         token = Token(value="2015", type=TokenTypes.SEARCH_TERM, position=(0, 4))
-        children = []
+        children: typing.List[Query] = []
         current_operator = "AND"
 
         result = self.parser.handle_year_search(token, children, current_operator)
@@ -675,8 +676,8 @@ class TestWOSParser(unittest.TestCase):
             result[0].children[0].operator, expected_result[0].children[0].operator
         )
         self.assertEqual(
-            result[0].children[0].search_field.value,
-            expected_result[0].children[0].search_field.value,
+            result[0].children[0].search_field.value,  # type: ignore
+            expected_result[0].children[0].search_field.value,  # type: ignore
         )
         self.assertEqual(
             result[0].children[0].position, expected_result[0].children[0].position
@@ -690,16 +691,16 @@ class TestWOSParser(unittest.TestCase):
         a term node to the list of children when there is no current operator.
         """
         tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
+        self.parser.tokens = tokens
         index = 0
         value = "example"
         operator = False
         search_field = SearchField(value="TI=", position=(0, 3))
         position = (0, 7)
-        current_operator = None
-        children = []
+        current_operator = ""
+        children: typing.List[Query] = []
 
         result = self.parser.add_term_node(
-            tokens,
             index,
             value,
             operator,
@@ -719,7 +720,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
         self.assertEqual(
-            result[0].search_field.value, expected_result[0].search_field.value
+            result[0].search_field.value, expected_result[0].search_field.value  # type: ignore
         )
         self.assertEqual(result[0].position, expected_result[0].position)
 
@@ -731,16 +732,16 @@ class TestWOSParser(unittest.TestCase):
         a term node to the list of children when there is a current operator.
         """
         tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
+        self.parser.tokens = tokens
         index = 0
         value = "example"
         operator = False
         search_field = SearchField(value="TI=", position=(0, 3))
         position = (0, 7)
         current_operator = "AND"
-        children = []
+        children: typing.List[Query] = []
 
         result = self.parser.add_term_node(
-            tokens,
             index,
             value,
             operator,
@@ -772,8 +773,8 @@ class TestWOSParser(unittest.TestCase):
             result[0].children[0].operator, expected_result[0].children[0].operator
         )
         self.assertEqual(
-            result[0].children[0].search_field.value,
-            expected_result[0].children[0].search_field.value,
+            result[0].children[0].search_field.value,  # type: ignore
+            expected_result[0].children[0].search_field.value,  # type: ignore
         )
         self.assertEqual(
             result[0].children[0].position, expected_result[0].children[0].position
@@ -791,6 +792,7 @@ class TestWOSParser(unittest.TestCase):
             Token(value="example2", type=TokenTypes.SEARCH_TERM, position=(8, 16)),
             Token(value="example3", type=TokenTypes.SEARCH_TERM, position=(17, 25)),
         ]
+        self.parser.tokens = tokens
         index = 1
         value = "example2"
         operator = False
@@ -820,7 +822,6 @@ class TestWOSParser(unittest.TestCase):
         ]
 
         result = self.parser.add_term_node(
-            tokens,
             index,
             value,
             operator,
@@ -901,12 +902,13 @@ class TestWOSParser(unittest.TestCase):
         a term node to the existing list of children.
         """
         tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
+        self.parser.tokens = tokens
         index = 0
         value = "example"
         operator = False
         search_field = SearchField(value="TI=", position=(0, 3))
         position = (0, 7)
-        current_operator = None
+        current_operator = ""
         children = [
             Query(
                 value="existing",
@@ -917,7 +919,6 @@ class TestWOSParser(unittest.TestCase):
         ]
 
         result = self.parser.add_term_node(
-            tokens,
             index,
             value,
             operator,
@@ -943,13 +944,13 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
         self.assertEqual(
-            result[0].search_field.value, expected_result[0].search_field.value
+            result[0].search_field.value, expected_result[0].search_field.value  # type: ignore
         )
         self.assertEqual(result[0].position, expected_result[0].position)
         self.assertEqual(result[1].value, expected_result[1].value)
         self.assertEqual(result[1].operator, expected_result[1].operator)
         self.assertEqual(
-            result[1].search_field.value, expected_result[1].search_field.value
+            result[1].search_field.value, expected_result[1].search_field.value  # type: ignore
         )
         self.assertEqual(result[1].position, expected_result[1].position)
 
@@ -961,17 +962,17 @@ class TestWOSParser(unittest.TestCase):
         a term node to the list of children when there is a current negation.
         """
         tokens = [Token(value="example", type=TokenTypes.SEARCH_TERM, position=(0, 7))]
+        self.parser.tokens = tokens
         index = 0
         value = "example"
         operator = False
         search_field = SearchField(value="TI=", position=(0, 3))
         position = (0, 7)
         current_operator = "AND"
-        children = []
+        children: typing.List[Query] = []
         current_negation = True
 
         result = self.parser.add_term_node(
-            tokens,
             index,
             value,
             operator,
@@ -1004,8 +1005,8 @@ class TestWOSParser(unittest.TestCase):
             result[0].children[0].operator, expected_result[0].children[0].operator
         )
         self.assertEqual(
-            result[0].children[0].search_field.value,
-            expected_result[0].children[0].search_field.value,
+            result[0].children[0].search_field.value,  # type: ignore
+            expected_result[0].children[0].search_field.value,  # type: ignore
         )
         self.assertEqual(
             result[0].children[0].position, expected_result[0].children[0].position
@@ -1149,7 +1150,7 @@ class TestWOSParser(unittest.TestCase):
         current_operator = "AND"
         result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
-            Query(value=current_operator, operator=True, children=children)
+            Query(value=current_operator, operator=True, children=list(children))
         ]
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
@@ -1174,7 +1175,7 @@ class TestWOSParser(unittest.TestCase):
         current_operator = "OR"
         result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
-            Query(value=current_operator, operator=True, children=children)
+            Query(value=current_operator, operator=True, children=list(children))
         ]
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
@@ -1198,11 +1199,11 @@ class TestWOSParser(unittest.TestCase):
         This test verifies that the `safe_children` method correctly handles
         an empty list of children and wraps it in a Query object with the given operator.
         """
-        children = []
+        children: typing.List[Query] = []
         current_operator = "AND"
         result = self.parser.wrap_with_operator_node(children, current_operator)
         expected_result = [
-            Query(value=current_operator, operator=True, children=children)
+            Query(value=current_operator, operator=True, children=list(children))
         ]
         self.assertEqual(result[0].value, expected_result[0].value)
         self.assertEqual(result[0].operator, expected_result[0].operator)
@@ -1219,7 +1220,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(query.children[0].value, "example")
         self.assertFalse(query.children[0].operator)
         self.assertEqual(query.children[1].value, "John Doe")
-        self.assertEqual(query.children[1].search_field.value, "au")
+        self.assertEqual(query.children[1].search_field.value, "au")  # type: ignore
         self.assertFalse(query.children[1].operator)
 
     def test_query_parsing_2(self) -> None:
@@ -1248,7 +1249,7 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(query.children[1].value, "OR")
 
         self.assertEqual(query.children[1].children[1].value, "John Wayne")
-        self.assertEqual(query.children[1].children[1].search_field.value, "au")
+        self.assertEqual(query.children[1].children[1].search_field.value, "au")  # type: ignore
 
 
 if __name__ == "__main__":

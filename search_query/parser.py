@@ -29,7 +29,7 @@ LIST_PARSERS = {
 # pylint: disable=too-many-return-statements
 def parse(
     query_str: str,
-    search_fields: str,
+    search_field_general: str,
     *,
     syntax: str = "wos",
     mode: str = LinterMode.STRICT,
@@ -41,12 +41,12 @@ def parse(
         if syntax not in LIST_PARSERS:
             raise ValueError(f"Invalid syntax: {syntax}")
 
-        return LIST_PARSERS[syntax](query_str, search_fields, mode).parse()
+        return LIST_PARSERS[syntax](query_str, search_field_general, mode).parse()
 
     if syntax not in PARSERS:
         raise ValueError(f"Invalid syntax: {syntax}")
 
-    return PARSERS[syntax](query_str, search_fields, mode).parse()
+    return PARSERS[syntax](query_str, search_field_general, mode).parse()
 
 
 def get_platform(platform_str: str) -> str:

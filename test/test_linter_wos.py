@@ -236,11 +236,11 @@ class TestQueryLinter(unittest.TestCase):
             parser.linter_messages[0],
             # TODO : this shows that the message can be ambiguous
             {
-                "code": "F1012",
-                "label": "invalid-token-sequence-missing-operator",
-                "message": "Invalid token sequence: missing operator.",
+                "code": "F1004",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
                 "is_fatal": True,
-                "pos": (0, 5),
+                "pos": (6, 9),
             },
             {
                 "code": "F1005",
@@ -276,11 +276,11 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1012",
+                "code": "F1004",
                 "is_fatal": True,
-                "label": "invalid-token-sequence-missing-operator",
-                "message": "Invalid token sequence: missing operator.",
-                "pos": (0, 5),
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "pos": (6, 7),
             },
         )
 
@@ -310,11 +310,11 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1012",
+                "code": "F1004",
                 "is_fatal": True,
-                "label": "invalid-token-sequence-missing-operator",
-                "message": "Invalid token sequence: missing operator.",
-                "pos": (0, 1),
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "pos": (2, 3),
             },
         )
 
@@ -343,11 +343,11 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1012",
+                "code": "F1004",
                 "is_fatal": True,
-                "label": "invalid-token-sequence-missing-operator",
-                "message": "Invalid token sequence: missing operator.",
-                "pos": (0, 5),
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "pos": (6, 9),
             },
         )
 

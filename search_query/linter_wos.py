@@ -118,7 +118,8 @@ class QueryLinter:
                         QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
                         pos=token.position,
                     )
-            # TODO : contradition could also be in following tokens (at level-0 of parentheses)
+            # TODO : contradition could also be in following tokens
+            # (at level-0 of parentheses)
 
             # # TODO : warning (message) for linter?
             # print(
@@ -218,88 +219,81 @@ class QueryLinter:
     def check_order_of_tokens(self) -> None:
         """Check for the correct order of tokens in the query."""
 
-        index = 0
-        while index < len(self.parser.tokens) - 1:
-            token = self.parser.tokens[index]
-            next_token = self.parser.tokens[index + 1]
+        valid_transitions = {
+            TokenTypes.FIELD: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
+            ],
+            TokenTypes.SEARCH_TERM: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+                TokenTypes.PARENTHESIS_CLOSED,
+            ],
+            TokenTypes.LOGIC_OPERATOR: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.FIELD,
+                TokenTypes.PARENTHESIS_OPEN,
+            ],
+            TokenTypes.PROXIMITY_OPERATOR: [
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
+                TokenTypes.FIELD,
+            ],
+            TokenTypes.PARENTHESIS_OPEN: [
+                TokenTypes.FIELD,
+                TokenTypes.SEARCH_TERM,
+                TokenTypes.PARENTHESIS_OPEN,
+            ],
+            TokenTypes.PARENTHESIS_CLOSED: [
+                TokenTypes.PARENTHESIS_CLOSED,
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ],
+        }
 
-            # Check for two operators in a row
-            if re.match(self.parser.OPERATOR_REGEX, token.value) and re.match(
-                self.parser.OPERATOR_REGEX, next_token.value
+        tokens = self.parser.tokens
+
+        for index in range(len(tokens) - 1):
+            token = tokens[index]
+            next_token = tokens[index + 1]
+
+            # Skip known exceptions like NEAR proximity modifier (custom rule)
+            if (
+                token.type == TokenTypes.SEARCH_TERM
+                and next_token.value == "("
+                and index > 0
+                and tokens[index - 1].value.upper() == "NEAR"
             ):
+                continue
+
+            # Allow known languages after parenthesis (custom rule)
+            if token.value == ")" and next_token.value in self.language_list:
+                continue
+
+            # Two operators in a row
+            if token.is_operator() and next_token.is_operator():
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE_TWO_OPERATORS,
                     pos=next_token.position,
                 )
+                continue
 
-            # Check for two search fields in a row
-            if re.match(self.parser.SEARCH_FIELD_REGEX, token.value) and re.match(
-                self.parser.SEARCH_FIELD_REGEX, next_token.value
-            ):
+            # Two search fields in a row
+            if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS,
                     pos=next_token.position,
                 )
+                continue
 
-            # Check for opening parenthesis after term
-            if (
-                (
-                    not re.match(self.parser.SEARCH_FIELD_REGEX, token.value)
-                    and not re.match(self.parser.OPERATOR_REGEX, token.value.upper())
-                    and not re.match(self.parser.PARENTHESIS_REGEX, token.value)
-                    and re.match(self.parser.SEARCH_TERM_REGEX, token.value)
-                )
-                and (next_token.value == "(")
-                and not (self.parser.tokens[index - 1].value.upper() == "NEAR")
-            ):
+            # Check transition
+            allowed_next_types = valid_transitions.get(token.type, [])
+            if next_token.type not in allowed_next_types:
                 self.parser.add_linter_message(
-                    # TODO : more detailed?
-                    # message="Missing Operator between term and parenthesis.",
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
-                    pos=token.position,
-                )
-
-            # Check for closing parenthesis after term
-            if (token == ")") and (
-                not re.match(self.parser.SEARCH_FIELD_REGEX, next_token.value)
-                and not re.match(
-                    self.parser.OPERATOR_REGEX,
-                    next_token.value.upper(),
-                )
-                and not re.match(self.parser.PARENTHESIS_REGEX, next_token.value)
-                and next_token.value not in self.language_list
-                and re.match(self.parser.SEARCH_TERM_REGEX, next_token.value)
-            ):
-                self.parser.add_linter_message(
-                    # TODO : more detailed?
-                    # message="Missing Operator between term and parenthesis.",
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     pos=next_token.position,
                 )
-
-            # Check for opening parenthesis after closing parenthesis
-            if (token.value == ")") and (next_token.value == "("):
-                self.parser.add_linter_message(
-                    # TODO: more detailed?
-                    # "Missing Operator between closing and opening parenthesis.",
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
-                    pos=token.position,
-                )
-
-            # Check for search field after term
-            if (
-                not re.match(self.parser.SEARCH_FIELD_REGEX, token.value)
-                and not re.match(self.parser.OPERATOR_REGEX, token.value.upper())
-                and not re.match(self.parser.PARENTHESIS_REGEX, token.value)
-                and re.match(self.parser.SEARCH_TERM_REGEX, token.value)
-            ) and re.match(self.parser.SEARCH_FIELD_REGEX, next_token.value):
-                self.parser.add_linter_message(
-                    # TODO : more detailed?
-                    # message="Missing Operator between term and search field.",
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
-                    pos=token.position,
-                )
-            index += 1
 
     def check_near_distance_in_range(self, index: int) -> None:
         """Check for NEAR with a specified distance out of range."""
