@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """CLI for search-query."""
 import argparse
-
+from pathlib import Path
 import search_query.parser
+from search_query import SearchFile
+from search_query import load_search_file
 
 
 def main():
@@ -44,16 +46,17 @@ def main():
 
     print(f"Convert from {args.source} to {args.target}")
 
-    # Example stub (replace with actual logic)
-    with open(args.input_file, encoding="utf-8") as infile:
-        query_str = infile.read()
-        query = search_query.parser.parse(query_str, syntax=args.source)
+    if Path(args.input_file).suffix == ".json":
+
+        search_file = load_search_file(args.input_file)
+        query = search_query.parser.parse(search_file.search_string, syntax=args.source, search_field_general="")
         converted_query = query.to_string(syntax=args.target)
+        search_file.search_string = converted_query
+        search_file.save()
 
-    with open(args.output_file, "w", encoding="utf-8") as outfile:
-        outfile.write(converted_query)
+    else:
+        raise NotImplemented
 
-    print("Conversion complete.")
 
 
 if __name__ == "__main__":
