@@ -14,7 +14,7 @@ class PLATFORM(Enum):
 
     WOS = "wos"
     PUBMED = "pubmed"
-    EBSCO = "ebsco"
+    EBSCO = "ebscohost"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
 
@@ -39,16 +39,6 @@ class Token:
     type: TokenTypes
     position: Tuple[int, int]
 
-
-@dataclass
-class Token:
-    """Token class"""
-
-    value: str
-    type: TokenTypes
-    position: Tuple[int, int]
-
-
 class Operators:
     """Operators"""
 
@@ -56,6 +46,7 @@ class Operators:
     OR = "OR"
     NOT = "NOT"
     NEAR = "NEAR"
+    WITHIN = "WITHIN"
 
 
 class Fields:
@@ -93,6 +84,14 @@ class Fields:
     ACCESSION_NUMBER = "ut"
     WEB_OF_SCIENCE_CATEGORY = "wc"
     ZIP_POSTAL_CODE = "zp"
+    AUTHOR_KEYWORDS = "au"
+    KEYWORDS = "kw"
+    SUBJECT_TERMS = "st"
+    SOURCE = "so"
+    ISSN = "is"
+    ISBN = "ib"
+    LANGUAGE = "la"
+    DESCRIPTORS = "de"
 
     @classmethod
     def all(cls) -> list:
@@ -156,7 +155,17 @@ PLATFORM_FIELD_MAP = {
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
-        Fields.TITLE: "TI ",
+        Fields.TITLE: "TI",
+        Fields.ABSTRACT: "AB",
+        Fields.ALL: "TX",
+        Fields.AUTHOR_KEYWORDS: "AU",
+        Fields.SUBJECT_TERMS: "SU",
+        Fields.SOURCE: "SO",
+        Fields.ISSN: "IS",
+        Fields.ISBN: "IB",
+        Fields.LANGUAGE: "LA",
+        Fields.KEYWORDS: "KW",
+        Fields.DESCRIPTORS: "DE",
     },
 }
 
@@ -533,7 +542,7 @@ class QueryErrorCode(Enum):
     )
     UNBALANCED_PARENTHESES = (
         ["all"],
-        "F0002",
+        "F1001",
         "unbalanced-parentheses",
         "Parentheses are unbalanced in the query",
         """**Typical fix**: Check the parentheses in the query
@@ -552,7 +561,7 @@ class QueryErrorCode(Enum):
     )
     UNMATCHED_OPENING_PARENTHESIS = (
         ["all"],
-        "F0004",
+        "F1002",
         "unmatched-opening-parenthesis",
         "Unmatched opening parenthesis",
         """**Typical fix**: Check the parentheses in the query
@@ -568,7 +577,7 @@ class QueryErrorCode(Enum):
     )
     UNMATCHED_CLOSING_PARENTHESIS = (
         ["all"],
-        "F0005",
+        "F1003",
         "unmatched-closing-parenthesis",
         "Unmatched closing parenthesis",
         """**Typical fix**: Check the parentheses in the query
@@ -580,11 +589,63 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
-    MISSING_OPERATOR = (
-        ["all"],
-        "F0003",
-        "missing-operator",
-        "An operator is missing between terms",
+    INVALID_TOKEN_SEQUENCE = (
+        [PLATFORM.EBSCO],
+        "F1004",
+        "invalid-token-sequence",
+        "The sequence of tokens is invalid "
+        "([token_type] followed by [token_type] is not allowed)",
+        "",
+    )
+    INVALID_OPERATOR_POSITION = (
+        [PLATFORM.PUBMED],
+        "F1006",
+        "invalid-operator-position",
+        "Invalid operator position",
+        "",
+    )
+    INVALID_SEARCH_FIELD_POSITION = (
+        [PLATFORM.PUBMED],
+        "F1007",
+        "invalid-search-field-position",
+        "Search field tags should directly follow search terms",
+        "",
+    )
+    NESTED_NOT_QUERY = (
+        [PLATFORM.PUBMED],
+        "F1008",
+        "nested-not-query",
+        "Nesting of NOT operator is not supported for this database",
+        "",
+    )
+    EMPTY_PARENTHESES = (
+        [PLATFORM.PUBMED],
+        "F1009",
+        "empty-parentheses",
+        "Query contains empty parentheses",
+        "",
+    )
+    # TODO : consolidate with INVALID_TOKEN_SEQUENCE (EBSCO) is non-fatal?!
+    INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS = (
+        [PLATFORM.EBSCO],
+        "F1010",
+        "invalid-token-sequence-two-search-fields",
+        "Invalid token sequence: two search fields in a row.",
+        "",
+    )
+    INVALID_TOKEN_SEQUENCE_TWO_OPERATORS = (
+        [PLATFORM.EBSCO],
+        "F1011",
+        "invalid-token-sequence-two-operators",
+        "Invalid token sequence: two operators in a row.",
+        "",
+    )
+    # Note : merged MISSING_OPERATOR with:
+    INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR = (
+        ["all", PLATFORM.WOS],
+        "F1012",
+        "invalid-token-sequence-missing-operator",
+        "Invalid token sequence: missing operator.",
         "",
     )
     WILDCARD_IN_YEAR = (
@@ -703,16 +764,96 @@ class QueryErrorCode(Enum):
         "Contradictory search fields specified",
         "",
     )
-    SEARCH_FIELD_MISSING = (
-        ["all"],
-        "E0002",
-        "search-field-missing",
-        "Expected search field is missing",
+    WILDCARD_IN_YEAR = (
+        [PLATFORM.WOS],
+        "F2002",
+        "wildcard-in-year",
+        "Wildcard characters (*, ?, $) not supported in year search.",
+        """**Typical fix**: Replace with year range.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND year=201*
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND (year >= 2010 AND year < 2020)""",
+    )
+    WILDCARD_RIGHT_SHORT_LENGTH = (
+        [PLATFORM.WOS],
+        "F2003",
+        "wildcard-right-short-length",
+        "Right-hand wildcard must preceded by at least three characters.",
         "",
     )
+    WILDCARD_LEFT_SHORT_LENGTH = (
+        [PLATFORM.WOS],
+        "F2004",
+        "wildcard-left-short-length",
+        "Left-hand wildcard must be preceded by at least three characters.",
+        "",
+    )
+    WILDCARD_AFTER_SPECIAL_CHAR = (
+        [PLATFORM.WOS],
+        "F2005",
+        "wildcard-after-special-char",
+        "Wildcard cannot be preceded by special characters.",
+        "",
+    )
+    WILDCARD_STANDALONE = (
+        [PLATFORM.WOS],
+        "F2006",
+        "wildcard-standalone",
+        "Wildcard cannot be standalone.",
+        "",
+    )
+    NEAR_DISTANCE_TOO_LARGE = (
+        [PLATFORM.WOS],
+        "F2007",
+        "near-distance-too-large",
+        "NEAR distance is too large (max: 15).",
+        "",
+    )
+    ISBN_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F2008",
+        "isbn-format-invalid",
+        "Invalid ISBN format.",
+        "",
+    )
+    DOI_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F2009",
+        "doi-format-invalid",
+        "Invalid DOI format.",
+        "",
+    )
+    YEAR_SPAN_VIOLATION = (
+        [PLATFORM.WOS],
+        "F2010",
+        "year-span-violation",
+        "Year span must be five or less.",
+        """**Typical fix**: The parser automatically sets the year span to 5.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND PY=2000-2020
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND PY=2015-2020""",
+    )
     SEARCH_FIELD_UNSUPPORTED = (
-        ["all"],
-        "E0003",
+        ["all", PLATFORM.WOS],
+        "F2011",
         "search-field-unsupported",
         "Search field is not supported for this database",
         "",
@@ -742,6 +883,59 @@ class QueryErrorCode(Enum):
     )
 
     # -------------------------------------------------------
+    # Errors (prefix: E)
+    # -------------------------------------------------------
+    SEARCH_FIELD_MISSING = (
+        ["all"],
+        "E0001",
+        "search-field-missing",
+        "Expected search field is missing",
+        "",
+    )
+    SEARCH_FIELD_CONTRADICTION = (
+        ["all"],
+        "E0002",
+        "search-field-contradiction",
+        "Contradictory search fields specified",
+        "",
+    )
+    INVALID_CHARACTER = (
+        [PLATFORM.PUBMED],
+        "E0004",
+        "invalid-character",
+        "Search term contains invalid character",
+        "",
+    )
+    INVALID_PROXIMITY_USE = (
+        [PLATFORM.PUBMED],
+        "E0005",
+        "invalid-proximity-use",
+        "Invalid use of the proximity operator :~",
+        "",
+    )
+    INVALID_WILDCARD_USE = (
+        [PLATFORM.PUBMED],
+        "E0006",
+        "invalid-wildcard-use",
+        "Invalid use of the wildcard operator *",
+        "",
+    )
+    QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
+        [PLATFORM.WOS],
+        "E0007",
+        "query-starts-with-platform-identifier",
+        "Query starts with platform identifier",
+        "",
+    )
+    QUERY_IN_QUOTES = (
+        [PLATFORM.WOS],
+        "E0008",
+        "query-in-quotes",
+        "The whole Search string is in quotes.",
+        "",
+    )
+
+    # -------------------------------------------------------
     # Warnings (prefix: W)
     # -------------------------------------------------------
     SEARCH_FIELD_REDUNDANT = (
@@ -758,6 +952,7 @@ class QueryErrorCode(Enum):
         "Recommend explicitly specifying the search field in the string",
         "",
     )
+    # TODO : equals SEARCH_FIELD_MISSING ??
     SEARCH_FIELD_NOT_SPECIFIED = (
         ["all"],
         "W0003",
@@ -787,10 +982,10 @@ class QueryErrorCode(Enum):
     )
     IMPLICIT_NEAR_VALUE = (
         [PLATFORM.WOS],
-        "W1000",
+        "W0006",
         "implicit-near-value",
         "The value of NEAR operator is implicit",
-        """**Typical fix**: The parser automatically sets NEAR values (default 15).
+        """**Typical fix**: The parser automatically sets NEAR values to 15 (default).
 
 **Problematic query**:
 
@@ -804,25 +999,6 @@ class QueryErrorCode(Enum):
 
     A NEAR/15 B""",
     )
-    YEAR_SPAN_VIOLATION = (
-        [PLATFORM.WOS],
-        "W1001",
-        "year-span-violation",
-        "Year span must be five or less.",
-        """**Typical fix**: The parser automatically sets the year span to 5.
-
-**Problematic query**:
-
-.. code-block:: python
-
-    A AND PY=2000-2020
-
-**Correct query**:
-
-.. code-block:: python
-
-    A AND PY=2015-2020""",
-    )
     UNSUPPORTED_SEARCH_FIELD = (
         [PLATFORM.WOS],
         "W1002",
@@ -830,10 +1006,11 @@ class QueryErrorCode(Enum):
         "Unsupported search field",
         "",
     )
-    OPERATOR_CHANGED_AT_SAME_LEVEL = (
-        ["all"],
-        "W1003",
-        "operator-changed-at-same-level",
+    # Note : merged QUERY_PRECEDENCE and OPERATOR_CHANGED_AT_SAME_LEVEL into:
+    IMPLICIT_PRECEDENCE = (
+        ["all", PLATFORM.PUBMED],
+        "W0007",
+        "implicit-precedence",
         "Operator changed at the same level "
         "(currently relying on implicit operator precedence, "
         "explicit parentheses are recommended)",

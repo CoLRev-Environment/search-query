@@ -8,6 +8,7 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
+from search_query.serializer_ebsco import to_string_ebsco
 from search_query.serializer_pre_notation import to_string_pre_notation
 from search_query.serializer_pubmed import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
@@ -45,20 +46,26 @@ class Query:
         search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,
+        distance: typing.Optional[int] = None,
     ) -> None:
         """init method - abstract"""
 
         self.value = value
         self.operator = operator
+        self.distance = distance
         if operator:
-            if "NEAR" not in value:
-                assert self.value in [
-                    Operators.AND,
-                    Operators.OR,
-                    Operators.NOT,
-                    Operators.NEAR,
-                    "NOT_INITIALIZED",
-                ]
+            assert value in [
+                Operators.AND,
+                Operators.OR,
+                Operators.NOT,
+                Operators.NEAR,
+                Operators.WITHIN,
+                "NOT_INITIALIZED",
+            ]
+            if value in {Operators.NEAR, Operators.WITHIN}:
+                assert distance is not None, f"{value} operator requires a distance."
+            else:
+                assert distance is None, f"{value} operator cannot have a distance."
 
         self.children: typing.List[Query] = []
 
@@ -174,5 +181,7 @@ class Query:
             return to_string_wos(self)
         if syntax == PLATFORM.PUBMED.value:
             return to_string_pubmed(self)
+        if syntax == PLATFORM.EBSCO.value:
+            return to_string_ebsco(self)
 
         raise ValueError(f"Syntax not supported ({syntax})")
