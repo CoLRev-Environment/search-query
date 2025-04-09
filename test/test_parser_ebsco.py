@@ -177,7 +177,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 {
                     "code": "W0005",
                     "label": "operator-capitalization",
-                    "message": "Operator should be in upper case",
+                    "message": "Operators should be capitalized",
                     "is_fatal": False,
                     "pos": (24, 27),
                 }
@@ -188,7 +188,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
             "(Artificial Intelligence AND Future",
             [
                 {
-                    "code": "F0002",
+                    "code": "F1001",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -201,10 +201,10 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
             "TI AND Artificial Intelligence",
             [
                 {
-                    "code": "E0004",
+                    "code": "F1004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "pos": (3, 6),
                 }
             ],
@@ -230,10 +230,10 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
             "XY Artificial Intelligence OR AB Future",
             [
                 {
-                    "code": "E0003",
+                    "code": "F2011",
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "pos": (0, 2),
                 }
             ],

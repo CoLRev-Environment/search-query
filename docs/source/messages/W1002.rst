@@ -1,0 +1,26 @@
+.. _W1002:
+
+W1002 — year-span-violation
+===========================
+
+**Error Code**: W1002
+
+**Message**: ``Year span must be five or less.``
+
+**Scope**: PLATFORM.WOS
+
+**Typical fix**: The parser automatically sets the year span to 5.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND PY=2000-2020
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND PY=2015-2020
+
+**Back to**: :ref:`query-error-messages`

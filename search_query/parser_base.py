@@ -24,7 +24,6 @@ class QueryStringParser(ABC):
     def __init__(
         self, query_str: str, search_field_general: str, mode: str = "strict"
     ) -> None:
-
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode

@@ -1,9 +1,9 @@
-.. _F0002:
+.. _F1001:
 
-F0002 — unbalanced-parentheses
+F1001 — unbalanced-parentheses
 ==============================
 
-**Error Code**: F0002
+**Error Code**: F1001
 
 **Message**: ``Parentheses are unbalanced in the query``
 
