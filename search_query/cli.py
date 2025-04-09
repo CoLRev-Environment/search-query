@@ -2,12 +2,14 @@
 """CLI for search-query."""
 import argparse
 from pathlib import Path
+
+import search_query.linter
 import search_query.parser
-from search_query import SearchFile
 from search_query import load_search_file
 
 
-def main():
+def translate() -> None:
+    """Main entrypoint for the query translation CLI"""
     parser = argparse.ArgumentParser(
         description="Convert search queries between formats"
     )
@@ -47,17 +49,18 @@ def main():
     print(f"Convert from {args.source} to {args.target}")
 
     if Path(args.input_file).suffix == ".json":
-
         search_file = load_search_file(args.input_file)
-        query = search_query.parser.parse(search_file.search_string, syntax=args.source, search_field_general="")
+        query = search_query.parser.parse(
+            search_file.search_string, syntax=args.source, search_field_general=""
+        )
         converted_query = query.to_string(syntax=args.target)
         search_file.search_string = converted_query
         search_file.save()
 
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
 
-
-if __name__ == "__main__":
-    main()
+def lint() -> None:
+    """Main entrypoint for the query linter hook"""
+    raise SystemExit(search_query.linter.pre_commit_hook())

@@ -177,18 +177,18 @@ To translate a search query on the command line, run
 Arguments
 ---------
 
-- ``--from`` (required):  
-  The source query format.  
+- ``--from`` (required):
+  The source query format.
   Example: ``colrev_web_of_science``
 
-- ``--input`` (required):  
+- ``--input`` (required):
   Path to the input file containing the original query.
 
-- ``--to`` (required):  
-  The target query format.  
+- ``--to`` (required):
+  The target query format.
   Example: ``colrev_pubmed``
 
-- ``--output`` (required):  
+- ``--output`` (required):
   Path to the file where the converted query will be written.
 
 
