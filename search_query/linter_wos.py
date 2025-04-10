@@ -252,7 +252,7 @@ class QueryLinter:
             # Two operators in a row
             if token.is_operator() and next_token.is_operator():
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_TWO_OPERATORS,
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     pos=next_token.position,
                 )
                 continue
@@ -260,7 +260,7 @@ class QueryLinter:
             # Two search fields in a row
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS,
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     pos=next_token.position,
                 )
                 continue

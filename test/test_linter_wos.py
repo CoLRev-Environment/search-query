@@ -197,10 +197,10 @@ class TestQueryLinter(unittest.TestCase):
         self.assertEqual(
             parser.linter_messages[0],
             {
-                "code": "F1011",
+                "code": "F1004",
                 "is_fatal": True,
-                "label": "invalid-token-sequence-two-operators",
-                "message": "Invalid token sequence: two operators in a row.",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
                 "pos": (10, 12),
             },
         )
