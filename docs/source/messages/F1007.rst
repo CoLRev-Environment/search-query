@@ -1,0 +1,14 @@
+.. _F1007:
+
+F1007 — invalid-search-field-position
+=====================================
+
+**Error Code**: F1007
+
+**Message**: ``Search field tags should directly follow search terms``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Search field tags should directly follow search terms
+
+**Back to**: :ref:`query-error-messages`

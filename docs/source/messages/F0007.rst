@@ -1,0 +1,14 @@
+.. _F0007:
+
+F0007 — empty-parentheses
+=========================
+
+**Error Code**: F0007
+
+**Message**: ``Query contains empty parentheses``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Query contains empty parentheses
+
+**Back to**: :ref:`query-error-messages`

@@ -1,0 +1,26 @@
+.. _W0006:
+
+W0006 — implicit-near-value
+===========================
+
+**Error Code**: W0006
+
+**Message**: ``The value of NEAR operator is implicit``
+
+**Scope**: PLATFORM.WOS
+
+**Typical fix**: The parser automatically sets implicit NEAR values to the default of 15.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A NEAR B
+
+**Correct query**:
+
+.. code-block:: python
+
+    A NEAR/15 B
+
+**Back to**: :ref:`query-error-messages`
