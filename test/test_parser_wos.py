@@ -1312,6 +1312,14 @@ class TestWOSParser(unittest.TestCase):
             },
         )
 
+    def test_query_in_quotes(self) -> None:
+        parser = WOSParser(
+            query_str='"TI=(digital AND online)"', search_field_general="", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(parser.tokens[0].value, "TI=")
+
 
 if __name__ == "__main__":
     unittest.main()

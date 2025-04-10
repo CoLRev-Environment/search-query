@@ -40,31 +40,6 @@ class QueryLinter:
         self.check_implicit_near()
         self.check_year_format()
         self.check_fields()
-
-        if len(self.parser.tokens) < 2:
-            if '"' in self.parser.tokens[0][0]:
-                # TODO : non-fatal error: remove quotes from tokens
-                self.parser.add_linter_message(
-                    QueryErrorCode.QUERY_IN_QUOTES,
-                    pos=self.parser.tokens[0][1],
-                )
-
-        if self.parser.tokens[0].value in [
-            "Web of Science",
-            "wos",
-            "WoS",
-            "WOS",
-            "WOS:",
-            "WoS:",
-            "WOS=",
-            "WoS=",
-        ]:
-            self.parser.add_linter_message(
-                QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
-                pos=self.parser.tokens[0][1],
-            )
-            # TODO : non-fatal error: remove identifier from tokens
-
         self.check_order_of_tokens()
 
         index = 0
@@ -132,9 +107,6 @@ class QueryLinter:
                 # (which may come after parentheses)
                 break
 
-            # TODO : contradition could also be in following tokens??
-            # (at level-0 of parentheses)
-
     def check_fields(self) -> None:
         """Check for the correct format of fields."""
         valid_fields = set().union(*WOSSearchFieldList.search_field_dict.values())
@@ -174,7 +146,6 @@ class QueryLinter:
                     pos=token.position,
                 )
                 token.value = "NEAR/15"
-                # TODO : TBD: adjust token position?
 
     def check_year_format(self) -> None:
         """Check for the correct format of year."""

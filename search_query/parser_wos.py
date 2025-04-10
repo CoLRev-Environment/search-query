@@ -10,6 +10,7 @@ from search_query.constants import LinterMode
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.constants import WOSSearchFieldList
@@ -65,8 +66,39 @@ class WOSParser(QueryStringParser):
         )
         self.query_linter = QueryLinter(parser=self)
 
+    def _handle_fully_quoted_query_str(self) -> None:
+        if (
+            '"' == self.query_str[0]
+            and '"' == self.query_str[-1]
+            and "(" in self.query_str
+        ):
+            self.add_linter_message(
+                QueryErrorCode.QUERY_IN_QUOTES,
+                pos=(-1, -1),
+            )
+            # remove quotes before tokenization
+            self.query_str = self.query_str[1:-1]
+
+        # if self.parser.tokens[0].value in [
+        #     "Web of Science",
+        #     "wos",
+        #     "WoS",
+        #     "WOS",
+        #     "WOS:",
+        #     "WoS:",
+        #     "WOS=",
+        #     "WoS=",
+        # ]:
+        #     self.parser.add_linter_message(
+        #         QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
+        #         pos=self.parser.tokens[0][1],
+        #     )
+        #     # non-fatal error: remove identifier from tokens
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
+
+        self._handle_fully_quoted_query_str()
 
         # Parse tokens and positions based on regex pattern
         compile_pattern = re.compile(pattern=self.pattern)
