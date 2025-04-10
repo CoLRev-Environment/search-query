@@ -137,6 +137,7 @@ class WOSParser(QueryStringParser):
         )
 
     # Parse a query tree from tokens recursively
+    # pylint: disable=too-many-branches
     def parse_query_tree(
         self,
         index: int = 0,
@@ -189,14 +190,6 @@ class WOSParser(QueryStringParser):
 
             # Handle operators
             elif token.type == TokenTypes.LOGIC_OPERATOR:
-                # Safe the children if there is a change
-                # of operator within the current parentheses
-                if current_operator and current_operator != token.value.upper():
-                    children = self.wrap_with_operator_node(
-                        children=children,
-                        current_operator=current_operator,
-                    )
-
                 # Handle the operator
                 # and update all changes within the handler
                 (
@@ -447,8 +440,10 @@ class WOSParser(QueryStringParser):
             current_operator=current_operator,
         )
 
+    # pylint: disable=too-many-arguments
     def add_term_node(
         self,
+        *,
         index: int,
         value: str,
         operator: bool,
@@ -541,43 +536,6 @@ class WOSParser(QueryStringParser):
         # queries for combined search fields
         # see _expand_combined_fields() in pubmed
 
-    def wrap_with_operator_node(self, children: list, current_operator: str) -> list:
-        """Safe children, when there is a change of
-        operator within the current parentheses."""
-        safe_children = []
-        safe_children.append(
-            Query(
-                value=current_operator,
-                operator=True,
-                children=children,
-            )
-        )
-
-        return safe_children
-
-    def flatten_nested_operators(self, query: Query) -> None:
-        """Check if there are double nested operators."""
-
-        del_children = []
-        if query.operator:
-            for child in query.children:
-                if child.operator:
-                    if child.value == query.value:
-                        # Get the child one level up
-                        for grandchild in child.children:
-                            query.children.append(grandchild)
-                        del_children.append(query.children.index(child))
-
-            # Delete the child
-            if del_children:
-                del_children.reverse()
-                for index in del_children:
-                    query.children.pop(index)
-
-        if query.children:
-            for child in query.children:
-                self.flatten_nested_operators(child)
-
     def pre_linting(self) -> None:
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
@@ -589,14 +547,13 @@ class WOSParser(QueryStringParser):
 
         self.linter_messages.clear()
         self.tokenize()
+        self.add_artificial_parentheses_for_operator_precedence()
+
         self.pre_linting()
 
         if not self.fatal_linter_err:
             query, _ = self.parse_query_tree()
-            # raise Exception
             self.translate_search_fields(query)
-            # TODO : optional?
-            self.flatten_nested_operators(query)
         else:
             print("\n[FATAL:] Fatal error detected in pre-linting")
 
@@ -672,15 +629,10 @@ class WOSListParser(QueryListParser):
                 # + query
             )
 
-    def parse(self) -> Query:
-        """Parse the list of queries."""
-        # the parse() method of QueryListParser is called to parse the list of queries
-
-        # TODO: check/raise linter messages
-        # TODO: consider linter messages of WOSParser (individual strings)
-        self.lint_list_parser()
-
-        query_dict = self.parse_dict()
+    def _parse_queries(
+        self, query_dict: dict
+    ) -> typing.Tuple[typing.List[Query], dict]:
+        """Parse the queries from the list of queries."""
         queries: typing.List[Query] = []
         combine_queries = {}
 
@@ -696,65 +648,83 @@ class WOSListParser(QueryListParser):
                 )
                 query = query_parser.parse()
                 queries.append(query)
+        return queries, combine_queries
 
+    def _validate_last_combining_item(
+        self, query_dict: dict, combine_queries: dict
+    ) -> None:
+        last_index = str(len(query_dict))
+        if (
+            last_index not in combine_queries
+            or combine_queries[last_index] != query_dict[last_index]["node_content"]
+        ):
+            raise ValueError("[ERROR] The last item must be a combining string.")
+
+    def _extract_operator_and_children(
+        self, tokens: list, queries: list
+    ) -> tuple[str, list]:
+        operator = ""
+        children = []
+
+        last_token = tokens[-1]
+        if last_token in {"AND", "OR"}:
+            raise ValueError(
+                "[ERROR] Last token must be a number, not an operator."
+                f"\nFound: {last_token}"
+            )
+        if "#" not in last_token:
+            raise ValueError(
+                "[ERROR] Last token must be a reference (e.g., #4)."
+                f"\nFound: {last_token}"
+            )
+
+        for token in tokens:
+            if "#" in token:
+                idx = int(token.replace("#", "")) - 1
+                children.append(queries[idx])
+            else:
+                if not operator:
+                    operator = token
+                elif operator != token:
+                    raise ValueError(
+                        "[ERROR] Two different operators used in the same line."
+                    )
+
+        assert operator, "[ERROR] No operator found in combining query."
+        return operator, children
+
+    def _combine_queries(self, queries: list, combine_queries: dict) -> None:
         for index, query_str in combine_queries.items():
-            children: typing.List[Query] = []
-            res_children = []
-            operator = ""
             tokens = self.tokenize_combining_list_elem(query_str)
+            operator, children = self._extract_operator_and_children(tokens, queries)
 
-            # Check if the last token is a operator
-            last_token = tokens[len(tokens) - 1]
-            if last_token in ["AND", "OR"]:
-                raise ValueError(
-                    "[ERROR] The last token of a combining list item must be a number."
-                    + "\nFound: "
-                    + last_token
-                    + "\nFor combinations like this '#4 AND DT=(Article)'"
-                    + " split the query into two seperate list items and"
-                    + " add them together in the next list item:"
-                    + "\n 5. DT=(Article)"
-                    + "\n 6. #4 AND #5"
-                )
-
-            # Check if the last token is a number
-            # This error is never raised
-            # because the regex only matches numbers and operators
-            if "#" not in tokens[len(tokens) - 1]:
-                raise ValueError(
-                    "[ERROR] LastTokenMustBeNumber\t"
-                    + "Combining list item must be a number. No term, language or year."
-                    + "\nFound: "
-                    + tokens[len(tokens) - 1]
-                )
-
-            for token in tokens:
-                if "#" in token:
-                    token = token.replace("#", "")
-                    children.append(queries[int(token) - 1])
-                else:
-                    if not operator or operator == token:
-                        operator = token
-                    else:
-                        raise ValueError(
-                            "[ERROR] Two different operators are used in one line."
-                        )
-
+            res_children = []
             for child in children:
                 if child.value == operator:
-                    for grandchild in child.children:
-                        res_children.append(grandchild)
+                    res_children.extend(child.children)
                 else:
                     res_children.append(child)
 
-            assert operator != ""
             queries[int(index) - 1] = Query(
                 value=operator,
                 operator=True,
-                children=list(res_children),
+                children=res_children,
             )
 
-        return queries[len(queries) - 1]
+    def parse(self) -> Query:
+        """Parse the list of queries."""
+
+        # TODO: check/raise linter messages
+        # TODO: consider linter messages of WOSParser (individual strings)
+        self.lint_list_parser()
+
+        query_dict = self.parse_dict()
+        # Note: the parse() method of QueryListParser is called to parse each query
+        queries, combine_queries = self._parse_queries(query_dict)
+        self._validate_last_combining_item(query_dict, combine_queries)
+        self._combine_queries(queries, combine_queries)
+
+        return queries[-1]
 
     def tokenize_combining_list_elem(self, query_str: str) -> list:
         """Tokenize the query_list."""

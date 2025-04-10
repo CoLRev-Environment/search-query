@@ -713,13 +713,13 @@ class TestWOSParser(unittest.TestCase):
         children: typing.List[Query] = []
 
         result = self.parser.add_term_node(
-            index,
-            value,
-            operator,
-            search_field,
-            position,
-            current_operator,
-            children,
+            index=index,
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position,
+            current_operator=current_operator,
+            children=children,
         )
         expected_result = [
             Query(
@@ -754,13 +754,13 @@ class TestWOSParser(unittest.TestCase):
         children: typing.List[Query] = []
 
         result = self.parser.add_term_node(
-            index,
-            value,
-            operator,
-            search_field,
-            position,
-            current_operator,
-            children,
+            index=index,
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position,
+            current_operator=current_operator,
+            children=children,
         )
         expected_result = [
             Query(
@@ -834,13 +834,13 @@ class TestWOSParser(unittest.TestCase):
         ]
 
         result = self.parser.add_term_node(
-            index,
-            value,
-            operator,
-            search_field,
-            position,
-            current_operator,
-            children,
+            index=index,
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position,
+            current_operator=current_operator,
+            children=children,
         )
         expected_result = [
             Query(
@@ -931,13 +931,13 @@ class TestWOSParser(unittest.TestCase):
         ]
 
         result = self.parser.add_term_node(
-            index,
-            value,
-            operator,
-            search_field,
-            position,
-            current_operator,
-            children,
+            index=index,
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position,
+            current_operator=current_operator,
+            children=children,
         )
         expected_result = [
             Query(
@@ -985,14 +985,14 @@ class TestWOSParser(unittest.TestCase):
         current_negation = True
 
         result = self.parser.add_term_node(
-            index,
-            value,
-            operator,
-            search_field,
-            position,
-            current_operator,
-            children,
-            current_negation,
+            index=index,
+            value=value,
+            operator=operator,
+            search_field=search_field,
+            position=position,
+            current_operator=current_operator,
+            children=children,
+            current_negation=current_negation,
         )
         expected_result = [
             Query(
@@ -1151,76 +1151,6 @@ class TestWOSParser(unittest.TestCase):
             result = self.parser._map_default_field(field)
             self.assertEqual(result, field)
 
-    def test_safe_children_with_single_child(self) -> None:
-        """
-        Test the `safe_children` method with a single child.
-
-        This test verifies that the `safe_children` method correctly wraps
-        a single child in a Query object with the given operator.
-        """
-        children = [Query(value="example", operator=False)]
-        current_operator = "AND"
-        result = self.parser.wrap_with_operator_node(children, current_operator)
-        expected_result = [
-            Query(value=current_operator, operator=True, children=list(children))
-        ]
-        self.assertEqual(result[0].value, expected_result[0].value)
-        self.assertEqual(result[0].operator, expected_result[0].operator)
-        self.assertEqual(
-            result[0].children[0].value, expected_result[0].children[0].value
-        )
-        self.assertEqual(
-            result[0].children[0].operator, expected_result[0].children[0].operator
-        )
-
-    def test_safe_children_with_multiple_children(self) -> None:
-        """
-        Test the `safe_children` method with multiple children.
-
-        This test verifies that the `safe_children` method correctly wraps
-        multiple children in a Query object with the given operator.
-        """
-        children = [
-            Query(value="example1", operator=False),
-            Query(value="example2", operator=False),
-        ]
-        current_operator = "OR"
-        result = self.parser.wrap_with_operator_node(children, current_operator)
-        expected_result = [
-            Query(value=current_operator, operator=True, children=list(children))
-        ]
-        self.assertEqual(result[0].value, expected_result[0].value)
-        self.assertEqual(result[0].operator, expected_result[0].operator)
-        self.assertEqual(
-            result[0].children[0].value, expected_result[0].children[0].value
-        )
-        self.assertEqual(
-            result[0].children[0].operator, expected_result[0].children[0].operator
-        )
-        self.assertEqual(
-            result[0].children[1].value, expected_result[0].children[1].value
-        )
-        self.assertEqual(
-            result[0].children[1].operator, expected_result[0].children[1].operator
-        )
-
-    def test_safe_children_with_empty_children(self) -> None:
-        """
-        Test the `safe_children` method with empty children.
-
-        This test verifies that the `safe_children` method correctly handles
-        an empty list of children and wraps it in a Query object with the given operator.
-        """
-        children: typing.List[Query] = []
-        current_operator = "AND"
-        result = self.parser.wrap_with_operator_node(children, current_operator)
-        expected_result = [
-            Query(value=current_operator, operator=True, children=list(children))
-        ]
-        self.assertEqual(result[0].value, expected_result[0].value)
-        self.assertEqual(result[0].operator, expected_result[0].operator)
-        self.assertEqual(result[0].children, expected_result[0].children)
-
     def test_query_parsing_1(self) -> None:
         parser = WOSParser(
             query_str="TI=example AND AU=John Doe", search_field_general="", mode=""
@@ -1253,8 +1183,6 @@ class TestWOSParser(unittest.TestCase):
         self.assertEqual(query.children[1].children[1].search_field.value, "au")  # type: ignore
 
     def test_query_parsing_basic_vs_advanced(self) -> None:
-        # TODO : clarify basic vs advanced search in the docs!
-
         # Basic search
         parser = WOSParser(
             query_str="digital AND online", search_field_general="ALL=", mode=""
@@ -1319,6 +1247,28 @@ class TestWOSParser(unittest.TestCase):
         parser.parse()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(parser.tokens[0].value, "TI=")
+
+    def test_artificial_parentheses(self) -> None:
+        parser = WOSParser(
+            query_str="remote OR online AND work", search_field_general="ALL=", mode=""
+        )
+        query = parser.parse()
+        self.assertEqual(query.value, "OR")
+        self.assertEqual(query.children[0].value, "remote")
+        self.assertEqual(query.children[1].value, "AND")
+        self.assertEqual(query.children[1].children[0].value, "online")
+        self.assertEqual(query.children[1].children[1].value, "work")
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "W0007",
+                "label": "implicit-precedence",
+                "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+                "pos": (-1, -1),
+                "is_fatal": False,
+            },
+        )
 
 
 if __name__ == "__main__":

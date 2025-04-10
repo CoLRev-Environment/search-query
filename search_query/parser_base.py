@@ -180,6 +180,10 @@ class QueryStringParser(ABC):
 
                 # Insert open parenthesis after operator
                 while current_value < value:
+                    self.add_linter_message(
+                        QueryErrorCode.IMPLICIT_PRECEDENCE,
+                        pos=(-1, -1),
+                    )
                     # Insert open parenthesis after operator
                     temp.insert(
                         1,
