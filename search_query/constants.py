@@ -277,34 +277,6 @@ class QueryErrorCode(Enum):
         "Invalid token sequence: missing operator.",
         "",
     )
-    INVALID_OPERATOR_POSITION = (
-        [PLATFORM.PUBMED],
-        "F0004",
-        "invalid-operator-position",
-        "Invalid operator position",
-        "",
-    )
-    INVALID_SEARCH_FIELD_POSITION = (
-        [PLATFORM.PUBMED],
-        "F0005",
-        "invalid-search-field-position",
-        "Search field tags should directly follow search terms",
-        "",
-    )
-    NESTED_NOT_QUERY = (
-        [PLATFORM.PUBMED],
-        "F0006",
-        "nested-not-query",
-        "Nesting of NOT operator is not supported for this database",
-        "",
-    )
-    EMPTY_PARENTHESES = (
-        [PLATFORM.PUBMED],
-        "F0007",
-        "empty-parentheses",
-        "Query contains empty parentheses",
-        "",
-    )
 
     WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
@@ -491,13 +463,6 @@ class QueryErrorCode(Enum):
         "W0004",
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
-        "",
-    )
-    QUERY_PRECEDENCE = (
-        [PLATFORM.PUBMED],
-        "W0005",
-        "query-precedence-warning",
-        "AND operator used after OR operator in the same subquery",
         "",
     )
     OPERATOR_CAPITALIZATION = (

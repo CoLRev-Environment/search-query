@@ -6,9 +6,9 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
+from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.parser_validation import QueryStringValidator
 
 
 class PubmedQueryStringValidator(QueryStringValidator):
@@ -24,7 +24,6 @@ class PubmedQueryStringValidator(QueryStringValidator):
         self._check_unbalanced_parentheses(tokens, invalid_token_indices)
 
         for index, token in enumerate(tokens):
-
             if token.type == TokenTypes.SEARCH_TERM:
                 self._check_invalid_characters(index, tokens, invalid_token_indices)
                 if "*" in token.value:
@@ -33,16 +32,16 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 self._check_invalid_token_position(index, tokens, invalid_token_indices)
 
             if (
-                    index not in invalid_token_indices
-                    and token.type == TokenTypes.FIELD
-                    and ":~" in token.value
+                index not in invalid_token_indices
+                and token.type == TokenTypes.FIELD
+                and ":~" in token.value
             ):
                 self._check_invalid_proximity_operator(index, tokens)
 
             if (
-                    index > 0
-                    and index not in invalid_token_indices
-                    and index - 1 not in invalid_token_indices
+                index > 0
+                and index not in invalid_token_indices
+                and index - 1 not in invalid_token_indices
             ):
                 self._check_missing_operator(index, tokens)
 
@@ -56,7 +55,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         return refined_tokens
 
     def _check_unbalanced_parentheses(
-            self, tokens: list, invalid_token_indices: list
+        self, tokens: list, invalid_token_indices: list
     ) -> None:
         """Check token list for unbalanced parentheses"""
         i = 0
@@ -98,10 +97,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
             }:
                 or_query = False
             elif token.value.upper() in {"AND", "&"} and or_query:
-                self.parser.add_linter_message(QueryErrorCode.QUERY_PRECEDENCE, token.position)
+                self.parser.add_linter_message(
+                    QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
+                )
 
     def _check_invalid_characters(
-            self, index: int, tokens: list, invalid_token_indices: list
+        self, index: int, tokens: list, invalid_token_indices: list
     ) -> None:
         """Check a search term for invalid characters"""
 
@@ -115,7 +116,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_CHARACTER, token.position
                 )
-                value = value[:i] + " " + value[i + 1:]
+                value = value[:i] + " " + value[i + 1 :]
         # Update token
         if value != token.value:
             token.value = value
@@ -131,10 +132,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
             k = 4
         if "*" in token.value[:k]:
             # Wildcard * is invalid if it is applied to terms with less than 4 characters
-            self.parser.add_linter_message(QueryErrorCode.INVALID_WILDCARD_USE, token.position)
+            self.parser.add_linter_message(
+                QueryErrorCode.INVALID_WILDCARD_USE, token.position
+            )
 
     def _check_invalid_token_position(
-            self, index: int, tokens: list, invalid_token_indices: list
+        self, index: int, tokens: list, invalid_token_indices: list
     ):
         """Check if token list contains invalid token position at index"""
         if index == 0:
@@ -160,12 +163,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         if current_token.type == TokenTypes.LOGIC_OPERATOR:
             if not (
-                    prev_token
-                    and (
-                            prev_token.type == TokenTypes.SEARCH_TERM
-                            or prev_token.type == TokenTypes.FIELD
-                            or prev_token.type == TokenTypes.PARENTHESIS_CLOSED
-                    )
+                prev_token
+                and (
+                    prev_token.type == TokenTypes.SEARCH_TERM
+                    or prev_token.type == TokenTypes.FIELD
+                    or prev_token.type == TokenTypes.PARENTHESIS_CLOSED
+                )
             ):
                 # Invalid operator position
                 self.parser.add_linter_message(
@@ -173,11 +176,11 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 )
                 invalid_token_indices.append(index)
             elif not (
-                    next_token
-                    and (
-                            next_token.type
-                            in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}
-                    )
+                next_token
+                and (
+                    next_token.type
+                    in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}
+                )
             ):
                 # Invalid operator position
                 self.parser.add_linter_message(
@@ -209,15 +212,19 @@ class PubmedQueryStringValidator(QueryStringValidator):
             else:
                 nr_of_terms = len(search_phrase_token.value.strip('"').split())
                 if not (
-                        search_phrase_token.value[0] == '"'
-                        and search_phrase_token.value[-1] == '"'
-                        and nr_of_terms >= 2
+                    search_phrase_token.value[0] == '"'
+                    and search_phrase_token.value[-1] == '"'
+                    and nr_of_terms >= 2
                 ):
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
 
-                if self.parser.map_search_field(field_value) not in {"tiab", Fields.TITLE, Fields.AFFILIATION}:
+                if self.parser.map_search_field(field_value) not in {
+                    "tiab",
+                    Fields.TITLE,
+                    Fields.AFFILIATION,
+                }:
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
@@ -252,7 +259,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
         """Check query tree for nested NOT queries"""
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
-                self.parser.add_linter_message(QueryErrorCode.NESTED_NOT_QUERY, child.position)
+                self.parser.add_linter_message(
+                    QueryErrorCode.NESTED_NOT_QUERY, child.position
+                )
             self._check_nested_not_query(child)
 
     def _check_redundant_terms(self, query: Query) -> None:
@@ -282,9 +291,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
             for k in range(len(terms)):
                 for i in range(len(terms)):
                     if (
-                            k == i
-                            or terms[k] in redundant_terms
-                            or terms[i] in redundant_terms
+                        k == i
+                        or terms[k] in redundant_terms
+                        or terms[i] in redundant_terms
                     ):
                         continue
 
@@ -296,12 +305,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     )
 
                     if field_value_1 == field_value_2 and (
-                            terms[k].value == terms[i].value
-                            or (
-                                    field_value_1 != "[mh]"
-                                    and terms[k].value.strip('"').lower()
-                                    in terms[i].value.strip('"').lower().split()
-                            )
+                        terms[k].value == terms[i].value
+                        or (
+                            field_value_1 != "[mh]"
+                            and terms[k].value.strip('"').lower()
+                            in terms[i].value.strip('"').lower().split()
+                        )
                     ):
                         # Terms in AND queries follow different redundancy logic than terms in OR queries
                         if operator == Operators.AND:
@@ -318,7 +327,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                             redundant_terms.append(terms[i])
 
     def _extract_subqueries(
-            self, query: Query, subqueries: dict, subquery_types: dict, subquery_id=0
+        self, query: Query, subqueries: dict, subquery_types: dict, subquery_id=0
     ) -> None:
         """Extract subqueries from query tree"""
         if subquery_id not in subqueries:
@@ -360,7 +369,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         """Check unsupported search field"""
 
         if search_field.value not in Fields.all() or (
-                search_field.position and search_field.value == "ab"
+            search_field.position and search_field.value == "ab"
         ):
             self.parser.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_UNSUPPORTED, search_field.position
@@ -369,16 +378,20 @@ class PubmedQueryStringValidator(QueryStringValidator):
             search_field.position = None
 
     def _check_search_field_alignment(
-            self, query_field_values: set, user_field_values: set
+        self, query_field_values: set, user_field_values: set
     ) -> None:
         """Compare user-provided fields with the fields found in query string"""
         if user_field_values and query_field_values:
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
-                self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_CONTRADICTION, None)
+                self.parser.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, None
+                )
             else:
                 # User-provided fields match fields in the query
-                self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_REDUNDANT, None)
+                self.parser.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, None
+                )
 
         elif user_field_values and not query_field_values:
             # User-provided fields are missing in the query
@@ -386,4 +399,6 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED, None)
+            self.parser.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED, None
+            )

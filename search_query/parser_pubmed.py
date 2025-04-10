@@ -15,11 +15,11 @@ from search_query.exception import PubmedInvalidFieldTag
 from search_query.exception import PubmedQueryWarning
 from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
+from search_query.linter_pubmed import PubmedQueryStringValidator
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.linter_pubmed import PubmedQueryStringValidator
 
 
 class PubmedParser(QueryStringParser):
@@ -226,7 +226,8 @@ class PubmedParser(QueryStringParser):
             i = position + 1
         token_lists.append(tokens[i:])
 
-        # The token lists represent the subqueries (children) of the compound query and are parsed individually.
+        # The token lists represent the subqueries (children
+        # of the compound query and are parsed individually.
         children = []
         for token_list in token_lists:
             query = self.parse_query_tree(token_list)
@@ -343,7 +344,9 @@ class PubmedParser(QueryStringParser):
         query.children = query_children
 
     def get_query_leaves(self, query: Query) -> list:
-        """Retrieve all leaf nodes from a query, representing search terms and fields, and return them as a list"""
+        """Retrieve all leaf nodes from a query,
+        representing search terms and fields,
+        and return them as a list"""
         if not query.children:
             return [query]
 
@@ -385,7 +388,7 @@ class PubmedParser(QueryStringParser):
                 raise e
 
             # Raise an exception for error messages if in strict mode
-            elif code.startswith("E"):
+            if code.startswith("E"):
                 if self.mode == "strict":
                     raise e
                 else:
@@ -411,7 +414,7 @@ class PubmedParser(QueryStringParser):
             QueryErrorCode.UNBALANCED_PARENTHESES.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
-            QueryErrorCode.MISSING_OPERATOR.code: lambda: QuerySyntaxError(
+            QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR.code: lambda: QuerySyntaxError(
                 user_message, self.query_str, pos
             ),
             QueryErrorCode.INVALID_OPERATOR_POSITION.code: lambda: QuerySyntaxError(
@@ -456,7 +459,7 @@ class PubmedParser(QueryStringParser):
             QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: lambda: PubmedQueryWarning(
                 user_message, self.query_str, pos
             ),
-            QueryErrorCode.QUERY_PRECEDENCE.code: lambda: PubmedQueryWarning(
+            QueryErrorCode.IMPLICIT_PRECEDENCE.code: lambda: PubmedQueryWarning(
                 user_message, self.query_str, pos
             ),
             QueryErrorCode.OPERATOR_CAPITALIZATION.code: lambda: PubmedQueryWarning(
