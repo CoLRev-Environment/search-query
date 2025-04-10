@@ -242,7 +242,12 @@ class WOSParser(QueryStringParser):
         # Return the operator and children if there is an operator
         if current_operator:
             return (
-                Query(value=current_operator, operator=True, children=list(children)),
+                Query(
+                    value=current_operator,
+                    operator=True,
+                    children=list(children),
+                    search_field=search_field,
+                ),
                 index,
             )
 
@@ -462,6 +467,7 @@ class WOSParser(QueryStringParser):
                             value=Operators.AND,
                             operator=True,
                             children=[*children, term_node],
+                            search_field=search_field,
                         )
                     ]
                 else:
@@ -470,6 +476,7 @@ class WOSParser(QueryStringParser):
                             value=current_operator,
                             operator=True,
                             children=[*children, term_node],
+                            search_field=search_field,
                         )
                     ]
             else:
@@ -614,44 +621,48 @@ class WOSListParser(QueryListParser):
     def get_token_str(self, token_nr: str) -> str:
         return f"#{token_nr}"
 
+    def lint_list_parser(self) -> None:
+        """Lint the list parser."""
+        query_dict = self.parse_dict()
+
+        # require combining list items
+        if not any("#" in query["node_content"] for query in query_dict.values()):
+            # TODO : add_linter_message()
+            # If there is no combining list item, raise a linter exception
+            # Individual list items can not be connected
+            raise ValueError("[ERROR] No combining list item found.")
+
+        # Raise an error if the last item of the list is not the last combining string
+        if "#" not in list(query_dict.values())[-1]["node_content"]:
+            raise ValueError(
+                "[ERROR] The last item of the list must be a combining string."
+                # + "\nFound: "
+                # + query
+            )
+
     def parse(self) -> Query:
         """Parse the list of queries."""
         # the parse() method of QueryListParser is called to parse the list of queries
+
+        # TODO: check/raise linter messages, consider linter messages of WOSParser
+        self.lint_list_parser()
+
         query_dict = self.parse_dict()
         queries: typing.List[Query] = []
         combine_queries = {}
 
         for node_nr, node_content in query_dict.items():
-            if node_nr == "14":
-                print(node_content["node_content"])
-
             if "#" in node_content["node_content"]:
                 combine_queries[node_nr] = node_content["node_content"]
                 queries.append(Query("Filler for combine queries"))
             else:
-                query_parser = self.parser_class(
+                query_parser = WOSParser(
                     query_str=node_content["node_content"],
                     search_field_general=self.search_field_general,
                     mode=self.linter_mode,
                 )
                 query = query_parser.parse()
                 queries.append(query)
-
-        # If there is no combining list item, raise a linter exception
-        # Individual list items can not be connected
-        if not combine_queries:
-            raise ValueError("[ERROR] No combining list item found.")
-
-        # Raise an error if the last item of the list is not the last combining string
-        if not (
-            combine_queries[str(len(query_dict))]
-            == query_dict[str(len(query_dict))]["node_content"]
-        ):
-            raise ValueError(
-                "[ERROR] The last item of the list must be a combining string."
-                # + "\nFound: "
-                # + query
-            )
 
         for index, query_str in combine_queries.items():
             children: typing.List[Query] = []
@@ -705,7 +716,9 @@ class WOSListParser(QueryListParser):
 
             assert operator != ""
             queries[int(index) - 1] = Query(
-                value=operator, operator=True, children=list(res_children)
+                value=operator,
+                operator=True,
+                children=list(res_children),
             )
 
         return queries[len(queries) - 1]

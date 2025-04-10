@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from typing import Tuple
 
-import pytest  # type: ignore
+import pytest
 
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -13,8 +13,6 @@ from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
 from search_query.query import Query
-
-# to run (from top-level dir): pytest test/test_parser_ebsco.py
 
 # flake8: noqa: E501
 
