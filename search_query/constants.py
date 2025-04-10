@@ -751,6 +751,23 @@ class QueryErrorCode(Enum):
         "A search for publication years must include at least another search term.",
         "",
     )
+    MISSING_ROOT_NODE = (
+        [PLATFORM.WOS],
+        "F3001",
+        "missing-root-node",
+        "List format query without root node (typically containing operators)",
+        # The last item of the list must be a "combining string"
+        "",
+    )
+    MISSING_OPERATOR_NODES = (
+        [PLATFORM.WOS],
+        "F3002",
+        "missing-operator-nodes",
+        "List format query without operator nodes",
+        "",
+    )
+    # TODO : MALFORMED_OPERATOR_NODE
+    # TODO : INVALID_LIST_REFERENCE / MISSING_TERM_NODE
 
     # -------------------------------------------------------
     # Errors (prefix: E)

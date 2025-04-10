@@ -433,16 +433,20 @@ class EBSCOListParser(QueryListParser):
         # Log a linter message and return the token number
         # 1 AND 2 ... are still possible,
         # however for standardization purposes it should be S/#
-        self.linter_messages.append(
-            {
-                "level": "Warning",
-                "msg": (
-                    "Connecting lines possibly failed."
-                    "Please use this format for connection:"
-                    "S1 OR S2 OR S3 / #1 OR #2 OR #3"
-                ),
-                "pos": None,
-            }
+        self.add_linter_message(
+            # TODO :check, use correct error code
+            QueryErrorCode.MISSING_OPERATOR_NODES,
+            list_position=QueryListParser.GENERAL_ERROR_POSITION,
+            pos=(-1, -1),
+            # {
+            #     "level": "Warning",
+            #     "msg": (
+            #         "Connecting lines possibly failed."
+            #         "Please use this format for connection:"
+            #         "S1 OR S2 OR S3 / #1 OR #2 OR #3"
+            #     ),
+            #     "pos": None,
+            # }
         )
         return token_nr
 

@@ -612,33 +612,80 @@ class WOSListParser(QueryListParser):
 
     def lint_list_parser(self) -> None:
         """Lint the list parser."""
+
+        # TODO : try/catch/tokenization failed?
         query_dict = self.parse_dict()
 
-        # require combining list items
-        if not any("#" in query["node_content"] for query in query_dict.values()):
-            # TODO : add_linter_message()
-            # If there is no combining list item, raise a linter exception
-            # Individual list items can not be connected
-            raise ValueError("[ERROR] No combining list item found.")
-
+        missing_root = False
         # Raise an error if the last item of the list is not the last combining string
         if "#" not in list(query_dict.values())[-1]["node_content"]:
-            raise ValueError(
-                "[ERROR] The last item of the list must be a combining string."
-                # + "\nFound: "
-                # + query
+            self.add_linter_message(
+                QueryErrorCode.MISSING_ROOT_NODE,
+                list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                pos=(-1, -1),
             )
+            missing_root = True
+
+        if not missing_root:
+            # require combining list items
+            if not any("#" in query["node_content"] for query in query_dict.values()):
+                # If there is no combining list item, raise a linter exception
+                # Individual list items can not be connected
+                # raise ValueError("[ERROR] No combining list item found.")
+                self.add_linter_message(
+                    QueryErrorCode.MISSING_OPERATOR_NODES,
+                    list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                    pos=(-1, -1),
+                )
+
+        self.fatal_linter_err = any(
+            d["is_fatal"] for e in self.linter_messages.values() for d in e
+        )
+        if self.fatal_linter_err:
+            print("\n[FATAL:] Fatal error detected in pre-linting")
+            # Print linter messages
+            if self.linter_mode != LinterMode.STRICT and not self.fatal_linter_err:
+                print(
+                    "\n[INFO:] The following errors have been corrected by the linter:"
+                )
+
+            for level, message_list in self.linter_messages.items():
+                print(f"\n[INFO:] Linter messages for level {level}:")
+                for msg in message_list:
+                    print(
+                        "[Linter:] "
+                        + msg["label"]
+                        + "\t"
+                        + msg["message"]
+                        + " At position "
+                        + str(msg["pos"])
+                    )
+
+            # Raise an exception
+            # if the linter is in strict mode
+            # or if a fatal error has occurred
+            if (
+                self.linter_mode == LinterMode.STRICT
+                or self.fatal_linter_err
+                and self.linter_messages
+            ):
+                raise FatalLintingException(
+                    message="LinterDetected",
+                    query_string=self.query_list,
+                    # TODO:
+                    linter_messages=[],
+                )
 
     def _parse_queries(
         self, query_dict: dict
     ) -> typing.Tuple[typing.List[Query], dict]:
         """Parse the queries from the list of queries."""
         queries: typing.List[Query] = []
-        combine_queries = {}
+        operator_nodes = {}
 
         for node_nr, node_content in query_dict.items():
             if "#" in node_content["node_content"]:
-                combine_queries[node_nr] = node_content["node_content"]
+                operator_nodes[node_nr] = node_content["node_content"]
                 queries.append(Query("Filler for combine queries"))
             else:
                 query_parser = WOSParser(
@@ -648,17 +695,7 @@ class WOSListParser(QueryListParser):
                 )
                 query = query_parser.parse()
                 queries.append(query)
-        return queries, combine_queries
-
-    def _validate_last_combining_item(
-        self, query_dict: dict, combine_queries: dict
-    ) -> None:
-        last_index = str(len(query_dict))
-        if (
-            last_index not in combine_queries
-            or combine_queries[last_index] != query_dict[last_index]["node_content"]
-        ):
-            raise ValueError("[ERROR] The last item must be a combining string.")
+        return queries, operator_nodes
 
     def _extract_operator_and_children(
         self, tokens: list, queries: list
@@ -693,8 +730,8 @@ class WOSListParser(QueryListParser):
         assert operator, "[ERROR] No operator found in combining query."
         return operator, children
 
-    def _combine_queries(self, queries: list, combine_queries: dict) -> None:
-        for index, query_str in combine_queries.items():
+    def _operator_nodes(self, queries: list, operator_nodes: dict) -> None:
+        for index, query_str in operator_nodes.items():
             tokens = self.tokenize_combining_list_elem(query_str)
             operator, children = self._extract_operator_and_children(tokens, queries)
 
@@ -720,9 +757,8 @@ class WOSListParser(QueryListParser):
 
         query_dict = self.parse_dict()
         # Note: the parse() method of QueryListParser is called to parse each query
-        queries, combine_queries = self._parse_queries(query_dict)
-        self._validate_last_combining_item(query_dict, combine_queries)
-        self._combine_queries(queries, combine_queries)
+        queries, operator_nodes = self._parse_queries(query_dict)
+        self._operator_nodes(queries, operator_nodes)
 
         return queries[-1]
 

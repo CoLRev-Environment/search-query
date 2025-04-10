@@ -33,8 +33,8 @@ class QueryStringParser(ABC):
         self.mode = mode
         # The external search_fields (in the JSON file: "search_field")
         self.search_field_general = search_field_general
-        self.fatal_linter_err = False
         self.linter_messages: typing.List[dict] = []
+        self.fatal_linter_err = False
 
     def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
         """Add a linter message."""
@@ -382,7 +382,7 @@ class QueryListParser:
     """QueryListParser"""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    linter_messages: typing.List[dict] = []
+    GENERAL_ERROR_POSITION = -1
 
     def __init__(
         self,
@@ -396,6 +396,31 @@ class QueryListParser:
         self.parser_class = parser_class
         self.search_field_general = search_field_general
         self.linter_mode = linter_mode
+        self.linter_messages: dict = {}
+        self.fatal_linter_err = False
+
+    def add_linter_message(
+        self, error: QueryErrorCode, *, list_position: int, pos: tuple
+    ) -> None:
+        """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and pos == msg["pos"]
+            for msg in self.linter_messages.get(list_position, [])
+        ):
+            return
+        if list_position not in self.linter_messages:
+            self.linter_messages[list_position] = []
+
+        self.linter_messages[list_position].append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "pos": pos,
+            }
+        )
 
     def parse_dict(self) -> dict:
         """Tokenize the query_list."""
