@@ -104,28 +104,36 @@ class QueryLinter:
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
 
-        if self.parser.search_field_general == "":
-            # message: should be set explicitly (-> set default?)
-            pass
-
         for index, token in enumerate(self.parser.tokens):
-            if index == 0:
-                if (
-                    token.type == TokenTypes.FIELD
-                    and token.value != self.parser.search_field_general
-                ):
+            if token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
+                if self.parser.search_field_general == "":
                     self.parser.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                        pos=token.position,
+                        QueryErrorCode.SEARCH_FIELD_MISSING,
+                        pos=(-1, -1),
                     )
-            # TODO : contradition could also be in following tokens
-            # (at level-0 of parentheses)
+                break
 
-            # # TODO : warning (message) for linter?
-            # print(
-            #     "[INFO:] Data redudancy. "
-            #     "Same Search Field in Search and Search Fields."
-            # )
+            if token.type == TokenTypes.FIELD:
+                if index == 0 and self.parser.search_field_general != "":
+                    if token.value != self.parser.search_field_general:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
+                            pos=token.position,
+                        )
+                    else:
+                        # Note : in basic search, when starting the query with a field,
+                        # WOS raises a syntax error.
+                        self.parser.add_linter_message(
+                            QueryErrorCode.SEARCH_FIELD_REDUNDANT,
+                            pos=token.position,
+                        )
+
+                # break: only consider the first FIELD
+                # (which may come after parentheses)
+                break
+
+            # TODO : contradition could also be in following tokens??
+            # (at level-0 of parentheses)
 
     def check_fields(self) -> None:
         """Check for the correct format of fields."""
@@ -173,7 +181,6 @@ class QueryLinter:
         for index, token in enumerate(self.parser.tokens):
             if token.value in WOSSearchFieldList.year_published_list:
                 year_token = self.parser.tokens[index + 1]
-                print(year_token)
 
                 if any(char in year_token.value for char in ["*", "?", "$"]):
                     self.parser.add_linter_message(

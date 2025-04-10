@@ -778,6 +778,7 @@ class QueryErrorCode(Enum):
     # -------------------------------------------------------
     # Errors (prefix: E)
     # -------------------------------------------------------
+    # Note: merged SEARCH_FIELD_NOT_SPECIFIED:
     SEARCH_FIELD_MISSING = (
         ["all"],
         "E0001",
@@ -843,14 +844,6 @@ class QueryErrorCode(Enum):
         "W0002",
         "search-field-extracted",
         "Recommend explicitly specifying the search field in the string",
-        "",
-    )
-    # TODO : equals SEARCH_FIELD_MISSING ??
-    SEARCH_FIELD_NOT_SPECIFIED = (
-        ["all"],
-        "W0003",
-        "search-field-not-specified",
-        "Search field should be explicitly specified",
         "",
     )
     QUERY_STRUCTURE_COMPLEX = (

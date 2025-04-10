@@ -644,7 +644,8 @@ class WOSListParser(QueryListParser):
         """Parse the list of queries."""
         # the parse() method of QueryListParser is called to parse the list of queries
 
-        # TODO: check/raise linter messages, consider linter messages of WOSParser
+        # TODO: check/raise linter messages
+        # TODO: consider linter messages of WOSParser (individual strings)
         self.lint_list_parser()
 
         query_dict = self.parse_dict()

@@ -1237,17 +1237,6 @@ class TestWOSParser(unittest.TestCase):
 
     def test_query_parsing_2(self) -> None:
         parser = WOSParser(
-            query_str="digital and online", search_field_general="", mode=""
-        )
-        query = parser.parse()
-        print(parser.linter_messages)
-        print(parser.tokens)
-        self.assertEqual(query.value, "AND")
-        self.assertTrue(query.operator)
-        raise Exception  # should not be accepted as a valid query/at least throw messages
-
-    def test_query_parsing_3(self) -> None:
-        parser = WOSParser(
             query_str="TI=example AND (AU=John Doe OR AU=John Wayne)",
             search_field_general="",
             mode="",
@@ -1262,6 +1251,66 @@ class TestWOSParser(unittest.TestCase):
 
         self.assertEqual(query.children[1].children[1].value, "John Wayne")
         self.assertEqual(query.children[1].children[1].search_field.value, "au")  # type: ignore
+
+    def test_query_parsing_basic_vs_advanced(self) -> None:
+        # TODO : clarify basic vs advanced search in the docs!
+
+        # Basic search
+        parser = WOSParser(
+            query_str="digital AND online", search_field_general="ALL=", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 0)
+
+        # search field could be nested
+        parser = WOSParser(
+            query_str="(TI=digital AND AB=online)", search_field_general="ALL=", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 0)
+
+        # Advanced search
+        parser = WOSParser(
+            query_str="ALL=(digital AND online)", search_field_general="", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 0)
+        parser = WOSParser(
+            query_str="(ALL=digital AND ALL=online)", search_field_general="", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 0)
+
+        # ERROR: Basic search without search_field_general
+        parser = WOSParser(
+            query_str="digital AND online", search_field_general="", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 1)
+
+        # ERROR: Advanced search with search_field_general
+        parser = WOSParser(
+            query_str="ALL=(digital AND online)", search_field_general="ALL=", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 1)
+
+        # ERROR: Advanced search with search_field_general
+        parser = WOSParser(
+            query_str="TI=(digital AND online)", search_field_general="ALL=", mode=""
+        )
+        parser.parse()
+        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(
+            parser.linter_messages[0],
+            {
+                "code": "E0002",
+                "label": "search-field-contradiction",
+                "message": "Contradictory search fields specified",
+                "is_fatal": False,
+                "pos": (0, 3),
+            },
+        )
 
 
 if __name__ == "__main__":
