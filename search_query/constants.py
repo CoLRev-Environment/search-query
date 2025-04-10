@@ -642,29 +642,6 @@ class QueryErrorCode(Enum):
         "Query contains empty parentheses",
         "",
     )
-    # TODO : consolidate with INVALID_TOKEN_SEQUENCE (EBSCO) is non-fatal?!
-    INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS = (
-        [PLATFORM.EBSCO],
-        "F1010",
-        "invalid-token-sequence-two-search-fields",
-        "Invalid token sequence: two search fields in a row.",
-        "",
-    )
-    INVALID_TOKEN_SEQUENCE_TWO_OPERATORS = (
-        [PLATFORM.EBSCO],
-        "F1011",
-        "invalid-token-sequence-two-operators",
-        "Invalid token sequence: two operators in a row.",
-        "",
-    )
-    # Note : merged MISSING_OPERATOR with:
-    INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR = (
-        ["all", PLATFORM.WOS],
-        "F1012",
-        "invalid-token-sequence-missing-operator",
-        "Invalid token sequence: missing operator.",
-        "",
-    )
 
     WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
