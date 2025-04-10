@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pubmed query linter."""
 import re
+import typing
 
 from search_query.constants import Fields
 from search_query.constants import Operators
@@ -10,15 +11,19 @@ from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
 
+if typing.TYPE_CHECKING:
+    from search_query.parser import PubmedParser
+
 
 class PubmedQueryStringValidator(QueryStringValidator):
     """Class for PubMed Query String Validation"""
 
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
+    parser: "PubmedParser"
 
     def validate_tokens(self, tokens: list) -> list:
         """Validate token list"""
-        invalid_token_indices = []
+        invalid_token_indices: typing.List[int] = []
 
         self.check_operator()
         self._check_unbalanced_parentheses(tokens, invalid_token_indices)
@@ -86,7 +91,8 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     break
 
     def _check_precedence(self, tokens: list) -> None:
-        """Check token list contain unspecified precedence (OR & AND operator in the same subquery)"""
+        """Check whether token list contains unspecified precedence
+        (OR & AND operator in the same subquery)"""
         or_query = False
         for token in tokens:
             if token.value.upper() in {"OR", "|"}:
@@ -110,7 +116,8 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         token = tokens[index]
         value = token.value
-        # Iterate over term to identify invalid characters and replace them with whitespace
+        # Iterate over term to identify invalid characters
+        # and replace them with whitespace
         for i, char in enumerate(token.value):
             if char in invalid_characters:
                 self.parser.add_linter_message(
@@ -123,7 +130,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if value.isspace():
                 invalid_token_indices.append(index)
 
-    def _check_invalid_wildcard(self, index: int, tokens: list):
+    def _check_invalid_wildcard(self, index: int, tokens: list) -> None:
         """Check search term for invalid wildcard *"""
         token = tokens[index]
         if token.value == '"':
@@ -131,14 +138,14 @@ class PubmedQueryStringValidator(QueryStringValidator):
         else:
             k = 4
         if "*" in token.value[:k]:
-            # Wildcard * is invalid if it is applied to terms with less than 4 characters
+            # Wildcard * is invalid when applied to terms with less than 4 characters
             self.parser.add_linter_message(
                 QueryErrorCode.INVALID_WILDCARD_USE, token.position
             )
 
     def _check_invalid_token_position(
         self, index: int, tokens: list, invalid_token_indices: list
-    ):
+    ) -> None:
         """Check if token list contains invalid token position at index"""
         if index == 0:
             prev_token = None
@@ -165,9 +172,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if not (
                 prev_token
                 and (
-                    prev_token.type == TokenTypes.SEARCH_TERM
-                    or prev_token.type == TokenTypes.FIELD
-                    or prev_token.type == TokenTypes.PARENTHESIS_CLOSED
+                    prev_token.type
+                    in [
+                        TokenTypes.SEARCH_TERM,
+                        TokenTypes.FIELD,
+                        TokenTypes.PARENTHESIS_CLOSED,
+                    ]
                 )
             ):
                 # Invalid operator position
@@ -246,7 +256,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
             TokenTypes.FIELD,
         } and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}:
             self.parser.add_linter_message(
-                QueryErrorCode.MISSING_OPERATOR,
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
                 (token_1.position[0], token_2.position[1]),
             )
 
@@ -260,25 +270,21 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
                 self.parser.add_linter_message(
-                    QueryErrorCode.NESTED_NOT_QUERY, child.position
+                    QueryErrorCode.NESTED_NOT_QUERY, pos=child.position
                 )
             self._check_nested_not_query(child)
 
     def _check_redundant_terms(self, query: Query) -> None:
         """Check query for redundant search terms"""
-        subqueries = {}
-        subquery_types = {}
+        subqueries: dict = {}
+        subquery_types: dict = {}
         self._extract_subqueries(query, subqueries, subquery_types)
 
         # Compare search terms in the same subquery for redundancy
-        for query_id in subqueries.keys():
-            terms = subqueries[query_id]
-
+        for query_id, terms in subqueries.items():
             # Exclude subqueries without search terms
             if not terms:
                 continue
-
-            redundant_terms = []
 
             if query_id not in subquery_types:
                 continue
@@ -288,46 +294,48 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if operator == Operators.NOT:
                 terms.pop(0)  # First term of a NOT query cannot be redundant
 
-            for k in range(len(terms)):
-                for i in range(len(terms)):
+            redundant_terms = []
+            for term_a in terms:
+                for term_b in terms:
                     if (
-                        k == i
-                        or terms[k] in redundant_terms
-                        or terms[i] in redundant_terms
+                        term_a == term_b
+                        or term_a in redundant_terms
+                        or term_b in redundant_terms
                     ):
                         continue
 
                     field_value_1 = self.parser.map_search_field(
-                        terms[k].search_field.value
+                        term_a.search_field.value
                     )
                     field_value_2 = self.parser.map_search_field(
-                        terms[i].search_field.value
+                        term_b.search_field.value
                     )
 
                     if field_value_1 == field_value_2 and (
-                        terms[k].value == terms[i].value
+                        term_a.value == term_b.value
                         or (
                             field_value_1 != "[mh]"
-                            and terms[k].value.strip('"').lower()
-                            in terms[i].value.strip('"').lower().split()
+                            and term_a.value.strip('"').lower()
+                            in term_b.value.strip('"').lower().split()
                         )
                     ):
-                        # Terms in AND queries follow different redundancy logic than terms in OR queries
+                        # Terms in AND queries follow different redundancy logic
+                        # than terms in OR queries
                         if operator == Operators.AND:
                             self.parser.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                terms[k].position,
+                                term_a.position,
                             )
-                            redundant_terms.append(terms[k])
+                            redundant_terms.append(term_a)
                         elif operator in {Operators.OR, Operators.NOT}:
                             self.parser.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                terms[i].position,
+                                term_b.position,
                             )
-                            redundant_terms.append(terms[i])
+                            redundant_terms.append(term_b)
 
     def _extract_subqueries(
-        self, query: Query, subqueries: dict, subquery_types: dict, subquery_id=0
+        self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
     ) -> None:
         """Extract subqueries from query tree"""
         if subquery_id not in subqueries:

@@ -148,12 +148,11 @@ class PubmedParser(QueryStringParser):
         """Get operator type"""
         if operator.upper() in {"&", "AND"}:
             return Operators.AND
-        elif operator.upper() in {"|", "OR"}:
+        if operator.upper() in {"|", "OR"}:
             return Operators.OR
-        elif operator.upper() == "NOT":
+        if operator.upper() == "NOT":
             return Operators.NOT
-        else:
-            raise ValueError()
+        raise ValueError()
 
     def parse_query_tree(self, tokens: list) -> Query:
         """Parse a query from a list of tokens"""
@@ -172,13 +171,16 @@ class PubmedParser(QueryStringParser):
 
         return query
 
-    def is_term_query(self, tokens):
+    def is_term_query(self, tokens: list) -> bool:
+        """Check if the query is a search term"""
         return tokens[0].type == TokenTypes.SEARCH_TERM and len(tokens) <= 2
 
-    def is_compound_query(self, tokens):
+    def is_compound_query(self, tokens: list) -> bool:
+        """Check if the query is a compound query"""
         return bool(self._get_operator_indices(tokens))
 
-    def is_nested_query(self, tokens):
+    def is_nested_query(self, tokens: list) -> bool:
+        """Check if the query is nested in parentheses"""
         return (
             tokens[0].type == TokenTypes.PARENTHESIS_OPEN
             and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
@@ -191,7 +193,8 @@ class PubmedParser(QueryStringParser):
         i = 0
         first_operator_found = False
         first_operator = ""
-        # Iterate over tokens in reverse to find and save positions of consecutive top-level operators
+        # Iterate over tokens in reverse
+        # to find and save positions of consecutive top-level operators
         # matching the first encountered until a different type is found.
         for token in reversed(tokens):
             token_index = tokens.index(token)
@@ -214,7 +217,8 @@ class PubmedParser(QueryStringParser):
         return operator_indices
 
     def _parse_compound_query(self, tokens: list) -> Query:
-        """Parse a compound query consisting of two or more subqueries connected by a boolean operator"""
+        """Parse a compound query
+        consisting of two or more subqueries connected by a boolean operator"""
 
         operator_indices = self._get_operator_indices(tokens)
 
@@ -277,8 +281,8 @@ class PubmedParser(QueryStringParser):
         """Translate search fields"""
 
         if query.children:
-            for query in query.children:
-                self.translate_search_fields(query)
+            for child in query.children:
+                self.translate_search_fields(child)
             return
 
         query.search_field.value = self.map_search_field(query.search_field.value)
@@ -293,27 +297,27 @@ class PubmedParser(QueryStringParser):
         if not field_values:
             return []
 
-        field_values = [
+        field_values_list = [
             search_field.strip() for search_field in field_values.split(",")
         ]
 
-        for index, value in enumerate(field_values):
+        for index, value in enumerate(field_values_list):
             value = "[" + value.lower() + "]"
 
             value = self.map_search_field(value)
 
             if value in {"[title and abstract]", "[tiab]"}:
                 value = Fields.TITLE
-                field_values.insert(index + 1, Fields.ABSTRACT)
+                field_values_list.insert(index + 1, Fields.ABSTRACT)
 
             if value in {"[subject headings]"}:
                 value = Fields.MESH_TERM
 
-            field_values[index] = value
+            field_values_list[index] = value
 
-        return field_values
+        return field_values_list
 
-    def map_search_field(self, field_value) -> str:
+    def map_search_field(self, field_value: str) -> str:
         """Translate a search field"""
         field_value = field_value.lower()
         # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
@@ -391,8 +395,7 @@ class PubmedParser(QueryStringParser):
             if code.startswith("E"):
                 if self.mode == "strict":
                     raise e
-                else:
-                    print(e)
+                print(e)
 
             elif code.startswith("W"):
                 if not self.silence_warnings:
@@ -515,7 +518,7 @@ class PubmedListParser(QueryListParser):
 
             exception_type = type(exc)
             raise exception_type(
-                msg=exc.message.split("\n")[0],
+                msg=exc.message.split("\n", maxsplit=1)[0],
                 query_string=exc.query_string,
                 pos=exc.pos,
             ) from None
