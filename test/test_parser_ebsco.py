@@ -276,3 +276,22 @@ def test_linter_ebsco_general_search_field(
     except Exception:
         pass
     assert ebsco_parser.linter_messages == linter_messages
+
+
+def test_query_parsing_1() -> None:
+    parser = EBSCOParser(
+        query_str="TI example AND (AU John Doe OR AU John Wayne)",
+        search_field_general="",
+        mode="",
+    )
+    query = parser.parse()
+    assert query.value == "AND"
+    assert query.operator
+    assert len(query.children) == 2
+    assert query.children[0].value == "example"
+    assert not query.children[0].operator
+    assert query.children[1].value == "OR"
+
+    assert query.children[1].children[1].value == "John Wayne"
+    assert query.children[1].children[1].search_field
+    assert query.children[1].children[1].search_field.value == "au"
