@@ -47,6 +47,14 @@ Fatal Errors
 
    F2011
 
+   F2012
+
+   F3001
+
+   F3002
+
+   F3003
+
 Errors
 ------
 

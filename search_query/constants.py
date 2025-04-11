@@ -39,6 +39,22 @@ class Token:
     type: TokenTypes
     position: Tuple[int, int]
 
+    def is_parenthesis(self) -> bool:
+        """Check if token is a parenthesis"""
+        return self.type in (TokenTypes.PARENTHESIS_OPEN, TokenTypes.PARENTHESIS_CLOSED)
+
+    def is_search_term(self) -> bool:
+        """Check if token is a search term"""
+        return self.type == TokenTypes.SEARCH_TERM
+
+    def is_field(self) -> bool:
+        """Check if token is a field"""
+        return self.type == TokenTypes.FIELD
+
+    def is_operator(self) -> bool:
+        """Check if token is an operator"""
+        return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)
+
 
 class Operators:
     """Operators"""
@@ -208,8 +224,9 @@ class QueryErrorCode(Enum):
         [PLATFORM.EBSCO],
         "F1004",
         "invalid-token-sequence",
-        "The sequence of tokens is invalid "
-        "([token_type] followed by [token_type] is not allowed)",
+        # Note: provide details like
+        # ([token_type] followed by [token_type] is not allowed)
+        "The sequence of tokens is invalid." "",
         "",
     )
     NESTED_NOT_QUERY = (
@@ -326,6 +343,35 @@ class QueryErrorCode(Enum):
         "F2011",
         "search-field-unsupported",
         "Search field is not supported for this database",
+        "",
+    )
+    YEAR_WITHOUT_SEARCH_FIELD = (
+        [PLATFORM.WOS],
+        "F2012",
+        "year-without-search-field",
+        "A search for publication years must include at least another search term.",
+        "",
+    )
+    MISSING_ROOT_NODE = (
+        [PLATFORM.WOS],
+        "F3001",
+        "missing-root-node",
+        "List format query without root node (typically containing operators)",
+        # The last item of the list must be a "combining string"
+        "",
+    )
+    MISSING_OPERATOR_NODES = (
+        [PLATFORM.WOS],
+        "F3002",
+        "missing-operator-nodes",
+        "List format query without operator nodes",
+        "",
+    )
+    INVALID_LIST_REFERENCE = (
+        [PLATFORM.WOS],
+        "F3003",
+        "invalid-list-reference",
+        "Invalid list reference in list query (not found)",
         "",
     )
 
