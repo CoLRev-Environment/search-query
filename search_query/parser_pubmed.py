@@ -246,7 +246,7 @@ class PubmedParser(QueryStringParser):
             value=operator_type,
             operator=True,
             search_field=SearchField(value=Fields.ALL),
-            children=children,
+            children=list(children),
             position=(query_start_pos, query_end_pos),
         )
 
@@ -322,10 +322,10 @@ class PubmedParser(QueryStringParser):
         field_value = field_value.lower()
         # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
         if field_value in self.DEFAULT_FIELD_MAP:
-            field_value = self.DEFAULT_FIELD_MAP.get(field_value)
+            field_value = self.DEFAULT_FIELD_MAP[field_value]
         # Convert search fields to default field constants
         if field_value in self.FIELD_TRANSLATION_MAP:
-            field_value = self.FIELD_TRANSLATION_MAP.get(field_value)
+            field_value = self.FIELD_TRANSLATION_MAP[field_value]
         return field_value
 
     def _expand_combined_fields(self, query: Query, search_fields: list) -> None:
@@ -386,7 +386,7 @@ class PubmedParser(QueryStringParser):
             msg = self.linter_messages.pop(0)
             e = self._get_exception(msg)
 
-            code = msg.get("code")
+            code = msg["code"]
             # Always raise an exception for fatal messages
             if code.startswith("F"):
                 raise e

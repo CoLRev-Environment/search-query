@@ -270,7 +270,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
                 self.parser.add_linter_message(
-                    QueryErrorCode.NESTED_NOT_QUERY, pos=child.position
+                    QueryErrorCode.NESTED_NOT_QUERY, pos=child.position or (-1, -1)
                 )
             self._check_nested_not_query(child)
 
@@ -345,7 +345,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         for child in query.children:
             if not child.children:
-                subqueries.get(subquery_id).append(child)
+                subqueries[subquery_id].append(child)
             elif child.value == query.value:
                 self._extract_subqueries(child, subqueries, subquery_types, subquery_id)
             else:
@@ -355,7 +355,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 )
 
         if not query.children:
-            subqueries.get(subquery_id).append(query)
+            subqueries[subquery_id].append(query)
 
     def validate_search_fields(self, query: Query, user_field_values: list) -> None:
         """Validate search terms and fields"""
