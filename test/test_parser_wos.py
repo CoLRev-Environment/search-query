@@ -556,6 +556,7 @@ class TestWOSParser(unittest.TestCase):
             "label": "operator-capitalization",
             "message": "Operators should be capitalized",
             "is_fatal": False,
+            "details": "",
             "pos": (0, 10),
         }
         self.assertIn(expected_message, self.parser.linter_messages)
@@ -594,6 +595,7 @@ class TestWOSParser(unittest.TestCase):
             "label": "operator-capitalization",
             "message": "Operators should be capitalized",
             "is_fatal": False,
+            "details": "",
             "pos": (0, 10),
         }
         expected_message2 = {
@@ -601,6 +603,7 @@ class TestWOSParser(unittest.TestCase):
             "label": "operator-capitalization",
             "message": "Operators should be capitalized",
             "is_fatal": False,
+            "details": "",
             "pos": (11, 20),
         }
         self.assertIn(expected_message1, self.parser.linter_messages)
@@ -1227,6 +1230,7 @@ class TestWOSParser(unittest.TestCase):
                 "label": "search-field-contradiction",
                 "message": "Contradictory search fields specified",
                 "is_fatal": False,
+                "details": "",
                 "pos": (0, 3),
             },
         )
@@ -1258,6 +1262,7 @@ class TestWOSParser(unittest.TestCase):
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
                 "pos": (-1, -1),
                 "is_fatal": False,
+                "details": "",
             },
         )
 
