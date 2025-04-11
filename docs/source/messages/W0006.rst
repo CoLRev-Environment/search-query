@@ -9,7 +9,7 @@ W0006 — implicit-near-value
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: The parser automatically sets implicit NEAR values to the default of 15.
+**Typical fix**: The parser automatically sets NEAR values to 15 (default).
 
 **Problematic query**:
 

@@ -36,7 +36,9 @@ class QueryStringParser(ABC):
         self.linter_messages: typing.List[dict] = []
         self.fatal_linter_err = False
 
-    def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
+    def add_linter_message(
+        self, error: QueryErrorCode, pos: tuple, details: str = ""
+    ) -> None:
         """Add a linter message."""
         # do not add duplicates
         if any(
@@ -52,6 +54,7 @@ class QueryStringParser(ABC):
                 "message": error.message,
                 "is_fatal": error.is_fatal(),
                 "pos": pos,
+                "details": details,
             }
         )
 
