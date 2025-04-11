@@ -22,6 +22,7 @@ class PubmedParser(QueryStringParser):
 
     search_fields = ""
     silence_warnings = False
+    last_read_index = -1
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
 
@@ -377,8 +378,8 @@ class PubmedParser(QueryStringParser):
 
     def check_linter_status(self) -> None:
         """Check the output of the linter and report errors to the user"""
-        while self.linter_messages:
-            msg = self.linter_messages.pop(0)
+        new_messages = self.linter_messages[self.last_read_index + 1:]
+        for msg in new_messages:
             e = QuerySyntaxError(msg["message"], self.query_str, msg["pos"])
 
             code = msg["code"]
@@ -397,6 +398,10 @@ class PubmedParser(QueryStringParser):
                     print(e)
 
             print("\n")
+
+        if new_messages:
+            self.last_read_index = len(self.linter_messages)
+
 
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
