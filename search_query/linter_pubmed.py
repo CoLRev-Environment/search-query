@@ -263,7 +263,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         } and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}:
             self.parser.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=(token_1.position[0], token_2.position[1]),
+                pos=(token_1.position[0], token_2.position[1]),
                 details="Missing operator",
             )
 

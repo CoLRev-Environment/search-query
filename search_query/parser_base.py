@@ -30,7 +30,7 @@ class QueryStringParser(ABC):
         self.search_field_general = search_field_general
         self.linter_messages: typing.List[dict] = []
 
-    def add_linter_message(self, error: QueryErrorCode, pos: tuple) -> None:
+    def add_linter_message(self, error: QueryErrorCode, pos: tuple, details: str = "") -> None:
         """Add a linter message."""
         self.linter_messages.append(
             {
@@ -39,6 +39,7 @@ class QueryStringParser(ABC):
                 "message": error.message,
                 "is_fatal": error.is_fatal(),
                 "pos": pos,
+                "details": details
             }
         )
 

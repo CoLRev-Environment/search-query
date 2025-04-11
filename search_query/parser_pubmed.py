@@ -86,7 +86,7 @@ class PubmedParser(QueryStringParser):
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_PHRASE_REGEX = r"\".*?\""
-    SEARCH_TERM_REGEX = r"[^\s\[\]()]+"
+    SEARCH_TERM_REGEX = r"[^\s\[\]()\|&]+"
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
 
     pattern = "|".join(
