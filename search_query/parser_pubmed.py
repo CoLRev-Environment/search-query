@@ -91,9 +91,7 @@ class PubmedParser(QueryStringParser):
         # Syntax Errors
         QueryErrorCode.TOKENIZING_FAILED.code: QuerySyntaxError,
         QueryErrorCode.UNBALANCED_PARENTHESES.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_OPERATOR_POSITION.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_SEARCH_FIELD_POSITION.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_TOKEN_SEQUENCE.code: QuerySyntaxError,
         QueryErrorCode.INVALID_PROXIMITY_USE.code: QuerySyntaxError,
         QueryErrorCode.INVALID_CHARACTER.code: QuerySyntaxError,
         QueryErrorCode.INVALID_WILDCARD_USE.code: QuerySyntaxError,
@@ -102,11 +100,10 @@ class PubmedParser(QueryStringParser):
         # Invalid Field Error
         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.code: PubmedInvalidFieldTag,
         # Field Mismatch Error
-        QueryErrorCode.SEARCH_FIELD_MISSING.code: PubmedFieldMismatch,
         QueryErrorCode.SEARCH_FIELD_CONTRADICTION.code: PubmedFieldMismatch,
         # Warnings
         QueryErrorCode.SEARCH_FIELD_REDUNDANT.code: PubmedFieldWarning,
-        QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED.code: PubmedFieldWarning,
+        QueryErrorCode.SEARCH_FIELD_MISSING.code: PubmedFieldWarning,
         QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: PubmedQueryWarning,
         QueryErrorCode.IMPLICIT_PRECEDENCE.code: PubmedQueryWarning,
         QueryErrorCode.OPERATOR_CAPITALIZATION.code: PubmedQueryWarning,

@@ -182,7 +182,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
             ):
                 # Invalid operator position
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_OPERATOR_POSITION, current_token.position
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    current_token.position,
+                    details="Invalid operator position",
                 )
                 invalid_token_indices.append(index)
             elif not (
@@ -194,7 +196,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
             ):
                 # Invalid operator position
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_OPERATOR_POSITION, current_token.position
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    current_token.position,
+                    details="Invalid operator position",
                 )
                 invalid_token_indices.append(index)
 
@@ -202,7 +206,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if not (prev_token and prev_token.type == TokenTypes.SEARCH_TERM):
                 # Invalid search field position
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_SEARCH_FIELD_POSITION, current_token.position
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    current_token.position,
+                    details="Invalid search field position",
                 )
                 invalid_token_indices.append(index)
 
@@ -256,8 +262,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
             TokenTypes.FIELD,
         } and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}:
             self.parser.add_linter_message(
-                QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR,
-                (token_1.position[0], token_2.position[1]),
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                position=(token_1.position[0], token_2.position[1]),
+                details="Missing operator",
             )
 
     def validate_query_tree(self, query: Query) -> None:
@@ -407,6 +414,4 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED, None
-            )
+            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, None)

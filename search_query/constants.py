@@ -39,6 +39,22 @@ class Token:
     type: TokenTypes
     position: Tuple[int, int]
 
+    def is_parenthesis(self) -> bool:
+        """Check if token is a parenthesis"""
+        return self.type in (TokenTypes.PARENTHESIS_OPEN, TokenTypes.PARENTHESIS_CLOSED)
+
+    def is_search_term(self) -> bool:
+        """Check if token is a search term"""
+        return self.type == TokenTypes.SEARCH_TERM
+
+    def is_field(self) -> bool:
+        """Check if token is a field"""
+        return self.type == TokenTypes.FIELD
+
+    def is_operator(self) -> bool:
+        """Check if token is an operator"""
+        return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)
+
 
 class Operators:
     """Operators"""
@@ -222,22 +238,9 @@ class QueryErrorCode(Enum):
         [PLATFORM.EBSCO],
         "F1004",
         "invalid-token-sequence",
-        "The sequence of tokens is invalid "
-        "([token_type] followed by [token_type] is not allowed)",
-        "",
-    )
-    INVALID_OPERATOR_POSITION = (
-        [PLATFORM.PUBMED],
-        "F1006",
-        "invalid-operator-position",
-        "Invalid operator position",
-        "",
-    )
-    INVALID_SEARCH_FIELD_POSITION = (
-        [PLATFORM.PUBMED],
-        "F1007",
-        "invalid-search-field-position",
-        "Search field tags should directly follow search terms",
+        # Note: provide details like
+        # ([token_type] followed by [token_type] is not allowed)
+        "The sequence of tokens is invalid." "",
         "",
     )
     NESTED_NOT_QUERY = (
@@ -252,29 +255,6 @@ class QueryErrorCode(Enum):
         "F1009",
         "empty-parentheses",
         "Query contains empty parentheses",
-        "",
-    )
-    # TODO : consolidate with INVALID_TOKEN_SEQUENCE (EBSCO) is non-fatal?!
-    INVALID_TOKEN_SEQUENCE_TWO_SEARCH_FIELDS = (
-        [PLATFORM.EBSCO],
-        "F1010",
-        "invalid-token-sequence-two-search-fields",
-        "Invalid token sequence: two search fields in a row.",
-        "",
-    )
-    INVALID_TOKEN_SEQUENCE_TWO_OPERATORS = (
-        [PLATFORM.EBSCO],
-        "F1011",
-        "invalid-token-sequence-two-operators",
-        "Invalid token sequence: two operators in a row.",
-        "",
-    )
-    # Note : merged MISSING_OPERATOR with:
-    INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR = (
-        ["all", PLATFORM.WOS],
-        "F1012",
-        "invalid-token-sequence-missing-operator",
-        "Invalid token sequence: missing operator.",
         "",
     )
 
@@ -379,10 +359,40 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
+    YEAR_WITHOUT_SEARCH_FIELD = (
+        [PLATFORM.WOS],
+        "F2012",
+        "year-without-search-field",
+        "A search for publication years must include at least another search term.",
+        "",
+    )
+    MISSING_ROOT_NODE = (
+        [PLATFORM.WOS],
+        "F3001",
+        "missing-root-node",
+        "List format query without root node (typically containing operators)",
+        # The last item of the list must be a "combining string"
+        "",
+    )
+    MISSING_OPERATOR_NODES = (
+        [PLATFORM.WOS],
+        "F3002",
+        "missing-operator-nodes",
+        "List format query without operator nodes",
+        "",
+    )
+    INVALID_LIST_REFERENCE = (
+        [PLATFORM.WOS],
+        "F3003",
+        "invalid-list-reference",
+        "Invalid list reference in list query (not found)",
+        "",
+    )
 
     # -------------------------------------------------------
     # Errors (prefix: E)
     # -------------------------------------------------------
+    # Note: merged SEARCH_FIELD_NOT_SPECIFIED:
     SEARCH_FIELD_MISSING = (
         ["all"],
         "E0001",
@@ -448,14 +458,6 @@ class QueryErrorCode(Enum):
         "W0002",
         "search-field-extracted",
         "Recommend explicitly specifying the search field in the string",
-        "",
-    )
-    # TODO : equals SEARCH_FIELD_MISSING ??
-    SEARCH_FIELD_NOT_SPECIFIED = (
-        ["all"],
-        "W0003",
-        "search-field-not-specified",
-        "Search field should be explicitly specified",
         "",
     )
     QUERY_STRUCTURE_COMPLEX = (
