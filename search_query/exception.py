@@ -42,8 +42,10 @@ class PubmedInvalidFieldTag(SearchQueryException):
 class PubmedFieldMismatch(SearchQueryException):
     """PubmedFieldMismatch Exception"""
 
-    def __init__(self, msg: str) -> None:
+    def __init__(self, msg: str, query_string: str, pos: tuple) -> None:
         self.message = msg
+        self.query_string = query_string
+        self.pos = pos
         super().__init__(self.message)
 
 

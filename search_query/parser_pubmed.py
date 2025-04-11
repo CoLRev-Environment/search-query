@@ -87,6 +87,31 @@ class PubmedParser(QueryStringParser):
         "[volume]": "[vi]",
     }
 
+    EXCEPTION_MAP = {
+        # Syntax Errors
+        QueryErrorCode.TOKENIZING_FAILED.code: QuerySyntaxError,
+        QueryErrorCode.UNBALANCED_PARENTHESES.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_OPERATOR_POSITION.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_SEARCH_FIELD_POSITION.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_PROXIMITY_USE.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_CHARACTER.code: QuerySyntaxError,
+        QueryErrorCode.INVALID_WILDCARD_USE.code: QuerySyntaxError,
+        QueryErrorCode.NESTED_NOT_QUERY.code: QuerySyntaxError,
+        QueryErrorCode.EMPTY_PARENTHESES.code: QuerySyntaxError,
+        # Invalid Field Error
+        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.code: PubmedInvalidFieldTag,
+        # Field Mismatch Error
+        QueryErrorCode.SEARCH_FIELD_MISSING.code: PubmedFieldMismatch,
+        QueryErrorCode.SEARCH_FIELD_CONTRADICTION.code: PubmedFieldMismatch,
+        # Warnings
+        QueryErrorCode.SEARCH_FIELD_REDUNDANT.code: PubmedFieldWarning,
+        QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED.code: PubmedFieldWarning,
+        QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: PubmedQueryWarning,
+        QueryErrorCode.IMPLICIT_PRECEDENCE.code: PubmedQueryWarning,
+        QueryErrorCode.OPERATOR_CAPITALIZATION.code: PubmedQueryWarning,
+    }
+
     SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
     PARENTHESIS_REGEX = r"[\(\)]"
@@ -389,12 +414,12 @@ class PubmedParser(QueryStringParser):
             code = msg["code"]
             # Always raise an exception for fatal messages
             if code.startswith("F"):
-                raise e
+                raise e(msg["mesage"], self.query_str, msg["pos"])
 
             # Raise an exception for error messages if in strict mode
             if code.startswith("E"):
                 if self.mode == "strict":
-                    raise e
+                    raise e(msg["mesage"], self.query_str, msg["pos"])
                 print(e)
 
             elif code.startswith("W"):
@@ -403,73 +428,9 @@ class PubmedParser(QueryStringParser):
 
             print("\n")
 
-    def _get_exception(self, msg: dict) -> SearchQueryException:
+    def _get_exception(self, msg: dict) -> type:
         """Retrieve the corresponding exception for a linter message"""
-        code = msg.get("code")
-        user_message = str(msg.get("message"))
-        pos = msg.get("pos")
-
-        exception_map = {
-            # Syntax Errors
-            QueryErrorCode.TOKENIZING_FAILED.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.UNBALANCED_PARENTHESES.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_TOKEN_SEQUENCE_MISSING_OPERATOR.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_OPERATOR_POSITION.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_SEARCH_FIELD_POSITION.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_PROXIMITY_USE.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_CHARACTER.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.INVALID_WILDCARD_USE.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.NESTED_NOT_QUERY.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.EMPTY_PARENTHESES.code: lambda: QuerySyntaxError(
-                user_message, self.query_str, pos
-            ),
-            # Invalid Field Error
-            QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.code: lambda: PubmedInvalidFieldTag(
-                user_message, self.query_str, pos
-            ),
-            # Field Mismatch Error
-            QueryErrorCode.SEARCH_FIELD_MISSING.code: lambda: PubmedFieldMismatch(
-                user_message
-            ),
-            QueryErrorCode.SEARCH_FIELD_CONTRADICTION.code: lambda: PubmedFieldMismatch(
-                user_message
-            ),
-            # Warnings
-            QueryErrorCode.SEARCH_FIELD_REDUNDANT.code: lambda: PubmedFieldWarning(
-                user_message
-            ),
-            QueryErrorCode.SEARCH_FIELD_NOT_SPECIFIED.code: lambda: PubmedFieldWarning(
-                user_message
-            ),
-            QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: lambda: PubmedQueryWarning(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.IMPLICIT_PRECEDENCE.code: lambda: PubmedQueryWarning(
-                user_message, self.query_str, pos
-            ),
-            QueryErrorCode.OPERATOR_CAPITALIZATION.code: lambda: PubmedQueryWarning(
-                user_message, self.query_str, pos
-            ),
-        }
-        return exception_map.get(code)()
+        return self.EXCEPTION_MAP.get(msg["code"], SearchQueryException)
 
 
 class PubmedListParser(QueryListParser):
