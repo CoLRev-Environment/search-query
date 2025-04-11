@@ -9,6 +9,7 @@ from abc import abstractmethod
 
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
+from search_query.constants import LinterMode
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -22,18 +23,30 @@ class QueryStringParser(ABC):
     PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
 
     def __init__(
-        self, query_str: str, search_field_general: str, mode: str = "strict"
+        self,
+        query_str: str,
+        search_field_general: str = "",
+        mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode
+        # The external search_fields (in the JSON file: "search_field")
         self.search_field_general = search_field_general
         self.linter_messages: typing.List[dict] = []
+        self.fatal_linter_err = False
 
     def add_linter_message(
         self, error: QueryErrorCode, pos: tuple, details: str = ""
     ) -> None:
         """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and pos == msg["pos"]
+            for msg in self.linter_messages
+        ):
+            return
+
         self.linter_messages.append(
             {
                 "code": error.code,
@@ -170,6 +183,10 @@ class QueryStringParser(ABC):
 
                 # Insert open parenthesis after operator
                 while current_value < value:
+                    self.add_linter_message(
+                        QueryErrorCode.IMPLICIT_PRECEDENCE,
+                        pos=(-1, -1),
+                    )
                     # Insert open parenthesis after operator
                     temp.insert(
                         1,
@@ -368,17 +385,51 @@ class QueryListParser:
     """QueryListParser"""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    linter_messages: typing.List[dict] = []
+    GENERAL_ERROR_POSITION = -1
 
     def __init__(
         self,
+        *,
         query_list: str,
-        search_field_general: str,
         parser_class: type[QueryStringParser],
+        search_field_general: str,
+        linter_mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
         self.search_field_general = search_field_general
+        self.linter_mode = linter_mode
+        self.linter_messages: dict = {}
+        self.fatal_linter_err = False
+
+    def add_linter_message(
+        self,
+        error: QueryErrorCode,
+        *,
+        list_position: int,
+        pos: tuple,
+        details: str = "",
+    ) -> None:
+        """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and pos == msg["pos"]
+            for msg in self.linter_messages.get(list_position, [])
+        ):
+            return
+        if list_position not in self.linter_messages:
+            self.linter_messages[list_position] = []
+
+        self.linter_messages[list_position].append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "pos": pos,
+                "details": details,
+            }
+        )
 
     def parse_dict(self) -> dict:
         """Tokenize the query_list."""

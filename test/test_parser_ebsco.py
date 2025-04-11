@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from typing import Tuple
 
-import pytest  # type: ignore
+import pytest
 
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -13,8 +13,6 @@ from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
 from search_query.query import Query
-
-# to run (from top-level dir): pytest test/test_parser_ebsco.py
 
 # flake8: noqa: E501
 
@@ -205,7 +203,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 {
                     "code": "F1004",
                     "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                    "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "pos": (3, 6),
                     "details": "",
@@ -246,10 +244,7 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
 )
 def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "", mode="non-strict")
-    try:
-        ebsco_parser.parse()
-    except Exception:
-        pass
+    ebsco_parser.parse()
     assert ebsco_parser.linter_messages == linter_messages
 
 

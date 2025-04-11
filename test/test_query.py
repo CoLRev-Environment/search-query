@@ -68,7 +68,7 @@ class TestQuery(unittest.TestCase):
 
     def test_or_query(self) -> None:
         """test whether OR node is created correctly"""
-        expected = Query("OR", operator=True)
+        expected = Query("OR", operator=True, search_field=SearchField(Fields.TITLE))
         self.assertEqual(
             self.query_ai.print_node(),
             expected.print_node(),
@@ -77,7 +77,7 @@ class TestQuery(unittest.TestCase):
 
     def test_and_query(self) -> None:
         """test whether AND node is created correctly"""
-        expected = Query("AND", operator=True)
+        expected = Query("AND", operator=True, search_field=SearchField(Fields.TITLE))
         self.assertEqual(
             self.query_complete.print_node(),
             expected.print_node(),
@@ -86,7 +86,7 @@ class TestQuery(unittest.TestCase):
 
     def test_not_query(self) -> None:
         """test whether NOT node is created correctly"""
-        expected = Query("NOT", operator=True)
+        expected = Query("NOT", operator=True, search_field=SearchField(Fields.TITLE))
         self.assertEqual(
             self.query_robot.print_node(),
             expected.print_node(),
