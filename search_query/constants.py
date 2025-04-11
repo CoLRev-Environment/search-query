@@ -73,6 +73,13 @@ class Fields:
     ALL = "all"
     ABSTRACT = "ab"
     AUTHOR_KEYWORDS = "au"
+    FILTER = "sb"
+    JOURNAL = "ta"
+    MESH_TERM = "mh"
+    PUBLICATION_TYPE = "pt"
+    TEXT_WORD = "tw"
+    AFFILIATION = "ad"
+    LANGUAGE = "la"
     KEYWORDS = "kw"
     SUBJECT_TERMS = "st"
     SOURCE = "so"
@@ -111,6 +118,14 @@ PLATFORM_FIELD_MAP = {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
+        Fields.AUTHOR_KEYWORDS: "[au]",
+        Fields.FILTER: "[sb]",
+        Fields.JOURNAL: "[ta]",
+        Fields.MESH_TERM: "[mh]",
+        Fields.PUBLICATION_TYPE: "[pt]",
+        Fields.TEXT_WORD: "[tw]",
+        Fields.AFFILIATION: "[ad]",
+        Fields.LANGUAGE: "[la]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
