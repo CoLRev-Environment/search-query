@@ -203,26 +203,13 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
+    # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],
         "F1004",
         "invalid-token-sequence",
         "The sequence of tokens is invalid "
         "([token_type] followed by [token_type] is not allowed)",
-        "",
-    )
-    INVALID_OPERATOR_POSITION = (
-        [PLATFORM.PUBMED],
-        "F1006",
-        "invalid-operator-position",
-        "Invalid operator position",
-        "",
-    )
-    INVALID_SEARCH_FIELD_POSITION = (
-        [PLATFORM.PUBMED],
-        "F1007",
-        "invalid-search-field-position",
-        "Search field tags should directly follow search terms",
         "",
     )
     NESTED_NOT_QUERY = (

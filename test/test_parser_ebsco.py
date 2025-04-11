@@ -180,6 +180,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "Operators should be capitalized",
                     "is_fatal": False,
                     "pos": (24, 27),
+                    "details": "",
                 }
             ],
         ),
@@ -193,6 +194,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
                     "pos": (),
+                    "details": "",
                 }
             ],
         ),
@@ -206,6 +208,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
                     "is_fatal": True,
                     "pos": (3, 6),
+                    "details": "",
                 }
             ],
         ),
@@ -235,6 +238,7 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "pos": (0, 2),
+                    "details": "",
                 }
             ],
         ),
@@ -262,6 +266,7 @@ def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> No
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "pos": (),
+                    "details": "",
                 }
             ],
         ),
