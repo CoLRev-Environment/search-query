@@ -9,12 +9,7 @@ from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.exception import PubmedFieldMismatch
-from search_query.exception import PubmedFieldWarning
-from search_query.exception import PubmedInvalidFieldTag
-from search_query.exception import PubmedQueryWarning
 from search_query.exception import QuerySyntaxError
-from search_query.exception import SearchQueryException
 from search_query.linter_pubmed import PubmedQueryStringValidator
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -85,28 +80,6 @@ class PubmedParser(QueryStringParser):
         "[title/abstract]": "[tiab]",
         "[transliterated title]": "[tt]",
         "[volume]": "[vi]",
-    }
-
-    EXCEPTION_MAP = {
-        # Syntax Errors
-        QueryErrorCode.TOKENIZING_FAILED.code: QuerySyntaxError,
-        QueryErrorCode.UNBALANCED_PARENTHESES.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_TOKEN_SEQUENCE.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_PROXIMITY_USE.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_CHARACTER.code: QuerySyntaxError,
-        QueryErrorCode.INVALID_WILDCARD_USE.code: QuerySyntaxError,
-        QueryErrorCode.NESTED_NOT_QUERY.code: QuerySyntaxError,
-        QueryErrorCode.EMPTY_PARENTHESES.code: QuerySyntaxError,
-        # Invalid Field Error
-        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.code: PubmedInvalidFieldTag,
-        # Field Mismatch Error
-        QueryErrorCode.SEARCH_FIELD_CONTRADICTION.code: PubmedFieldMismatch,
-        # Warnings
-        QueryErrorCode.SEARCH_FIELD_REDUNDANT.code: PubmedFieldWarning,
-        QueryErrorCode.SEARCH_FIELD_MISSING.code: PubmedFieldWarning,
-        QueryErrorCode.QUERY_STRUCTURE_COMPLEX.code: PubmedQueryWarning,
-        QueryErrorCode.IMPLICIT_PRECEDENCE.code: PubmedQueryWarning,
-        QueryErrorCode.OPERATOR_CAPITALIZATION.code: PubmedQueryWarning,
     }
 
     SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
@@ -406,17 +379,17 @@ class PubmedParser(QueryStringParser):
         """Check the output of the linter and report errors to the user"""
         while self.linter_messages:
             msg = self.linter_messages.pop(0)
-            e = self._get_exception(msg)
+            e = QuerySyntaxError(msg["message"], self.query_str, msg["pos"])
 
             code = msg["code"]
             # Always raise an exception for fatal messages
             if code.startswith("F"):
-                raise e(msg["mesage"], self.query_str, msg["pos"])
+                raise e
 
             # Raise an exception for error messages if in strict mode
             if code.startswith("E"):
                 if self.mode == "strict":
-                    raise e(msg["mesage"], self.query_str, msg["pos"])
+                    raise e
                 print(e)
 
             elif code.startswith("W"):
@@ -424,11 +397,6 @@ class PubmedParser(QueryStringParser):
                     print(e)
 
             print("\n")
-
-    def _get_exception(self, msg: dict) -> type:
-        """Retrieve the corresponding exception for a linter message"""
-        return self.EXCEPTION_MAP.get(msg["code"], SearchQueryException)
-
 
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
@@ -452,7 +420,7 @@ class PubmedListParser(QueryListParser):
         try:
             query = self.parser_class(query_string, self.search_field_general).parse()
 
-        except (QuerySyntaxError, PubmedInvalidFieldTag, PubmedQueryWarning) as exc:
+        except QuerySyntaxError as exc:
             # Correct positions and query string
             # to display the error for the original (list) query
             new_pos = exc.pos
