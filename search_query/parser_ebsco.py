@@ -10,9 +10,9 @@ from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.linter_ebsco import EBSCOQueryStringValidator
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_validation import EBSCOQueryStringValidator
 from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
