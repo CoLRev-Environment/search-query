@@ -203,7 +203,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                 {
                     "code": "F1004",
                     "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                    "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "pos": (3, 6),
                     "details": "",

@@ -1294,8 +1294,54 @@ class TestWOSListParser(unittest.TestCase):
                 "label": "missing-root-node",
                 "message": "List format query without root node (typically containing operators)",
                 "pos": (-1, -1),
+                "details": "",
             },
         )
+
+    def test_list_parser_case_3(self) -> None:
+        query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND not_a_ref_to_term_node\n'
+
+        list_parser = WOSListParser(
+            query_list=query_list, search_field_general="", linter_mode=""
+        )
+        try:
+            list_parser.parse()
+        except FatalLintingException:
+            pass
+        self.assertEqual(
+            list_parser.linter_messages[WOSListParser.GENERAL_ERROR_POSITION][0],
+            {
+                "code": "F1004",
+                "is_fatal": True,
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "pos": (3, 6),
+                "details": "Last token must be a list item.",
+            },
+        )
+
+    # TODO : implement and test INVALID_LIST_REFERENCE
+    # def test_list_parser_case_4(self) -> None:
+    #     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #5\n'
+
+    #     list_parser = WOSListParser(
+    #         query_list=query_list, search_field_general="", linter_mode=""
+    #     )
+    #     try:
+    #         list_parser.parse()
+    #     except FatalLintingException:
+    #         pass
+    #     self.assertEqual(
+    #         list_parser.linter_messages[WOSListParser.GENERAL_ERROR_POSITION][0],
+    #         {
+    #             "code": "F1004",
+    #             "is_fatal": True,
+    #             "label": "invalid-token-sequence",
+    #             "message": "The sequence of tokens is invalid.",
+    #             "pos": (3, 6),
+    #             "details": "Last token must be a list item.",
+    #         },
+    #     )
 
 
 if __name__ == "__main__":

@@ -205,7 +205,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "details": "",
                 "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "message": "The sequence of tokens is invalid.",
                 "pos": (10, 12),
             },
         )
@@ -243,7 +243,7 @@ class TestQueryLinter(unittest.TestCase):
             {
                 "code": "F1004",
                 "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
                 "details": "",
                 "pos": (6, 9),
@@ -287,7 +287,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "details": "",
                 "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "message": "The sequence of tokens is invalid.",
                 "pos": (6, 7),
             },
         )
@@ -322,7 +322,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "details": "",
                 "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "message": "The sequence of tokens is invalid.",
                 "pos": (2, 3),
             },
         )
@@ -356,7 +356,7 @@ class TestQueryLinter(unittest.TestCase):
                 "is_fatal": True,
                 "details": "",
                 "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid ([token_type] followed by [token_type] is not allowed)",
+                "message": "The sequence of tokens is invalid.",
                 "pos": (6, 9),
             },
         )

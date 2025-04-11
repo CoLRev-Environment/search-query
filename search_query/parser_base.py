@@ -403,7 +403,12 @@ class QueryListParser:
         self.fatal_linter_err = False
 
     def add_linter_message(
-        self, error: QueryErrorCode, *, list_position: int, pos: tuple
+        self,
+        error: QueryErrorCode,
+        *,
+        list_position: int,
+        pos: tuple,
+        details: str = "",
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
@@ -422,6 +427,7 @@ class QueryListParser:
                 "message": error.message,
                 "is_fatal": error.is_fatal(),
                 "pos": pos,
+                "details": details,
             }
         )
 

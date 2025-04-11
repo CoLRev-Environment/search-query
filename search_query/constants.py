@@ -29,6 +29,8 @@ class TokenTypes(Enum):
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
     UNKNOWN = "UNKNOWN"
+    # TODO : do not allow list items in StringParser?!
+    LIST_ITEM = "LIST_ITEM"
 
 
 @dataclass
@@ -611,8 +613,9 @@ class QueryErrorCode(Enum):
         [PLATFORM.EBSCO],
         "F1004",
         "invalid-token-sequence",
-        "The sequence of tokens is invalid "
-        "([token_type] followed by [token_type] is not allowed)",
+        # Note: provide details like
+        # ([token_type] followed by [token_type] is not allowed)
+        "The sequence of tokens is invalid." "",
         "",
     )
     NESTED_NOT_QUERY = (
@@ -753,8 +756,13 @@ class QueryErrorCode(Enum):
         "List format query without operator nodes",
         "",
     )
-    # TODO : MALFORMED_OPERATOR_NODE
-    # TODO : INVALID_LIST_REFERENCE / MISSING_TERM_NODE
+    INVALID_LIST_REFERENCE = (
+        [PLATFORM.WOS],
+        "F3003",
+        "invalid-list-reference",
+        "Invalid list reference in list query (not found)",
+        "",
+    )
 
     # -------------------------------------------------------
     # Errors (prefix: E)

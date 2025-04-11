@@ -595,6 +595,7 @@ class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    ITEM_REFERENCE = r"#\d+"
     LIST_COMBINE_REGEX = r"#\d+|AND|OR"
 
     def __init__(
@@ -637,6 +638,8 @@ class WOSListParser(QueryListParser):
                     list_position=QueryListParser.GENERAL_ERROR_POSITION,
                     pos=(-1, -1),
                 )
+
+        # TODO : tokenize (try/catch) and _validate_tokens() per query
 
         self.fatal_linter_err = any(
             d["is_fatal"] for e in self.linter_messages.values() for d in e
@@ -703,26 +706,14 @@ class WOSListParser(QueryListParser):
         operator = ""
         children = []
 
-        last_token = tokens[-1]
-        if last_token in {"AND", "OR"}:
-            raise ValueError(
-                "[ERROR] Last token must be a number, not an operator."
-                f"\nFound: {last_token}"
-            )
-        if "#" not in last_token:
-            raise ValueError(
-                "[ERROR] Last token must be a reference (e.g., #4)."
-                f"\nFound: {last_token}"
-            )
-
         for token in tokens:
-            if "#" in token:
-                idx = int(token.replace("#", "")) - 1
+            if "#" in token.value:
+                idx = int(token.value.replace("#", "")) - 1
                 children.append(queries[idx])
             else:
                 if not operator:
-                    operator = token
-                elif operator != token:
+                    operator = token.value
+                elif operator != token.value:
                     raise ValueError(
                         "[ERROR] Two different operators used in the same line."
                     )
@@ -733,6 +724,8 @@ class WOSListParser(QueryListParser):
     def _operator_nodes(self, queries: list, operator_nodes: dict) -> None:
         for index, query_str in operator_nodes.items():
             tokens = self.tokenize_combining_list_elem(query_str)
+            self._validate_tokens(tokens)
+
             operator, children = self._extract_operator_and_children(tokens, queries)
 
             res_children = []
@@ -764,5 +757,68 @@ class WOSListParser(QueryListParser):
 
     def tokenize_combining_list_elem(self, query_str: str) -> list:
         """Tokenize the query_list."""
-        matches = re.findall(self.LIST_COMBINE_REGEX, query_str)
-        return matches
+
+        tokens = []
+        for match in re.finditer(self.LIST_COMBINE_REGEX, query_str):
+            value = match.group()
+            position = match.span()
+            if re.fullmatch(self.ITEM_REFERENCE, value):
+                token_type = TokenTypes.LIST_ITEM
+            elif re.fullmatch(WOSParser.LOGIC_OPERATOR_REGEX, value):
+                token_type = TokenTypes.LOGIC_OPERATOR
+            else:
+                token_type = TokenTypes.UNKNOWN
+            tokens.append(Token(value=value, type=token_type, position=position))
+
+        return tokens
+
+    def _validate_tokens(self, tokens: list) -> None:
+        """Validate the tokens of the combining list element."""
+        for token in tokens:
+            if token.type == TokenTypes.UNKNOWN:
+                self.add_linter_message(
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                    pos=token.position,
+                )
+
+        # Note: details should pass "format should be #1 [operator] #2"
+
+        # Must start with LIST_ITEM
+        if tokens[0].type != TokenTypes.LIST_ITEM:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                pos=tokens[0].position,
+                # TODO : add number of the query item
+                details="First token must be a list item.",
+            )
+            return
+
+        # Expect alternating pattern after first LIST_ITEM
+        expected = TokenTypes.LOGIC_OPERATOR
+        for idx, token in enumerate(tokens[1:], start=1):
+            if token.type != expected:
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                    pos=token.position,
+                    details=f"Expected {expected.name} at position "
+                    f"{token.position}, but found {token.type.name}.",
+                )
+                return
+            # Alternate between LOGIC_OPERATOR and LIST_ITEM
+            expected = (
+                TokenTypes.LIST_ITEM
+                if expected == TokenTypes.LOGIC_OPERATOR
+                else TokenTypes.LOGIC_OPERATOR
+            )
+
+        # The final token must be a LIST_ITEM (if even-length list of tokens)
+        if expected == TokenTypes.LIST_ITEM:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                pos=tokens[-1].position,
+                details="Last token must be a list item.",
+            )
