@@ -400,7 +400,7 @@ class PubmedParser(QueryStringParser):
             print("\n")
 
         if new_messages:
-            self.last_read_index = len(self.linter_messages)
+            self.last_read_index = len(self.linter_messages) - 1
 
 
 class PubmedListParser(QueryListParser):

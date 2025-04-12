@@ -123,7 +123,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_CHARACTER, token.position
                 )
-                value = value[:i] + " " + value[i + 1 :]
+                value = value[:i] + " " + value[i + 1:]
         # Update token
         if value != token.value:
             token.value = value
@@ -400,18 +400,22 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
                 self.parser.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, None
+                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, (-1, -1)
                 )
             else:
                 # User-provided fields match fields in the query
                 self.parser.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, None
+                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, (-1, -1)
                 )
 
         elif user_field_values and not query_field_values:
             # User-provided fields are missing in the query
-            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, None)
+            self.parser.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
+            )
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, None)
+            self.parser.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
+            )
