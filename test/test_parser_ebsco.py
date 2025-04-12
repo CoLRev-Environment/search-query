@@ -180,6 +180,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "Operators should be capitalized",
                     "is_fatal": False,
                     "pos": (24, 27),
+                    "details": "",
                 }
             ],
         ),
@@ -193,6 +194,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
                     "pos": (),
+                    "details": "",
                 }
             ],
         ),
@@ -206,6 +208,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "pos": (3, 6),
+                    "details": "",
                 }
             ],
         ),
@@ -235,6 +238,7 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "pos": (0, 2),
+                    "details": "",
                 }
             ],
         ),
@@ -262,6 +266,7 @@ def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> No
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "pos": (),
+                    "details": "",
                 }
             ],
         ),
@@ -276,3 +281,22 @@ def test_linter_ebsco_general_search_field(
     except Exception:
         pass
     assert ebsco_parser.linter_messages == linter_messages
+
+
+def test_query_parsing_1() -> None:
+    parser = EBSCOParser(
+        query_str="TI example AND (AU John Doe OR AU John Wayne)",
+        search_field_general="",
+        mode="",
+    )
+    query = parser.parse()
+    assert query.value == "AND"
+    assert query.operator
+    assert len(query.children) == 2
+    assert query.children[0].value == "example"
+    assert not query.children[0].operator
+    assert query.children[1].value == "OR"
+
+    assert query.children[1].children[1].value == "John Wayne"
+    assert query.children[1].children[1].search_field
+    assert query.children[1].children[1].search_field.value == "au"

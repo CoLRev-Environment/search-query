@@ -234,6 +234,7 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
+    # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],
         "F1004",
