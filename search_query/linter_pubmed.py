@@ -93,19 +93,30 @@ class PubmedQueryStringValidator(QueryStringValidator):
     def _check_precedence(self, tokens: list) -> None:
         """Check whether token list contains unspecified precedence
         (OR & AND operator in the same subquery)"""
+        operator_indices = []
+        i = 0
         or_query = False
-        for token in tokens:
-            if token.value.upper() in {"OR", "|"}:
-                or_query = True
-            elif token.type in {
-                TokenTypes.PARENTHESIS_OPEN,
-                TokenTypes.PARENTHESIS_CLOSED,
-            }:
-                or_query = False
-            elif token.value.upper() in {"AND", "&"} and or_query:
-                self.parser.add_linter_message(
-                    QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
-                )
+        for index, token in enumerate(tokens):
+            if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
+                operator_indices.append(index)
+                if token.value in {"OR", "|"}:
+                    or_query = True
+                if token.value in {"AND", "&"} and or_query:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
+                    )
+                    or_query = False
+            if token.type == TokenTypes.PARENTHESIS_OPEN and index > 0:
+                i = i + 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED and index < len(tokens) - 1:
+                i = i - 1
+
+        if operator_indices:
+            i = 0
+            for index in operator_indices:
+                self._check_precedence(tokens[i:index])
+                i = index + 1
+            self._check_precedence(tokens[i:])
 
     def _check_invalid_characters(
         self, index: int, tokens: list, invalid_token_indices: list
