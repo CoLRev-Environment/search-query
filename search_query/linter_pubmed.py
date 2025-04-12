@@ -79,33 +79,42 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
         if i > 0:
             # Query contains unbalanced opening parentheses
-            last_index = len(tokens) - 1
+            i = 0
             for index, token in enumerate(reversed(tokens)):
+                if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                    i += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.UNBALANCED_PARENTHESES, token.position
-                    )
-                    invalid_token_indices.append(last_index - index)
-                    i -= 1
-                if i == 0:
-                    break
+                    if i == 0:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.UNBALANCED_PARENTHESES, token.position
+                        )
+                        invalid_token_indices.append(len(tokens) - index - 1)
+                    else:
+                        i -= 1
 
     def _check_precedence(self, tokens: list) -> None:
         """Check whether token list contains unspecified precedence
         (OR & AND operator in the same subquery)"""
         operator_indices = []
         i = 0
-        or_query = False
+        or_query = and_query = False
         for index, token in enumerate(tokens):
             if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
                 operator_indices.append(index)
-                if token.value in {"OR", "|"}:
+                if token.value.upper() in {"OR", "|"}:
+                    if and_query:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
+                        )
+                        and_query = False
                     or_query = True
-                if token.value in {"AND", "&"} and or_query:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
-                    )
-                    or_query = False
+                if token.value.upper() in {"AND", "&"}:
+                    if or_query:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
+                        )
+                        or_query = False
+                    and_query = True
             if token.type == TokenTypes.PARENTHESIS_OPEN and index > 0:
                 i = i + 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED and index < len(tokens) - 1:
@@ -248,7 +257,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     )
 
                 if self.parser.map_search_field(field_value) not in {
-                    "tiab",
+                    "[tiab]",
                     Fields.TITLE,
                     Fields.AFFILIATION,
                 }:
@@ -322,17 +331,17 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     ):
                         continue
 
-                    field_value_1 = self.parser.map_search_field(
+                    field_a = self.parser.map_search_field(
                         term_a.search_field.value
                     )
-                    field_value_2 = self.parser.map_search_field(
+                    field_b = self.parser.map_search_field(
                         term_b.search_field.value
                     )
 
-                    if field_value_1 == field_value_2 and (
+                    if field_a == field_b and (
                         term_a.value == term_b.value
                         or (
-                            field_value_1 != "[mh]"
+                            field_a != "[mh]"
                             and term_a.value.strip('"').lower()
                             in term_b.value.strip('"').lower().split()
                         )
