@@ -139,9 +139,12 @@ class PubmedQueryStringValidator(QueryStringValidator):
         """Check whether token list contains unspecified precedence
         (OR & AND operator in the same subquery)"""
         i = 0
-        for token in tokens[:index]:
-            if token.type == TokenTypes.PARENTHESIS_OPEN and i == 0:
-                return
+        for token in reversed(tokens[:index]):
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                if i == 0:
+                    return
+                else:
+                    i -= 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i += 1
             if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
