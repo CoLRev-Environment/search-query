@@ -6,6 +6,7 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
@@ -21,138 +22,158 @@ class PubmedQueryStringValidator(QueryStringValidator):
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
     parser: "PubmedParser"
 
+    VALID_TOKEN_SEQUENCES = {
+        None: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN
+        ],
+        TokenTypes.PARENTHESIS_OPEN: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+        ],
+        TokenTypes.PARENTHESIS_CLOSED: [
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PARENTHESIS_CLOSED,
+            None
+        ],
+        TokenTypes.SEARCH_TERM: [
+            TokenTypes.FIELD,
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PARENTHESIS_CLOSED,
+            None
+        ],
+        TokenTypes.FIELD: [
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PARENTHESIS_CLOSED,
+            None
+        ],
+        TokenTypes.LOGIC_OPERATOR: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN
+        ],
+    }
+
     def validate_tokens(self, tokens: list) -> list:
         """Validate token list"""
-        invalid_token_indices: typing.List[int] = []
-
-        self.check_operator()
-        self._check_unbalanced_parentheses(tokens, invalid_token_indices)
+        self._check_unbalanced_parentheses(tokens)
+        self._check_invalid_token_sequence(tokens)
 
         for index, token in enumerate(tokens):
             if token.type == TokenTypes.SEARCH_TERM:
-                self._check_invalid_characters(index, tokens, invalid_token_indices)
-                if "*" in token.value:
-                    self._check_invalid_wildcard(index, tokens)
-            else:
-                self._check_invalid_token_position(index, tokens, invalid_token_indices)
+                self._check_invalid_characters(token)
+                if '*' in token.value:
+                    self._check_invalid_wildcard(token)
 
-            if (
-                index not in invalid_token_indices
-                and token.type == TokenTypes.FIELD
-                and ":~" in token.value
-            ):
-                self._check_invalid_proximity_operator(index, tokens)
+            if token.type == TokenTypes.FIELD:
+                if ":~" in token.value:
+                    self._check_invalid_proximity_operator(index, tokens)
 
-            if (
-                index > 0
-                and index not in invalid_token_indices
-                and index - 1 not in invalid_token_indices
-            ):
-                self._check_missing_operator(index, tokens)
+            if token.type == TokenTypes.LOGIC_OPERATOR:
+                self._check_precedence(index, tokens)
 
-        refined_tokens = [
-            token
-            for index, token in enumerate(tokens)
-            if index not in invalid_token_indices
-        ]
-        self._check_precedence(refined_tokens)
+        return tokens
 
-        return refined_tokens
-
-    def _check_unbalanced_parentheses(
-        self, tokens: list, invalid_token_indices: list
-    ) -> None:
-        """Check token list for unbalanced parentheses"""
+    def _check_unbalanced_parentheses(self, tokens: list) -> None:
+        """Check query for unbalanced parentheses."""
         i = 0
-        for index, token in enumerate(tokens):
+        for token in tokens:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i += 1
-            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if i == 0:
-                    # Query contains unbalanced closing parentheses
                     self.parser.add_linter_message(
-                        QueryErrorCode.UNBALANCED_PARENTHESES, token.position
+                        QueryErrorCode.UNBALANCED_PARENTHESES,
+                        pos=token.position,
                     )
-                    invalid_token_indices.append(index)
                 else:
                     i -= 1
-
         if i > 0:
             # Query contains unbalanced opening parentheses
             i = 0
-            for index, token in enumerate(reversed(tokens)):
+            for token in reversed(tokens):
                 if token.type == TokenTypes.PARENTHESIS_CLOSED:
                     i += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
                     if i == 0:
                         self.parser.add_linter_message(
-                            QueryErrorCode.UNBALANCED_PARENTHESES, token.position
+                            QueryErrorCode.UNBALANCED_PARENTHESES,
+                            pos=token.position,
                         )
-                        invalid_token_indices.append(len(tokens) - index - 1)
                     else:
                         i -= 1
 
-    def _check_precedence(self, tokens: list) -> None:
+    def _check_invalid_token_sequence(self, tokens: list) -> None:
+        """Check token list for invalid token sequences."""
+        for i in range(0, len(tokens) + 1):
+            prev_type = tokens[i - 1].type if i > 0 else None
+            token_type = tokens[i].type if i < len(tokens) else None
+
+            if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
+                if token_type == TokenTypes.FIELD:
+                    details = "Invalid search field position"
+                    position = tokens[i].position
+
+                elif token_type == TokenTypes.LOGIC_OPERATOR:
+                    details = "Invalid operator position"
+                    position = tokens[i].position
+
+                elif prev_type == TokenTypes.PARENTHESIS_OPEN and token_type == TokenTypes.PARENTHESIS_CLOSED:
+                    details = "Empty parenthesis"
+                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+
+                elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
+                    details = "Missing operator"
+                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+
+                else:
+                    details = ""
+                    position = tokens[i].position if token_type else tokens[i - 1].position
+
+                self.parser.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    pos=position,
+                    details=details,
+                )
+
+    def _check_precedence(self, index: int, tokens: list) -> None:
         """Check whether token list contains unspecified precedence
         (OR & AND operator in the same subquery)"""
-        operator_indices = []
         i = 0
-        or_query = and_query = False
-        for index, token in enumerate(tokens):
+        for token in tokens[:index]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN and i == 0:
+                return
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                i += 1
             if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
-                operator_indices.append(index)
-                if token.value.upper() in {"OR", "|"}:
-                    if and_query:
-                        self.parser.add_linter_message(
-                            QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
-                        )
-                        and_query = False
-                    or_query = True
-                if token.value.upper() in {"AND", "&"}:
-                    if or_query:
-                        self.parser.add_linter_message(
-                            QueryErrorCode.IMPLICIT_PRECEDENCE, token.position
-                        )
-                        or_query = False
-                    and_query = True
-            if token.type == TokenTypes.PARENTHESIS_OPEN and index > 0:
-                i = i + 1
-            if token.type == TokenTypes.PARENTHESIS_CLOSED and index < len(tokens) - 1:
-                i = i - 1
-
-        if operator_indices:
-            i = 0
-            for index in operator_indices:
-                self._check_precedence(tokens[i:index])
-                i = index + 1
-            self._check_precedence(tokens[i:])
+                for operator_group in [{"AND", "&"}, {"OR", "|"}]:
+                    if tokens[index].value.upper() in operator_group:
+                        if token.value.upper() not in operator_group:
+                            self.parser.add_linter_message(
+                                QueryErrorCode.IMPLICIT_PRECEDENCE,
+                                pos=tokens[index].position
+                            )
 
     def _check_invalid_characters(
-        self, index: int, tokens: list, invalid_token_indices: list
+        self, token: Token
     ) -> None:
         """Check a search term for invalid characters"""
-
         invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
-
-        token = tokens[index]
         value = token.value
         # Iterate over term to identify invalid characters
         # and replace them with whitespace
         for i, char in enumerate(token.value):
             if char in invalid_characters:
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_CHARACTER, token.position
+                    QueryErrorCode.INVALID_CHARACTER,
+                    pos=token.position
                 )
                 value = value[:i] + " " + value[i + 1:]
         # Update token
         if value != token.value:
             token.value = value
-            if value.isspace():
-                invalid_token_indices.append(index)
 
-    def _check_invalid_wildcard(self, index: int, tokens: list) -> None:
+    def _check_invalid_wildcard(self, token: Token) -> None:
         """Check search term for invalid wildcard *"""
-        token = tokens[index]
         if token.value == '"':
             k = 5
         else:
@@ -162,75 +183,6 @@ class PubmedQueryStringValidator(QueryStringValidator):
             self.parser.add_linter_message(
                 QueryErrorCode.INVALID_WILDCARD_USE, token.position
             )
-
-    def _check_invalid_token_position(
-        self, index: int, tokens: list, invalid_token_indices: list
-    ) -> None:
-        """Check if token list contains invalid token position at index"""
-        if index == 0:
-            prev_token = None
-        else:
-            prev_token = tokens[index - 1]
-
-        if index == len(tokens) - 1:
-            next_token = None
-        else:
-            next_token = tokens[index + 1]
-
-        current_token = tokens[index]
-
-        if current_token.type == TokenTypes.PARENTHESIS_OPEN:
-            if next_token and next_token.type == TokenTypes.PARENTHESIS_CLOSED:
-                self.parser.add_linter_message(
-                    QueryErrorCode.EMPTY_PARENTHESES,
-                    (current_token.position[0], next_token.position[1]),
-                )
-                invalid_token_indices.append(index)
-                invalid_token_indices.append(index + 1)
-
-        if current_token.type == TokenTypes.LOGIC_OPERATOR:
-            if not (
-                prev_token
-                and (
-                    prev_token.type
-                    in [
-                        TokenTypes.SEARCH_TERM,
-                        TokenTypes.FIELD,
-                        TokenTypes.PARENTHESIS_CLOSED,
-                    ]
-                )
-            ):
-                # Invalid operator position
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    current_token.position,
-                    details="Invalid operator position",
-                )
-                invalid_token_indices.append(index)
-            elif not (
-                next_token
-                and (
-                    next_token.type
-                    in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}
-                )
-            ):
-                # Invalid operator position
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    current_token.position,
-                    details="Invalid operator position",
-                )
-                invalid_token_indices.append(index)
-
-        elif current_token.type == TokenTypes.FIELD:
-            if not (prev_token and prev_token.type == TokenTypes.SEARCH_TERM):
-                # Invalid search field position
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    current_token.position,
-                    details="Invalid search field position",
-                )
-                invalid_token_indices.append(index)
 
     def _check_invalid_proximity_operator(self, index: int, tokens: list) -> None:
         """Check search field for invalid proximity operator"""
@@ -264,27 +216,11 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
-
             # Update search field token
             tokens[index].value = field_value
         else:
             self.parser.add_linter_message(
                 QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-            )
-
-    def _check_missing_operator(self, index: int, tokens: list) -> None:
-        """Check if there is a missing operator between previous and current token"""
-        token_1 = tokens[index - 1]
-        token_2 = tokens[index]
-        if token_1.type in {
-            TokenTypes.PARENTHESIS_CLOSED,
-            TokenTypes.SEARCH_TERM,
-            TokenTypes.FIELD,
-        } and token_2.type in {TokenTypes.PARENTHESIS_OPEN, TokenTypes.SEARCH_TERM}:
-            self.parser.add_linter_message(
-                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                pos=(token_1.position[0], token_2.position[1]),
-                details="Missing operator",
             )
 
     def validate_query_tree(self, query: Query) -> None:
