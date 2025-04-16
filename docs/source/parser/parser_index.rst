@@ -9,7 +9,7 @@ Overview of query parsers:
 
 - pubmed
 
-- ebsco
+- ebscohost
 
 - structured
 

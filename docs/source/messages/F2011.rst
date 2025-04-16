@@ -1,13 +1,13 @@
-.. _E0003:
+.. _F2011:
 
-E0003 — search-field-unsupported
+F2011 — search-field-unsupported
 ================================
 
-**Error Code**: E0003
+**Error Code**: F2011
 
 **Message**: ``Search field is not supported for this database``
 
-**Scope**: all
+**Scope**: all, PLATFORM.WOS
 
 **Description**: Search field is not supported for this database
 

@@ -6,6 +6,8 @@ from search_query.constants import Operators
 from search_query.query import Query
 from search_query.query import SearchField
 
+# pylint: disable=duplicate-code
+
 
 class NotQuery(Query):
     """NOT Query"""
