@@ -199,30 +199,6 @@ class EBSCOParser(QueryStringParser):
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
 
-    # pylint: disable=too-many-arguments
-    def create_query_node(
-        self,
-        token: str,
-        operator: bool = False,
-        position: typing.Optional[tuple] = None,
-        search_field: typing.Optional[SearchField] = None,
-        distance: typing.Optional[int] = None,
-        search_field_par: typing.Optional[SearchField] = None,
-    ) -> Query:
-        """Create new Query node"""
-
-        # Handles case if search_field was created for entire parentheses
-        if not search_field and search_field_par is not None:
-            search_field = search_field_par
-
-        return Query(
-            value=token,
-            operator=operator,
-            position=position,
-            search_field=search_field,
-            distance=distance,
-        )
-
     def append_node(
         self,
         root: typing.Optional[Query],
@@ -277,13 +253,11 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.SEARCH_TERM:
                 # Create new search_term and in case tree is empty, sets first root
-                term_node = self.create_query_node(
-                    token.value,
-                    False,
-                    token.position,
-                    search_field,
-                    None,
-                    search_field_par,
+                term_node = Query(
+                    value=token.value,
+                    operator=False,
+                    position=token.position,
+                    search_field=search_field or search_field_par,
                 )
 
                 # Append search_term to tree
@@ -300,8 +274,12 @@ class EBSCOParser(QueryStringParser):
                 )
 
                 # Create new proximity_operator from token (N3, W1, N13, ...)
-                proximity_node = self.create_query_node(
-                    token.value, True, token.position, search_field, distance
+                proximity_node = Query(
+                    value=token.value,
+                    operator=True,
+                    position=token.position,
+                    search_field=search_field or search_field_par,
+                    distance=distance,
                 )
 
                 # Set proximity_operator as tree node
@@ -309,8 +287,11 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.LOGIC_OPERATOR:
                 # Create new operator node
-                new_operator_node = self.create_query_node(
-                    token.value, True, token.position, search_field, None
+                new_operator_node = Query(
+                    value=token.value,
+                    operator=True,
+                    position=token.position,
+                    search_field=search_field or search_field_par,
                 )
 
                 if not current_operator:
@@ -426,9 +407,14 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    def __init__(self, query_list: str, search_field_general: str) -> None:
+    def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
         """Initialize with a query list and use EBSCOParser for parsing each query."""
-        super().__init__(query_list, search_field_general, EBSCOParser)
+        super().__init__(
+            query_list=query_list,
+            parser_class=EBSCOParser,
+            search_field_general=search_field_general,
+            mode=mode,
+        )
 
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
@@ -445,16 +431,13 @@ class EBSCOListParser(QueryListParser):
         # Log a linter message and return the token number
         # 1 AND 2 ... are still possible,
         # however for standardization purposes it should be S/#
-        self.linter_messages.append(
-            {
-                "level": "Warning",
-                "msg": (
-                    "Connecting lines possibly failed."
-                    "Please use this format for connection:"
-                    "S1 OR S2 OR S3 / #1 OR #2 OR #3"
-                ),
-                "pos": None,
-            }
+        self.add_linter_message(
+            QueryErrorCode.INVALID_LIST_REFERENCE,
+            list_position=QueryListParser.GENERAL_ERROR_POSITION,
+            position=(-1, -1),
+            details="Connecting lines possibly failed. "
+            "Please use this format for connection: "
+            "S1 OR S2 OR S3 / #1 OR #2 OR #3",
         )
         return token_nr
 

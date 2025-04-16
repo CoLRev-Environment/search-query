@@ -380,7 +380,7 @@ class PubmedParser(QueryStringParser):
         """Check the output of the linter and report errors to the user"""
         new_messages = self.linter_messages[self.last_read_index + 1 :]
         for msg in new_messages:
-            e = QuerySyntaxError(msg["message"], self.query_str, msg["pos"])
+            e = QuerySyntaxError(msg["message"], self.query_str, msg["position"])
 
             code = msg["code"]
             # Always raise an exception for fatal messages
@@ -409,7 +409,11 @@ class PubmedListParser(QueryListParser):
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
 
     def __init__(self, query_list: str, search_field_general: str) -> None:
-        super().__init__(query_list, search_field_general, PubmedParser)
+        super().__init__(
+            query_list=query_list,
+            parser_class=PubmedParser,
+            search_field_general=search_field_general,
+        )
 
     def get_token_str(self, token_nr: str) -> str:
         return f"#{token_nr}"
@@ -417,7 +421,7 @@ class PubmedListParser(QueryListParser):
     def parse(self) -> Query:
         """Parse the query in list format."""
 
-        tokens = self.parse_dict()
+        tokens = self.tokenize_list()
 
         query_list = self.dict_to_positioned_list(tokens)
         query_string = "".join([query[0] for query in query_list])
@@ -429,7 +433,7 @@ class PubmedListParser(QueryListParser):
             # pylint: disable=duplicate-code
             # Correct positions and query string
             # to display the error for the original (list) query
-            new_pos = exc.pos
+            new_pos = exc.position
             for content, pos in query_list:
                 # Note: artificial parentheses cannot be ignored here
                 # because they were counted in the query_string
@@ -443,7 +447,7 @@ class PubmedListParser(QueryListParser):
                     new_pos[0] + segment_beginning,
                     new_pos[1] + segment_beginning,
                 )
-                exc.pos = new_pos
+                exc.position = new_pos
                 break
 
             exc.query_string = self.query_list
@@ -452,7 +456,7 @@ class PubmedListParser(QueryListParser):
             raise exception_type(
                 msg=exc.message.split("\n", maxsplit=1)[0],
                 query_string=exc.query_string,
-                pos=exc.pos,
+                position=exc.position,
             ) from None
 
         return query
