@@ -29,8 +29,21 @@ class TokenTypes(Enum):
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
     UNKNOWN = "UNKNOWN"
-    # TODO : do not allow list items in StringParser?!
-    LIST_ITEM = "LIST_ITEM"
+
+
+class OperatorNodeTokenTypes(Enum):
+    """Operator node token types (list queries)"""
+
+    LIST_ITEM_REFERENCE = "LIST_ITEM_REFERENCE"
+    LOGIC_OPERATOR = "LOGIC_OPERATOR"
+    UNKNOWN = "UNKNOWN"
+
+
+class ListTokenTypes(Enum):
+    """List token types"""
+
+    OPERATOR_NODE = "OPERATOR_NODE"
+    QUERY_NODE = "QUERY_NODE"
 
 
 @dataclass
@@ -56,6 +69,16 @@ class Token:
     def is_operator(self) -> bool:
         """Check if token is an operator"""
         return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)
+
+
+@dataclass
+class ListToken:
+    """Token class"""
+
+    value: str
+    type: OperatorNodeTokenTypes
+    level: int
+    position: Tuple[int, int]
 
 
 class Operators:

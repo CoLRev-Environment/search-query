@@ -10,6 +10,7 @@ from abc import abstractmethod
 import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import LinterMode
+from search_query.constants import ListTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -37,12 +38,12 @@ class QueryStringParser(ABC):
         self.fatal_linter_err = False
 
     def add_linter_message(
-        self, error: QueryErrorCode, pos: tuple, details: str = ""
+        self, error: QueryErrorCode, position: tuple, details: str = ""
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
         if any(
-            error.code == msg["code"] and pos == msg["pos"]
+            error.code == msg["code"] and position == msg["position"]
             for msg in self.linter_messages
         ):
             return
@@ -53,7 +54,7 @@ class QueryStringParser(ABC):
                 "label": error.label,
                 "message": error.message,
                 "is_fatal": error.is_fatal(),
-                "pos": pos,
+                "position": position,
                 "details": details,
             }
         )
@@ -185,7 +186,7 @@ class QueryStringParser(ABC):
                 while current_value < value:
                     self.add_linter_message(
                         QueryErrorCode.IMPLICIT_PRECEDENCE,
-                        pos=(-1, -1),
+                        position=(-1, -1),
                     )
                     # Insert open parenthesis after operator
                     temp.insert(
@@ -393,12 +394,12 @@ class QueryListParser:
         query_list: str,
         parser_class: type[QueryStringParser],
         search_field_general: str,
-        linter_mode: str = LinterMode.STRICT,
+        mode: str = LinterMode.STRICT,
     ) -> None:
         self.query_list = query_list
         self.parser_class = parser_class
         self.search_field_general = search_field_general
-        self.linter_mode = linter_mode
+        self.mode = mode
         self.linter_messages: dict = {}
         self.fatal_linter_err = False
 
@@ -407,13 +408,13 @@ class QueryListParser:
         error: QueryErrorCode,
         *,
         list_position: int,
-        pos: tuple,
+        position: tuple,
         details: str = "",
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
         if any(
-            error.code == msg["code"] and pos == msg["pos"]
+            error.code == msg["code"] and position == msg["position"]
             for msg in self.linter_messages.get(list_position, [])
         ):
             return
@@ -426,12 +427,12 @@ class QueryListParser:
                 "label": error.label,
                 "message": error.message,
                 "is_fatal": error.is_fatal(),
-                "pos": pos,
+                "position": position,
                 "details": details,
             }
         )
 
-    def parse_dict(self) -> dict:
+    def tokenize_list(self) -> dict:
         """Tokenize the query_list."""
         query_list = self.query_list
         tokens = {}
@@ -447,11 +448,12 @@ class QueryListParser:
             pos_start, pos_end = match.span(2)
             pos_start += previous
             pos_end += previous
-            len_node_nr = match.span(1)[1] - match.span(1)[0]
             tokens[str(node_nr)] = {
                 "node_content": node_content,
                 "content_pos": (pos_start, pos_end),
-                "node_nr_len": len_node_nr,
+                "type": ListTokenTypes.OPERATOR_NODE
+                if "#" in node_content
+                else ListTokenTypes.QUERY_NODE,
             }
             previous += len(line) + 1
         return tokens
@@ -511,7 +513,7 @@ class QueryListParser:
     def parse(self) -> Query:
         """Parse the query in list format."""
 
-        tokens = self.parse_dict()
+        tokens = self.tokenize_list()
 
         query_list = self.dict_to_positioned_list(tokens)
         query_string = "".join([query[0] for query in query_list])
@@ -523,8 +525,8 @@ class QueryListParser:
         except search_query_exception.QuerySyntaxError as exc:
             # Correct positions and query string
             # to display the error for the original (list) query
-            new_pos = exc.pos
-            for content, pos in query_list:
+            new_pos = exc.position
+            for content, position in query_list:
                 # Note: artificial parentheses cannot be ignored here
                 # because they were counted in teh query_string
                 segment_length = len(content)
@@ -532,17 +534,17 @@ class QueryListParser:
                 if new_pos[0] - segment_length >= 0:
                     new_pos = (new_pos[0] - segment_length, new_pos[1] - segment_length)
                     continue
-                segment_beginning = pos[0]
+                segment_beginning = position[0]
                 new_pos = (
                     new_pos[0] + segment_beginning,
                     new_pos[1] + segment_beginning,
                 )
-                exc.pos = new_pos
+                exc.position = new_pos
                 break
 
             exc.query_string = self.query_list
             raise search_query_exception.QuerySyntaxError(
-                msg="", query_string=self.query_list, pos=exc.pos
+                msg="", query_string=self.query_list, position=exc.position
             )
 
         return query

@@ -7,6 +7,9 @@ import typing
 
 from search_query.constants import Fields
 from search_query.constants import LinterMode
+from search_query.constants import ListToken
+from search_query.constants import ListTokenTypes
+from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
@@ -74,7 +77,7 @@ class WOSParser(QueryStringParser):
         ):
             self.add_linter_message(
                 QueryErrorCode.QUERY_IN_QUOTES,
-                pos=(-1, -1),
+                position=(-1, -1),
             )
             # remove quotes before tokenization
             self.query_str = self.query_str[1:-1]
@@ -91,7 +94,7 @@ class WOSParser(QueryStringParser):
         # ]:
         #     self.parser.add_linter_message(
         #         QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
-        #         pos=self.parser.tokens[0][1],
+        #         position=self.parser.tokens[0][1],
         #     )
         #     # non-fatal error: remove identifier from tokens
 
@@ -571,7 +574,7 @@ class WOSParser(QueryStringParser):
                     + "\t"
                     + msg["message"]
                     + " At position "
-                    + str(msg["pos"])
+                    + str(msg["position"])
                 )
 
             # Raise an exception
@@ -595,51 +598,101 @@ class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    ITEM_REFERENCE = r"#\d+"
-    LIST_COMBINE_REGEX = r"#\d+|AND|OR"
+    LIST_ITEM_REFERENCE = r"#\d+"
+    OPERATOR_NODE_REGEX = r"#\d+|AND|OR"
+    query_dict: dict
 
-    def __init__(
-        self, query_list: str, search_field_general: str, linter_mode: str
-    ) -> None:
+    def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
         super().__init__(
             query_list=query_list,
             parser_class=WOSParser,
             search_field_general=search_field_general,
-            linter_mode=linter_mode,
+            mode=mode,
         )
 
     def get_token_str(self, token_nr: str) -> str:
         return f"#{token_nr}"
 
-    def lint_list_parser(self) -> None:
-        """Lint the list parser."""
-
-        # TODO : try/catch/tokenization failed?
-        query_dict = self.parse_dict()
-
+    def _check_missing_root(self) -> bool:
         missing_root = False
         # Raise an error if the last item of the list is not the last combining string
-        if "#" not in list(query_dict.values())[-1]["node_content"]:
+        if "#" not in list(self.query_dict.values())[-1]["node_content"]:
             self.add_linter_message(
                 QueryErrorCode.MISSING_ROOT_NODE,
                 list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                pos=(-1, -1),
+                position=(-1, -1),
             )
             missing_root = True
+        return missing_root
 
-        if not missing_root:
-            # require combining list items
-            if not any("#" in query["node_content"] for query in query_dict.values()):
-                # If there is no combining list item, raise a linter exception
-                # Individual list items can not be connected
-                # raise ValueError("[ERROR] No combining list item found.")
+    def _check_missing_operator_nodes(self, missing_root: bool) -> None:
+        if missing_root:
+            return
+        # require combining list items
+        if not any("#" in query["node_content"] for query in self.query_dict.values()):
+            # If there is no combining list item, raise a linter exception
+            # Individual list items can not be connected
+            # raise ValueError("[ERROR] No combining list item found.")
+            self.add_linter_message(
+                QueryErrorCode.MISSING_OPERATOR_NODES,
+                list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                position=(-1, -1),
+            )
+
+    def _check_invalid_list_reference(self) -> None:
+        # check if all list-references exist
+        for ind, query_node in enumerate(self.query_dict.values()):
+            if "#" in query_node["node_content"]:
+                # check if all list references exist
+                for match in re.finditer(
+                    self.LIST_ITEM_REFERENCE, query_node["node_content"]
+                ):
+                    reference = match.group()
+                    position = match.span()
+                    if reference.replace("#", "") not in self.query_dict:
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_LIST_REFERENCE,
+                            list_position=ind,
+                            position=position,
+                            details=f"List reference {reference} not found.",
+                        )
+
+    def _check_query_tokenization(self) -> None:
+        for ind, query_node in enumerate(self.query_dict.values()):
+            query_parser = WOSParser(
+                query_str=query_node["node_content"],
+                search_field_general=self.search_field_general,
+                mode=self.mode,
+            )
+            try:
+                query_parser.parse()
+            except FatalLintingException:  # add more specific message?""
                 self.add_linter_message(
-                    QueryErrorCode.MISSING_OPERATOR_NODES,
-                    list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                    pos=(-1, -1),
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    list_position=ind,
+                    position=(-1, -1),
                 )
+            for msg in query_parser.linter_messages:
+                if ind not in self.linter_messages:
+                    self.linter_messages[ind] = []
+                self.linter_messages[ind].append(msg)
 
-        # TODO : tokenize (try/catch) and _validate_tokens() per query
+    def lint_list_parser(self) -> None:
+        """Lint the list parser."""
+
+        try:
+            self.query_dict = self.tokenize_list()
+        except ValueError:  # may catch other errors here
+            self.add_linter_message(
+                QueryErrorCode.TOKENIZING_FAILED,
+                list_position=QueryListParser.GENERAL_ERROR_POSITION,
+                position=(-1, -1),
+            )
+
+        missing_root = self._check_missing_root()
+        self._check_missing_operator_nodes(missing_root)
+        self._check_invalid_list_reference()
+        self._check_query_tokenization()
 
         self.fatal_linter_err = any(
             d["is_fatal"] for e in self.linter_messages.values() for d in e
@@ -647,7 +700,7 @@ class WOSListParser(QueryListParser):
         if self.fatal_linter_err:
             print("\n[FATAL:] Fatal error detected in pre-linting")
             # Print linter messages
-            if self.linter_mode != LinterMode.STRICT and not self.fatal_linter_err:
+            if self.mode != LinterMode.STRICT and not self.fatal_linter_err:
                 print(
                     "\n[INFO:] The following errors have been corrected by the linter:"
                 )
@@ -661,55 +714,33 @@ class WOSListParser(QueryListParser):
                         + "\t"
                         + msg["message"]
                         + " At position "
-                        + str(msg["pos"])
+                        + str(msg["position"])
                     )
 
             # Raise an exception
             # if the linter is in strict mode
             # or if a fatal error has occurred
             if (
-                self.linter_mode == LinterMode.STRICT
+                self.mode == LinterMode.STRICT
                 or self.fatal_linter_err
                 and self.linter_messages
             ):
+                l_messages = [
+                    y for x in self.linter_messages.values() if x for y in x if y
+                ]
                 raise FatalLintingException(
                     message="LinterDetected",
                     query_string=self.query_list,
-                    # TODO:
-                    linter_messages=[],
+                    linter_messages=l_messages,
                 )
 
-    def _parse_queries(
-        self, query_dict: dict
-    ) -> typing.Tuple[typing.List[Query], dict]:
-        """Parse the queries from the list of queries."""
-        queries: typing.List[Query] = []
-        operator_nodes = {}
-
-        for node_nr, node_content in query_dict.items():
-            if "#" in node_content["node_content"]:
-                operator_nodes[node_nr] = node_content["node_content"]
-                queries.append(Query("Filler for combine queries"))
-            else:
-                query_parser = WOSParser(
-                    query_str=node_content["node_content"],
-                    search_field_general=self.search_field_general,
-                    mode=self.linter_mode,
-                )
-                query = query_parser.parse()
-                queries.append(query)
-        return queries, operator_nodes
-
-    def _extract_operator_and_children(
-        self, tokens: list, queries: list
-    ) -> tuple[str, list]:
+    def _build_query_from_operator_node(self, tokens: list) -> Query:
         operator = ""
         children = []
-
         for token in tokens:
             if "#" in token.value:
-                idx = int(token.value.replace("#", "")) - 1
-                children.append(queries[idx])
+                idx = token.value.replace("#", "")  # - 1
+                children.append(self.query_dict[idx]["query"])
             else:
                 if not operator:
                     operator = token.value
@@ -719,106 +750,163 @@ class WOSListParser(QueryListParser):
                     )
 
         assert operator, "[ERROR] No operator found in combining query."
-        return operator, children
 
-    def _operator_nodes(self, queries: list, operator_nodes: dict) -> None:
-        for index, query_str in operator_nodes.items():
-            tokens = self.tokenize_combining_list_elem(query_str)
-            self._validate_tokens(tokens)
+        operator_query = Query(
+            value=operator,
+            operator=True,
+            children=children,
+        )
+        return operator_query
 
-            operator, children = self._extract_operator_and_children(tokens, queries)
+    def _parse_queries(self) -> typing.Tuple[typing.List[Query], dict]:
+        """Parse the queries from the list of queries."""
+        queries: typing.List[Query] = []
+        operator_nodes = {}
 
-            res_children = []
-            for child in children:
-                if child.value == operator:
-                    res_children.extend(child.children)
-                else:
-                    res_children.append(child)
+        for node_nr, node_content in self.query_dict.items():
+            if "#" in node_content["node_content"]:
+                operator_nodes[node_nr] = node_content["node_content"]
+                queries.append(Query("Filler for combine queries"))
+            else:
+                query_parser = WOSParser(
+                    query_str=node_content["node_content"],
+                    search_field_general=self.search_field_general,
+                    mode=self.mode,
+                )
+                query = query_parser.parse()
+                queries.append(query)
+        return queries, operator_nodes
 
-            queries[int(index) - 1] = Query(
-                value=operator,
-                operator=True,
-                children=res_children,
-            )
+    def _parse_list_query(self) -> Query:
+
+        for node_nr, node_content in self.query_dict.items():
+            if node_content["type"] == ListTokenTypes.QUERY_NODE:
+                query_parser = WOSParser(
+                    query_str=node_content["node_content"],
+                    search_field_general=self.search_field_general,
+                    mode=self.mode,
+                )
+                query = query_parser.parse()
+                node_content["query"] = query
+
+            elif node_content["type"] == ListTokenTypes.OPERATOR_NODE:
+                tokens = self.tokenize_operator_node(
+                    node_content["node_content"], node_nr
+                )
+                self._validate_tokens(tokens, node_nr)
+                query = self._build_query_from_operator_node(tokens)
+                self.query_dict[node_nr]["query"] = query
+
+        return list(self.query_dict.values())[-1]["query"]
 
     def parse(self) -> Query:
         """Parse the list of queries."""
 
-        # TODO: check/raise linter messages
-        # TODO: consider linter messages of WOSParser (individual strings)
         self.lint_list_parser()
 
-        query_dict = self.parse_dict()
-        # Note: the parse() method of QueryListParser is called to parse each query
-        queries, operator_nodes = self._parse_queries(query_dict)
-        self._operator_nodes(queries, operator_nodes)
+        # Print linter messages
+        if self.linter_messages:
+            if self.mode != LinterMode.STRICT and not self.fatal_linter_err:
+                print(
+                    "\n[INFO:] The following errors have been corrected by the linter:"
+                )
+            for level, linter_messages in self.linter_messages.items():
+                for msg in linter_messages:
+                    print(
+                        "[Linter:] "
+                        + msg["label"]
+                        + "\t"
+                        + msg["message"]
+                        + " At position "
+                        + str(msg["position"])
+                        + f"(level {level})"
+                    )
 
-        return queries[-1]
+                # Raise an exception
+                # if the linter is in strict mode
+                # or if a fatal error has occurred
+                if (
+                    self.mode == LinterMode.STRICT
+                    or self.fatal_linter_err
+                    and linter_messages
+                ):
+                    raise FatalLintingException(
+                        message="LinterDetected",
+                        query_string="",  # add query-string?
+                        linter_messages=linter_messages,
+                    )
 
-    def tokenize_combining_list_elem(self, query_str: str) -> list:
+        self.tokenize_list()
+        query = self._parse_list_query()
+        return query
+
+    def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
         """Tokenize the query_list."""
 
         tokens = []
-        for match in re.finditer(self.LIST_COMBINE_REGEX, query_str):
+        for match in re.finditer(self.OPERATOR_NODE_REGEX, query_str):
             value = match.group()
             position = match.span()
-            if re.fullmatch(self.ITEM_REFERENCE, value):
-                token_type = TokenTypes.LIST_ITEM
+            if re.fullmatch(self.LIST_ITEM_REFERENCE, value):
+                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
             elif re.fullmatch(WOSParser.LOGIC_OPERATOR_REGEX, value):
-                token_type = TokenTypes.LOGIC_OPERATOR
+                token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
             else:
-                token_type = TokenTypes.UNKNOWN
-            tokens.append(Token(value=value, type=token_type, position=position))
+                token_type = OperatorNodeTokenTypes.UNKNOWN
+            tokens.append(
+                ListToken(
+                    value=value, type=token_type, level=node_nr, position=position
+                )
+            )
 
         return tokens
 
-    def _validate_tokens(self, tokens: list) -> None:
+    def _validate_tokens(self, tokens: list, node_nr: int) -> None:
         """Validate the tokens of the combining list element."""
         for token in tokens:
-            if token.type == TokenTypes.UNKNOWN:
+            if token.type == OperatorNodeTokenTypes.UNKNOWN:
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                    pos=token.position,
+                    position=token.position,
                 )
 
         # Note: details should pass "format should be #1 [operator] #2"
 
         # Must start with LIST_ITEM
-        if tokens[0].type != TokenTypes.LIST_ITEM:
+        if tokens[0].type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                pos=tokens[0].position,
-                # TODO : add number of the query item
-                details="First token must be a list item.",
+                position=tokens[0].position,
+                details=f"First token for query item {node_nr} must be a list item.",
             )
             return
 
         # Expect alternating pattern after first LIST_ITEM
-        expected = TokenTypes.LOGIC_OPERATOR
-        for idx, token in enumerate(tokens[1:], start=1):
+        expected = OperatorNodeTokenTypes.LOGIC_OPERATOR
+        for _, token in enumerate(tokens[1:], start=1):
             if token.type != expected:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                    pos=token.position,
-                    details=f"Expected {expected.name} at position "
-                    f"{token.position}, but found {token.type.name}.",
+                    position=token.position,
+                    details=f"Expected {expected.name} for query item {node_nr} "
+                    f"at position {token.position}, but found {token.type.name}.",
                 )
                 return
             # Alternate between LOGIC_OPERATOR and LIST_ITEM
             expected = (
-                TokenTypes.LIST_ITEM
-                if expected == TokenTypes.LOGIC_OPERATOR
-                else TokenTypes.LOGIC_OPERATOR
+                OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+                if expected == OperatorNodeTokenTypes.LOGIC_OPERATOR
+                else OperatorNodeTokenTypes.LOGIC_OPERATOR
             )
 
         # The final token must be a LIST_ITEM (if even-length list of tokens)
-        if expected == TokenTypes.LIST_ITEM:
+        if expected == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 list_position=QueryListParser.GENERAL_ERROR_POSITION,
-                pos=tokens[-1].position,
-                details="Last token must be a list item.",
+                position=tokens[-1].position,
+                details=f"Last token of query item {node_nr} must be a list item.",
             )

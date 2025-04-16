@@ -177,7 +177,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "label": "operator-capitalization",
                     "message": "Operators should be capitalized",
                     "is_fatal": False,
-                    "pos": (24, 27),
+                    "position": (24, 27),
                     "details": "",
                 }
             ],
@@ -191,7 +191,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "pos": (),
+                    "position": (),
                     "details": "",
                 }
             ],
@@ -205,7 +205,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "pos": (3, 6),
+                    "position": (3, 6),
                     "details": "",
                 }
             ],
@@ -235,7 +235,7 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "pos": (0, 2),
+                    "position": (0, 2),
                     "details": "",
                 }
             ],
@@ -260,7 +260,7 @@ def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> No
                     "label": "search-field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
-                    "pos": (),
+                    "position": (),
                     "details": "",
                 }
             ],

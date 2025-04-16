@@ -79,7 +79,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "unmatched-opening-parenthesis",
                 "message": "Unmatched opening parenthesis",
-                "pos": (0, 1),
+                "position": (0, 1),
             },
         )
 
@@ -111,7 +111,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "unmatched-closing-parenthesis",
                 "message": "Unmatched closing parenthesis",
-                "pos": (10, 11),
+                "position": (10, 11),
             },
         )
 
@@ -139,7 +139,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "unmatched-closing-parenthesis",
                 "message": "Unmatched closing parenthesis",
-                "pos": (12, 13),
+                "position": (12, 13),
             },
         )
 
@@ -172,7 +172,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "unmatched-opening-parenthesis",
                 "message": "Unmatched opening parenthesis",
-                "pos": (0, 1),
+                "position": (0, 1),
             },
         )
 
@@ -206,7 +206,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
-                "pos": (10, 12),
+                "position": (10, 12),
             },
         )
 
@@ -246,7 +246,7 @@ class TestQueryLinter(unittest.TestCase):
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
                 "details": "",
-                "pos": (6, 9),
+                "position": (6, 9),
             },
             {
                 "code": "F1005",
@@ -254,7 +254,7 @@ class TestQueryLinter(unittest.TestCase):
                 "message": "Invalid token sequence: two search fields in a row.",
                 "is_fatal": True,
                 "details": "",
-                "pos": (10, 13),
+                "position": (10, 13),
             },
         )
 
@@ -288,7 +288,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
-                "pos": (6, 7),
+                "position": (6, 7),
             },
         )
 
@@ -323,7 +323,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
-                "pos": (2, 3),
+                "position": (2, 3),
             },
         )
 
@@ -357,7 +357,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
-                "pos": (6, 9),
+                "position": (6, 9),
             },
         )
 
@@ -407,7 +407,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "near-distance-too-large",
                 "message": "NEAR distance is too large (max: 15).",
-                "pos": (6, 13),
+                "position": (6, 13),
             },
         )
 
@@ -471,7 +471,7 @@ class TestQueryLinter(unittest.TestCase):
                 "message": "Unsupported wildcard in search string.",
                 "is_fatal": True,
                 "details": "",
-                "pos": (6, 7),
+                "position": (6, 7),
             },
         )
 
@@ -504,7 +504,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-standalone",
                 "message": "Wildcard cannot be standalone.",
-                "pos": (0, 3),
+                "position": (0, 3),
             },
         )
 
@@ -573,7 +573,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-after-special-char",
                 "message": "Wildcard cannot be preceded by special characters.",
-                "pos": (6, 7),
+                "position": (6, 7),
             },
         )
 
@@ -611,7 +611,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-right-short-length",
                 "message": "Right-hand wildcard must preceded by at least three characters.",
-                "pos": (0, 2),
+                "position": (0, 2),
             },
         )
 
@@ -680,7 +680,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-left-short-length",
                 "message": "Left-hand wildcard must be preceded by at least three characters.",
-                "pos": (0, 2),
+                "position": (0, 2),
             },
         )
 
@@ -730,7 +730,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "isbn-format-invalid",
                 "message": "Invalid ISBN format.",
-                "pos": (0, 3),
+                "position": (0, 3),
             },
         )
 
@@ -784,7 +784,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "isbn-format-invalid",
                 "message": "Invalid ISBN format.",
-                "pos": (0, 3),
+                "position": (0, 3),
             },
         )
 
@@ -834,7 +834,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "doi-format-invalid",
                 "message": "Invalid DOI format.",
-                "pos": (0, 3),
+                "position": (0, 3),
             },
         )
 
@@ -878,7 +878,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "pos": (13, 15),
+                "position": (13, 15),
             },
         )
 
@@ -916,7 +916,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "pos": (13, 17),
+                "position": (13, 17),
             },
         )
 
@@ -998,7 +998,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "implicit-precedence",
                 "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "pos": (16, 19),
+                "position": (16, 19),
             },
         )
 
@@ -1020,7 +1020,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "implicit-near-value",
                 "message": "The value of NEAR operator is implicit",
-                "pos": (6, 10),
+                "position": (6, 10),
             },
         )
         self.assertEqual(parser.tokens[1].value, "NEAR/15")
@@ -1043,7 +1043,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
-                "pos": (6, 9),
+                "position": (6, 9),
             },
         )
         self.assertEqual(parser.tokens[1].value, "AND")
@@ -1066,7 +1066,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-in-year",
                 "message": "Wildcard characters (*, ?, $) not supported in year search.",
-                "pos": (13, 17),
+                "position": (13, 17),
             },
         )
 
@@ -1088,7 +1088,7 @@ class TestQueryLinter(unittest.TestCase):
                 "message": "Search field is not supported for this database",
                 "is_fatal": True,
                 "details": "",
-                "pos": (10, 13),
+                "position": (10, 13),
             },
         )
 
@@ -1110,7 +1110,7 @@ class TestQueryLinter(unittest.TestCase):
                 "details": "",
                 "label": "year-span-violation",
                 "message": "Year span must be five or less.",
-                "pos": (13, 22),
+                "position": (13, 22),
             },
         )
         self.assertEqual(parser.tokens[3].value, "1995-2000")
@@ -1134,7 +1134,7 @@ class TestQueryLinter(unittest.TestCase):
                 "message": "Contradictory search fields specified",
                 "is_fatal": False,
                 "details": "",
-                "pos": (0, 3),
+                "position": (0, 3),
             },
             parser.linter_messages,
         )

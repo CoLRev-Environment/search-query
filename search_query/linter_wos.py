@@ -69,7 +69,7 @@ class QueryLinter:
             # Year detected without other search fields
             self.parser.add_linter_message(
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_FIELD,
-                pos=token.position,
+                position=token.position,
             )
 
         self.check_unmatched_parentheses()
@@ -84,7 +84,7 @@ class QueryLinter:
                 if self.parser.search_field_general == "":
                     self.parser.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_MISSING,
-                        pos=(-1, -1),
+                        position=(-1, -1),
                     )
                 break
 
@@ -93,14 +93,14 @@ class QueryLinter:
                     if token.value != self.parser.search_field_general:
                         self.parser.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                            pos=token.position,
+                            position=token.position,
                         )
                     else:
                         # Note : in basic search, when starting the query with a field,
                         # WOS raises a syntax error.
                         self.parser.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                            pos=token.position,
+                            position=token.position,
                         )
 
                 # break: only consider the first FIELD
@@ -115,7 +115,7 @@ class QueryLinter:
                 if token.value not in valid_fields:
                     self.parser.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                        pos=token.position,
+                        position=token.position,
                     )
 
     def check_unknown_token_types(self) -> None:
@@ -133,7 +133,7 @@ class QueryLinter:
                 if token.value != token.value.upper():
                     self.parser.add_linter_message(
                         QueryErrorCode.OPERATOR_CAPITALIZATION,
-                        pos=token.position,
+                        position=token.position,
                     )
                     token.value = token.value.upper()
 
@@ -143,7 +143,7 @@ class QueryLinter:
             if token.value == "NEAR":
                 self.parser.add_linter_message(
                     QueryErrorCode.IMPLICIT_NEAR_VALUE,
-                    pos=token.position,
+                    position=token.position,
                 )
                 token.value = "NEAR/15"
 
@@ -156,7 +156,7 @@ class QueryLinter:
                 if any(char in year_token.value for char in ["*", "?", "$"]):
                     self.parser.add_linter_message(
                         QueryErrorCode.WILDCARD_IN_YEAR,
-                        pos=year_token.position,
+                        position=year_token.position,
                     )
 
                 # Check if the yearspan is not more than 5 years
@@ -170,7 +170,8 @@ class QueryLinter:
                         )
 
                         self.parser.add_linter_message(
-                            QueryErrorCode.YEAR_SPAN_VIOLATION, pos=year_token.position
+                            QueryErrorCode.YEAR_SPAN_VIOLATION,
+                            position=year_token.position,
                         )
 
     def check_unmatched_parentheses(self) -> None:
@@ -185,13 +186,13 @@ class QueryLinter:
                 else:
                     self.parser.add_linter_message(
                         QueryErrorCode.UNMATCHED_CLOSING_PARENTHESIS,
-                        pos=(i, i + 1),
+                        position=(i, i + 1),
                     )
 
         for unmatched_index in stack:
             self.parser.add_linter_message(
                 QueryErrorCode.UNMATCHED_OPENING_PARENTHESIS,
-                pos=(unmatched_index, unmatched_index + 1),
+                position=(unmatched_index, unmatched_index + 1),
             )
 
     def check_order_of_tokens(self) -> None:
@@ -253,7 +254,7 @@ class QueryLinter:
             if token.is_operator() and next_token.is_operator():
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    pos=next_token.position,
+                    position=next_token.position,
                 )
                 continue
 
@@ -261,7 +262,7 @@ class QueryLinter:
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    pos=next_token.position,
+                    position=next_token.position,
                 )
                 continue
 
@@ -270,7 +271,7 @@ class QueryLinter:
             if next_token.type not in allowed_next_types:
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    pos=next_token.position,
+                    position=next_token.position,
                 )
 
     def check_near_distance_in_range(self, index: int) -> None:
@@ -279,7 +280,7 @@ class QueryLinter:
         if near_distance and int(near_distance[0]) > 15:
             self.parser.add_linter_message(
                 QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
-                pos=self.parser.tokens[index].position,
+                position=self.parser.tokens[index].position,
             )
 
     def check_unsupported_wildcards(self) -> None:
@@ -289,7 +290,7 @@ class QueryLinter:
         for match in re.finditer(r"\!+", self.search_str):
             self.parser.add_linter_message(
                 QueryErrorCode.WILDCARD_UNSUPPORTED,
-                pos=(match.start(), match.end()),
+                position=(match.start(), match.end()),
             )
 
     def check_wildcards(self, token: Token) -> None:
@@ -304,7 +305,7 @@ class QueryLinter:
                 if index == 0 and len(token_value) == 1:
                     self.parser.add_linter_message(
                         QueryErrorCode.WILDCARD_STANDALONE,
-                        pos=token.position,
+                        position=token.position,
                     )
 
                 elif len(token_value) == index + 1:
@@ -322,7 +323,7 @@ class QueryLinter:
                     if token_value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
                         self.parser.add_linter_message(
                             QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
-                            pos=token.position,
+                            position=token.position,
                         )
 
     def check_unsupported_right_hand_wildcards(self, token: Token, index: int) -> None:
@@ -331,13 +332,13 @@ class QueryLinter:
         if token.value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
             self.parser.add_linter_message(
                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
-                pos=token.position,
+                position=token.position,
             )
 
         if len(token.value) < 4:
             self.parser.add_linter_message(
                 QueryErrorCode.WILDCARD_RIGHT_SHORT_LENGTH,
-                pos=token.position,
+                position=token.position,
             )
 
     def check_format_left_hand_wildcards(self, token: Token) -> None:
@@ -346,7 +347,7 @@ class QueryLinter:
         if len(token.value) < 4:
             self.parser.add_linter_message(
                 QueryErrorCode.WILDCARD_LEFT_SHORT_LENGTH,
-                pos=token.position,
+                position=token.position,
             )
 
     def check_issn_isbn_format(self, token: Token) -> None:
@@ -358,7 +359,7 @@ class QueryLinter:
             # Add messages to self.linter_messages
             self.parser.add_linter_message(
                 QueryErrorCode.ISBN_FORMAT_INVALID,
-                pos=token.position,
+                position=token.position,
             )
 
     def check_doi_format(self, token: Token) -> None:
@@ -368,7 +369,7 @@ class QueryLinter:
             # Add messages to self.linter_messages
             self.parser.add_linter_message(
                 QueryErrorCode.DOI_FORMAT_INVALID,
-                pos=token.position,
+                position=token.position,
             )
 
     def handle_multiple_same_level_operators(self, tokens: list, index: int) -> int:
@@ -398,7 +399,7 @@ class QueryLinter:
             ):
                 self.parser.add_linter_message(
                     QueryErrorCode.IMPLICIT_PRECEDENCE,
-                    pos=token.position,
+                    position=token.position,
                 )
 
                 clear_list = True

@@ -407,15 +407,13 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    def __init__(
-        self, query_list: str, search_field_general: str, linter_mode: str
-    ) -> None:
+    def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
         """Initialize with a query list and use EBSCOParser for parsing each query."""
         super().__init__(
             query_list=query_list,
             parser_class=EBSCOParser,
             search_field_general=search_field_general,
-            linter_mode=linter_mode,
+            mode=mode,
         )
 
     def get_token_str(self, token_nr: str) -> str:
@@ -434,19 +432,12 @@ class EBSCOListParser(QueryListParser):
         # 1 AND 2 ... are still possible,
         # however for standardization purposes it should be S/#
         self.add_linter_message(
-            # TODO :check, use correct error code
-            QueryErrorCode.MISSING_OPERATOR_NODES,
+            QueryErrorCode.INVALID_LIST_REFERENCE,
             list_position=QueryListParser.GENERAL_ERROR_POSITION,
-            pos=(-1, -1),
-            # {
-            #     "level": "Warning",
-            #     "msg": (
-            #         "Connecting lines possibly failed."
-            #         "Please use this format for connection:"
-            #         "S1 OR S2 OR S3 / #1 OR #2 OR #3"
-            #     ),
-            #     "pos": None,
-            # }
+            position=(-1, -1),
+            details="Connecting lines possibly failed. "
+            "Please use this format for connection: "
+            "S1 OR S2 OR S3 / #1 OR #2 OR #3",
         )
         return token_nr
 
