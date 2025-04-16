@@ -2,11 +2,11 @@
 """Tests for Pubmed search query parser."""
 from typing import Tuple
 
-import pytest   # type: ignore
+import pytest  # type: ignore
 
+from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants import QueryErrorCode
 from search_query.exception import SearchQueryException
 from search_query.parser_pubmed import PubmedParser
 
@@ -21,50 +21,58 @@ from search_query.parser_pubmed import PubmedParser
         (
             '("health tracking" [tw] OR"remote monitoring"[tw])AND wearable device[tw]NOT Comment[pt]',
             [
-                Token(value='(', type=TokenTypes.PARENTHESIS_OPEN, position=(0, 1)),
-                Token(value='"health tracking"', type=TokenTypes.SEARCH_TERM, position=(1, 18)),
-                Token(value='[tw]', type=TokenTypes.FIELD, position=(19, 23)),
-                Token(value='OR', type=TokenTypes.LOGIC_OPERATOR, position=(24, 26)),
-                Token(value='"remote monitoring"', type=TokenTypes.SEARCH_TERM, position=(26, 45)),
-                Token(value='[tw]', type=TokenTypes.FIELD, position=(45, 49)),
-                Token(value=')', type=TokenTypes.PARENTHESIS_CLOSED, position=(49, 50)),
-                Token(value='AND', type=TokenTypes.LOGIC_OPERATOR, position=(50, 53)),
-                Token(value='wearable device', type=TokenTypes.SEARCH_TERM, position=(54, 69)),
-                Token(value='[tw]', type=TokenTypes.FIELD, position=(69, 73)),
-                Token(value='NOT', type=TokenTypes.LOGIC_OPERATOR, position=(73, 76)),
-                Token(value='Comment', type=TokenTypes.SEARCH_TERM, position=(77, 84)),
-                Token(value='[pt]', type=TokenTypes.FIELD, position=(84, 88)),
-            ]
+                Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(0, 1)),
+                Token(
+                    value='"health tracking"',
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(1, 18),
+                ),
+                Token(value="[tw]", type=TokenTypes.FIELD, position=(19, 23)),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(24, 26)),
+                Token(
+                    value='"remote monitoring"',
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(26, 45),
+                ),
+                Token(value="[tw]", type=TokenTypes.FIELD, position=(45, 49)),
+                Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(49, 50)),
+                Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(50, 53)),
+                Token(
+                    value="wearable device",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(54, 69),
+                ),
+                Token(value="[tw]", type=TokenTypes.FIELD, position=(69, 73)),
+                Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(73, 76)),
+                Token(value="Comment", type=TokenTypes.SEARCH_TERM, position=(77, 84)),
+                Token(value="[pt]", type=TokenTypes.FIELD, position=(84, 88)),
+            ],
         )
-    ]
+    ],
 )
-def test_tokenization_pubmed(
-        query_str: str, expected_tokens: list
-) -> None:
+def test_tokenization_pubmed(query_str: str, expected_tokens: list) -> None:
     pubmed_parser = PubmedParser(query_str, "")
     pubmed_parser.tokenize()
     assert pubmed_parser.tokens == expected_tokens, print(pubmed_parser.tokens)
 
 
 @pytest.mark.parametrize(
-    'query_str, expected_translation',
+    "query_str, expected_translation",
     [
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
-            'AND[OR[OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]'
+            'AND[OR[OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
         )
-    ]
+    ],
 )
-def test_parser_pubmed(
-        query_str: str, expected_translation: str
-) -> None:
+def test_parser_pubmed(query_str: str, expected_translation: str) -> None:
     pubmed_parser = PubmedParser(query_str, "")
     query_tree = pubmed_parser.parse()
     assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
 
 
 @pytest.mark.parametrize(
-    'query_str, error, pos',
+    "query_str, error, pos",
     [
         (
             '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
@@ -107,7 +115,7 @@ def test_parser_pubmed(
             (41, 43),
         ),
         (
-            'digital health[tiab:~5]',
+            "digital health[tiab:~5]",
             QueryErrorCode.INVALID_PROXIMITY_USE,
             (14, 23),
         ),
@@ -141,12 +149,12 @@ def test_parser_pubmed(
             QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
             (9, 13),
         ),
-    ]
+    ],
 )
 def test_linter_pubmed(
-        query_str: str,
-        error: QueryErrorCode,
-        pos: Tuple,
+    query_str: str,
+    error: QueryErrorCode,
+    pos: Tuple,
 ) -> None:
     pubmed_parser = PubmedParser(query_str, "")
     try:

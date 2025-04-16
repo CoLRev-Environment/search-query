@@ -22,11 +22,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
     parser: "PubmedParser"
 
-    VALID_TOKEN_SEQUENCES = {
-        None: [
-            TokenTypes.SEARCH_TERM,
-            TokenTypes.PARENTHESIS_OPEN
-        ],
+    VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
@@ -34,22 +30,19 @@ class PubmedQueryStringValidator(QueryStringValidator):
         TokenTypes.PARENTHESIS_CLOSED: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None
         ],
         TokenTypes.SEARCH_TERM: [
             TokenTypes.FIELD,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None
         ],
         TokenTypes.FIELD: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None
         ],
         TokenTypes.LOGIC_OPERATOR: [
             TokenTypes.SEARCH_TERM,
-            TokenTypes.PARENTHESIS_OPEN
+            TokenTypes.PARENTHESIS_OPEN,
         ],
     }
 
@@ -61,7 +54,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for index, token in enumerate(tokens):
             if token.type == TokenTypes.SEARCH_TERM:
                 self._check_invalid_characters(token)
-                if '*' in token.value:
+                if "*" in token.value:
                     self._check_invalid_wildcard(token)
 
             if token.type == TokenTypes.FIELD:
@@ -105,8 +98,33 @@ class PubmedQueryStringValidator(QueryStringValidator):
     def _check_invalid_token_sequence(self, tokens: list) -> None:
         """Check token list for invalid token sequences."""
         for i in range(0, len(tokens) + 1):
-            prev_type = tokens[i - 1].type if i > 0 else None
-            token_type = tokens[i].type if i < len(tokens) else None
+            if i == len(tokens):
+                if tokens[i - 1].type in [
+                    TokenTypes.PARENTHESIS_OPEN,
+                    TokenTypes.LOGIC_OPERATOR,
+                ]:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                        pos=tokens[i - 1].position,
+                        details=f"Cannot end with {tokens[i-1].type}",
+                    )
+                break
+
+            token_type = tokens[i].type  # if i < len(tokens) else None
+            if i == 0:
+                # Skip first token
+                if token_type not in [
+                    TokenTypes.SEARCH_TERM,
+                    TokenTypes.PARENTHESIS_OPEN,
+                ]:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                        pos=tokens[i].position,
+                        details=f"Cannot start with {token_type}",
+                    )
+                continue
+
+            prev_type = tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
@@ -117,17 +135,24 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     details = "Invalid operator position"
                     position = tokens[i].position
 
-                elif prev_type == TokenTypes.PARENTHESIS_OPEN and token_type == TokenTypes.PARENTHESIS_CLOSED:
+                elif (
+                    prev_type == TokenTypes.PARENTHESIS_OPEN
+                    and token_type == TokenTypes.PARENTHESIS_CLOSED
+                ):
                     details = "Empty parenthesis"
                     position = (tokens[i - 1].position[0], tokens[i].position[1])
 
-                elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
+                elif (
+                    token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
+                ):
                     details = "Missing operator"
                     position = (tokens[i - 1].position[0], tokens[i].position[1])
 
                 else:
                     details = ""
-                    position = tokens[i].position if token_type else tokens[i - 1].position
+                    position = (
+                        tokens[i].position if token_type else tokens[i - 1].position
+                    )
 
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -143,8 +168,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 if i == 0:
                     return
-                else:
-                    i -= 1
+                i -= 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i += 1
             if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
@@ -153,12 +177,10 @@ class PubmedQueryStringValidator(QueryStringValidator):
                         if token.value.upper() not in operator_group:
                             self.parser.add_linter_message(
                                 QueryErrorCode.IMPLICIT_PRECEDENCE,
-                                pos=tokens[index].position
+                                pos=tokens[index].position,
                             )
 
-    def _check_invalid_characters(
-        self, token: Token
-    ) -> None:
+    def _check_invalid_characters(self, token: Token) -> None:
         """Check a search term for invalid characters"""
         invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
         value = token.value
@@ -167,10 +189,9 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for i, char in enumerate(token.value):
             if char in invalid_characters:
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_CHARACTER,
-                    pos=token.position
+                    QueryErrorCode.INVALID_CHARACTER, pos=token.position
                 )
-                value = value[:i] + " " + value[i + 1:]
+                value = value[:i] + " " + value[i + 1 :]
         # Update token
         if value != token.value:
             token.value = value
@@ -270,12 +291,8 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     ):
                         continue
 
-                    field_a = self.parser.map_search_field(
-                        term_a.search_field.value
-                    )
-                    field_b = self.parser.map_search_field(
-                        term_b.search_field.value
-                    )
+                    field_a = self.parser.map_search_field(term_a.search_field.value)
+                    field_b = self.parser.map_search_field(term_b.search_field.value)
 
                     if field_a == field_b and (
                         term_a.value == term_b.value
@@ -346,7 +363,8 @@ class PubmedQueryStringValidator(QueryStringValidator):
             search_field.position and search_field.value == "ab"
         ):
             self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED, search_field.position
+                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                search_field.position or (-1, -1),
             )
             search_field.value = Fields.ALL
             search_field.position = None

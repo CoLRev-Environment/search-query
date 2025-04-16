@@ -281,15 +281,15 @@ class PubmedParser(QueryStringParser):
                 self.translate_search_fields(child)
             return
 
-        query.search_field.value = self.map_search_field(query.search_field.value)
+        if query.search_field:
+            query.search_field.value = self.map_search_field(query.search_field.value)
 
-        # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
-        if query.search_field.value == "[tiab]":
-            self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
-            return
+            # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
+            if query.search_field.value == "[tiab]":
+                self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
 
     def parse_user_provided_fields(self, field_values: str) -> list:
-        """Extract and translate user-provided search fields and return them as a list"""
+        """Extract and translate user-provided search fields (return as a list)"""
         if not field_values:
             return []
 
@@ -340,7 +340,7 @@ class PubmedParser(QueryStringParser):
 
         query.value = Operators.OR
         query.operator = True
-        query.search_field.value = Fields.ALL
+        query.search_field = SearchField(value=Fields.ALL)
         query.children = query_children
 
     def get_query_leaves(self, query: Query) -> list:
@@ -378,7 +378,7 @@ class PubmedParser(QueryStringParser):
 
     def check_linter_status(self) -> None:
         """Check the output of the linter and report errors to the user"""
-        new_messages = self.linter_messages[self.last_read_index + 1:]
+        new_messages = self.linter_messages[self.last_read_index + 1 :]
         for msg in new_messages:
             e = QuerySyntaxError(msg["message"], self.query_str, msg["pos"])
 
@@ -426,6 +426,7 @@ class PubmedListParser(QueryListParser):
             query = self.parser_class(query_string, self.search_field_general).parse()
 
         except QuerySyntaxError as exc:
+            # pylint: disable=duplicate-code
             # Correct positions and query string
             # to display the error for the original (list) query
             new_pos = exc.pos
