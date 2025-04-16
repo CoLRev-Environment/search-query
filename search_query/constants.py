@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """Constants for search-query"""
-# pylint: disable=too-few-public-methods
-# pylint: disable=line-too-long
 from dataclasses import dataclass
 from enum import Enum
 from typing import Tuple
 
 # noqa: E501
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=line-too-long
 
 
 class PLATFORM(Enum):
@@ -127,6 +128,13 @@ class Fields:
     WEB_OF_SCIENCE_CATEGORY = "wc"
     ZIP_POSTAL_CODE = "zp"
     AUTHOR_KEYWORDS = "au"
+    FILTER = "sb"
+    JOURNAL = "ta"
+    MESH_TERM = "mh"
+    PUBLICATION_TYPE = "pt"
+    TEXT_WORD = "tw"
+    AFFILIATION = "ad"
+    LANGUAGE = "la"
     KEYWORDS = "kw"
     SUBJECT_TERMS = "st"
     SOURCE = "so"
@@ -194,6 +202,14 @@ PLATFORM_FIELD_MAP = {
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
         Fields.ABSTRACT: "[ab]",
+        Fields.AUTHOR_KEYWORDS: "[au]",
+        Fields.FILTER: "[sb]",
+        Fields.JOURNAL: "[ta]",
+        Fields.MESH_TERM: "[mh]",
+        Fields.PUBLICATION_TYPE: "[pt]",
+        Fields.TEXT_WORD: "[tw]",
+        Fields.AFFILIATION: "[ad]",
+        Fields.LANGUAGE: "[la]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {

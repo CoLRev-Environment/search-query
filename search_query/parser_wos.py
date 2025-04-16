@@ -778,7 +778,6 @@ class WOSListParser(QueryListParser):
         return queries, operator_nodes
 
     def _parse_list_query(self) -> Query:
-
         for node_nr, node_content in self.query_dict.items():
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
                 query_parser = WOSParser(

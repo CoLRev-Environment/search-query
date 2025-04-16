@@ -124,6 +124,13 @@ class Query:
         """Children property."""
         return self._children
 
+    @children.setter
+    def children(self, children: typing.List[Query]) -> None:
+        """Set children property."""
+        if not isinstance(children, list):
+            raise TypeError("children must be a list of Query objects")
+        self._children = children
+
     def add_child(self, child: typing.Union[str, Query]) -> None:
         """Add child to the query."""
         if isinstance(child, str):
