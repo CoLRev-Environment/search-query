@@ -281,12 +281,12 @@ class PubmedParser(QueryStringParser):
                 self.translate_search_fields(child)
             return
 
-        query.search_field.value = self.map_search_field(query.search_field.value)
+        if query.search_field:
+            query.search_field.value = self.map_search_field(query.search_field.value)
 
-        # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
-        if query.search_field.value == "[tiab]":
-            self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
-            return
+            # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
+            if query.search_field.value == "[tiab]":
+                self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
 
     def parse_user_provided_fields(self, field_values: str) -> list:
         """Extract and translate user-provided search fields (return as a list)"""
@@ -340,7 +340,7 @@ class PubmedParser(QueryStringParser):
 
         query.value = Operators.OR
         query.operator = True
-        query.search_field.value = Fields.ALL
+        query.search_field = SearchField(value=Fields.ALL)
         query.children = query_children
 
     def get_query_leaves(self, query: Query) -> list:
@@ -430,9 +430,10 @@ class PubmedListParser(QueryListParser):
             query = self.parser_class(query_string, self.search_field_general).parse()
 
         except QuerySyntaxError as exc:
+            # pylint: disable=duplicate-code
             # Correct positions and query string
             # to display the error for the original (list) query
-            new_pos = exc.pos
+            new_pos = exc.position
             for content, pos in query_list:
                 # Note: artificial parentheses cannot be ignored here
                 # because they were counted in the query_string
@@ -446,7 +447,7 @@ class PubmedListParser(QueryListParser):
                     new_pos[0] + segment_beginning,
                     new_pos[1] + segment_beginning,
                 )
-                exc.pos = new_pos
+                exc.position = new_pos
                 break
 
             exc.query_string = self.query_list
@@ -455,7 +456,7 @@ class PubmedListParser(QueryListParser):
             raise exception_type(
                 msg=exc.message.split("\n", maxsplit=1)[0],
                 query_string=exc.query_string,
-                position=exc.pos,
+                position=exc.position,
             ) from None
 
         return query

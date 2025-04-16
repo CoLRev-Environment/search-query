@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from abc import ABCMeta
 
 import search_query.parser
 from search_query.constants import Colors
@@ -11,10 +12,15 @@ from search_query.search_file import load_search_file
 from search_query.utils import format_query_string_pos
 
 
-def run_linter(search_string: str, *, platform: str, search_field_general: str) -> list:
+def run_linter(search_string: str, *, syntax: str, search_field_general: str) -> list:
     """Run the linter on the search string"""
 
-    parser = search_query.parser.PARSERS[platform](search_string, search_field_general)
+    parser_class = search_query.parser.PARSERS[syntax]
+    if isinstance(parser_class, ABCMeta):
+        raise NotImplementedError(
+            f"Cannot instantiate {parser_class} because it is abstract."
+        )
+    parser = parser_class(search_string, search_field_general)
 
     try:
         parser.parse()
@@ -44,7 +50,7 @@ def pre_commit_hook() -> int:
 
     linter_messages = run_linter(
         search_file.search_string,
-        platform=search_file.platform,
+        syntax=search_file.platform,
         search_field_general=search_file.search_field,
     )
 

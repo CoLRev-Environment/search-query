@@ -22,8 +22,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
     parser: "PubmedParser"
 
-    VALID_TOKEN_SEQUENCES = {
-        None: [TokenTypes.SEARCH_TERM, TokenTypes.PARENTHESIS_OPEN],
+    VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
@@ -31,18 +30,15 @@ class PubmedQueryStringValidator(QueryStringValidator):
         TokenTypes.PARENTHESIS_CLOSED: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None,
         ],
         TokenTypes.SEARCH_TERM: [
             TokenTypes.FIELD,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None,
         ],
         TokenTypes.FIELD: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
-            None,
         ],
         TokenTypes.LOGIC_OPERATOR: [
             TokenTypes.SEARCH_TERM,
@@ -102,8 +98,33 @@ class PubmedQueryStringValidator(QueryStringValidator):
     def _check_invalid_token_sequence(self, tokens: list) -> None:
         """Check token list for invalid token sequences."""
         for i in range(0, len(tokens) + 1):
-            prev_type = tokens[i - 1].type if i > 0 else None
-            token_type = tokens[i].type if i < len(tokens) else None
+            if i == len(tokens):
+                if tokens[i - 1].type in [
+                    TokenTypes.PARENTHESIS_OPEN,
+                    TokenTypes.LOGIC_OPERATOR,
+                ]:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                        position=tokens[i - 1].position,
+                        details=f"Cannot end with {tokens[i-1].type}",
+                    )
+                break
+
+            token_type = tokens[i].type  # if i < len(tokens) else None
+            if i == 0:
+                # Skip first token
+                if token_type not in [
+                    TokenTypes.SEARCH_TERM,
+                    TokenTypes.PARENTHESIS_OPEN,
+                ]:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                        position=tokens[i].position,
+                        details=f"Cannot start with {token_type}",
+                    )
+                continue
+
+            prev_type = tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
@@ -342,7 +363,8 @@ class PubmedQueryStringValidator(QueryStringValidator):
             search_field.position and search_field.value == "ab"
         ):
             self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED, search_field.position
+                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                search_field.position or (-1, -1),
             )
             search_field.value = Fields.ALL
             search_field.position = None

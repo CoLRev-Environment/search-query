@@ -2,6 +2,8 @@
 """Query parser."""
 from __future__ import annotations
 
+from abc import ABCMeta
+
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.parser_ebsco import EBSCOListParser
@@ -11,7 +13,6 @@ from search_query.parser_pubmed import PubmedParser
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
-
 
 PARSERS = {
     PLATFORM.WOS.value: WOSParser,
@@ -46,7 +47,12 @@ def parse(
     if syntax not in PARSERS:
         raise ValueError(f"Invalid syntax: {syntax}")
 
-    return PARSERS[syntax](query_str, search_field_general, mode).parse()
+    parser_class = PARSERS[syntax]
+    if isinstance(parser_class, ABCMeta):  # Check if it's an abstract class
+        raise NotImplementedError(
+            f"Cannot instantiate {parser_class} because it is abstract."
+        )
+    return parser_class(query_str, search_field_general, mode).parse()
 
 
 def get_platform(platform_str: str) -> str:
