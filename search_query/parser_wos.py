@@ -16,11 +16,11 @@ from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants import WOSSearchFieldList
 from search_query.exception import FatalLintingException
 from search_query.linter_wos import QueryLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
+from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
 

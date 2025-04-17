@@ -6,7 +6,7 @@ import typing
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants import WOSSearchFieldList
+from search_query.parser_wos_constants import WOSSearchFieldList
 
 if typing.TYPE_CHECKING:
     import search_query.parser_wos
