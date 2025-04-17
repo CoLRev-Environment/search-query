@@ -17,7 +17,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import FatalLintingException
-from search_query.linter_wos import QueryLinter
+from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.parser_wos_constants import WOSSearchFieldList
@@ -69,7 +69,7 @@ class WOSParser(QueryStringParser):
         super().__init__(
             query_str=query_str, search_field_general=search_field_general, mode=mode
         )
-        self.query_linter = QueryLinter(parser=self)
+        self.query_linter = WOSQueryStringLinter(parser=self)
 
     def _handle_fully_quoted_query_str(self) -> None:
         if (

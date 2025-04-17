@@ -7,10 +7,10 @@ import typing
 
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
-from search_query.parser_validation import QueryStringValidator
+from search_query.linter_base import QueryStringLinter
 
 
-class EBSCOQueryStringValidator(QueryStringValidator):
+class EBSCOQueryStringLinter(QueryStringLinter):
     """Class for EBSCO Query String Validation"""
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"

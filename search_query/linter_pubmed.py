@@ -8,7 +8,7 @@ from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.parser_validation import QueryStringValidator
+from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
 from search_query.query import SearchField
 
@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
     from search_query.parser import PubmedParser
 
 
-class PubmedQueryStringValidator(QueryStringValidator):
+class PubmedQueryStringLinter(QueryStringLinter):
     """Class for PubMed Query String Validation"""
 
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"

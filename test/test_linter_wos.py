@@ -3,24 +3,24 @@ import unittest
 
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.linter_wos import QueryLinter
+from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_wos import WOSParser
 
 # ruff: noqa: E501
 # flake8: noqa: E501
 
 
-class TestQueryLinter(unittest.TestCase):
-    """Test suite for the QueryLinter class."""
+class TestWOSQueryStringLinter(unittest.TestCase):
+    """Test suite for the WOSQueryStringLinter class."""
 
     def setUp(self) -> None:
         self.linter_messages: list = []
 
     def test_no_parentheses(self) -> None:
         """
-        Test that the QueryLinter correctly identifies a query with no unmatched parentheses.
+        Test that the WOSQueryStringLinter correctly identifies a query with no unmatched parentheses.
 
-        This test initializes a QueryLinter instance with a test query and checks that
+        This test initializes a WOSQueryStringLinter instance with a test query and checks that
         the `check_unmatched_parentheses` method returns False, indicating no unmatched
         parentheses are present. It also verifies that no linter messages are generated.
 
@@ -29,7 +29,7 @@ class TestQueryLinter(unittest.TestCase):
             - The length of `self.linter_messages` should be 0.
         """
         parser = WOSParser("test query")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -37,7 +37,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for checking matched parentheses in a query string.
 
-        This test initializes a QueryLinter object with
+        This test initializes a WOSQueryStringLinter object with
         a query string containing matched parentheses
         and verifies that the linter does not detect any unmatched parentheses. It also checks that
         no linter messages are generated.
@@ -47,7 +47,7 @@ class TestQueryLinter(unittest.TestCase):
             - The length of linter messages should be 0.
         """
         parser = WOSParser("(test query)")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -55,7 +55,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting an unmatched opening parenthesis in a query.
 
-        This test initializes a QueryLinter instance with a query containing an unmatched
+        This test initializes a WOSQueryStringLinter instance with a query containing an unmatched
         opening parenthesis and checks if the linter correctly identifies the issue.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the unmatched parenthesis.
@@ -68,7 +68,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message is (0, 1).
         """
         parser = WOSParser("(test query")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -87,7 +87,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting an unmatched closing parenthesis in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an unmatched closing parenthesis and checks if the linter correctly identifies
         the unmatched parenthesis. It verifies that the linter messages contain the
         appropriate rule, message, and position for the unmatched parenthesis.
@@ -100,7 +100,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (10, 11).
         """
         parser = WOSParser("test query)")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -119,7 +119,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for checking unmatched parentheses in a query string.
 
-        This test verifies that the QueryLinter correctly identifies and reports
+        This test verifies that the WOSQueryStringLinter correctly identifies and reports
         an unmatched closing parenthesis in the query string. It checks that:
         - The linter detects the unmatched parenthesis.
         - The linter messages list contains exactly one message.
@@ -128,7 +128,7 @@ class TestQueryLinter(unittest.TestCase):
         - The position of the unmatched parenthesis is correctly reported.
         """
         parser = WOSParser("(test query))")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -147,7 +147,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for checking unmatched parentheses in a nested query.
 
-        This test initializes a QueryLinter instance with a query containing
+        This test initializes a WOSQueryStringLinter instance with a query containing
         unmatched parentheses and verifies that the linter correctly identifies
         the unmatched opening parenthesis. It checks that the linter messages
         contain the appropriate rule, message, and position for the unmatched
@@ -161,7 +161,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the first linter message is (0, 1).
         """
         parser = WOSParser("((test query)")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -180,7 +180,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting two operators in a row in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         two operators in a row and checks if the linter correctly identifies the issue.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the two operators.
@@ -195,7 +195,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 AND OR")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -214,7 +214,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting two search fields in a row in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         two search fields in a row and checks if the linter correctly identifies the issue.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the two search fields.
@@ -234,7 +234,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 au= ti=")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 2)
         self.assertEqual(
@@ -262,7 +262,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting missing operator between term and parenthesis in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a term followed by an opening parenthesis without an operator in between.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the missing operator.
@@ -277,7 +277,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 (query)")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -297,7 +297,7 @@ class TestQueryLinter(unittest.TestCase):
         Test case for detecting missing operator between
         closing and opening parenthesis in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a closing parenthesis followed by an opening parenthesis without an operator in between.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the missing operator.
@@ -312,7 +312,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser(") (query)")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -331,7 +331,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for detecting missing operator between term and search field in a query string.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a term followed by a search field without an operator in between.
         It verifies that the linter messages contain the appropriate rule, message, and position
         for the missing operator.
@@ -346,7 +346,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 au=")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -365,7 +365,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for NEAR operator with a specified distance within the allowed range.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         the NEAR operator with a distance within the allowed range (<= 15).
         It verifies that the linter does not detect any issues with the NEAR distance.
 
@@ -375,7 +375,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 NEAR/10 term2")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range(1)
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -383,7 +383,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for NEAR operator with a specified distance out of the allowed range.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         the NEAR operator with a distance out of the allowed range (> 15).
         It verifies that the linter correctly identifies the NEAR distance out of range.
 
@@ -396,7 +396,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 NEAR/20 term2")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range(1)
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -415,7 +415,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for NEAR operator without a specified distance.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         the NEAR operator without a specified distance.
         It verifies that the linter does not detect any issues with the NEAR operator.
 
@@ -425,7 +425,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("term1 NEAR term2")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range(0)
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -433,7 +433,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with no unsupported wildcards.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         no unsupported wildcards and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -441,7 +441,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 term2")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -449,7 +449,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with unsupported wildcards.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         unsupported wildcards and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -460,7 +460,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         parser = WOSParser("term1 !term2")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -479,7 +479,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a standalone wildcard.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a standalone wildcard and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -491,7 +491,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser('term1 "?" term2')
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_wildcards(
             Token(value='"?"', type=TokenTypes.SEARCH_TERM, position=(0, 3))
         )
@@ -512,7 +512,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a wildcard within a term.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a wildcard within a term and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -520,7 +520,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 te?m2")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -528,7 +528,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with no unsupported right-hand wildcards.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         no unsupported right-hand wildcards and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -536,7 +536,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 term2*")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_right_hand_wildcards(
             Token(value="term2*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 5
         )
@@ -547,7 +547,7 @@ class TestQueryLinter(unittest.TestCase):
         Test case for a query string with an unsupported
         right-hand wildcard after a special character.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an unsupported right-hand wildcard after a special character and verifies that the linter
         correctly identifies the issue.
 
@@ -560,7 +560,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (5, 6).
         """
         parser = WOSParser("term1 term2!*")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_right_hand_wildcards(
             Token(value="term2!*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 6
         )
@@ -584,7 +584,7 @@ class TestQueryLinter(unittest.TestCase):
         Test case for a query string with an unsupported
         right-hand wildcard preceded by less than three characters.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an unsupported right-hand wildcard preceded by less than
         three characters and verifies that the linter
         correctly identifies the issue.
@@ -598,7 +598,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (0, 2).
         """
         parser = WOSParser("te*")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_right_hand_wildcards(
             Token(value="te*", type=TokenTypes.SEARCH_TERM, position=(0, 2)), 2
         )
@@ -619,7 +619,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with no left-hand wildcard.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         no left-hand wildcard and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -627,7 +627,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 term2")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_format_left_hand_wildcards(
             Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(6, 11))
         )
@@ -637,7 +637,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a valid left-hand wildcard.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a valid left-hand wildcard and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -645,7 +645,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("term1 *term2")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_format_left_hand_wildcards(
             Token(value="*term2", type=TokenTypes.SEARCH_TERM, position=(6, 12))
         )
@@ -655,7 +655,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with an invalid left-hand wildcard.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an invalid left-hand wildcard and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -667,7 +667,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (0, 2).
         """
         parser = WOSParser("*te")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_format_left_hand_wildcards(
             Token(value="*te", type=TokenTypes.SEARCH_TERM, position=(0, 2))
         )
@@ -688,7 +688,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a valid ISSN format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a valid ISSN and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -696,7 +696,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("1234-5678")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_issn_isbn_format(
             Token(value="1234-5678", type=TokenTypes.SEARCH_TERM, position=(0, 3))
         )
@@ -706,7 +706,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with an invalid ISSN format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an invalid ISSN and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -717,7 +717,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (0, 3).
         """
         parser = WOSParser("1234-567")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_issn_isbn_format(
             Token(value="1234-567", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
@@ -738,7 +738,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a valid ISBN format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a valid ISBN and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -746,7 +746,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("978-3-16-148410-0")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_issn_isbn_format(
             Token(
                 value="978-3-16-148410-0", type=TokenTypes.SEARCH_TERM, position=(0, 3)
@@ -758,7 +758,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with an invalid ISBN format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an invalid ISBN and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -769,7 +769,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (0, 3).
         """
         parser = WOSParser("978-3-16-148410")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_issn_isbn_format(
             Token(
                 value="978-3-16-148410", type=TokenTypes.SEARCH_TERM, position=(0, 3)
@@ -792,7 +792,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with a valid DOI format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         a valid DOI and verifies that the linter does not detect any issues.
 
         Assertions:
@@ -800,7 +800,7 @@ class TestQueryLinter(unittest.TestCase):
             - The linter messages list should be empty.
         """
         parser = WOSParser("10.1000/xyz123")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_doi_format(
             Token(value="10.1000/xyz123", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
@@ -810,7 +810,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for a query string with an invalid DOI format.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         an invalid DOI and verifies that the linter correctly identifies the issue.
 
         Assertions:
@@ -821,7 +821,7 @@ class TestQueryLinter(unittest.TestCase):
             - The position in the linter message should be (0, 3).
         """
         parser = WOSParser("12.1000/xyz")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_doi_format(
             Token(value="12.1000/xyz", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
@@ -840,7 +840,7 @@ class TestQueryLinter(unittest.TestCase):
 
     def test_handle_multiple_same_level_operators_change(self) -> None:
         """
-        Test the handle_multiple_same_level_operators method of the QueryLinter class.
+        Test the handle_multiple_same_level_operators method of the WOSQueryStringLinter class.
 
         This test checks if the linter correctly identifies and handles multiple operators
         at the same level in a query string. It verifies that the linter sets the
@@ -868,7 +868,7 @@ class TestQueryLinter(unittest.TestCase):
             Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(15, 20)),
         ]
         parser = WOSParser("term1 AND term2 OR term3")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertEqual(
             parser.linter_messages[0],
@@ -886,7 +886,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test case for handle_multiple_same_level_operators with issues.
 
-        This test initializes a QueryLinter object with a query string containing
+        This test initializes a WOSQueryStringLinter object with a query string containing
         multiple operators at the same level with issues. It verifies that the linter
         correctly identifies the issue with the operators.
 
@@ -905,7 +905,7 @@ class TestQueryLinter(unittest.TestCase):
             Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(17, 22)),
         ]
         parser = WOSParser("term1 AND term2 NEAR term3")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
@@ -925,13 +925,13 @@ class TestQueryLinter(unittest.TestCase):
         Test case for handling multiple same level operators
         within nested parentheses without any issues.
 
-        This test verifies that the QueryLinter correctly
+        This test verifies that the WOSQueryStringLinter correctly
         handles a query with multiple same level operators
         (AND, OR) nested within parentheses and does not flag any issues.
 
         Steps:
         1. Define a list of tokens representing the query "term1 AND (term2 OR term3)".
-        2. Initialize the QueryLinter with the query and an empty list for linter messages.
+        2. Initialize the WOSQueryStringLinter with the query and an empty list for linter messages.
         3. Call the handle_multiple_same_level_operators method on the linter instance.
         4. Assert that the linter does not flag multiple same level operators.
         5. Assert that no linter messages are generated.
@@ -951,7 +951,7 @@ class TestQueryLinter(unittest.TestCase):
             Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(21, 22)),
         ]
         parser = WOSParser("term1 AND (term2 OR term3)")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertEqual(len(parser.linter_messages), 0)
 
@@ -959,7 +959,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         Test the handling of multiple same-level operators with the 'NEAR' operator.
 
-        This test checks if the QueryLinter correctly identifies and handles the
+        This test checks if the WOSQueryStringLinter correctly identifies and handles the
         presence of multiple same-level operators, specifically when 'NEAR' and 'AND'
         operators are used in the query. It verifies that the linter sets the
         `multiple_same_level_operators` flag and adds the appropriate message to
@@ -988,7 +988,7 @@ class TestQueryLinter(unittest.TestCase):
             Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(19, 24)),
         ]
         parser = WOSParser("term1 NEAR/5 term2 AND term3")
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.handle_multiple_same_level_operators(tokens, 0)
         self.assertEqual(
             parser.linter_messages[0],
@@ -1009,7 +1009,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 NEAR term2")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
 
         linter.check_implicit_near()
         self.assertEqual(
@@ -1032,7 +1032,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 and term2")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
 
         linter.check_operator_capitalization()
         self.assertEqual(
@@ -1055,7 +1055,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 and PY=202*")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
 
         linter.check_year_format()
         self.assertEqual(
@@ -1077,7 +1077,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 and IY=digital")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
 
         linter.check_fields()
         self.assertEqual(
@@ -1099,7 +1099,7 @@ class TestQueryLinter(unittest.TestCase):
 
         parser = WOSParser("term1 and PY=1900-2000")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
 
         linter.check_year_format()
         self.assertEqual(
@@ -1125,7 +1125,7 @@ class TestQueryLinter(unittest.TestCase):
         """
         parser = WOSParser("TI=digital", search_field_general="AB=")
         parser.tokenize()
-        linter = QueryLinter(parser)
+        linter = WOSQueryStringLinter(parser)
         linter.check_search_fields_from_json()
         self.assertIn(
             {

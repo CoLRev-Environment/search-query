@@ -9,7 +9,7 @@ from search_query.constants import QueryErrorCode
 
 
 # Could indeed be a general Validator class
-class QueryStringValidator:
+class QueryStringLinter:
     """Class for Query String Validation"""
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"

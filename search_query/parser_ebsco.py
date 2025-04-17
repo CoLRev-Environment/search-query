@@ -10,10 +10,10 @@ from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.linter_ebsco import EBSCOQueryStringValidator
+from search_query.linter_base import QueryStringLinter
+from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
 
@@ -152,7 +152,7 @@ class EBSCOParser(QueryStringParser):
 
         self.tokens = []
 
-        validator = EBSCOQueryStringValidator(self)
+        validator = EBSCOQueryStringLinter(self)
         validator.filter_search_field(strict)
         self.query_str = validator.query_str
 
@@ -376,8 +376,8 @@ class EBSCOParser(QueryStringParser):
 
         self.linter_messages.clear()
 
-        # Create an instance of QueryStringValidator
-        validator = QueryStringValidator(self)
+        # Create an instance of QueryStringLinter
+        validator = QueryStringLinter(self)
 
         # Call validation methods
         validator.check_operator()

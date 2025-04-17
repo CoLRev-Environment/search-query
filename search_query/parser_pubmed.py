@@ -10,7 +10,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import QuerySyntaxError
-from search_query.linter_pubmed import PubmedQueryStringValidator
+from search_query.linter_pubmed import PubmedQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -357,7 +357,7 @@ class PubmedParser(QueryStringParser):
 
     def parse(self) -> Query:
         """Parse a query string"""
-        validator = PubmedQueryStringValidator(self)
+        validator = PubmedQueryStringLinter(self)
         # Tokenization
         self.tokenize()
         refined_tokens = validator.validate_tokens(self.tokens.copy())

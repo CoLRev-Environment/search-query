@@ -6,13 +6,14 @@ import typing
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.linter_base import QueryStringLinter
 from search_query.parser_wos_constants import WOSSearchFieldList
 
 if typing.TYPE_CHECKING:
     import search_query.parser_wos
 
 
-class QueryLinter:
+class WOSQueryStringLinter(QueryStringLinter):
     """Linter for wos query"""
 
     language_list = [
@@ -27,9 +28,13 @@ class QueryLinter:
     ]
     WILDCARD_CHARS = ["?", "$", "*"]
 
+    parser: "search_query.parser_wos.WOSParser"
+
     def __init__(self, parser: "search_query.parser_wos.WOSParser"):
         self.search_str = parser.query_str
         self.parser = parser
+
+        super().__init__(parser=parser)
 
     def pre_linting(self) -> None:
         """Performs a pre-linting"""
