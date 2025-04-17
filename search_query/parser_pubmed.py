@@ -102,6 +102,9 @@ class PubmedParser(QueryStringParser):
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
+        if self.query_str is None:
+            raise ValueError("No string provided to parse.")
+
         # Parse tokens and positions based on regex patterns.
         prev_end = 0
         for match in re.finditer(self.pattern, self.query_str, re.IGNORECASE):

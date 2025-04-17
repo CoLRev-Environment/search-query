@@ -103,12 +103,13 @@ class WOSParser(QueryStringParser):
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
+        if self.query_str is None:
+            raise ValueError("No string provided to parse.")
+
         self._handle_fully_quoted_query_str()
 
         # Parse tokens and positions based on regex pattern
-        compile_pattern = re.compile(pattern=self.pattern)
-
-        for match in compile_pattern.finditer(self.query_str):
+        for match in re.finditer(self.pattern, self.query_str):
             value = match.group()
             position = match.span()
 

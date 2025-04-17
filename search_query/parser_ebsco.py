@@ -24,10 +24,12 @@ class EBSCOParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
     PARENTHESIS_REGEX = r"[\(\)]"
-    LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
+    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
     PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
     SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB|DE|LA|KW)\b"
     SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
+
+    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
 
     pattern = "|".join(
         [
@@ -145,20 +147,12 @@ class EBSCOParser(QueryStringParser):
         if self.query_str is None:
             raise ValueError("No string provided to parse.")
 
-        strict = False
-        # Commented for automatic testing, after pull-request is done, please uncomment
-        # if self.mode == "strict":
-        #     strict = True
-
         self.tokens = []
 
         validator = EBSCOQueryStringLinter(self)
-        validator.filter_search_field(strict)
-        self.query_str = validator.query_str
+        validator.filter_search_field()
+        validator.check_search_field_general()
 
-        validator.check_search_field_general(strict=self.mode)
-
-        previous_token_type = None
         token_type = TokenTypes.UNKNOWN
 
         for match in re.finditer(self.pattern, self.query_str):
@@ -184,13 +178,6 @@ class EBSCOParser(QueryStringParser):
                 self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
                 continue
 
-            # Validate token positioning to ensure logical structure
-            validator.validate_token_position(
-                token_type, previous_token_type, (start, end)
-            )
-            # Set token_type for continoued validation
-            previous_token_type = token_type
-
             # Append token with its type and position to self.tokens
             self.tokens.append(
                 Token(value=value, type=token_type, position=(start, end))
@@ -198,6 +185,9 @@ class EBSCOParser(QueryStringParser):
 
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
+
+        # Validate token positioning to ensure logical structure
+        validator.validate_token_positions()
 
     def append_node(
         self,
@@ -376,19 +366,15 @@ class EBSCOParser(QueryStringParser):
 
         self.linter_messages.clear()
 
-        # Create an instance of QueryStringLinter
-        validator = QueryStringLinter(self)
-
-        # Call validation methods
-        validator.check_operator()
-
-        validator.check_parenthesis()
-
-        # Update the query string and messages after validation
-        self.query_str = validator.query_str
-
         # Tokenize the search string
         self.tokenize()
+
+        # Create an instance of QueryStringLinter
+        validator = QueryStringLinter(self)
+        # Call validation methods
+        validator.check_operator_capitalization()
+        validator.check_unbalanced_parentheses()
+
         # Add artificial parentheses
         self.add_artificial_parentheses_for_operator_precedence()
 

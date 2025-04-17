@@ -48,7 +48,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
     def validate_tokens(self, tokens: list) -> list:
         """Validate token list"""
-        self._check_unbalanced_parentheses(tokens)
+        self.check_unbalanced_parentheses()
         self._check_invalid_token_sequence(tokens)
 
         for index, token in enumerate(tokens):
@@ -66,38 +66,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         return tokens
 
-    def _check_unbalanced_parentheses(self, tokens: list) -> None:
-        """Check query for unbalanced parentheses."""
-        i = 0
-        for token in tokens:
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                i += 1
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                if i == 0:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.UNBALANCED_PARENTHESES,
-                        position=token.position,
-                    )
-                else:
-                    i -= 1
-        if i > 0:
-            # Query contains unbalanced opening parentheses
-            i = 0
-            for token in reversed(tokens):
-                if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                    i += 1
-                if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    if i == 0:
-                        self.parser.add_linter_message(
-                            QueryErrorCode.UNBALANCED_PARENTHESES,
-                            position=token.position,
-                        )
-                    else:
-                        i -= 1
-
     def _check_invalid_token_sequence(self, tokens: list) -> None:
         """Check token list for invalid token sequences."""
-        for i in range(0, len(tokens) + 1):
+        for i, token in enumerate(tokens):
+            # Check the last token
             if i == len(tokens):
                 if tokens[i - 1].type in [
                     TokenTypes.PARENTHESIS_OPEN,
@@ -110,16 +82,16 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
                 break
 
-            token_type = tokens[i].type  # if i < len(tokens) else None
+            token_type = token.type
+            # Check the first token
             if i == 0:
-                # Skip first token
                 if token_type not in [
                     TokenTypes.SEARCH_TERM,
                     TokenTypes.PARENTHESIS_OPEN,
                 ]:
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=tokens[i].position,
+                        position=token.position,
                         details=f"Cannot start with {token_type}",
                     )
                 continue
@@ -129,30 +101,28 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
                     details = "Invalid search field position"
-                    position = tokens[i].position
+                    position = token.position
 
                 elif token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
-                    position = tokens[i].position
+                    position = token.position
 
                 elif (
                     prev_type == TokenTypes.PARENTHESIS_OPEN
                     and token_type == TokenTypes.PARENTHESIS_CLOSED
                 ):
                     details = "Empty parenthesis"
-                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+                    position = (tokens[i - 1].position[0], token.position[1])
 
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
                     details = "Missing operator"
-                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+                    position = (tokens[i - 1].position[0], token.position[1])
 
                 else:
                     details = ""
-                    position = (
-                        tokens[i].position if token_type else tokens[i - 1].position
-                    )
+                    position = token.position if token_type else tokens[i - 1].position
 
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,

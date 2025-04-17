@@ -131,17 +131,6 @@ class WOSQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.TOKENIZING_FAILED, token.position
                 )
 
-    def check_operator_capitalization(self) -> None:
-        """Check if operators are capitalized."""
-        for token in self.parser.tokens:
-            if re.match(self.parser.OPERATOR_REGEX, token.value):
-                if token.value != token.value.upper():
-                    self.parser.add_linter_message(
-                        QueryErrorCode.OPERATOR_CAPITALIZATION,
-                        position=token.position,
-                    )
-                    token.value = token.value.upper()
-
     def check_implicit_near(self) -> None:
         """Check for implicit NEAR operator."""
         for token in self.parser.tokens:

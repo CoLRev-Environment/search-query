@@ -22,6 +22,8 @@ class QueryStringParser(ABC):
 
     # Higher number=higher precedence
     PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
+    # Note: override the following:
+    OPERATOR_REGEX = r"^(AND|and|OR|or|NOT|not)$"
 
     def __init__(
         self,

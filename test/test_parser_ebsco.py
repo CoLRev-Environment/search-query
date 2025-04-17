@@ -191,7 +191,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "position": (),
+                    "position": (0, 1),
                     "details": "",
                 }
             ],
@@ -206,7 +206,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": (3, 6),
-                    "details": "",
+                    "details": "Invalid operator position",
                 }
             ],
         ),

@@ -6,6 +6,7 @@ import re
 
 import search_query.parser_base
 from search_query.constants import QueryErrorCode
+from search_query.constants import TokenTypes
 
 
 # Could indeed be a general Validator class
@@ -23,41 +24,45 @@ class QueryStringLinter:
         self.search_field_general = parser.search_field_general
         self.parser = parser
 
-    def check_operator(self) -> None:
-        """Check for operators written in not all capital letters."""
+    def check_operator_capitalization(self) -> None:
+        """Check if operators are capitalized."""
+        for token in self.parser.tokens:
+            if re.match(self.parser.OPERATOR_REGEX, token.value):
+                if token.value != token.value.upper():
+                    self.parser.add_linter_message(
+                        QueryErrorCode.OPERATOR_CAPITALIZATION,
+                        position=token.position,
+                    )
+                    token.value = token.value.upper()
 
-        for match in re.finditer(
-            self.FAULTY_OPERATOR_REGEX, self.query_str, flags=re.IGNORECASE
-        ):
-            operator = match.group()
-            start, end = match.span()
-            if operator != operator.upper():
-                self.query_str = (
-                    self.query_str[:start] + operator.upper() + self.query_str[end:]
-                )
-
-                self.parser.add_linter_message(
-                    QueryErrorCode.OPERATOR_CAPITALIZATION,
-                    (start, end),
-                )
-
-    def check_parenthesis(self) -> None:
-        """Check if the string has the same amount of '(' as well as ')'."""
-
-        open_count = 0
-        close_count = 0
-
-        for match in re.finditer(self.PARENTHESIS_REGEX, self.query_str):
-            parenthesis = match.group()
-
-            if parenthesis == "(":
-                open_count += 1
-
-            if parenthesis == ")":
-                close_count += 1
-
-        if open_count != close_count:
-            self.parser.add_linter_message(QueryErrorCode.UNBALANCED_PARENTHESES, ())
+    def check_unbalanced_parentheses(self) -> None:
+        """Check query for unbalanced parentheses."""
+        i = 0
+        for token in self.parser.tokens:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                i += 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                if i == 0:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.UNBALANCED_PARENTHESES,
+                        position=token.position,
+                    )
+                else:
+                    i -= 1
+        if i > 0:
+            # Query contains unbalanced opening parentheses
+            i = 0
+            for token in reversed(self.parser.tokens):
+                if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                    i += 1
+                if token.type == TokenTypes.PARENTHESIS_OPEN:
+                    if i == 0:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.UNBALANCED_PARENTHESES,
+                            position=token.position,
+                        )
+                    else:
+                        i -= 1
 
 
 class QueryListValidator:
