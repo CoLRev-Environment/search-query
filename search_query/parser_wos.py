@@ -24,6 +24,8 @@ from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
 
+# pylint: disable=duplicate-code
+
 
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
