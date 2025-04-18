@@ -46,39 +46,28 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def validate_tokens(self, tokens: list) -> list:
+    def validate_tokens(self) -> None:
         """Validate token list"""
+
         self.check_unbalanced_parentheses()
-        self._check_invalid_token_sequence(tokens)
+        self._check_invalid_token_sequence()
+        self._check_invalid_characters()
+        self._check_invalid_proximity_operator()
+        self.add_artificial_parentheses_for_operator_precedence()
 
-        for index, token in enumerate(tokens):
-            if token.type == TokenTypes.SEARCH_TERM:
-                self._check_invalid_characters(token)
-                if "*" in token.value:
-                    self._check_invalid_wildcard(token)
-
-            if token.type == TokenTypes.FIELD:
-                if ":~" in token.value:
-                    self._check_invalid_proximity_operator(index, tokens)
-
-            if token.type == TokenTypes.LOGIC_OPERATOR:
-                self._check_precedence(index, tokens)
-
-        return tokens
-
-    def _check_invalid_token_sequence(self, tokens: list) -> None:
+    def _check_invalid_token_sequence(self) -> None:
         """Check token list for invalid token sequences."""
-        for i, token in enumerate(tokens):
+        for i, token in enumerate(self.parser.tokens):
             # Check the last token
-            if i == len(tokens):
-                if tokens[i - 1].type in [
+            if i == len(self.parser.tokens):
+                if self.parser.tokens[i - 1].type in [
                     TokenTypes.PARENTHESIS_OPEN,
                     TokenTypes.LOGIC_OPERATOR,
                 ]:
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=tokens[i - 1].position,
-                        details=f"Cannot end with {tokens[i-1].type}",
+                        position=self.parser.tokens[i - 1].position,
+                        details=f"Cannot end with {self.parser.tokens[i-1].type}",
                     )
                 break
 
@@ -96,7 +85,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
                 continue
 
-            prev_type = tokens[i - 1].type
+            prev_type = self.parser.tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
@@ -112,17 +101,27 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     and token_type == TokenTypes.PARENTHESIS_CLOSED
                 ):
                     details = "Empty parenthesis"
-                    position = (tokens[i - 1].position[0], token.position[1])
+                    position = (
+                        self.parser.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
 
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
                     details = "Missing operator"
-                    position = (tokens[i - 1].position[0], token.position[1])
+                    position = (
+                        self.parser.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
 
                 else:
                     details = ""
-                    position = token.position if token_type else tokens[i - 1].position
+                    position = (
+                        token.position
+                        if token_type
+                        else self.parser.tokens[i - 1].position
+                    )
 
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -130,41 +129,29 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
 
-    def _check_precedence(self, index: int, tokens: list) -> None:
-        """Check whether token list contains unspecified precedence
-        (OR & AND operator in the same subquery)"""
-        i = 0
-        for token in reversed(tokens[:index]):
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                if i == 0:
-                    return
-                i -= 1
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                i += 1
-            if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
-                for operator_group in [{"AND", "&"}, {"OR", "|"}]:
-                    if tokens[index].value.upper() in operator_group:
-                        if token.value.upper() not in operator_group:
-                            self.parser.add_linter_message(
-                                QueryErrorCode.IMPLICIT_PRECEDENCE,
-                                position=tokens[index].position,
-                            )
-
-    def _check_invalid_characters(self, token: Token) -> None:
+    def _check_invalid_characters(self) -> None:
         """Check a search term for invalid characters"""
         invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
-        value = token.value
-        # Iterate over term to identify invalid characters
-        # and replace them with whitespace
-        for i, char in enumerate(token.value):
-            if char in invalid_characters:
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_CHARACTER, position=token.position
-                )
-                value = value[:i] + " " + value[i + 1 :]
-        # Update token
-        if value != token.value:
-            token.value = value
+
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+            value = token.value
+
+            # Iterate over term to identify invalid characters
+            # and replace them with whitespace
+            for i, char in enumerate(token.value):
+                if char in invalid_characters:
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_CHARACTER, position=token.position
+                    )
+                    value = value[:i] + " " + value[i + 1 :]
+            # Update token
+            if value != token.value:
+                token.value = value
+
+            if "*" in token.value:
+                self._check_invalid_wildcard(token)
 
     def _check_invalid_wildcard(self, token: Token) -> None:
         """Check search term for invalid wildcard *"""
@@ -178,44 +165,48 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.INVALID_WILDCARD_USE, token.position
             )
 
-    def _check_invalid_proximity_operator(self, index: int, tokens: list) -> None:
+    def _check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
-        field_token = tokens[index]
-        search_phrase_token = tokens[index - 1]
 
-        match = re.match(self.PROXIMITY_REGEX, field_token.value)
-        if match:
-            field_value, prox_value = match.groups()
-            field_value = "[" + field_value + "]"
-            if not prox_value.isdigit():
+        for index, token in enumerate(self.parser.tokens):
+            if ":~" not in token.value:
+                continue
+            field_token = self.parser.tokens[index]
+            search_phrase_token = self.parser.tokens[index - 1]
+
+            match = re.match(self.PROXIMITY_REGEX, field_token.value)
+            if match:
+                field_value, prox_value = match.groups()
+                field_value = "[" + field_value + "]"
+                if not prox_value.isdigit():
+                    self.parser.add_linter_message(
+                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                    )
+                else:
+                    nr_of_terms = len(search_phrase_token.value.strip('"').split())
+                    if not (
+                        search_phrase_token.value[0] == '"'
+                        and search_phrase_token.value[-1] == '"'
+                        and nr_of_terms >= 2
+                    ):
+                        self.parser.add_linter_message(
+                            QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                        )
+
+                    if self.parser.map_search_field(field_value) not in {
+                        "[tiab]",
+                        Fields.TITLE,
+                        Fields.AFFILIATION,
+                    }:
+                        self.parser.add_linter_message(
+                            QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                        )
+                # Update search field token
+                self.parser.tokens[index].value = field_value
+            else:
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                 )
-            else:
-                nr_of_terms = len(search_phrase_token.value.strip('"').split())
-                if not (
-                    search_phrase_token.value[0] == '"'
-                    and search_phrase_token.value[-1] == '"'
-                    and nr_of_terms >= 2
-                ):
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                    )
-
-                if self.parser.map_search_field(field_value) not in {
-                    "[tiab]",
-                    Fields.TITLE,
-                    Fields.AFFILIATION,
-                }:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                    )
-            # Update search field token
-            tokens[index].value = field_value
-        else:
-            self.parser.add_linter_message(
-                QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-            )
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""

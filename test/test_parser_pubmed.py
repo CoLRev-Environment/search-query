@@ -8,6 +8,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import SearchQueryException
+from search_query.linter_pubmed import PubmedQueryStringLinter
 from search_query.parser_pubmed import PubmedParser
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
@@ -88,7 +89,7 @@ def test_parser_pubmed(query_str: str, expected_translation: str) -> None:
         (
             '"health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")',
             QueryErrorCode.IMPLICIT_PRECEDENCE,
-            (49, 52),
+            (18, 20),
         ),
         (
             '"healthcare" AND "Industry 4.0"',
@@ -157,7 +158,7 @@ def test_linter_pubmed(
     error: QueryErrorCode,
     position: Tuple,
 ) -> None:
-    pubmed_parser = PubmedParser(query_str, "")
+    pubmed_parser = PubmedParser(query_str, search_field_general="")
     try:
         pubmed_parser.parse()
     except SearchQueryException:
@@ -167,3 +168,49 @@ def test_linter_pubmed(
         message["code"] == error.code and message["position"] == position
         for message in pubmed_parser.linter_messages
     ), print(pubmed_parser.linter_messages)
+
+
+@pytest.mark.parametrize(
+    "query_string, expected_output_string",
+    [
+        (
+            '"health tracking" OR "remote monitoring" AND "wearable device"',
+            '"health tracking" OR ( "remote monitoring" AND "wearable device" ) ',
+        ),
+        (
+            '"AI" AND "robotics" OR "ethics"',
+            '( "AI" AND "robotics" ) OR "ethics" ',
+        ),
+        (
+            '"AI" OR "robotics" AND "ethics"',
+            '"AI" OR ( "robotics" AND "ethics" ) ',
+        ),
+        (
+            '"AI" NOT "robotics" OR "ethics"',
+            '( "AI" NOT "robotics" ) OR "ethics" ',
+        ),
+        (
+            '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
+            '( "digital health" AND ( "apps" OR ( "wearables" NOT "privacy" ) ) ) OR "ethics" ',
+        ),
+        (
+            '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
+            '"eHealth" OR ( "digital health" AND ( "bias" NOT "equity" ) ) OR "policy" ',
+        ),
+    ],
+)
+def test_add_artificial_parentheses_for_operator_precedence_pubmed(
+    query_string: str, expected_output_string: str
+) -> None:
+    """Test PubMed parser normalization for operator precedence via artificial parentheses."""
+    pubmed_parser = PubmedParser(query_string, "")
+    pubmed_parser.tokenize()
+
+    linter = PubmedQueryStringLinter(pubmed_parser)
+    linter.validate_tokens()
+
+    actual_tokens = pubmed_parser.tokens
+    actual_string = "".join(f"{token.value} " for token in actual_tokens)
+
+    print("actual string: " + actual_string)
+    assert actual_string == expected_output_string

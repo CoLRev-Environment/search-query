@@ -7,8 +7,10 @@ from typing import Tuple
 
 import pytest
 
+from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
@@ -107,9 +109,10 @@ def test_add_artificial_parentheses_for_operator_precedence(
     """Test EBSCO parser tokenization."""
     ebsco_parser = EBSCOParser(query_string, "")
     ebsco_parser.tokenize()
-    ebsco_parser.add_artificial_parentheses_for_operator_precedence()
-    actual_tokens = ebsco_parser.tokens
 
+    linter = EBSCOQueryStringLinter(ebsco_parser)
+    linter.validate_tokens()
+    actual_tokens = ebsco_parser.tokens
     actual_string = "".join([f"{token.value} " for token in actual_tokens])
 
     # Assert equality with error message on failure
@@ -226,24 +229,34 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
 @pytest.mark.parametrize(
     "query_string, linter_messages",
     [
-        # 1. Unsupported search field
+        # 1. Ambiguous token
         (
-            "XY Artificial Intelligence OR AB Future",
+            "AI governance OR AB Future",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
-                    "message": "Search field is not supported for this database",
-                    "is_fatal": True,
+                    "code": "W0008",
+                    "label": "token-ambiguity",
+                    "message": "Token ambiguity",
+                    "is_fatal": False,
                     "position": (0, 2),
-                    "details": "",
+                    "details": "The token 'AI governance' (at (0, 13)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add parentheses.",
                 }
             ],
         ),
+        # Resolved ambiguity
+        (
+            '"AI governance" OR AB Future',
+            [],
+        ),
+        # Unknown search field (TODO)
+        # (
+        #     'AI "governance" OR AB Future',
+        #     [],
+        # ),
     ],
 )
 def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
-    ebsco_parser = EBSCOParser(query_string, "", mode="non-strict")
+    ebsco_parser = EBSCOParser(query_string, "", mode=LinterMode.NONSTRICT)
     ebsco_parser.parse()
     assert ebsco_parser.linter_messages == linter_messages
 
@@ -270,7 +283,7 @@ def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> No
 def test_linter_ebsco_general_search_field(
     query_string: str, linter_messages: list
 ) -> None:
-    ebsco_parser = EBSCOParser(query_string, "AB", mode="strict")
+    ebsco_parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
     try:
         ebsco_parser.parse()
     except Exception:

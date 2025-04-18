@@ -1,10 +1,14 @@
 """Web-of-Science linter unit tests."""
 import unittest
 
+import pytest
+
+from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_wos import WOSParser
+from search_query.utils import print_tokens
 
 # ruff: noqa: E501
 # flake8: noqa: E501
@@ -376,7 +380,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR/10 term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range(1)
+        linter.check_near_distance_in_range()
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_near_distance_out_of_range(self) -> None:
@@ -397,7 +401,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR/20 term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range(1)
+        linter.check_near_distance_in_range()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -426,7 +430,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range(0)
+        linter.check_near_distance_in_range()
         self.assertEqual(len(parser.linter_messages), 0)
 
     def test_no_unsupported_wildcards(self) -> None:
@@ -489,12 +493,10 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             - The message in the linter message should indicate a standalone wildcard.
             - The position in the linter message should be (5, 6).
         """
-        parser = WOSParser('term1 "?" term2')
+        parser = WOSParser('term1 AND "?"')
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_wildcards(
-            Token(value='"?"', type=TokenTypes.SEARCH_TERM, position=(0, 3))
-        )
+        linter.check_wildcards()
         self.assertEqual(len(parser.linter_messages), 1)
         self.assertEqual(
             parser.linter_messages[0],
@@ -504,7 +506,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
                 "details": "",
                 "label": "wildcard-standalone",
                 "message": "Wildcard cannot be standalone.",
-                "position": (0, 3),
+                "position": (10, 13),
             },
         )
 
@@ -838,170 +840,6 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             },
         )
 
-    def test_handle_multiple_same_level_operators_change(self) -> None:
-        """
-        Test the handle_multiple_same_level_operators method of the WOSQueryStringLinter class.
-
-        This test checks if the linter correctly identifies and handles multiple operators
-        at the same level in a query string. It verifies that the linter sets the
-        multiple_same_level_operators attribute to True and adds the appropriate message
-        to the linter_messages list.
-
-        The test uses the following tokens:
-        - ("term1", (0, 5))
-        - ("AND", (5, 8))
-        - ("term2", (8, 13))
-        - ("OR", (13, 15))
-        - ("term3", (15, 20))
-
-        The expected linter message is:
-        - rule: "F0007"
-        - message: "The operator changed at the same level. Please introduce parentheses."
-        - position: (13, 15)
-        """
-
-        tokens = [
-            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
-            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
-            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(8, 13)),
-            Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(13, 15)),
-            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(15, 20)),
-        ]
-        parser = WOSParser("term1 AND term2 OR term3")
-        linter = WOSQueryStringLinter(parser)
-        linter.handle_multiple_same_level_operators(tokens, 0)
-        self.assertEqual(
-            parser.linter_messages[0],
-            {
-                "code": "W0007",
-                "is_fatal": False,
-                "details": "",
-                "label": "implicit-precedence",
-                "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "position": (13, 15),
-            },
-        )
-
-    def test_handle_multiple_same_level_operators_issue(self) -> None:
-        """
-        Test case for handle_multiple_same_level_operators with issues.
-
-        This test initializes a WOSQueryStringLinter object with a query string containing
-        multiple operators at the same level with issues. It verifies that the linter
-        correctly identifies the issue with the operators.
-
-        Assertions:
-            - The linter should detect issues with the operators.
-            - The linter messages list should contain exactly one message.
-            - The rule in the linter message should be "F0007".
-            - The message in the linter message should indicate operator change at the same level.
-            - The position in the linter message should be (13, 17).
-        """
-        tokens = [
-            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
-            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
-            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(8, 13)),
-            Token(value="NEAR", type=TokenTypes.LOGIC_OPERATOR, position=(13, 17)),
-            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(17, 22)),
-        ]
-        parser = WOSParser("term1 AND term2 NEAR term3")
-        linter = WOSQueryStringLinter(parser)
-        linter.handle_multiple_same_level_operators(tokens, 0)
-        self.assertEqual(len(parser.linter_messages), 1)
-        self.assertEqual(
-            parser.linter_messages[0],
-            {
-                "code": "W0007",
-                "is_fatal": False,
-                "details": "",
-                "label": "implicit-precedence",
-                "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "position": (13, 17),
-            },
-        )
-
-    def test_handle_multiple_same_level_operators_nested_no_issue(self) -> None:
-        """
-        Test case for handling multiple same level operators
-        within nested parentheses without any issues.
-
-        This test verifies that the WOSQueryStringLinter correctly
-        handles a query with multiple same level operators
-        (AND, OR) nested within parentheses and does not flag any issues.
-
-        Steps:
-        1. Define a list of tokens representing the query "term1 AND (term2 OR term3)".
-        2. Initialize the WOSQueryStringLinter with the query and an empty list for linter messages.
-        3. Call the handle_multiple_same_level_operators method on the linter instance.
-        4. Assert that the linter does not flag multiple same level operators.
-        5. Assert that no linter messages are generated.
-
-        Assertions:
-        - linter.multiple_same_level_operators should be False.
-        - len(self.linter_messages) should be 0.
-        """
-
-        tokens = [
-            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
-            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(5, 8)),
-            Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(8, 9)),
-            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(9, 14)),
-            Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(14, 16)),
-            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(16, 21)),
-            Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(21, 22)),
-        ]
-        parser = WOSParser("term1 AND (term2 OR term3)")
-        linter = WOSQueryStringLinter(parser)
-        linter.handle_multiple_same_level_operators(tokens, 0)
-        self.assertEqual(len(parser.linter_messages), 0)
-
-    def test_handle_multiple_same_level_operators_with_near(self) -> None:
-        """
-        Test the handling of multiple same-level operators with the 'NEAR' operator.
-
-        This test checks if the WOSQueryStringLinter correctly identifies and handles the
-        presence of multiple same-level operators, specifically when 'NEAR' and 'AND'
-        operators are used in the query. It verifies that the linter sets the
-        `multiple_same_level_operators` flag and adds the appropriate message to
-        `linter_messages`.
-
-        The test uses the following tokens:
-        - ("term1", (0, 5))
-        - ("NEAR/5", (5, 11))
-        - ("term2", (11, 16))
-        - ("AND", (16, 19))
-        - ("term3", (19, 24))
-
-        Assertions:
-        - `linter.multiple_same_level_operators` is set to True.
-        - The first message in `linter_messages` has:
-          - 'rule' set to "F0007".
-          - 'message' set to "The operator changed at the same level. Please introduce parentheses."
-          - 'position' set to (16, 19).
-        """
-
-        tokens = [
-            Token(value="term1", type=TokenTypes.SEARCH_TERM, position=(0, 5)),
-            Token(value="NEAR/5", type=TokenTypes.LOGIC_OPERATOR, position=(5, 11)),
-            Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(11, 16)),
-            Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(16, 19)),
-            Token(value="term3", type=TokenTypes.SEARCH_TERM, position=(19, 24)),
-        ]
-        parser = WOSParser("term1 NEAR/5 term2 AND term3")
-        linter = WOSQueryStringLinter(parser)
-        linter.handle_multiple_same_level_operators(tokens, 0)
-        self.assertEqual(
-            parser.linter_messages[0],
-            {
-                "code": "W0007",
-                "is_fatal": False,
-                "details": "",
-                "label": "implicit-precedence",
-                "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-                "position": (16, 19),
-            },
-        )
-
     def test_handle_near_without_distance(self) -> None:
         """
         Test case for handling the NEAR operator without a specified distance.
@@ -1138,6 +976,51 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             },
             parser.linter_messages,
         )
+
+
+@pytest.mark.parametrize(
+    "query_str, expected_message, expected_query",
+    [
+        (
+            "TI=(term1 OR term2 AND term3)",
+            "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+            "TI=(term1 OR TI=(term2 AND term3))",
+        ),
+        (
+            "TI=term1 AND term2 OR term3",
+            "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+            "(TI=(term1 AND term2) OR term3)",
+        ),
+        # TODO : proximity operators not yet handled by wos
+        # (
+        #     "term1 AND term2 NEAR term3",
+        #     "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        #     ""
+        # ),
+        # (
+        #     "term1 NEAR/5 term2 AND term3",
+        #     "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        #     ""
+        # ),
+    ],
+)
+def test_implicit_precedence(
+    query_str: str, expected_message: str, expected_query: str
+) -> None:
+    parser = WOSParser(query_str, mode=LinterMode.NONSTRICT)
+    query = parser.parse()
+    print_tokens(parser.tokens)
+
+    assert expected_query == query.to_string(syntax="wos")
+
+    assert len(parser.linter_messages) == 1
+    msg = parser.linter_messages[0]
+
+    assert msg["code"] == "W0007"
+    assert msg["label"] == "implicit-precedence"
+    assert msg["message"] == expected_message
+    assert msg["is_fatal"] is False
+    assert msg["details"] == ""
 
 
 if __name__ == "__main__":

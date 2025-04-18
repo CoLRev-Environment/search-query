@@ -36,7 +36,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         super().__init__(parser=parser)
 
-    def pre_linting(self) -> None:
+    def validate_tokens(self) -> None:
         """Performs a pre-linting"""
 
         self.check_search_fields_from_json()
@@ -46,38 +46,32 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_year_format()
         self.check_fields()
         self.check_order_of_tokens()
+        self._check_year_without_search_field()
+        self.check_near_distance_in_range()
+        self.check_wildcards()
+        self.check_unsupported_wildcards()
+        self.check_unmatched_parentheses()
+        self.add_artificial_parentheses_for_operator_precedence()
 
-        index = 0
+    def _check_year_without_search_field(self) -> None:
         year_search_field_detected = False
         count_search_fields = 0
-        while index < len(self.parser.tokens) - 1:
-            token = self.parser.tokens[index]
-
-            if "NEAR" in token.value:
-                self.check_near_distance_in_range(index=index)
-
+        for token in self.parser.tokens:
             if re.match(self.parser.YEAR_REGEX, token.value):
                 year_search_field_detected = True
 
             if re.match(self.parser.SEARCH_FIELD_REGEX, token.value):
                 count_search_fields += 1
 
-            self.check_wildcards(token=token)
-
-            index += 1
-
-        self.check_unsupported_wildcards()
-
-        self.handle_multiple_same_level_operators(tokens=self.parser.tokens, index=0)
-
         if year_search_field_detected and count_search_fields < 2:
             # Year detected without other search fields
             self.parser.add_linter_message(
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_FIELD,
-                position=token.position,
+                position=(
+                    self.parser.tokens[0].position[0],
+                    self.parser.tokens[-1].position[1],
+                ),
             )
-
-        self.check_unmatched_parentheses()
 
     def check_search_fields_from_json(
         self,
@@ -122,14 +116,6 @@ class WOSQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         position=token.position,
                     )
-
-    def check_unknown_token_types(self) -> None:
-        """Check for unknown token types."""
-        for token in self.parser.tokens:
-            if token.type == TokenTypes.UNKNOWN:
-                self.parser.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, token.position
-                )
 
     def check_implicit_near(self) -> None:
         """Check for implicit NEAR operator."""
@@ -268,14 +254,17 @@ class WOSQueryStringLinter(QueryStringLinter):
                     position=next_token.position,
                 )
 
-    def check_near_distance_in_range(self, index: int) -> None:
+    def check_near_distance_in_range(self) -> None:
         """Check for NEAR with a specified distance out of range."""
-        near_distance = re.findall(r"\d{1,2}", self.parser.tokens[index].value)
-        if near_distance and int(near_distance[0]) > 15:
-            self.parser.add_linter_message(
-                QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
-                position=self.parser.tokens[index].position,
-            )
+        for token in self.parser.tokens:
+            if "NEAR" not in token.value:
+                continue
+            near_distance = re.findall(r"\d{1,2}", token.value)
+            if near_distance and int(near_distance[0]) > 15:
+                self.parser.add_linter_message(
+                    QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
+                    position=token.position,
+                )
 
     def check_unsupported_wildcards(self) -> None:
         """Check for unsupported characters in the search string."""
@@ -287,38 +276,47 @@ class WOSQueryStringLinter(QueryStringLinter):
                 position=(match.start(), match.end()),
             )
 
-    def check_wildcards(self, token: Token) -> None:
+    def check_wildcards(self) -> None:
         """Check for the usage of wildcards in the search string."""
 
-        token_value = token.value.replace('"', "")
+        for token in self.parser.tokens:
+            token_value = token.value.replace('"', "")
 
-        # Implement constrains from Web of Science for Wildcards
-        for index, charachter in enumerate(token_value):
-            if charachter in self.WILDCARD_CHARS:
-                # Check if wildcard is left or right-handed or standalone
-                if index == 0 and len(token_value) == 1:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.WILDCARD_STANDALONE,
-                        position=token.position,
-                    )
-
-                elif len(token_value) == index + 1:
-                    # Right-hand wildcard
-                    self.check_unsupported_right_hand_wildcards(
-                        token=token, index=index
-                    )
-
-                elif index == 0 and len(token_value) > 1:
-                    # Left-hand wildcard
-                    self.check_format_left_hand_wildcards(token=token)
-
-                else:
-                    # Wildcard in the middle of the term
-                    if token_value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
+            # Implement constrains from Web of Science for Wildcards
+            for index, charachter in enumerate(token_value):
+                if charachter in self.WILDCARD_CHARS:
+                    # Check if wildcard is left or right-handed or standalone
+                    if index == 0 and len(token_value) == 1:
                         self.parser.add_linter_message(
-                            QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
+                            QueryErrorCode.WILDCARD_STANDALONE,
                             position=token.position,
                         )
+
+                    elif len(token_value) == index + 1:
+                        # Right-hand wildcard
+                        self.check_unsupported_right_hand_wildcards(
+                            token=token, index=index
+                        )
+
+                    elif index == 0 and len(token_value) > 1:
+                        # Left-hand wildcard
+                        self.check_format_left_hand_wildcards(token=token)
+
+                    else:
+                        # Wildcard in the middle of the term
+                        if token_value[index - 1] in [
+                            "/",
+                            "@",
+                            "#",
+                            ".",
+                            ":",
+                            ";",
+                            "!",
+                        ]:
+                            self.parser.add_linter_message(
+                                QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
+                                position=token.position,
+                            )
 
     def check_unsupported_right_hand_wildcards(self, token: Token, index: int) -> None:
         """Check for unsupported right-hand wildcards in the search string."""
@@ -365,48 +363,3 @@ class WOSQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.DOI_FORMAT_INVALID,
                 position=token.position,
             )
-
-    def handle_multiple_same_level_operators(self, tokens: list, index: int) -> int:
-        """Handle multiple same level operators."""
-        # This function introduces additional parantheses to the query tree
-        # based on the precedence of the operators.
-        # Precedence: NEAR > SAME > NOT > AND > OR
-        operator_list: typing.List[str] = []
-        clear_list = False
-        while index < len(tokens):
-            token = tokens[index]
-
-            if token.value == "(":
-                index = self.handle_multiple_same_level_operators(
-                    tokens=tokens, index=index + 1
-                )
-
-            if token.value == ")":
-                return index
-
-            # Operator change
-            if (
-                operator_list
-                and re.match(self.parser.OPERATOR_REGEX, token.value.upper())
-                and token.value.upper() not in operator_list
-                and token.value.upper() != "NOT"
-            ):
-                self.parser.add_linter_message(
-                    QueryErrorCode.IMPLICIT_PRECEDENCE,
-                    position=token.position,
-                )
-
-                clear_list = True
-
-            # Clear the operator list after inserting parentheses
-            if clear_list:
-                operator_list.clear()
-                clear_list = False
-
-            if (
-                token.value.upper() in ["NEAR", "AND", "OR", "NOT"]
-                or "NEAR" in token.value.upper()
-            ):
-                operator_list.append(token.value.upper())
-            index += 1
-        return index

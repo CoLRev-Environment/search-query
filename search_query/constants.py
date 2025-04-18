@@ -601,6 +601,7 @@ class QueryErrorCode(Enum):
         "explicit parentheses are recommended)",
         "",
     )
+    TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments

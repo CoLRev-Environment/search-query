@@ -59,6 +59,14 @@ class WOSParser(QueryStringParser):
         ]
     )
 
+    OPERATOR_PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
+
     def __init__(
         self,
         query_str: str,
@@ -70,19 +78,6 @@ class WOSParser(QueryStringParser):
             query_str=query_str, search_field_general=search_field_general, mode=mode
         )
         self.query_linter = WOSQueryStringLinter(parser=self)
-
-    def _handle_fully_quoted_query_str(self) -> None:
-        if (
-            '"' == self.query_str[0]
-            and '"' == self.query_str[-1]
-            and "(" in self.query_str
-        ):
-            self.add_linter_message(
-                QueryErrorCode.QUERY_IN_QUOTES,
-                position=(-1, -1),
-            )
-            # remove quotes before tokenization
-            self.query_str = self.query_str[1:-1]
 
         # if self.parser.tokens[0].value in [
         #     "Web of Science",
@@ -105,8 +100,6 @@ class WOSParser(QueryStringParser):
 
         if self.query_str is None:
             raise ValueError("No string provided to parse.")
-
-        self._handle_fully_quoted_query_str()
 
         # Parse tokens and positions based on regex pattern
         for match in re.finditer(self.pattern, self.query_str):
@@ -232,7 +225,7 @@ class WOSParser(QueryStringParser):
 
                 # Set search field to ALL if no search field is given
                 if not search_field:
-                    search_field = SearchField("All", position=None)
+                    search_field = SearchField(Fields.ALL, position=None)
 
                 # Check if the token is ISSN or ISBN
                 if search_field.value in WOSSearchFieldList.issn_isbn_list:
@@ -545,15 +538,16 @@ class WOSParser(QueryStringParser):
     def pre_linting(self) -> None:
         """Pre-linting of the query string."""
         # Check if there is an unsolvable error in the query string
-        self.query_linter.pre_linting()
+
+        self.query_linter.validate_tokens()
         self.fatal_linter_err = any(e["is_fatal"] for e in self.linter_messages)
 
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.linter_messages.clear()
+        self.query_linter.handle_fully_quoted_query_str()
+
         self.tokenize()
-        self.add_artificial_parentheses_for_operator_precedence()
 
         self.pre_linting()
 

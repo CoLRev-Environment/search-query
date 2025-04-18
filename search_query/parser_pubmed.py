@@ -363,11 +363,11 @@ class PubmedParser(QueryStringParser):
         validator = PubmedQueryStringLinter(self)
         # Tokenization
         self.tokenize()
-        refined_tokens = validator.validate_tokens(self.tokens.copy())
+        validator.validate_tokens()
         self.check_linter_status()
 
         # Parsing
-        query = self.parse_query_tree(refined_tokens)
+        query = self.parse_query_tree(self.tokens)
         validator.validate_query_tree(query)
         self.check_linter_status()
 

@@ -1122,7 +1122,7 @@ def test_artificial_parentheses() -> None:
         "code": "W0007",
         "label": "implicit-precedence",
         "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
-        "position": (-1, -1),
+        "position": (7, 9),
         "is_fatal": False,
         "details": "",
     }
