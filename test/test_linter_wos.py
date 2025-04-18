@@ -18,7 +18,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
     """Test suite for the WOSQueryStringLinter class."""
 
     def setUp(self) -> None:
-        self.linter_messages: list = []
+        self.messages: list = []
 
     def test_no_parentheses(self) -> None:
         """
@@ -30,12 +30,12 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         Assertions:
             - The `check_unmatched_parentheses` method should return False.
-            - The length of `self.linter_messages` should be 0.
+            - The length of `self.messages` should be 0.
         """
         parser = WOSParser("test query")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_matched_parentheses(self) -> None:
         """
@@ -53,7 +53,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("(test query)")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_unmatched_opening_parenthesis(self) -> None:
         """
@@ -74,9 +74,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("(test query")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1002",
                 "is_fatal": True,
@@ -106,9 +106,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("test query)")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1003",
                 "is_fatal": True,
@@ -134,9 +134,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("(test query))")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1003",
                 "is_fatal": True,
@@ -159,7 +159,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         Assertions:
             - The linter's check_unmatched_parentheses method returns True.
-            - The length of linter_messages is 1.
+            - The length of messages is 1.
             - The rule in the first linter message is "F0002".
             - The message in the first linter message is "Unmatched opening parenthesis '('."
             - The position in the first linter message is (0, 1).
@@ -167,9 +167,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("((test query)")
         linter = WOSQueryStringLinter(parser)
         linter.check_unmatched_parentheses()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1002",
                 "is_fatal": True,
@@ -201,9 +201,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1004",
                 "is_fatal": True,
@@ -240,9 +240,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
-        self.assertEqual(len(parser.linter_messages), 2)
+        self.assertEqual(len(linter.messages), 2)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             # TODO : this shows that the message can be ambiguous
             {
                 "code": "F1004",
@@ -283,9 +283,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1004",
                 "is_fatal": True,
@@ -318,9 +318,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1004",
                 "is_fatal": True,
@@ -352,9 +352,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_order_of_tokens()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F1004",
                 "is_fatal": True,
@@ -381,7 +381,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_near_distance_out_of_range(self) -> None:
         """
@@ -402,9 +402,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2007",
                 "is_fatal": True,
@@ -431,7 +431,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_near_distance_in_range()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_no_unsupported_wildcards(self) -> None:
         """
@@ -447,7 +447,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 term2")
         linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_unsupported_wildcards(self) -> None:
         """
@@ -466,9 +466,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 !term2")
         linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2001",
                 "label": "wildcard-unsupported",
@@ -497,9 +497,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
         linter.check_wildcards()
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2006",
                 "is_fatal": True,
@@ -524,7 +524,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 te?m2")
         linter = WOSQueryStringLinter(parser)
         linter.check_unsupported_wildcards()
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_no_unsupported_right_hand_wildcards(self) -> None:
         """
@@ -542,7 +542,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_unsupported_right_hand_wildcards(
             Token(value="term2*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 5
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_unsupported_right_hand_wildcard_after_special_character(self) -> None:
         """
@@ -566,9 +566,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_unsupported_right_hand_wildcards(
             Token(value="term2!*", type=TokenTypes.SEARCH_TERM, position=(6, 7)), 6
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2005",
                 "is_fatal": True,
@@ -604,9 +604,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_unsupported_right_hand_wildcards(
             Token(value="te*", type=TokenTypes.SEARCH_TERM, position=(0, 2)), 2
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2003",
                 "is_fatal": True,
@@ -633,7 +633,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_format_left_hand_wildcards(
             Token(value="term2", type=TokenTypes.SEARCH_TERM, position=(6, 11))
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_valid_left_hand_wildcard(self) -> None:
         """
@@ -651,7 +651,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_format_left_hand_wildcards(
             Token(value="*term2", type=TokenTypes.SEARCH_TERM, position=(6, 12))
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_invalid_left_hand_wildcard(self) -> None:
         """
@@ -673,9 +673,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_format_left_hand_wildcards(
             Token(value="*te", type=TokenTypes.SEARCH_TERM, position=(0, 2))
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2004",
                 "is_fatal": True,
@@ -702,7 +702,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_issn_isbn_format(
             Token(value="1234-5678", type=TokenTypes.SEARCH_TERM, position=(0, 3))
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_invalid_issn_format(self) -> None:
         """
@@ -723,9 +723,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_issn_isbn_format(
             Token(value="1234-567", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2008",
                 "is_fatal": True,
@@ -754,7 +754,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
                 value="978-3-16-148410-0", type=TokenTypes.SEARCH_TERM, position=(0, 3)
             ),
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_invalid_isbn_format(self) -> None:
         """
@@ -777,9 +777,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
                 value="978-3-16-148410", type=TokenTypes.SEARCH_TERM, position=(0, 3)
             ),
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2008",
                 "is_fatal": True,
@@ -806,7 +806,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_doi_format(
             Token(value="10.1000/xyz123", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
-        self.assertEqual(len(parser.linter_messages), 0)
+        self.assertEqual(len(linter.messages), 0)
 
     def test_invalid_doi_format(self) -> None:
         """
@@ -827,9 +827,9 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         linter.check_doi_format(
             Token(value="12.1000/xyz", type=TokenTypes.SEARCH_TERM, position=(0, 3)),
         )
-        self.assertEqual(len(parser.linter_messages), 1)
+        self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2009",
                 "is_fatal": True,
@@ -851,7 +851,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         linter.check_implicit_near()
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "W0006",
                 "is_fatal": False,
@@ -874,7 +874,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         linter.check_operator_capitalization()
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "W0005",
                 "is_fatal": False,
@@ -897,7 +897,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         linter.check_year_format()
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2002",
                 "is_fatal": True,
@@ -919,7 +919,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         linter.check_fields()
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2011",
                 "label": "search-field-unsupported",
@@ -941,7 +941,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         linter.check_year_format()
         self.assertEqual(
-            parser.linter_messages[0],
+            linter.messages[0],
             {
                 "code": "F2010",
                 "is_fatal": True,
@@ -974,7 +974,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
                 "details": "",
                 "position": (0, 3),
             },
-            parser.linter_messages,
+            linter.messages,
         )
 
 
@@ -1013,8 +1013,8 @@ def test_implicit_precedence(
 
     assert expected_query == query.to_string(syntax="wos")
 
-    assert len(parser.linter_messages) == 1
-    msg = parser.linter_messages[0]
+    assert len(parser.linter.messages) == 1
+    msg = parser.linter.messages[0]
 
     assert msg["code"] == "W0007"
     assert msg["label"] == "implicit-precedence"

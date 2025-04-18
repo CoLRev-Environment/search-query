@@ -25,8 +25,8 @@ def run_linter(search_string: str, *, syntax: str, search_field_general: str) ->
     try:
         parser.parse()
     except Exception:  # pylint: disable=broad-except
-        assert parser.linter_messages
-    return parser.linter_messages
+        assert parser.linter.messages
+    return parser.linter.messages
 
 
 def pre_commit_hook() -> int:
@@ -48,14 +48,14 @@ def pre_commit_hook() -> int:
         )
         return ExitCodes.FAIL
 
-    linter_messages = run_linter(
+    messages = run_linter(
         search_file.search_string,
         syntax=search_file.platform,
         search_field_general=search_file.search_field,
     )
 
-    if linter_messages:
-        for message in linter_messages:
+    if messages:
+        for message in messages:
             color = Colors.ORANGE
             if message["level"] == "error":
                 color = Colors.RED

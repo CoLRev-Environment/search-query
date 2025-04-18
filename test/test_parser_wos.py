@@ -5,6 +5,7 @@ import typing
 import pytest
 
 from search_query.constants import Fields
+from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import FatalLintingException
@@ -1042,47 +1043,47 @@ def test_query_parsing_basic_vs_advanced() -> None:
         query_str="digital AND online", search_field_general="ALL=", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 0
+    assert len(parser.linter.messages) == 0
 
     # Search field could be nested
     parser = WOSParser(
         query_str="(TI=digital AND AB=online)", search_field_general="ALL=", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 0
+    assert len(parser.linter.messages) == 0
 
     # Advanced search
     parser = WOSParser(
         query_str="ALL=(digital AND online)", search_field_general="", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 0
+    assert len(parser.linter.messages) == 0
 
     parser = WOSParser(
         query_str="(ALL=digital AND ALL=online)", search_field_general="", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 0
+    assert len(parser.linter.messages) == 0
 
     # ERROR: Basic search without search_field_general
     parser = WOSParser(query_str="digital AND online", search_field_general="", mode="")
     parser.parse()
-    assert len(parser.linter_messages) == 1
+    assert len(parser.linter.messages) == 1
 
     # ERROR: Advanced search with search_field_general
     parser = WOSParser(
         query_str="ALL=(digital AND online)", search_field_general="ALL=", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 1
+    assert len(parser.linter.messages) == 1
 
     # ERROR: Advanced search with search_field_general
     parser = WOSParser(
         query_str="TI=(digital AND online)", search_field_general="ALL=", mode=""
     )
     parser.parse()
-    assert len(parser.linter_messages) == 1
-    assert parser.linter_messages[0] == {
+    assert len(parser.linter.messages) == 1
+    assert parser.linter.messages[0] == {
         "code": "E0002",
         "label": "search-field-contradiction",
         "message": "Contradictory search fields specified",
@@ -1099,7 +1100,7 @@ def test_query_in_quotes() -> None:
     parser.parse()
 
     # Assertions using standard assert statement
-    assert len(parser.linter_messages) == 1
+    assert len(parser.linter.messages) == 1
     assert parser.tokens[0].value == "TI="
 
 
@@ -1117,8 +1118,8 @@ def test_artificial_parentheses() -> None:
     assert query.children[1].children[1].value == "work"
 
     # Check if linter messages contain one entry
-    assert len(parser.linter_messages) == 1
-    assert parser.linter_messages[0] == {
+    assert len(parser.linter.messages) == 1
+    assert parser.linter.messages[0] == {
         "code": "W0007",
         "label": "implicit-precedence",
         "message": "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
@@ -1145,7 +1146,7 @@ def test_list_parser_case_2() -> None:
         list_parser.parse()
     except FatalLintingException:
         pass
-    assert list_parser.linter_messages[WOSListParser.GENERAL_ERROR_POSITION][0] == {
+    assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F3001",
         "is_fatal": True,
         "label": "missing-root-node",
@@ -1164,7 +1165,7 @@ def test_list_parser_case_3() -> None:
         list_parser.parse()
     except FatalLintingException:
         pass
-    assert list_parser.linter_messages[WOSListParser.GENERAL_ERROR_POSITION][0] == {
+    assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F1004",
         "is_fatal": True,
         "label": "invalid-token-sequence",
@@ -1183,7 +1184,7 @@ def test_list_parser_case_4() -> None:
         list_parser.parse()
     except FatalLintingException:
         pass
-    assert list_parser.linter_messages[2][0] == {
+    assert list_parser.linter.messages[2][0] == {
         "code": "F3003",
         "is_fatal": True,
         "label": "invalid-list-reference",

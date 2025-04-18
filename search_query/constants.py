@@ -47,6 +47,9 @@ class ListTokenTypes(Enum):
     QUERY_NODE = "QUERY_NODE"
 
 
+GENERAL_ERROR_POSITION = -1
+
+
 @dataclass
 class Token:
     """Token class"""

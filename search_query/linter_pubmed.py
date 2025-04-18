@@ -64,7 +64,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     TokenTypes.PARENTHESIS_OPEN,
                     TokenTypes.LOGIC_OPERATOR,
                 ]:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                         position=self.parser.tokens[i - 1].position,
                         details=f"Cannot end with {self.parser.tokens[i-1].type}",
@@ -78,7 +78,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     TokenTypes.SEARCH_TERM,
                     TokenTypes.PARENTHESIS_OPEN,
                 ]:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                         position=token.position,
                         details=f"Cannot start with {token_type}",
@@ -123,7 +123,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         else self.parser.tokens[i - 1].position
                     )
 
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=position,
                     details=details,
@@ -142,7 +142,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             # and replace them with whitespace
             for i, char in enumerate(token.value):
                 if char in invalid_characters:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_CHARACTER, position=token.position
                     )
                     value = value[:i] + " " + value[i + 1 :]
@@ -161,9 +161,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             k = 4
         if "*" in token.value[:k]:
             # Wildcard * is invalid when applied to terms with less than 4 characters
-            self.parser.add_linter_message(
-                QueryErrorCode.INVALID_WILDCARD_USE, token.position
-            )
+            self.add_linter_message(QueryErrorCode.INVALID_WILDCARD_USE, token.position)
 
     def _check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
@@ -179,7 +177,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 field_value, prox_value = match.groups()
                 field_value = "[" + field_value + "]"
                 if not prox_value.isdigit():
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                     )
                 else:
@@ -189,7 +187,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         and search_phrase_token.value[-1] == '"'
                         and nr_of_terms >= 2
                     ):
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                         )
 
@@ -198,13 +196,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         Fields.TITLE,
                         Fields.AFFILIATION,
                     }:
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                         )
                 # Update search field token
                 self.parser.tokens[index].value = field_value
             else:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                 )
 
@@ -217,7 +215,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         """Check query tree for nested NOT queries"""
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.NESTED_NOT_QUERY, position=child.position or (-1, -1)
                 )
             self._check_nested_not_query(child)
@@ -266,13 +264,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         # Terms in AND queries follow different redundancy logic
                         # than terms in OR queries
                         if operator == Operators.AND:
-                            self.parser.add_linter_message(
+                            self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 term_a.position,
                             )
                             redundant_terms.append(term_a)
                         elif operator in {Operators.OR, Operators.NOT}:
-                            self.parser.add_linter_message(
+                            self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 term_b.position,
                             )
@@ -323,7 +321,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if search_field.value not in Fields.all() or (
             search_field.position and search_field.value == "ab"
         ):
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                 search_field.position or (-1, -1),
             )
@@ -337,23 +335,17 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if user_field_values and query_field_values:
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.SEARCH_FIELD_CONTRADICTION, (-1, -1)
                 )
             else:
                 # User-provided fields match fields in the query
-                self.parser.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, (-1, -1)
-                )
+                self.add_linter_message(QueryErrorCode.SEARCH_FIELD_REDUNDANT, (-1, -1))
 
         elif user_field_values and not query_field_values:
             # User-provided fields are missing in the query
-            self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
-            )
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1))
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
-            )
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1))

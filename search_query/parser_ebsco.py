@@ -5,11 +5,14 @@ from __future__ import annotations
 import re
 import typing
 
+from search_query.constants import GENERAL_ERROR_POSITION
+from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.linter_base import QueryListLinter
 from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -48,6 +51,18 @@ class EBSCOParser(QueryStringParser):
         "AND": 1,
         "OR": 0,
     }
+
+    def __init__(
+        self,
+        query_str: str,
+        search_field_general: str = "",
+        mode: str = LinterMode.STRICT,
+    ) -> None:
+        """Initialize the parser."""
+        super().__init__(
+            query_str=query_str, search_field_general=search_field_general, mode=mode
+        )
+        self.linter = EBSCOQueryStringLinter(self)
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
@@ -328,16 +343,16 @@ class EBSCOParser(QueryStringParser):
         for child in query.children:
             self.translate_search_fields(child)
 
-    # def print_linter_messages(self, linter_messages: list[dict]) -> None:
+    # def print_messages(self, messages: list[dict]) -> None:
     #     """Print linter messages in a readable format"""
-    #     if not linter_messages:
+    #     if not messages:
     #         print("No linter messages to display.")
     #         return
 
     #     print("Linter Messages:")
     #     print("-" * 20)
 
-    #     for message in linter_messages:
+    #     for message in messages:
     #         if not isinstance(message, dict):
     #             print(f"Invalid message format: {message}")
     #             continue
@@ -357,11 +372,7 @@ class EBSCOParser(QueryStringParser):
         # Tokenize the search string
         self.tokenize()
 
-        linter = EBSCOQueryStringLinter(self)
-        linter.validate_tokens()
-
-        # TODO : if self.linter.has_fatal_errors(): ...
-        self.fatal_linter_err = any(e["is_fatal"] for e in self.linter_messages)
+        self.linter.validate_tokens()
 
         # Parse query on basis of tokens and recursively build a query-tree
         query = self.parse_query_tree(self.tokens)
@@ -369,8 +380,8 @@ class EBSCOParser(QueryStringParser):
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
 
-        # Uncomment if linter_messages should be printed (e.g. for testing)
-        # self.print_linter_messages(self.linter_messages)
+        # Uncomment if messages should be printed (e.g. for testing)
+        # self.print_messages(self.messages)
 
         return query
 
@@ -386,6 +397,7 @@ class EBSCOListParser(QueryListParser):
             search_field_general=search_field_general,
             mode=mode,
         )
+        self.linter = QueryListLinter(parser=self, string_parser_class=EBSCOParser)
 
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
@@ -402,9 +414,9 @@ class EBSCOListParser(QueryListParser):
         # Log a linter message and return the token number
         # 1 AND 2 ... are still possible,
         # however for standardization purposes it should be S/#
-        self.add_linter_message(
+        self.linter.add_linter_message(
             QueryErrorCode.INVALID_LIST_REFERENCE,
-            list_position=QueryListParser.GENERAL_ERROR_POSITION,
+            list_position=GENERAL_ERROR_POSITION,
             position=(-1, -1),
             details="Connecting lines possibly failed. "
             "Please use this format for connection: "

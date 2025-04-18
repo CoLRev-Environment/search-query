@@ -79,7 +79,7 @@ class XYParser(QueryStringParser):
 
         # Parse a query tree from tokens (bottom-up or top-down)
 
-        # Add messages to self.linter_messages
+        # Add messages to self.messages
         # self.add_linter_message(QueryErrorCode.ADD_CODE, (start, end))
 
     def translate_search_fields(self, query: Query) -> None:
@@ -87,7 +87,7 @@ class XYParser(QueryStringParser):
 
         # Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
 
-        # Add messages to self.linter_messages if needed
+        # Add messages to self.messages if needed
         # self.add_linter_message(QueryErrorCode.ADD_CODE, (start, end))
 
     def parse(self) -> Query:
@@ -99,7 +99,7 @@ class XYParser(QueryStringParser):
         query = self.parse_query_tree(self.tokens)
         self.translate_search_fields(query)
 
-        # If self.mode == "strict", raise exception if self.linter_messages is not empty
+        # If self.mode == "strict", raise exception if self.messages is not empty
 
         return query
 

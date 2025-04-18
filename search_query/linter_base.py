@@ -25,13 +25,40 @@ class QueryStringLinter:
         self.query_str = parser.query_str
         self.search_field_general = parser.search_field_general
         self.parser = parser
+        self.messages: typing.List[dict] = []
+
+    def add_linter_message(
+        self, error: QueryErrorCode, position: tuple, details: str = ""
+    ) -> None:
+        """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and position == msg["position"]
+            for msg in self.messages
+        ):
+            return
+
+        self.messages.append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "position": position,
+                "details": details,
+            }
+        )
+
+    def has_fatal_errors(self) -> bool:
+        """Check if there are any fatal errors."""
+        return any(m["is_fatal"] for m in self.messages)
 
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
         for token in self.parser.tokens:
             if re.match(self.parser.OPERATOR_REGEX, token.value):
                 if token.value != token.value.upper():
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.OPERATOR_CAPITALIZATION,
                         position=token.position,
                     )
@@ -45,7 +72,7 @@ class QueryStringLinter:
                 i += 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if i == 0:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.UNBALANCED_PARENTHESES,
                         position=token.position,
                     )
@@ -59,7 +86,7 @@ class QueryStringLinter:
                     i += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
                     if i == 0:
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.UNBALANCED_PARENTHESES,
                             position=token.position,
                         )
@@ -70,7 +97,7 @@ class QueryStringLinter:
         """Check for unknown token types."""
         for token in self.parser.tokens:
             if token.type == TokenTypes.UNKNOWN:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED, token.position
                 )
 
@@ -81,7 +108,7 @@ class QueryStringLinter:
             and '"' == self.parser.query_str[-1]
             and "(" in self.parser.query_str
         ):
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.QUERY_IN_QUOTES,
                 position=(-1, -1),
             )
@@ -120,7 +147,7 @@ class QueryStringLinter:
 
                 # Insert open parenthesis after operator
                 while current_value < value:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.IMPLICIT_PRECEDENCE,
                         position=token.position,
                     )
@@ -268,7 +295,7 @@ class QueryStringLinter:
                 elif value < current_value:
                     # Insert close parenthesis for each point in value difference
                     while current_value > value:
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.IMPLICIT_PRECEDENCE,
                             position=self.parser.tokens[index].position,
                         )
@@ -317,18 +344,47 @@ class QueryStringLinter:
         return index, output
 
 
-class QueryListValidator:
+class QueryListLinter:
     """Class for Query List Validation"""
 
-    def __init__(self, query_list: str, search_field_general: str):
-        self.query_list = query_list
-        self.search_field_general = search_field_general
+    def __init__(
+        self,
+        parser: search_query.parser_base.QueryListParser,
+        string_parser_class: typing.Type[search_query.parser_base.QueryStringParser],
+    ):
+        self.parser = parser
+        self.messages: dict = {}
+        self.string_parser_class = string_parser_class
 
-    # Possible validations to be implemented in the future
-    def check_string_connector(self) -> None:
-        """Check string combination, e.g., replace #1 OR #2 -> S1 OR S2."""
-        raise NotImplementedError("not yet implemented")
+    def add_linter_message(
+        self,
+        error: QueryErrorCode,
+        *,
+        list_position: int,
+        position: tuple,
+        details: str = "",
+    ) -> None:
+        """Add a linter message."""
+        # do not add duplicates
+        if any(
+            error.code == msg["code"] and position == msg["position"]
+            for msg in self.messages.get(list_position, [])
+        ):
+            return
+        if list_position not in self.messages:
+            self.messages[list_position] = []
 
-    def check_comments(self) -> None:
-        """Check string for comments -> add to file comments"""
-        raise NotImplementedError("not yet implemented")
+        self.messages[list_position].append(
+            {
+                "code": error.code,
+                "label": error.label,
+                "message": error.message,
+                "is_fatal": error.is_fatal(),
+                "position": position,
+                "details": details,
+            }
+        )
+
+    def has_fatal_errors(self) -> bool:
+        """Check if there are any fatal errors."""
+        return any(d["is_fatal"] for e in self.messages.values() for d in e)

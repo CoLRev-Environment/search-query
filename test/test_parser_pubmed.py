@@ -166,8 +166,8 @@ def test_linter_pubmed(
 
     assert any(
         message["code"] == error.code and message["position"] == position
-        for message in pubmed_parser.linter_messages
-    ), print(pubmed_parser.linter_messages)
+        for message in pubmed_parser.linter.messages
+    ), print(pubmed_parser.linter.messages)
 
 
 @pytest.mark.parametrize(

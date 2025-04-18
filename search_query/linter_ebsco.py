@@ -74,7 +74,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """Check field 'Search Fields' in content."""
 
         if self.search_field_general != "" and self.parser.mode == LinterMode.STRICT:
-            self.parser.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
 
     def check_token_ambiguity(self) -> None:
         """Check for ambiguous tokens in the query."""
@@ -92,7 +92,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     + f"The {match.group()}could be a search field or a search term. "
                     + "To avoid confusion, please add parentheses."
                 )
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.TOKEN_AMBIGUITY,
                     position=(token.position[0], token.position[0] + 2),
                     details=details,
@@ -114,7 +114,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     TokenTypes.LOGIC_OPERATOR,
                     TokenTypes.SEARCH_TERM,
                 ]:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                         position=self.parser.tokens[i - 1].position,
                         details=f"Cannot end with {self.parser.tokens[i-1].type}",
@@ -129,7 +129,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     TokenTypes.FIELD,
                     TokenTypes.PARENTHESIS_OPEN,
                 ]:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                         position=token.position,
                         details=f"Cannot start with {token_type}",
@@ -174,7 +174,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         else self.parser.tokens[i - 1].position
                     )
 
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=position,
                     details=details,

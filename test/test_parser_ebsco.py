@@ -169,7 +169,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "query_string, linter_messages",
+    "query_string, messages",
     [
         # 1. Boolean operator not capitalized
         (
@@ -217,17 +217,17 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
         ("TI Artificial Intelligence AND AB Future", []),
     ],
 )
-def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
+def test_linter_ebsco(query_string: str, messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "")
     try:
         ebsco_parser.parse()
     except Exception:
         pass
-    assert ebsco_parser.linter_messages == linter_messages
+    assert ebsco_parser.linter.messages == messages
 
 
 @pytest.mark.parametrize(
-    "query_string, linter_messages",
+    "query_string, messages",
     [
         # 1. Ambiguous token
         (
@@ -255,14 +255,14 @@ def test_linter_ebsco(query_string: str, linter_messages: list) -> None:
         # ),
     ],
 )
-def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> None:
+def test_linter_ebsco_non_strict(query_string: str, messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "", mode=LinterMode.NONSTRICT)
     ebsco_parser.parse()
-    assert ebsco_parser.linter_messages == linter_messages
+    assert ebsco_parser.linter.messages == messages
 
 
 @pytest.mark.parametrize(
-    "query_string, linter_messages",
+    "query_string, messages",
     [
         # 1. Invalid token sequence (FIELD followed directly by LOGIC_OPERATOR)
         (
@@ -280,15 +280,13 @@ def test_linter_ebsco_non_strict(query_string: str, linter_messages: list) -> No
         ),
     ],
 )
-def test_linter_ebsco_general_search_field(
-    query_string: str, linter_messages: list
-) -> None:
+def test_linter_ebsco_general_search_field(query_string: str, messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
     try:
         ebsco_parser.parse()
     except Exception:
         pass
-    assert ebsco_parser.linter_messages == linter_messages
+    assert ebsco_parser.linter.messages == messages
 
 
 def test_query_parsing_1() -> None:

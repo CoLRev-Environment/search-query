@@ -3,9 +3,15 @@
 import re
 import typing
 
+from search_query.constants import GENERAL_ERROR_POSITION
+from search_query.constants import LinterMode
+from search_query.constants import ListTokenTypes
+from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.exception import FatalLintingException
+from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.parser_wos_constants import WOSSearchFieldList
 
@@ -65,7 +71,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         if year_search_field_detected and count_search_fields < 2:
             # Year detected without other search fields
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_FIELD,
                 position=(
                     self.parser.tokens[0].position[0],
@@ -81,7 +87,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         for index, token in enumerate(self.parser.tokens):
             if token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
                 if self.parser.search_field_general == "":
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_MISSING,
                         position=(-1, -1),
                     )
@@ -90,14 +96,14 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.type == TokenTypes.FIELD:
                 if index == 0 and self.parser.search_field_general != "":
                     if token.value != self.parser.search_field_general:
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
                             position=token.position,
                         )
                     else:
                         # Note : in basic search, when starting the query with a field,
                         # WOS raises a syntax error.
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_REDUNDANT,
                             position=token.position,
                         )
@@ -112,7 +118,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         for token in self.parser.tokens:
             if token.type == TokenTypes.FIELD:
                 if token.value not in valid_fields:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         position=token.position,
                     )
@@ -121,7 +127,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for implicit NEAR operator."""
         for token in self.parser.tokens:
             if token.value == "NEAR":
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.IMPLICIT_NEAR_VALUE,
                     position=token.position,
                 )
@@ -134,7 +140,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 year_token = self.parser.tokens[index + 1]
 
                 if any(char in year_token.value for char in ["*", "?", "$"]):
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.WILDCARD_IN_YEAR,
                         position=year_token.position,
                     )
@@ -149,7 +155,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                             + year_token.value[5:9]
                         )
 
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.YEAR_SPAN_VIOLATION,
                             position=year_token.position,
                         )
@@ -164,13 +170,13 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if stack:
                     stack.pop()
                 else:
-                    self.parser.add_linter_message(
+                    self.add_linter_message(
                         QueryErrorCode.UNMATCHED_CLOSING_PARENTHESIS,
                         position=(i, i + 1),
                     )
 
         for unmatched_index in stack:
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.UNMATCHED_OPENING_PARENTHESIS,
                 position=(unmatched_index, unmatched_index + 1),
             )
@@ -232,7 +238,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             # Two operators in a row
             if token.is_operator() and next_token.is_operator():
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=next_token.position,
                 )
@@ -240,7 +246,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             # Two search fields in a row
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=next_token.position,
                 )
@@ -249,7 +255,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             # Check transition
             allowed_next_types = valid_transitions.get(token.type, [])
             if next_token.type not in allowed_next_types:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=next_token.position,
                 )
@@ -261,7 +267,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 continue
             near_distance = re.findall(r"\d{1,2}", token.value)
             if near_distance and int(near_distance[0]) > 15:
-                self.parser.add_linter_message(
+                self.add_linter_message(
                     QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
                     position=token.position,
                 )
@@ -271,7 +277,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         # Web of Science does not support "!"
         for match in re.finditer(r"\!+", self.search_str):
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.WILDCARD_UNSUPPORTED,
                 position=(match.start(), match.end()),
             )
@@ -287,7 +293,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if charachter in self.WILDCARD_CHARS:
                     # Check if wildcard is left or right-handed or standalone
                     if index == 0 and len(token_value) == 1:
-                        self.parser.add_linter_message(
+                        self.add_linter_message(
                             QueryErrorCode.WILDCARD_STANDALONE,
                             position=token.position,
                         )
@@ -313,7 +319,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                             ";",
                             "!",
                         ]:
-                            self.parser.add_linter_message(
+                            self.add_linter_message(
                                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
                                 position=token.position,
                             )
@@ -322,13 +328,13 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for unsupported right-hand wildcards in the search string."""
 
         if token.value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
                 position=token.position,
             )
 
         if len(token.value) < 4:
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.WILDCARD_RIGHT_SHORT_LENGTH,
                 position=token.position,
             )
@@ -337,7 +343,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for wrong usage among left-hand wildcards in the search string."""
 
         if len(token.value) < 4:
-            self.parser.add_linter_message(
+            self.add_linter_message(
                 QueryErrorCode.WILDCARD_LEFT_SHORT_LENGTH,
                 position=token.position,
             )
@@ -348,8 +354,8 @@ class WOSQueryStringLinter(QueryStringLinter):
         if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
             self.parser.ISBN_REGEX, token_vale
         ):
-            # Add messages to self.linter_messages
-            self.parser.add_linter_message(
+            # Add messages to self.messages
+            self.add_linter_message(
                 QueryErrorCode.ISBN_FORMAT_INVALID,
                 position=token.position,
             )
@@ -358,8 +364,207 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct format of DOI."""
         token_value = token.value.replace('"', "").upper()
         if not re.match(self.parser.DOI_REGEX, token_value):
-            # Add messages to self.linter_messages
-            self.parser.add_linter_message(
+            # Add messages to self.messages
+            self.add_linter_message(
                 QueryErrorCode.DOI_FORMAT_INVALID,
                 position=token.position,
             )
+
+
+class WOSQueryListLinter(QueryListLinter):
+    """WOSQueryListLinter"""
+
+    parser: "search_query.parser_wos.WOSListParser"
+
+    def __init__(
+        self,
+        parser: "search_query.parser_wos.WOSListParser",
+        string_parser_class: typing.Type["search_query.parser_wos.WOSParser"],
+    ):
+        super().__init__(
+            parser=parser,
+            string_parser_class=string_parser_class,
+        )
+        self.messages: dict = {}
+
+    def validate_list_tokens(self) -> None:
+        """Lint the list parser."""
+
+        # try:
+        #     self.tokenize_list()
+        # except ValueError:  # may catch other errors here
+        #     self.add_linter_message(
+        #         QueryErrorCode.TOKENIZING_FAILED,
+        #         list_position=self.GENERAL_ERROR_POSITION,
+        #         position=(-1, -1),
+        #     )
+
+        missing_root = self._check_missing_root()
+        self._check_missing_operator_nodes(missing_root)
+        self._check_invalid_list_reference()
+        self._check_query_tokenization()
+        self._validate_operator_node()
+
+        if self.has_fatal_errors():
+            print("\n[FATAL:] Fatal error detected in pre-linting")
+            # Print linter messages
+            if self.parser.mode != LinterMode.STRICT and not self.has_fatal_errors():
+                print(
+                    "\n[INFO:] The following errors have been corrected by the linter:"
+                )
+
+            for level, message_list in self.messages.items():
+                print(f"\n[INFO:] Linter messages for level {level}:")
+                for msg in message_list:
+                    print(
+                        "[Linter:] "
+                        + msg["label"]
+                        + "\t"
+                        + msg["message"]
+                        + " At position "
+                        + str(msg["position"])
+                    )
+
+            # Raise an exception
+            # if the linter is in strict mode
+            # or if a fatal error has occurred
+            if (
+                self.parser.mode == LinterMode.STRICT
+                or self.has_fatal_errors()
+                and self.messages
+            ):
+                l_messages = [y for x in self.messages.values() if x for y in x if y]
+                raise FatalLintingException(
+                    message="LinterDetected",
+                    query_string=self.parser.query_list,
+                    messages=l_messages,
+                )
+
+    def _check_missing_root(self) -> bool:
+        missing_root = False
+        root_node_content: str = str(
+            list(self.parser.query_dict.values())[-1]["node_content"]
+        )
+        # Raise an error if the last item of the list is not the last combining string
+        if "#" not in root_node_content:
+            self.add_linter_message(
+                QueryErrorCode.MISSING_ROOT_NODE,
+                list_position=GENERAL_ERROR_POSITION,
+                position=(-1, -1),
+            )
+            missing_root = True
+        return missing_root
+
+    def _check_missing_operator_nodes(self, missing_root: bool) -> None:
+        if missing_root:
+            return
+        # require combining list items
+        if not any(
+            "#" in str(query["node_content"])
+            for query in self.parser.query_dict.values()
+        ):
+            # If there is no combining list item, raise a linter exception
+            # Individual list items can not be connected
+            # raise ValueError("[ERROR] No combining list item found.")
+            self.add_linter_message(
+                QueryErrorCode.MISSING_OPERATOR_NODES,
+                list_position=GENERAL_ERROR_POSITION,
+                position=(-1, -1),
+            )
+
+    def _validate_operator_node(self) -> None:
+        """Validate the tokens of the combining list element."""
+
+        for node_nr, node in self.parser.query_dict.items():
+            if node["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+
+            tokens = self.parser.tokenize_operator_node(node["node_content"], node_nr)
+
+            for token in tokens:
+                if token.type == OperatorNodeTokenTypes.UNKNOWN:
+                    self.add_linter_message(
+                        QueryErrorCode.TOKENIZING_FAILED,
+                        list_position=GENERAL_ERROR_POSITION,
+                        position=token.position,
+                    )
+
+            # Note: details should pass "format should be #1 [operator] #2"
+
+            # Must start with LIST_ITEM
+            if tokens[0].type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                details = f"First token for query item {node_nr} must be a list item."
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    list_position=GENERAL_ERROR_POSITION,
+                    position=tokens[0].position,
+                    details=details,
+                )
+                return
+
+            # Expect alternating pattern after first LIST_ITEM
+            expected = OperatorNodeTokenTypes.LOGIC_OPERATOR
+            for _, token in enumerate(tokens[1:], start=1):
+                if token.type != expected:
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                        list_position=GENERAL_ERROR_POSITION,
+                        position=token.position,
+                        details=f"Expected {expected.name} for query item {node_nr} "
+                        f"at position {token.position}, but found {token.type.name}.",
+                    )
+                    return
+                # Alternate between LOGIC_OPERATOR and LIST_ITEM
+                expected = (
+                    OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+                    if expected == OperatorNodeTokenTypes.LOGIC_OPERATOR
+                    else OperatorNodeTokenTypes.LOGIC_OPERATOR
+                )
+
+            # The final token must be a LIST_ITEM (if even-length list of tokens)
+            if expected == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    list_position=GENERAL_ERROR_POSITION,
+                    position=tokens[-1].position,
+                    details=f"Last token of query item {node_nr} must be a list item.",
+                )
+
+    def _check_invalid_list_reference(self) -> None:
+        # check if all list-references exist
+        for ind, query_node in enumerate(self.parser.query_dict.values()):
+            if "#" in str(query_node["node_content"]):
+                # check if all list references exist
+                for match in re.finditer(
+                    self.parser.LIST_ITEM_REFERENCE,
+                    str(query_node["node_content"]),
+                ):
+                    reference = match.group()
+                    position = match.span()
+                    if reference.replace("#", "") not in self.parser.query_dict:
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_LIST_REFERENCE,
+                            list_position=ind,
+                            position=position,
+                            details=f"List reference {reference} not found.",
+                        )
+
+    def _check_query_tokenization(self) -> None:
+        for ind, query_node in enumerate(self.parser.query_dict.values()):
+            query_parser = self.string_parser_class(
+                query_str=query_node["node_content"],
+                search_field_general=self.parser.search_field_general,
+                mode=self.parser.mode,
+            )
+            try:
+                query_parser.parse()
+            except FatalLintingException:  # add more specific message?""
+                self.add_linter_message(
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    list_position=ind,
+                    position=(-1, -1),
+                )
+            for msg in query_parser.linter.messages:  # type: ignore
+                if ind not in self.messages:
+                    self.messages[ind] = []
+                self.messages[ind].append(msg)

@@ -3,6 +3,7 @@
 import re
 
 from search_query.constants import Fields
+from search_query.constants import LinterMode
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
@@ -100,6 +101,18 @@ class PubmedParser(QueryStringParser):
         ]
     )
 
+    def __init__(
+        self,
+        query_str: str,
+        search_field_general: str = "",
+        mode: str = LinterMode.STRICT,
+    ) -> None:
+        """Initialize the parser."""
+        super().__init__(
+            query_str=query_str, search_field_general=search_field_general, mode=mode
+        )
+        self.linter = PubmedQueryStringLinter(self)
+
     def tokenize(self) -> None:
         """Tokenize the query_str"""
         if self.query_str is None:
@@ -112,7 +125,7 @@ class PubmedParser(QueryStringParser):
             start, end = match.span()
 
             if start > prev_end and self.query_str[prev_end:start].strip():
-                self.add_linter_message(
+                self.linter.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED, (prev_end, start)
                 )
 
@@ -133,7 +146,7 @@ class PubmedParser(QueryStringParser):
             )
 
         if prev_end < len(self.query_str) and self.query_str[:prev_end].strip():
-            self.add_linter_message(
+            self.linter.add_linter_message(
                 QueryErrorCode.TOKENIZING_FAILED, (prev_end, len(self.query_str))
             )
 
@@ -360,28 +373,27 @@ class PubmedParser(QueryStringParser):
 
     def parse(self) -> Query:
         """Parse a query string"""
-        validator = PubmedQueryStringLinter(self)
-        # Tokenization
+
         self.tokenize()
-        validator.validate_tokens()
+        self.linter.validate_tokens()
         self.check_linter_status()
 
         # Parsing
         query = self.parse_query_tree(self.tokens)
-        validator.validate_query_tree(query)
+        self.linter.validate_query_tree(query)
         self.check_linter_status()
 
         # Search field mapping
         self.translate_search_fields(query)
         user_field_values = self.parse_user_provided_fields(self.search_fields)
-        validator.validate_search_fields(query, user_field_values)
+        self.linter.validate_search_fields(query, user_field_values)
         self.check_linter_status()
 
         return query
 
     def check_linter_status(self) -> None:
         """Check the output of the linter and report errors to the user"""
-        new_messages = self.linter_messages[self.last_read_index + 1 :]
+        new_messages = self.linter.messages[self.last_read_index + 1 :]
         for msg in new_messages:
             e = QuerySyntaxError(msg["message"], self.query_str, msg["position"])
 
@@ -403,7 +415,7 @@ class PubmedParser(QueryStringParser):
             print("\n")
 
         if new_messages:
-            self.last_read_index = len(self.linter_messages) - 1
+            self.last_read_index = len(self.linter.messages) - 1
 
 
 class PubmedListParser(QueryListParser):
@@ -424,9 +436,9 @@ class PubmedListParser(QueryListParser):
     def parse(self) -> Query:
         """Parse the query in list format."""
 
-        tokens = self.tokenize_list()
+        self.tokenize_list()
 
-        query_list = self.dict_to_positioned_list(tokens)
+        query_list = self.dict_to_positioned_list()
         query_string = "".join([query[0] for query in query_list])
 
         try:

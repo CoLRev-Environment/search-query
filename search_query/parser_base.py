@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import typing
 from abc import ABC
 from abc import abstractmethod
 
@@ -11,7 +10,6 @@ import search_query.exception as search_query_exception
 from search_query.constants import Colors
 from search_query.constants import LinterMode
 from search_query.constants import ListTokenTypes
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
@@ -36,30 +34,6 @@ class QueryStringParser(ABC):
         self.mode = mode
         # The external search_fields (in the JSON file: "search_field")
         self.search_field_general = search_field_general
-        self.linter_messages: typing.List[dict] = []
-        self.fatal_linter_err = False
-
-    def add_linter_message(
-        self, error: QueryErrorCode, position: tuple, details: str = ""
-    ) -> None:
-        """Add a linter message."""
-        # do not add duplicates
-        if any(
-            error.code == msg["code"] and position == msg["position"]
-            for msg in self.linter_messages
-        ):
-            return
-
-        self.linter_messages.append(
-            {
-                "code": error.code,
-                "label": error.label,
-                "message": error.message,
-                "is_fatal": error.is_fatal(),
-                "position": position,
-                "details": details,
-            }
-        )
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""
@@ -167,7 +141,6 @@ class QueryListParser:
     """QueryListParser"""
 
     LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    GENERAL_ERROR_POSITION = -1
 
     def __init__(
         self,
@@ -181,42 +154,11 @@ class QueryListParser:
         self.parser_class = parser_class
         self.search_field_general = search_field_general
         self.mode = mode
-        self.linter_messages: dict = {}
-        self.fatal_linter_err = False
+        self.query_dict: dict = {}
 
-    def add_linter_message(
-        self,
-        error: QueryErrorCode,
-        *,
-        list_position: int,
-        position: tuple,
-        details: str = "",
-    ) -> None:
-        """Add a linter message."""
-        # do not add duplicates
-        if any(
-            error.code == msg["code"] and position == msg["position"]
-            for msg in self.linter_messages.get(list_position, [])
-        ):
-            return
-        if list_position not in self.linter_messages:
-            self.linter_messages[list_position] = []
-
-        self.linter_messages[list_position].append(
-            {
-                "code": error.code,
-                "label": error.label,
-                "message": error.message,
-                "is_fatal": error.is_fatal(),
-                "position": position,
-                "details": details,
-            }
-        )
-
-    def tokenize_list(self) -> dict:
+    def tokenize_list(self) -> None:
         """Tokenize the query_list."""
         query_list = self.query_list
-        tokens = {}
         previous = 0
         for line in query_list.split("\n"):
             if line.strip() == "":
@@ -229,7 +171,7 @@ class QueryListParser:
             pos_start, pos_end = match.span(2)
             pos_start += previous
             pos_end += previous
-            tokens[str(node_nr)] = {
+            self.query_dict[str(node_nr)] = {
                 "node_content": node_content,
                 "content_pos": (pos_start, pos_end),
                 "type": ListTokenTypes.OPERATOR_NODE
@@ -237,7 +179,6 @@ class QueryListParser:
                 else ListTokenTypes.QUERY_NODE,
             }
             previous += len(line) + 1
-        return tokens
 
     def get_token_str(self, token_nr: str) -> str:
         """Get the token string."""
@@ -278,13 +219,13 @@ class QueryListParser:
 
                 break
 
-    def dict_to_positioned_list(self, tokens: dict) -> list:
+    def dict_to_positioned_list(self) -> list:
         """Convert a node to a positioned list."""
 
-        root_node = list(tokens.values())[-1]
+        root_node = list(self.query_dict.values())[-1]
         query_list = [(root_node["node_content"], root_node["content_pos"])]
 
-        for token_nr, token_content in reversed(tokens.items()):
+        for token_nr, token_content in reversed(self.query_dict.items()):
             # iterate over query_list if token_nr is in the content,
             # split the content and insert the token_content, updating the content_pos
             self._replace_token_nr_by_query(query_list, token_nr, token_content)
@@ -294,9 +235,9 @@ class QueryListParser:
     def parse(self) -> Query:
         """Parse the query in list format."""
 
-        tokens = self.tokenize_list()
+        self.tokenize_list()
 
-        query_list = self.dict_to_positioned_list(tokens)
+        query_list = self.dict_to_positioned_list()
         query_string = "".join([query[0] for query in query_list])
         search_field_general = self.search_field_general
 
