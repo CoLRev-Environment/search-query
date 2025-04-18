@@ -9,6 +9,9 @@ from search_query.query import Query
 from search_query.query import SearchField
 
 
+# pylint: disable=duplicate-code
+
+
 class EBSCOProximityWithin(Query):
     """Within Proximity Operator Class"""
 

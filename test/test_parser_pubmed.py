@@ -61,7 +61,8 @@ def test_tokenization_pubmed(query_str: str, expected_tokens: list) -> None:
     [
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
-            'AND[OR[OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
+            # TODO : should the operators have search_field?
+            'AND[all][OR[all][OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
         )
     ],
 )
@@ -72,7 +73,7 @@ def test_parser_pubmed(query_str: str, expected_translation: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "query_str, error, pos",
+    "query_str, error, position",
     [
         (
             '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
@@ -154,7 +155,7 @@ def test_parser_pubmed(query_str: str, expected_translation: str) -> None:
 def test_linter_pubmed(
     query_str: str,
     error: QueryErrorCode,
-    pos: Tuple,
+    position: Tuple,
 ) -> None:
     pubmed_parser = PubmedParser(query_str, "")
     try:
@@ -163,6 +164,6 @@ def test_linter_pubmed(
         pass
 
     assert any(
-        message["code"] == error.code and message["pos"] == pos
+        message["code"] == error.code and message["position"] == position
         for message in pubmed_parser.linter_messages
     ), print(pubmed_parser.linter_messages)

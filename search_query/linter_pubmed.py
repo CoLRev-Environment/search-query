@@ -76,7 +76,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 if i == 0:
                     self.parser.add_linter_message(
                         QueryErrorCode.UNBALANCED_PARENTHESES,
-                        pos=token.position,
+                        position=token.position,
                     )
                 else:
                     i -= 1
@@ -90,7 +90,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                     if i == 0:
                         self.parser.add_linter_message(
                             QueryErrorCode.UNBALANCED_PARENTHESES,
-                            pos=token.position,
+                            position=token.position,
                         )
                     else:
                         i -= 1
@@ -105,7 +105,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 ]:
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        pos=tokens[i - 1].position,
+                        position=tokens[i - 1].position,
                         details=f"Cannot end with {tokens[i-1].type}",
                     )
                 break
@@ -119,7 +119,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                 ]:
                     self.parser.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        pos=tokens[i].position,
+                        position=tokens[i].position,
                         details=f"Cannot start with {token_type}",
                     )
                 continue
@@ -156,7 +156,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
 
                 self.parser.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    pos=position,
+                    position=position,
                     details=details,
                 )
 
@@ -177,7 +177,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
                         if token.value.upper() not in operator_group:
                             self.parser.add_linter_message(
                                 QueryErrorCode.IMPLICIT_PRECEDENCE,
-                                pos=tokens[index].position,
+                                position=tokens[index].position,
                             )
 
     def _check_invalid_characters(self, token: Token) -> None:
@@ -189,7 +189,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for i, char in enumerate(token.value):
             if char in invalid_characters:
                 self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_CHARACTER, pos=token.position
+                    QueryErrorCode.INVALID_CHARACTER, position=token.position
                 )
                 value = value[:i] + " " + value[i + 1 :]
         # Update token
@@ -257,7 +257,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
         for child in query.children:
             if child.operator and child.value == Operators.NOT:
                 self.parser.add_linter_message(
-                    QueryErrorCode.NESTED_NOT_QUERY, pos=child.position or (-1, -1)
+                    QueryErrorCode.NESTED_NOT_QUERY, position=child.position or (-1, -1)
                 )
             self._check_nested_not_query(child)
 

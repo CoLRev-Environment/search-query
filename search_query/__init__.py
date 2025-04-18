@@ -6,6 +6,7 @@ __email__ = "gerit.wagner@hec.ca"
 from search_query.query import Query
 from search_query.or_query import OrQuery
 from search_query.and_query import AndQuery
+from search_query.near_query import NEARQuery
 from search_query.search_file import SearchFile, load_search_file
 from .__version__ import __version__
 
@@ -14,6 +15,7 @@ __all__ = [
     "Query",
     "OrQuery",
     "AndQuery",
+    "NEARQuery",
     "SearchFile",
     "load_search_file",
 ]
