@@ -25,16 +25,17 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         Test that the WOSQueryStringLinter correctly identifies a query with no unmatched parentheses.
 
         This test initializes a WOSQueryStringLinter instance with a test query and checks that
-        the `check_unmatched_parentheses` method returns False, indicating no unmatched
+        the `check_unbalanced_parentheses` method returns False, indicating no unmatched
         parentheses are present. It also verifies that no linter messages are generated.
 
         Assertions:
-            - The `check_unmatched_parentheses` method should return False.
+            - The `check_unbalanced_parentheses` method should return False.
             - The length of `self.messages` should be 0.
         """
         parser = WOSParser("test query")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 0)
 
     def test_matched_parentheses(self) -> None:
@@ -51,13 +52,14 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             - The length of linter messages should be 0.
         """
         parser = WOSParser("(test query)")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 0)
 
     def test_unmatched_opening_parenthesis(self) -> None:
         """
-        Test case for detecting an unmatched opening parenthesis in a query.
+        Test case for detecting an Parentheses are unbalanced in the query in a query.
 
         This test initializes a WOSQueryStringLinter instance with a query containing an unmatched
         opening parenthesis and checks if the linter correctly identifies the issue.
@@ -68,21 +70,22 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             - The linter detects unmatched parentheses.
             - The length of linter messages is 1.
             - The rule in the linter message is "F0002".
-            - The message in the linter message is "Unmatched opening parenthesis '('."
+            - The message in the linter message is "Parentheses are unbalanced in the query '('."
             - The position in the linter message is (0, 1).
         """
         parser = WOSParser("(test query")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
             {
-                "code": "F1002",
+                "code": "F1001",
                 "is_fatal": True,
-                "details": "",
-                "label": "unmatched-opening-parenthesis",
-                "message": "Unmatched opening parenthesis",
+                "details": "Unbalanced opening parenthesis",
+                "label": "unbalanced-parentheses",
+                "message": "Parentheses are unbalanced in the query",
                 "position": (0, 1),
             },
         )
@@ -104,17 +107,18 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             - The position in the linter message should be (10, 11).
         """
         parser = WOSParser("test query)")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
             {
-                "code": "F1003",
+                "code": "F1001",
                 "is_fatal": True,
-                "details": "",
-                "label": "unmatched-closing-parenthesis",
-                "message": "Unmatched closing parenthesis",
+                "details": "Unbalanced closing parenthesis",
+                "label": "unbalanced-parentheses",
+                "message": "Parentheses are unbalanced in the query",
                 "position": (10, 11),
             },
         )
@@ -132,17 +136,18 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         - The position of the unmatched parenthesis is correctly reported.
         """
         parser = WOSParser("(test query))")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
             {
-                "code": "F1003",
+                "code": "F1001",
                 "is_fatal": True,
-                "details": "",
-                "label": "unmatched-closing-parenthesis",
-                "message": "Unmatched closing parenthesis",
+                "details": "Unbalanced closing parenthesis",
+                "label": "unbalanced-parentheses",
+                "message": "Parentheses are unbalanced in the query",
                 "position": (12, 13),
             },
         )
@@ -153,29 +158,30 @@ class TestWOSQueryStringLinter(unittest.TestCase):
 
         This test initializes a WOSQueryStringLinter instance with a query containing
         unmatched parentheses and verifies that the linter correctly identifies
-        the unmatched opening parenthesis. It checks that the linter messages
+        the Parentheses are unbalanced in the query. It checks that the linter messages
         contain the appropriate rule, message, and position for the unmatched
         parenthesis.
 
         Assertions:
-            - The linter's check_unmatched_parentheses method returns True.
+            - The linter's check_unbalanced_parentheses method returns True.
             - The length of messages is 1.
             - The rule in the first linter message is "F0002".
-            - The message in the first linter message is "Unmatched opening parenthesis '('."
+            - The message in the first linter message is "Parentheses are unbalanced in the query '('."
             - The position in the first linter message is (0, 1).
         """
         parser = WOSParser("((test query)")
+        parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_unmatched_parentheses()
+        linter.check_unbalanced_parentheses()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
             {
-                "code": "F1002",
+                "code": "F1001",
                 "is_fatal": True,
-                "details": "",
-                "label": "unmatched-opening-parenthesis",
-                "message": "Unmatched opening parenthesis",
+                "details": "Unbalanced opening parenthesis",
+                "label": "unbalanced-parentheses",
+                "message": "Parentheses are unbalanced in the query",
                 "position": (0, 1),
             },
         )
@@ -200,7 +206,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 AND OR")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_order_of_tokens()
+        linter.check_invalid_token_sequences()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
@@ -239,7 +245,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 au= ti=")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_order_of_tokens()
+        linter.check_invalid_token_sequences()
         self.assertEqual(len(linter.messages), 2)
         self.assertEqual(
             linter.messages[0],
@@ -282,7 +288,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 (query)")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_order_of_tokens()
+        linter.check_invalid_token_sequences()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
@@ -317,7 +323,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser(") (query)")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_order_of_tokens()
+        linter.check_invalid_token_sequences()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
@@ -351,7 +357,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 au=")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_order_of_tokens()
+        linter.check_invalid_token_sequences()
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
@@ -380,7 +386,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR/10 term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range()
+        linter.check_near_distance_in_range(max_value=15)
         self.assertEqual(len(linter.messages), 0)
 
     def test_near_distance_out_of_range(self) -> None:
@@ -401,7 +407,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR/20 term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range()
+        linter.check_near_distance_in_range(max_value=15)
         self.assertEqual(len(linter.messages), 1)
         self.assertEqual(
             linter.messages[0],
@@ -430,7 +436,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         parser = WOSParser("term1 NEAR term2")
         parser.tokenize()
         linter = WOSQueryStringLinter(parser)
-        linter.check_near_distance_in_range()
+        linter.check_near_distance_in_range(max_value=15)
         self.assertEqual(len(linter.messages), 0)
 
     def test_no_unsupported_wildcards(self) -> None:
@@ -489,7 +495,7 @@ class TestWOSQueryStringLinter(unittest.TestCase):
         Assertions:
             - The linter should detect the standalone wildcard.
             - The linter messages list should contain exactly one message.
-            - The rule in the linter message should be "F1002".
+            - The rule in the linter message should be "F1001".
             - The message in the linter message should indicate a standalone wildcard.
             - The position in the linter message should be (5, 6).
         """

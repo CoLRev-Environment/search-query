@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 
 
 class WOSQueryStringLinter(QueryStringLinter):
-    """Linter for wos query"""
+    """Linter for WOS Query Strings"""
 
     language_list = [
         "LA=",
@@ -34,6 +34,39 @@ class WOSQueryStringLinter(QueryStringLinter):
     ]
     WILDCARD_CHARS = ["?", "$", "*"]
 
+    VALID_TOKEN_SEQUENCES = {
+        TokenTypes.FIELD: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+        ],
+        TokenTypes.SEARCH_TERM: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PROXIMITY_OPERATOR,
+            TokenTypes.PARENTHESIS_CLOSED,
+        ],
+        TokenTypes.LOGIC_OPERATOR: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.FIELD,
+            TokenTypes.PARENTHESIS_OPEN,
+        ],
+        TokenTypes.PROXIMITY_OPERATOR: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+            TokenTypes.FIELD,
+        ],
+        TokenTypes.PARENTHESIS_OPEN: [
+            TokenTypes.FIELD,
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+        ],
+        TokenTypes.PARENTHESIS_CLOSED: [
+            TokenTypes.PARENTHESIS_CLOSED,
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PROXIMITY_OPERATOR,
+        ],
+    }
+
     parser: "search_query.parser_wos.WOSParser"
 
     def __init__(self, parser: "search_query.parser_wos.WOSParser"):
@@ -45,21 +78,24 @@ class WOSQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Performs a pre-linting"""
 
-        self.check_search_fields_from_json()
         self.check_unknown_token_types()
+        self.check_invalid_token_sequences()
+        self.check_unbalanced_parentheses()
+        self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
+        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
+
+        self.check_search_fields_from_json()
         self.check_implicit_near()
         self.check_year_format()
         self.check_fields()
-        self.check_order_of_tokens()
-        self._check_year_without_search_field()
-        self.check_near_distance_in_range()
+        self.check_year_without_search_field()
+        self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
         self.check_unsupported_wildcards()
-        self.check_unmatched_parentheses()
-        self.add_artificial_parentheses_for_operator_precedence()
 
-    def _check_year_without_search_field(self) -> None:
+    def check_year_without_search_field(self) -> None:
+        """Check if the year is used without a search field."""
         year_search_field_detected = False
         count_search_fields = 0
         for token in self.parser.tokens:
@@ -160,62 +196,8 @@ class WOSQueryStringLinter(QueryStringLinter):
                             position=year_token.position,
                         )
 
-    def check_unmatched_parentheses(self) -> None:
-        """Check for unmatched parentheses in the query."""
-        stack = []
-        for i, char in enumerate(self.search_str):
-            if char == "(":
-                stack.append(i)
-            elif char == ")":
-                if stack:
-                    stack.pop()
-                else:
-                    self.add_linter_message(
-                        QueryErrorCode.UNMATCHED_CLOSING_PARENTHESIS,
-                        position=(i, i + 1),
-                    )
-
-        for unmatched_index in stack:
-            self.add_linter_message(
-                QueryErrorCode.UNMATCHED_OPENING_PARENTHESIS,
-                position=(unmatched_index, unmatched_index + 1),
-            )
-
-    def check_order_of_tokens(self) -> None:
+    def check_invalid_token_sequences(self) -> None:
         """Check for the correct order of tokens in the query."""
-
-        valid_transitions = {
-            TokenTypes.FIELD: [
-                TokenTypes.SEARCH_TERM,
-                TokenTypes.PARENTHESIS_OPEN,
-            ],
-            TokenTypes.SEARCH_TERM: [
-                TokenTypes.SEARCH_TERM,
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.PROXIMITY_OPERATOR,
-                TokenTypes.PARENTHESIS_CLOSED,
-            ],
-            TokenTypes.LOGIC_OPERATOR: [
-                TokenTypes.SEARCH_TERM,
-                TokenTypes.FIELD,
-                TokenTypes.PARENTHESIS_OPEN,
-            ],
-            TokenTypes.PROXIMITY_OPERATOR: [
-                TokenTypes.SEARCH_TERM,
-                TokenTypes.PARENTHESIS_OPEN,
-                TokenTypes.FIELD,
-            ],
-            TokenTypes.PARENTHESIS_OPEN: [
-                TokenTypes.FIELD,
-                TokenTypes.SEARCH_TERM,
-                TokenTypes.PARENTHESIS_OPEN,
-            ],
-            TokenTypes.PARENTHESIS_CLOSED: [
-                TokenTypes.PARENTHESIS_CLOSED,
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.PROXIMITY_OPERATOR,
-            ],
-        }
 
         tokens = self.parser.tokens
 
@@ -253,23 +235,11 @@ class WOSQueryStringLinter(QueryStringLinter):
                 continue
 
             # Check transition
-            allowed_next_types = valid_transitions.get(token.type, [])
+            allowed_next_types = self.VALID_TOKEN_SEQUENCES.get(token.type, [])
             if next_token.type not in allowed_next_types:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=next_token.position,
-                )
-
-    def check_near_distance_in_range(self) -> None:
-        """Check for NEAR with a specified distance out of range."""
-        for token in self.parser.tokens:
-            if "NEAR" not in token.value:
-                continue
-            near_distance = re.findall(r"\d{1,2}", token.value)
-            if near_distance and int(near_distance[0]) > 15:
-                self.add_linter_message(
-                    QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
-                    position=token.position,
                 )
 
     def check_unsupported_wildcards(self) -> None:

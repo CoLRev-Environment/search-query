@@ -195,7 +195,7 @@ def print_debug(query: Query, query_string: str, query_str: str) -> None:
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
                     "position": (0, 1),
-                    "details": "",
+                    "details": "Unbalanced opening parenthesis",
                 }
             ],
         ),

@@ -15,11 +15,11 @@ if typing.TYPE_CHECKING:
 
 
 class EBSCOQueryStringLinter(QueryStringLinter):
-    """Class for EBSCO Query String Validation"""
+    """Linter for EBSCO Query Strings"""
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
 
-    VALID_TRANSITIONS = {
+    VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
@@ -62,22 +62,19 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Pre-linting checks."""
 
-        self.add_artificial_parentheses_for_operator_precedence()
         self.check_unknown_token_types()
+        self.check_invalid_token_sequences()
+        self.check_unbalanced_parentheses()
+        self.add_artificial_parentheses_for_operator_precedence()
+        self.check_operator_capitalization()
+        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
+
         self.check_token_ambiguity()
         self.check_search_field_general()
-        self.validate_token_positions()
-        self.check_operator_capitalization()
-        self.check_unbalanced_parentheses()
-
-    def check_search_field_general(self) -> None:
-        """Check field 'Search Fields' in content."""
-
-        if self.search_field_general != "" and self.parser.mode == LinterMode.STRICT:
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
 
     def check_token_ambiguity(self) -> None:
         """Check for ambiguous tokens in the query."""
+        # Note: EBSCO-specific
 
         prev_token = None
         for token in self.parser.tokens:
@@ -100,10 +97,17 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
             prev_token = token
 
-    def validate_token_positions(self) -> None:
+    def check_search_field_general(self) -> None:
+        """Check field 'Search Fields' in content."""
+
+        # TODO : the messages should not depend on the mode?!
+        if self.search_field_general != "" and self.parser.mode == LinterMode.STRICT:
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
+
+    def check_invalid_token_sequences(self) -> None:
         """
-        Validate the position of the current token
-        based on its type and the previous token type.
+        Check for invalid token sequences
+        based on token type and the previous token type.
         """
 
         for i, token in enumerate(self.parser.tokens):
@@ -138,7 +142,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
             prev_type = self.parser.tokens[i - 1].type
 
-            if token_type not in self.VALID_TRANSITIONS[prev_type]:
+            if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
                     details = "Invalid search field position"
                     position = token.position

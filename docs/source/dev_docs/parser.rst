@@ -15,9 +15,13 @@ Development setup
 Skeleton
 --------------------
 
-A code skeleton is available for the parser and tests:
+A code skeleton is available for the parser, linter, and tests:
 
 .. literalinclude:: parser_skeleton.py
+   :language: python
+
+
+.. literalinclude:: linter_skeleton.py
    :language: python
 
 

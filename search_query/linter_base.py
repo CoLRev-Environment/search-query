@@ -56,7 +56,7 @@ class QueryStringLinter:
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
         for token in self.parser.tokens:
-            if re.match(self.parser.OPERATOR_REGEX, token.value):
+            if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value != token.value.upper():
                     self.add_linter_message(
                         QueryErrorCode.OPERATOR_CAPITALIZATION,
@@ -75,6 +75,7 @@ class QueryStringLinter:
                     self.add_linter_message(
                         QueryErrorCode.UNBALANCED_PARENTHESES,
                         position=token.position,
+                        details="Unbalanced closing parenthesis",
                     )
                 else:
                     i -= 1
@@ -89,6 +90,7 @@ class QueryStringLinter:
                         self.add_linter_message(
                             QueryErrorCode.UNBALANCED_PARENTHESES,
                             position=token.position,
+                            details="Unbalanced opening parenthesis",
                         )
                     else:
                         i -= 1
@@ -100,6 +102,52 @@ class QueryStringLinter:
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED, token.position
                 )
+
+    def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
+        """Check a search term for invalid characters"""
+
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+            value = token.value
+
+            # Iterate over term to identify invalid characters
+            # and replace them with whitespace
+            for i, char in enumerate(token.value):
+                if char in invalid_characters:
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_CHARACTER, position=token.position
+                    )
+                    value = value[:i] + " " + value[i + 1 :]
+            # Update token
+            if value != token.value:
+                token.value = value
+
+    def check_near_distance_in_range(self, *, max_value: int) -> None:
+        """Check for NEAR with a specified distance out of range."""
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.PROXIMITY_OPERATOR:
+                continue
+            near_distance = re.findall(r"\d{1,2}", token.value)
+            if near_distance and int(near_distance[0]) > max_value:
+                self.add_linter_message(
+                    QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
+                    position=token.position,
+                )
+
+    def check_boolean_operator_readability(
+        self, *, faulty_operators: str = "|&"
+    ) -> None:
+        """Check for readability of boolean operators."""
+        for token in self.parser.tokens:
+            if token.type == TokenTypes.LOGIC_OPERATOR:
+                if token.value in faulty_operators:
+                    self.add_linter_message(
+                        QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
+                        position=token.position,
+                        details="Please use AND, OR, NOT instead of |&",
+                    )
+                    # Replace?
 
     def handle_fully_quoted_query_str(self) -> None:
         """Handle fully quoted query string."""

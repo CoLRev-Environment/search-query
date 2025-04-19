@@ -6,7 +6,6 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
-from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 
 class PubmedQueryStringLinter(QueryStringLinter):
-    """Class for PubMed Query String Validation"""
+    """Linter for PubMed Query Strings"""
 
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
     parser: "PubmedParser"
@@ -49,13 +48,18 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
+        # No tokens marked as unknown token-type
+        self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
-        self._check_invalid_token_sequence()
-        self._check_invalid_characters()
-        self._check_invalid_proximity_operator()
         self.add_artificial_parentheses_for_operator_precedence()
+        self.check_operator_capitalization()
+        self.check_invalid_characters_in_search_term("!#$%+.;<>?\\^_{}~'()[]")
 
-    def _check_invalid_token_sequence(self) -> None:
+        self.check_invalid_wildcard()
+        self.check_invalid_proximity_operator()
+        self.check_boolean_operator_readability()
+
+    def check_invalid_token_sequences(self) -> None:
         """Check token list for invalid token sequences."""
         for i, token in enumerate(self.parser.tokens):
             # Check the last token
@@ -129,41 +133,28 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
 
-    def _check_invalid_characters(self) -> None:
-        """Check a search term for invalid characters"""
-        invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
+    def check_invalid_wildcard(self) -> None:
+        """Check search term for invalid wildcard *"""
 
         for token in self.parser.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
-            value = token.value
 
-            # Iterate over term to identify invalid characters
-            # and replace them with whitespace
-            for i, char in enumerate(token.value):
-                if char in invalid_characters:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_CHARACTER, position=token.position
-                    )
-                    value = value[:i] + " " + value[i + 1 :]
-            # Update token
-            if value != token.value:
-                token.value = value
+            if "*" not in token.value:
+                continue
 
-            if "*" in token.value:
-                self._check_invalid_wildcard(token)
+            if token.value == '"':
+                k = 5
+            else:
+                k = 4
+            if "*" in token.value[:k]:
+                # Wildcard * is invalid
+                # when applied to terms with less than 4 characters
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_WILDCARD_USE, token.position
+                )
 
-    def _check_invalid_wildcard(self, token: Token) -> None:
-        """Check search term for invalid wildcard *"""
-        if token.value == '"':
-            k = 5
-        else:
-            k = 4
-        if "*" in token.value[:k]:
-            # Wildcard * is invalid when applied to terms with less than 4 characters
-            self.add_linter_message(QueryErrorCode.INVALID_WILDCARD_USE, token.position)
-
-    def _check_invalid_proximity_operator(self) -> None:
+    def check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
 
         for index, token in enumerate(self.parser.tokens):
@@ -173,38 +164,40 @@ class PubmedQueryStringLinter(QueryStringLinter):
             search_phrase_token = self.parser.tokens[index - 1]
 
             match = re.match(self.PROXIMITY_REGEX, field_token.value)
-            if match:
-                field_value, prox_value = match.groups()
-                field_value = "[" + field_value + "]"
-                if not prox_value.isdigit():
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                    )
-                else:
-                    nr_of_terms = len(search_phrase_token.value.strip('"').split())
-                    if not (
-                        search_phrase_token.value[0] == '"'
-                        and search_phrase_token.value[-1] == '"'
-                        and nr_of_terms >= 2
-                    ):
-                        self.add_linter_message(
-                            QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                        )
-
-                    if self.parser.map_search_field(field_value) not in {
-                        "[tiab]",
-                        Fields.TITLE,
-                        Fields.AFFILIATION,
-                    }:
-                        self.add_linter_message(
-                            QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                        )
-                # Update search field token
-                self.parser.tokens[index].value = field_value
-            else:
+            if not match:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
                 )
+                continue
+
+            field_value, prox_value = match.groups()
+            field_value = "[" + field_value + "]"
+            if not prox_value.isdigit():
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                )
+                continue
+
+            nr_of_terms = len(search_phrase_token.value.strip('"').split())
+            if not (
+                search_phrase_token.value[0] == '"'
+                and search_phrase_token.value[-1] == '"'
+                and nr_of_terms >= 2
+            ):
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                )
+
+            if self.parser.map_search_field(field_value) not in {
+                "[tiab]",
+                Fields.TITLE,
+                Fields.AFFILIATION,
+            }:
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                )
+            # Update search field token
+            self.parser.tokens[index].value = field_value
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""

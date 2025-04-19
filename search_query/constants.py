@@ -298,36 +298,6 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
-    UNMATCHED_OPENING_PARENTHESIS = (
-        ["all"],
-        "F1002",
-        "unmatched-opening-parenthesis",
-        "Unmatched opening parenthesis",
-        """**Typical fix**: Check the parentheses in the query
-**Problematic query**:
-.. code-block:: python
-
-    (a AND b OR c
-**Correct query**:
-.. code-block:: python
-
-
-    (a AND b) OR c""",
-    )
-    UNMATCHED_CLOSING_PARENTHESIS = (
-        ["all"],
-        "F1003",
-        "unmatched-closing-parenthesis",
-        "Unmatched closing parenthesis",
-        """**Typical fix**: Check the parentheses in the query
-**Problematic query**:
-.. code-block:: python
-    a AND b) OR c
-**Correct query**:
-.. code-block:: python
-
-    (a AND b) OR c""",
-    )
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],
@@ -605,6 +575,13 @@ class QueryErrorCode(Enum):
         "",
     )
     TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
+    BOOLEAN_OPERATOR_READABILITY = (
+        ["all"],
+        "W0009",
+        "boolean-operator-readability",
+        "Boolean operator readability",
+        "",
+    )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
