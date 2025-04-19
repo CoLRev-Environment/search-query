@@ -62,6 +62,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Pre-linting checks."""
 
+        self.check_missing_tokens()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()

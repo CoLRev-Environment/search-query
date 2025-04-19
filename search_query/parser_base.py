@@ -28,12 +28,14 @@ class QueryStringParser(ABC):
         query_str: str,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
+        verbosity: int = 0,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode
         # The external search_fields (in the JSON file: "search_field")
         self.search_field_general = search_field_general
+        self.verbosity = verbosity
 
     def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
         """Print the token types"""

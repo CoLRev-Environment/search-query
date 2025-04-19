@@ -213,10 +213,10 @@ class TestWOSQueryStringLinter(unittest.TestCase):
             {
                 "code": "F1004",
                 "is_fatal": True,
-                "details": "",
+                "details": "Two operators in a row are not allowed.",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
-                "position": (10, 12),
+                "position": (6, 12),
             },
         )
 
@@ -989,23 +989,23 @@ class TestWOSQueryStringLinter(unittest.TestCase):
     [
         (
             "TI=(term1 OR term2 AND term3)",
-            "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+            "Operator changed at the same level (explicit parentheses are recommended)",
             "TI=(term1 OR TI=(term2 AND term3))",
         ),
         (
             "TI=term1 AND term2 OR term3",
-            "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+            "Operator changed at the same level (explicit parentheses are recommended)",
             "(TI=(term1 AND term2) OR term3)",
         ),
         # TODO : proximity operators not yet handled by wos
         # (
         #     "term1 AND term2 NEAR term3",
-        #     "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        #     "Operator changed at the same level (explicit parentheses are recommended)",
         #     ""
         # ),
         # (
         #     "term1 NEAR/5 term2 AND term3",
-        #     "Operator changed at the same level (currently relying on implicit operator precedence, explicit parentheses are recommended)",
+        #     "Operator changed at the same level (explicit parentheses are recommended)",
         #     ""
         # ),
     ],

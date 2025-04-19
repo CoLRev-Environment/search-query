@@ -53,6 +53,52 @@ class QueryStringLinter:
         """Check if there are any fatal errors."""
         return any(m["is_fatal"] for m in self.messages)
 
+    def check_missing_tokens(self) -> None:
+        """Check missing tokens"""
+        covered_ranges = []
+        current_index = 0
+
+        for token in self.parser.tokens:
+            token_value = token.value
+            try:
+                start = self.parser.query_str.index(token_value, current_index)
+                end = start + len(token_value)
+                covered_ranges.append((start, end))
+                current_index = end
+            except ValueError:
+                continue  # Token not found
+
+        # Merge overlapping/adjacent ranges
+        merged: list = []
+        for start, end in sorted(covered_ranges):
+            if not merged or merged[-1][1] < start:
+                merged.append((start, end))
+            else:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+
+        # Identify gaps and add linter messages
+        last_end = 0
+        for start, end in merged:
+            if last_end < start:
+                segment = self.parser.query_str[last_end:start]
+                if segment.strip():  # non-whitespace segment
+                    self.add_linter_message(
+                        QueryErrorCode.TOKENIZING_FAILED,
+                        position=(last_end, start),
+                        details=f"Unparsed segment: '{segment.strip()}'",
+                    )
+            last_end = end
+
+        # Handle trailing unparsed text
+        if last_end < len(self.parser.query_str):
+            segment = self.parser.query_str[last_end:]
+            if segment.strip():
+                self.add_linter_message(
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    position=(last_end, len(self.parser.query_str)),
+                    details=f"Unparsed segment: '{segment.strip()}'",
+                )
+
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
         for token in self.parser.tokens:

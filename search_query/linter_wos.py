@@ -78,6 +78,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Performs a pre-linting"""
 
+        self.check_missing_tokens()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
@@ -200,7 +201,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct order of tokens in the query."""
 
         tokens = self.parser.tokens
-
         for index in range(len(tokens) - 1):
             token = tokens[index]
             next_token = tokens[index + 1]
@@ -222,7 +222,8 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.is_operator() and next_token.is_operator():
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=next_token.position,
+                    position=(token.position[0], next_token.position[1]),
+                    details="Two operators in a row are not allowed.",
                 )
                 continue
 
@@ -404,6 +405,7 @@ class WOSQueryListLinter(QueryListLinter):
                 and self.messages
             ):
                 l_messages = [y for x in self.messages.values() if x for y in x if y]
+                print(l_messages)
                 raise FatalLintingException(
                     message="LinterDetected",
                     query_string=self.parser.query_list,
@@ -521,10 +523,13 @@ class WOSQueryListLinter(QueryListLinter):
 
     def _check_query_tokenization(self) -> None:
         for ind, query_node in enumerate(self.parser.query_dict.values()):
+            if query_node["type"] != ListTokenTypes.QUERY_NODE:
+                continue
             query_parser = self.string_parser_class(
                 query_str=query_node["node_content"],
                 search_field_general=self.parser.search_field_general,
                 mode=self.parser.mode,
+                verbosity=0,  # errors are printed by the list linter
             )
             try:
                 query_parser.parse()

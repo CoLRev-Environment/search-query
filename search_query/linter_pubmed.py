@@ -48,6 +48,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
+        self.check_missing_tokens()
         # No tokens marked as unknown token-type
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()

@@ -31,8 +31,12 @@ class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
-
-    SEARCH_TERM_REGEX = r'\*?[\w-]+(?:[\*\$\?][\w-]*)*|"[^"]+"'
+    SEARCH_TERM_REGEX = (
+        r"\*?[\w-]+(?:[\*\$\?][\w-]*)*"
+        r'|"[^"]+"'
+        r'|\u201c[^"^\u201d]+\u201d'
+        r'|\u2018[^"]+\u2019'
+    )
     LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
     PROXIMITY_OPERATOR_REGEX = r"\b(NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
     SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
@@ -72,10 +76,14 @@ class WOSParser(QueryStringParser):
         query_str: str,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
+        verbosity: int = 1,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str=query_str, search_field_general=search_field_general, mode=mode
+            query_str=query_str,
+            search_field_general=search_field_general,
+            mode=mode,
+            verbosity=verbosity,
         )
         self.linter = WOSQueryStringLinter(parser=self)
 
@@ -541,31 +549,33 @@ class WOSParser(QueryStringParser):
         self.linter.handle_fully_quoted_query_str()
 
         self.tokenize()
-
         self.linter.validate_tokens()
 
         if not self.linter.has_fatal_errors():
             query, _ = self.parse_query_tree()
             self.translate_search_fields(query)
-        else:
-            print("\n[FATAL:] Fatal error detected in pre-linting")
 
         # Print linter messages
         if self.linter.messages:
-            if self.mode != LinterMode.STRICT and not self.linter.has_fatal_errors():
-                print(
-                    "\n[INFO:] The following errors have been corrected by the linter:"
-                )
+            if self.verbosity > 0:
+                if self.linter.has_fatal_errors():
+                    print("\n[FATAL:] Fatal error detected in pre-linting")
 
-            for msg in self.linter.messages:
-                print(
-                    "[Linter:] "
-                    + msg["label"]
-                    + "\t"
-                    + msg["message"]
-                    + " At position "
-                    + str(msg["position"])
-                )
+                if (
+                    self.mode != LinterMode.STRICT
+                    and not self.linter.has_fatal_errors()
+                ):
+                    print("\n[INFO:] The following errors have been corrected:")
+
+                for msg in self.linter.messages:
+                    print(
+                        "[Linter:] "
+                        + msg["label"]
+                        + "\t"
+                        + msg["message"]
+                        + " At position "
+                        + str(msg["position"])
+                    )
 
             # Raise an exception
             # if the linter is in strict mode
@@ -674,39 +684,8 @@ class WOSListParser(QueryListParser):
         """Parse the list of queries."""
 
         self.tokenize_list()
+        # note: messages printed in linter
         self.linter.validate_list_tokens()
-
-        # Print linter messages
-        if self.linter.messages:
-            if self.mode != LinterMode.STRICT and not self.linter.has_fatal_errors():
-                print(
-                    "\n[INFO:] The following errors have been corrected by the linter:"
-                )
-            for level, messages in self.linter.messages.items():
-                for msg in messages:
-                    print(
-                        "[Linter:] "
-                        + msg["label"]
-                        + "\t"
-                        + msg["message"]
-                        + " At position "
-                        + str(msg["position"])
-                        + f"(level {level})"
-                    )
-
-                # Raise an exception
-                # if the linter is in strict mode
-                # or if a fatal error has occurred
-                if (
-                    self.mode == LinterMode.STRICT
-                    or self.linter.has_fatal_errors()
-                    and messages
-                ):
-                    raise FatalLintingException(
-                        message="LinterDetected",
-                        query_string="",  # add query-string?
-                        messages=messages,
-                    )
 
         query = self._parse_list_query()
         return query

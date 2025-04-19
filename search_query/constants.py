@@ -570,9 +570,7 @@ class QueryErrorCode(Enum):
         ["all", PLATFORM.PUBMED],
         "W0007",
         "implicit-precedence",
-        "Operator changed at the same level "
-        "(currently relying on implicit operator precedence, "
-        "explicit parentheses are recommended)",
+        "Operator changed at the same level (explicit parentheses are recommended)",
         "",
     )
     TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
