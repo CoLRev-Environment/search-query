@@ -2,8 +2,7 @@
 """Query linter hook."""
 from __future__ import annotations
 
-import sys
-from abc import ABCMeta
+from pathlib import Path
 
 import search_query.parser
 from search_query.constants import Colors
@@ -16,23 +15,17 @@ def run_linter(search_string: str, *, syntax: str, search_field_general: str) ->
     """Run the linter on the search string"""
 
     parser_class = search_query.parser.PARSERS[syntax]
-    if isinstance(parser_class, ABCMeta):
-        raise NotImplementedError(
-            f"Cannot instantiate {parser_class} because it is abstract."
-        )
-    parser = parser_class(search_string, search_field_general)
+    parser = parser_class(search_string, search_field_general)  # type: ignore
 
     try:
         parser.parse()
     except Exception:  # pylint: disable=broad-except
-        assert parser.linter.messages
-    return parser.linter.messages
+        assert parser.linter.messages  # type: ignore
+    return parser.linter.messages  # type: ignore
 
 
-def pre_commit_hook() -> int:
+def pre_commit_hook(file_path: str) -> int:
     """Entrypoint for the query linter hook"""
-
-    file_path = sys.argv[1]
 
     try:
         search_file = load_search_file(file_path)
@@ -54,19 +47,35 @@ def pre_commit_hook() -> int:
         search_field_general=search_file.search_field,
     )
 
+    print(f"Lint: {Path(file_path).name} ({platform})")
     if messages:
         for message in messages:
             color = Colors.ORANGE
-            if message["level"] == "error":
+
+            if message["is_fatal"]:
                 color = Colors.RED
 
-            print(f"{file_path} ({platform})")
-            print(f"- {message['msg']}")
-            query_info = format_query_string_pos(
-                search_file.search_string, message["pos"], color=color
+            category = "Fatal"
+            if message["code"].startswith("E"):
+                category = "Error"
+            elif message["code"].startswith("W"):
+                category = "Warning"
+
+            print(
+                f"- {color}{category}{Colors.END}: "
+                f"{message['label']} ({message['code']})"
             )
+            query_info = format_query_string_pos(
+                search_file.search_string, message["position"], color=color
+            )
+            if message["details"]:
+                print(f"  {message['details']}")
+            else:
+                print(f"  {message['message']}")
             print(f"  {query_info}")
 
         return ExitCodes.FAIL
+
+    print("No errors detected")
 
     return ExitCodes.SUCCESS

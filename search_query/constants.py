@@ -218,6 +218,7 @@ PLATFORM_FIELD_MAP = {
     PLATFORM.EBSCO: {
         Fields.TITLE: "TI",
         Fields.ABSTRACT: "AB",
+        Fields.TOPIC: "TP",
         Fields.ALL: "TX",
         Fields.AUTHOR_KEYWORDS: "AU",
         Fields.SUBJECT_TERMS: "SU",

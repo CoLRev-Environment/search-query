@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """CLI for search-query."""
 import argparse
+import sys
 from pathlib import Path
 
 import search_query.linter
@@ -10,10 +11,10 @@ from search_query import load_search_file
 
 def translate() -> None:
     """Main entrypoint for the query translation CLI"""
+
     parser = argparse.ArgumentParser(
         description="Convert search queries between formats"
     )
-
     parser.add_argument(
         "--from",
         dest="source",
@@ -45,7 +46,6 @@ def translate() -> None:
     print(f"Converting from {args.source} to {args.target}")
     print(f"Reading query from {args.input_file}")
     print(f"Writing converted query to {args.output_file}")
-
     print(f"Convert from {args.source} to {args.target}")
 
     if Path(args.input_file).suffix == ".json":
@@ -55,7 +55,7 @@ def translate() -> None:
         )
         converted_query = query.to_string(syntax=args.target)
         search_file.search_string = converted_query
-        search_file.save()
+        search_file.save(args.output_file)
 
     else:
         raise NotImplementedError
@@ -63,4 +63,7 @@ def translate() -> None:
 
 def lint() -> None:
     """Main entrypoint for the query linter hook"""
-    raise SystemExit(search_query.linter.pre_commit_hook())
+
+    file_path = sys.argv[1]
+
+    raise SystemExit(search_query.linter.pre_commit_hook(file_path))

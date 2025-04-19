@@ -40,7 +40,7 @@ dev = [
 
 [project.scripts]
 search-query-translate = "search_query.cli:translate"
-search-query-lint = "search_query.linter:lint"
+search-query-lint = "search_query.cli:lint"
 
 [tool.pylint.MAIN]
 extension-pkg-whitelist = "lxml.etree"

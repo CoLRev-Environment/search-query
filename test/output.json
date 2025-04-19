@@ -1,0 +1,27 @@
+{
+    "search_string": "(TP quantum AND TP dot AND TP spin)",
+    "platform": "Web of Science",
+    "authors": [
+        {
+            "name": "Wagner, G.",
+            "ORCID": "0000-0000-0000-1111"
+        }
+    ],
+    "record_info": {},
+    "date": {
+        "data_entry": "2019.07.01",
+        "search_conducted": "2019.07.01"
+    },
+    "search_field": "",
+    "database": [
+        "SCI-EXPANDED",
+        "SSCI",
+        "A&HCI"
+    ],
+    "parsed": {
+        "Search": "TS=(quantum AND dot AND spin)",
+        "Coder": "GW",
+        "Timestamp": "2024-07-01 20:23",
+        "Comment": ""
+    }
+}
