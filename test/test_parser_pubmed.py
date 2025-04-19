@@ -2,7 +2,7 @@
 """Tests for Pubmed search query parser."""
 from typing import Tuple
 
-import pytest  # type: ignore
+import pytest
 
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
