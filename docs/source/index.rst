@@ -162,11 +162,57 @@ To write a query to a JSON file, run the serializer:
 CLI Use
 =======
 
+The CLI reads a query from an input file, converts it from a specified source format
+to a target format, and writes the converted query to an output file.
+
+To translate a search query on the command line, run
+
+.. code-block:: bash
+
+    search-query-translate --from colrev_web_of_science \
+                            --input input_query.txt \
+                            --to colrev_pubmed \
+                            --output output_query.txt
+
+Arguments
+---------
+
+- ``--from`` (required):
+  The source query format.
+  Example: ``colrev_web_of_science``
+
+- ``--input`` (required):
+  Path to the input file containing the original query.
+
+- ``--to`` (required):
+  The target query format.
+  Example: ``colrev_pubmed``
+
+- ``--output`` (required):
+  Path to the file where the converted query will be written.
+
+
+
+Example
+-------
+
+Suppose you have a Web of Science search query saved in ``input_query.txt`` and you want to convert it to a PubMed-compatible format. Run:
+
+.. code-block:: bash
+
+    search-query-translate --from colrev_web_of_science \
+                            --input input_query.txt \
+                            --to colrev_pubmed \
+                            --output output_query.txt
+
+The converted query will be saved in ``output_query.txt``.
+
 Linters can be run on the CLI:
 
 .. code-block:: bash
 
-    search-file-lint search-file.json
+    search-query-lint search-file.json
+
 
 Pre-commit Hooks
 ================
@@ -179,7 +225,7 @@ Linters can be included as pre-commit hooks by adding the following to the ``.pr
       - repo: https://github.com/CoLRev-Environment/search-query
         rev: main  # or version of search-query
         hooks:
-          - id: search-file-lint
+          - id: search-query-lint
 
 For development and testing, use the following:
 
@@ -188,9 +234,9 @@ For development and testing, use the following:
     repos:
       - repo: local
         hooks:
-          - id: search-file-lint
+          - id: search-query-lint
             name: Search-file linter
-            entry: search-file-lint
+            entry: search-query-lint
             language: python
             files: \.json$
 
