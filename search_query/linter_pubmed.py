@@ -54,11 +54,42 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("!#$%+.;<>?\\^_{}~'()[]")
+        self.check_character_replacement_in_search_term()
 
         self.check_invalid_wildcard()
         self.check_invalid_proximity_operator()
         self.check_boolean_operator_readability()
+
+    def check_character_replacement_in_search_term(self) -> None:
+        """Check a search term for invalid characters"""
+        # https://pubmed.ncbi.nlm.nih.gov/help/
+        # PubMed character conversions
+
+        invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+            value = token.value
+
+            # Iterate over term to identify invalid characters
+            # and replace them with whitespace
+            for i, char in enumerate(token.value):
+                if char in invalid_characters:
+                    details = (
+                        f"Character '{char}' in search term "
+                        "will be replaced with whitespace "
+                        "(see PubMed character conversions in "
+                        "https://pubmed.ncbi.nlm.nih.gov/help/)"
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.CHARACTER_REPLACEMENT,
+                        position=(token.position[0] + i, token.position[0] + i + 1),
+                        details=details,
+                    )
+                    value = value[:i] + " " + value[i + 1 :]
+            # Update token
+            if value != token.value:
+                token.value = value
 
     def check_invalid_token_sequences(self) -> None:
         """Check token list for invalid token sequences."""
@@ -166,27 +197,42 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
             match = re.match(self.PROXIMITY_REGEX, field_token.value)
             if not match:
+                details = f"Not matching regex {self.PROXIMITY_REGEX}"
                 self.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    field_token.position,
+                    details=details,
                 )
                 continue
 
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
+                details = f"Proximity value '{prox_value}' is not a digit"
                 self.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    field_token.position,
+                    details=details,
                 )
                 continue
 
             nr_of_terms = len(search_phrase_token.value.strip('"').split())
-            if not (
+            print(search_phrase_token)
+            print(search_phrase_token.value.strip('"').split())
+            if nr_of_terms >= 2 and not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
-                and nr_of_terms >= 2
             ):
+                details = (
+                    "When using proximity operators, "
+                    + "search terms consisting of 2 or more words "
+                    + f"(i.e., {search_phrase_token.value}) "
+                    + "must be enclosed in double quotes"
+                )
                 self.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    field_token.position,
+                    details=details,
                 )
 
             if self.parser.map_search_field(field_value) not in {
@@ -194,8 +240,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 Fields.TITLE,
                 Fields.AFFILIATION,
             }:
+                details = (
+                    f"Proximity operator '{field_value}' is not supported "
+                    + "for this search field (supported: [tiab], [ti], [ad])"
+                )
                 self.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    field_token.position,
+                    details=details,
                 )
             # Update search field token
             self.parser.tokens[index].value = field_value

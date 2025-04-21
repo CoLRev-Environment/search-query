@@ -581,6 +581,13 @@ class QueryErrorCode(Enum):
         "Boolean operator readability",
         "",
     )
+    CHARACTER_REPLACEMENT = (
+        [PLATFORM.PUBMED],
+        "W0010",
+        "character-replacement",
+        "Character replacement",
+        "",
+    )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments

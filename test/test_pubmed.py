@@ -48,9 +48,9 @@ from search_query.parser_pubmed import PubmedParser
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
-    pubmed_parser = PubmedParser(query_str, "")
-    pubmed_parser.tokenize()
-    assert pubmed_parser.tokens == expected_tokens, print(pubmed_parser.tokens)
+    parser = PubmedParser(query_str, "")
+    parser.tokenize()
+    assert parser.tokens == expected_tokens, print(parser.tokens)
 
 
 @pytest.mark.parametrize(
@@ -90,9 +90,9 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
     ],
 )
 def test_parser(query_str: str, expected_translation: str) -> None:
-    pubmed_parser = PubmedParser(query_str)
-    query_tree = pubmed_parser.parse()
-    assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
+    parser = PubmedParser(query_str)
+    query = parser.parse()
+    assert expected_translation == query.to_string(), print(query.to_string())
 
 
 @pytest.mark.parametrize(
@@ -137,17 +137,17 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                 }
             ],
         ),
-        # TODO : check the following.
+        # Note: corresponds to the search for "Industry 4 0" (replaced dot with space)
         (
             '"healthcare" AND "Industry 4.0"',
             [
                 {
-                    "code": "E0004",
-                    "label": "invalid-character",
-                    "message": "Search term contains invalid character",
+                    "code": "W0010",
+                    "label": "character-replacement",
+                    "message": "Character replacement",
                     "is_fatal": False,
-                    "position": (17, 31),
-                    "details": "",
+                    "position": (28, 29),
+                    "details": "Character '.' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
                 }
             ],
         ),
@@ -203,7 +203,6 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                 }
             ],
         ),
-        # TODO : explain why
         (
             "digital health[tiab:~5]",
             [
@@ -213,11 +212,10 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "message": "Invalid use of the proximity operator :~",
                     "is_fatal": False,
                     "position": (14, 23),
-                    "details": "",
+                    "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
                 }
             ],
         ),
-        # TODO : explain why
         (
             '"digital health"[tiab:~0.5]',
             [
@@ -227,23 +225,13 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "message": "Invalid use of the proximity operator :~",
                     "is_fatal": False,
                     "position": (16, 27),
-                    "details": "",
+                    "details": "Proximity value '0.5' is not a digit",
                 }
             ],
         ),
-        # TODO : explain why
         (
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
-            [
-                {
-                    "code": "E0005",
-                    "label": "invalid-proximity-use",
-                    "message": "Invalid use of the proximity operator :~",
-                    "is_fatal": False,
-                    "position": (38, 47),
-                    "details": "",
-                }
-            ],
+            [],
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
@@ -258,7 +246,6 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                 }
             ],
         ),
-        # TODO : explain why
         (
             '"device" AND ("wearable device" AND "health tracking")',
             [
@@ -304,10 +291,11 @@ def test_linter(
     query_str: str,
     messages: list,
 ) -> None:
-    pubmed_parser = PubmedParser(query_str, search_field_general="")
+    parser = PubmedParser(query_str, search_field_general="")
     try:
-        pubmed_parser.parse()
+        parser.parse()
     except SearchQueryException:
         pass
-
-    assert messages == pubmed_parser.linter.messages
+    print(query_str)
+    print(parser.linter.messages)
+    assert messages == parser.linter.messages

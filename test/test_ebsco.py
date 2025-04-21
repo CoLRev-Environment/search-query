@@ -8,7 +8,6 @@ import pytest
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
 
 # flake8: noqa: E501
@@ -48,42 +47,23 @@ from search_query.parser_ebsco import EBSCOParser
                 ),
             ],
         ),
-        # Add more test cases as needed
     ],
 )
 def test_tokenization(
     query_string: str, expected_tokens: List[Tuple[str, str, Tuple[int, int]]]
 ) -> None:
     """Test EBSCO parser tokenization."""
-    ebsco_parser = EBSCOParser(query_string, "")
-    ebsco_parser.tokenize()
+    parser = EBSCOParser(query_string, "")
+    parser.tokenize()
 
-    # Assert equality with error message on failure
-    actual_tokens = ebsco_parser.tokens
-    assert actual_tokens == expected_tokens, print_debug_tokens(
-        ebsco_parser, expected_tokens, query_string
-    )
-
-
-# TODO : move to parser_base?
-def print_debug_tokens(
-    ebsco_parser: QueryStringParser,
-    expected_tokens: List[Tuple[str, str, Tuple[int, int]]],
-    query_string: str,
-) -> str:
-    """Debugging utility for tokenization mismatches."""
-    debug_message = (
-        f"Query String: {query_string}\n\n"
-        f"Expected Tokens: {expected_tokens}\n\n"
-        f"Actual Tokens: {ebsco_parser.tokens}\n\n"
-    )
-    return debug_message
+    actual_tokens = parser.tokens
+    parser.print_tokens()
+    assert actual_tokens == expected_tokens
 
 
 @pytest.mark.parametrize(
     "query_string, messages",
     [
-        # 1. Boolean operator not capitalized
         (
             "Artificial intelligence and Future",
             [
@@ -97,7 +77,6 @@ def print_debug_tokens(
                 }
             ],
         ),
-        # 2. Unbalanced parentheses
         (
             "(Artificial Intelligence AND Future",
             [
@@ -111,7 +90,6 @@ def print_debug_tokens(
                 }
             ],
         ),
-        # 3. Invalid token sequence (FIELD followed directly by LOGIC_OPERATOR)
         (
             "TI AND Artificial Intelligence",
             [
@@ -125,9 +103,7 @@ def print_debug_tokens(
                 }
             ],
         ),
-        # 4. Correct query (no linter messages expected)
         ("TI Artificial Intelligence AND AB Future", []),
-        # 1. Ambiguous token
         (
             "AI governance OR AB Future",
             [
@@ -137,35 +113,57 @@ def print_debug_tokens(
                     "message": "Token ambiguity",
                     "is_fatal": False,
                     "position": (0, 2),
-                    "details": "The token 'AI governance' (at (0, 13)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add parentheses.",
+                    "details": "The token 'AI governance' (at (0, 13)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add quotes.",
                 }
             ],
         ),
-        # Resolved ambiguity
         (
             '"AI governance" OR AB Future',
+            # Resolved ambiguity
             [],
         ),
-        # Unknown search field (TODO)
-        # (
-        #     'AI "governance" OR AB Future',
-        #     [],
-        # ),
+        (
+            'AI "governance" OR AB Future',
+            [
+                {
+                    "code": "F0001",
+                    "label": "tokenizing-failed",
+                    "message": "Fatal error during tokenization",
+                    "is_fatal": True,
+                    "position": (0, 15),
+                    "details": "Token 'AI \"governance\"' should be fully quoted",
+                },
+                {
+                    "code": "W0008",
+                    "label": "token-ambiguity",
+                    "message": "Token ambiguity",
+                    "is_fatal": False,
+                    "position": (0, 2),
+                    "details": "The token 'AI \"governance\"' (at (0, 15)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add quotes.",
+                },
+            ],
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
-    ebsco_parser = EBSCOParser(query_string, "")
+    parser = EBSCOParser(query_string, "")
     try:
-        ebsco_parser.parse()
+        parser.parse()
     except Exception:
         pass
-    assert ebsco_parser.linter.messages == messages
+
+    print(query_string)
+    parser.tokenize()
+    print(parser.tokens)
+    parser.print_tokens()
+    print(parser.linter.messages)
+
+    assert parser.linter.messages == messages
 
 
 @pytest.mark.parametrize(
     "query_string, messages",
     [
-        # 1. Invalid token sequence (FIELD followed directly by LOGIC_OPERATOR)
         (
             "TI Artificial Intelligence AND AB Future",
             [
@@ -182,12 +180,12 @@ def test_linter(query_string: str, messages: list) -> None:
     ],
 )
 def test_linter_general_search_field(query_string: str, messages: list) -> None:
-    ebsco_parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
+    parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
     try:
-        ebsco_parser.parse()
+        parser.parse()
     except Exception:
         pass
-    assert ebsco_parser.linter.messages == messages
+    assert parser.linter.messages == messages
 
 
 @pytest.mark.parametrize(
@@ -197,46 +195,34 @@ def test_linter_general_search_field(query_string: str, messages: list) -> None:
             'TI example AND (AU "John Doe" OR AU "John Wayne")',
             'AND[example[ti], OR["John Doe"[au], "John Wayne"[au]]]',
         ),
-        # Artificial parentheses
-        # TODO : check NOT (should be unary!?)
+        # Implicit precedence / artificial parentheses
         (
             'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'AND["Artificial Intelligence"[ti], NOT[Future[ab], Past[ab]]]'
-            # 'TI "Artificial Intelligence" AND ( ( AB Future NOT AB Past ) ) ',
+            'AND["Artificial Intelligence"[ti], NOT[Future[ab], Past[ab]]]',
         ),
-        # TODO : check NOT (should be unary!?)
         (
             'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            'AND[NOT["Artificial Intelligence"[ti], Future[ab]], Past[ab]]'
-            # '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
+            'AND[NOT["Artificial Intelligence"[ti], Future[ab]], Past[ab]]',
         ),
         (
             'TI "AI" OR AB Robots AND AB Ethics',
-            'OR["AI"[ti], AND[Robots[ab], Ethics[ab]]]'
-            # 'TI "AI" OR ( AB Robots AND AB Ethics ) ',
+            'OR["AI"[ti], AND[Robots[ab], Ethics[ab]]]',
         ),
         (
             'TI "AI" AND AB Robots OR AB Ethics',
-            'OR[AND["AI"[ti], Robots[ab]], Ethics[ab]]'
-            # '( TI "AI" AND AB Robots ) OR AB Ethics ',
+            'OR[AND["AI"[ti], Robots[ab]], Ethics[ab]]',
         ),
-        # TODO : check NOT (should be unary!?)
         (
             'TI "AI" NOT AB Robots OR AB Ethics',
-            'OR[NOT["AI"[ti], Robots[ab]], Ethics[ab]]'
-            # '( TI "AI" NOT AB Robots ) OR AB Ethics ',
+            'OR[NOT["AI"[ti], Robots[ab]], Ethics[ab]]',
         ),
-        # TODO : check NOT (should be unary!?)
         (
             'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            'OR[AND["AI"[ti], OR[Robots[ab], NOT[Ethics[ab], Bias[ab]]]], "Technology"[st]]'
-            # '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
+            'OR[AND["AI"[ti], OR[Robots[ab], NOT[Ethics[ab], Bias[ab]]]], "Technology"[st]]',
         ),
-        # TODO : check NOT (should be unary!?)
         (
             'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'OR["Robo*"[ti], AND[Robots[ab], NOT[Ethics[ab], Bias[ab]]], "Technology"[st]]'
-            # 'TI "Robo*" OR ( AB Robots AND ( AB Ethics NOT AB Bias ) ) OR SU "Technology" ',
+            'OR["Robo*"[ti], AND[Robots[ab], NOT[Ethics[ab], Bias[ab]]], "Technology"[st]]',
         ),
     ],
 )
