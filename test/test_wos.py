@@ -12,6 +12,7 @@ from search_query.exception import FatalLintingException
 from search_query.exception import SearchQueryException
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
+
 # ruff: noqa: E501
 # flake8: noqa: E501
 
