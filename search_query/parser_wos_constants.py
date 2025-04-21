@@ -6,6 +6,8 @@
 class WOSSearchFieldList:
     """List of search fields"""
 
+    # TODO : are fields without "=" valid?
+
     # Define lists for all search fields
     abstract_list = [
         "AB=",
@@ -299,6 +301,8 @@ class WOSSearchFieldList:
         "CF=": conference_list,
         "CI=": city_list,
         "CU=": country_region_list,
+        # TODO : doi DO= or DI?
+        # https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html
         "DO=": doi_list,
         "ED=": editor_list,
         "FG=": grant_number_list,

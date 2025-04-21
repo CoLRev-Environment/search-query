@@ -293,8 +293,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if not query.children:
             subqueries[subquery_id].append(query)
 
-    def validate_search_fields(self, query: Query, user_field_values: list) -> None:
+    def validate_search_fields(self, query: Query) -> None:
         """Validate search terms and fields"""
+
         leaf_queries = self.parser.get_query_leaves(query)
 
         for leaf_query in leaf_queries:
@@ -305,9 +306,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
             for q in leaf_queries
             if not (q.search_field.value == "all" and not q.search_field.position)
         ]
-        self._check_search_field_alignment(
-            set(query_field_values), set(user_field_values)
+        user_field_values = self.parser.parse_user_provided_fields(
+            self.parser.search_field_general
         )
+        if user_field_values:
+            self._check_search_field_alignment(
+                set(query_field_values), set(user_field_values)
+            )
 
     def _check_unsupported_search_field(self, search_field: SearchField) -> None:
         """Check unsupported search field"""

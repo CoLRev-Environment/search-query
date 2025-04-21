@@ -32,7 +32,7 @@ class WOSParser(QueryStringParser):
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
     SEARCH_TERM_REGEX = (
-        r"\*?[\w-]+(?:[\*\$\?][\w-]*)*"
+        r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
         r'|"[^"]+"'
         r'|\u201c[^"^\u201d]+\u201d'
         r'|\u2018[^"]+\u2019'

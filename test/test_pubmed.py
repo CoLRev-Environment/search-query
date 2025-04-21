@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 """Tests for Pubmed search query parser."""
-from typing import Tuple
-
 import pytest
 
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import SearchQueryException
-from search_query.linter_pubmed import PubmedQueryStringLinter
 from search_query.parser_pubmed import PubmedParser
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
@@ -51,7 +47,7 @@ from search_query.parser_pubmed import PubmedParser
         )
     ],
 )
-def test_tokenization_pubmed(query_str: str, expected_tokens: list) -> None:
+def test_tokenization(query_str: str, expected_tokens: list) -> None:
     pubmed_parser = PubmedParser(query_str, "")
     pubmed_parser.tokenize()
     assert pubmed_parser.tokens == expected_tokens, print(pubmed_parser.tokens)
@@ -64,99 +60,249 @@ def test_tokenization_pubmed(query_str: str, expected_tokens: list) -> None:
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
             # TODO : should the operators have search_field?
             'AND[all][OR[all][OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
-        )
+        ),
+        # Artificial parentheses:
+        (
+            '"health tracking" OR "remote monitoring" AND "wearable device"',
+            'OR[all]["health tracking"[all], AND[all]["remote monitoring"[all], "wearable device"[all]]]',
+        ),
+        (
+            '"AI" AND "robotics" OR "ethics"',
+            'OR[all][AND[all]["AI"[all], "robotics"[all]], "ethics"[all]]',
+        ),
+        (
+            '"AI" OR "robotics" AND "ethics"',
+            'OR[all]["AI"[all], AND[all]["robotics"[all], "ethics"[all]]]',
+        ),
+        # TODO : check (invalid queries)?
+        # (
+        #     '"AI" NOT "robotics" OR "ethics"',
+        #     '( "AI" NOT "robotics" ) OR "ethics" ',
+        # ),
+        # (
+        #     '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
+        #     '( "digital health" AND ( "apps" OR ( "wearables" NOT "privacy" ) ) ) OR "ethics" ',
+        # ),
+        # (
+        #     '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
+        #     '"eHealth" OR ( "digital health" AND ( "bias" NOT "equity" ) ) OR "policy" ',
+        # ),
     ],
 )
-def test_parser_pubmed(query_str: str, expected_translation: str) -> None:
-    pubmed_parser = PubmedParser(query_str, "")
+def test_parser(query_str: str, expected_translation: str) -> None:
+    pubmed_parser = PubmedParser(query_str)
     query_tree = pubmed_parser.parse()
     assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
 
 
 @pytest.mark.parametrize(
-    "query_str, error, position",
+    "query_str, messages",
     [
         (
             '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
-            QueryErrorCode.UNBALANCED_PARENTHESES,
-            (47, 48),
+            [
+                {
+                    "code": "F1001",
+                    "label": "unbalanced-parentheses",
+                    "message": "Parentheses are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": (47, 48),
+                    "details": "Unbalanced opening parenthesis",
+                }
+            ],
         ),
         (
             '("health tracking" OR "remote monitoring")) AND ("mobile application" OR "wearable device")',
-            QueryErrorCode.UNBALANCED_PARENTHESES,
-            (42, 43),
+            [
+                {
+                    "code": "F1001",
+                    "label": "unbalanced-parentheses",
+                    "message": "Parentheses are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": (42, 43),
+                    "details": "Unbalanced closing parenthesis",
+                }
+            ],
         ),
         (
             '"health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")',
-            QueryErrorCode.IMPLICIT_PRECEDENCE,
-            (18, 20),
+            [
+                {
+                    "code": "W0007",
+                    "label": "implicit-precedence",
+                    "message": "Operator changed at the same level (explicit parentheses are recommended)",
+                    "is_fatal": False,
+                    "position": (18, 20),
+                    "details": "",
+                }
+            ],
         ),
+        # TODO : check the following.
         (
             '"healthcare" AND "Industry 4.0"',
-            QueryErrorCode.INVALID_CHARACTER,
-            (17, 31),
+            [
+                {
+                    "code": "E0004",
+                    "label": "invalid-character",
+                    "message": "Search term contains invalid character",
+                    "is_fatal": False,
+                    "position": (17, 31),
+                    "details": "",
+                }
+            ],
         ),
         (
             '"health tracking" AND AI*',
-            QueryErrorCode.INVALID_WILDCARD_USE,
-            (22, 25),
+            [
+                {
+                    "code": "E0006",
+                    "label": "invalid-wildcard-use",
+                    "message": "Invalid use of the wildcard operator *",
+                    "is_fatal": False,
+                    "position": (22, 25),
+                    "details": "",
+                }
+            ],
         ),
         (
             '("eHealth" OR "digital health")[tiab]',
-            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-            (31, 37),
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": (31, 37),
+                    "details": "Invalid search field position",
+                }
+            ],
         ),
         (
             '"eHealth"[tiab] "digital health"[tiab]',
-            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-            (9, 32),
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": (9, 32),
+                    "details": "Missing operator",
+                }
+            ],
         ),
         (
             '("health tracking" OR "remote monitoring")("mobile application" OR "wearable device")',
-            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-            (41, 43),
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": (41, 43),
+                    "details": "Missing operator",
+                }
+            ],
         ),
+        # TODO : explain why
         (
             "digital health[tiab:~5]",
-            QueryErrorCode.INVALID_PROXIMITY_USE,
-            (14, 23),
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator :~",
+                    "is_fatal": False,
+                    "position": (14, 23),
+                    "details": "",
+                }
+            ],
         ),
+        # TODO : explain why
         (
             '"digital health"[tiab:~0.5]',
-            QueryErrorCode.INVALID_PROXIMITY_USE,
-            (16, 27),
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator :~",
+                    "is_fatal": False,
+                    "position": (16, 27),
+                    "details": "",
+                }
+            ],
         ),
+        # TODO : explain why
         (
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
-            QueryErrorCode.INVALID_PROXIMITY_USE,
-            (38, 47),
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator :~",
+                    "is_fatal": False,
+                    "position": (38, 47),
+                    "details": "",
+                }
+            ],
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
-            QueryErrorCode.NESTED_NOT_QUERY,
-            (1, 36),
+            [
+                {
+                    "code": "F1008",
+                    "label": "nested-not-query",
+                    "message": "Nesting of NOT operator is not supported for this database",
+                    "is_fatal": True,
+                    "position": (1, 36),
+                    "details": "",
+                }
+            ],
         ),
+        # TODO : explain why
         (
             '"device" AND ("wearable device" AND "health tracking")',
-            QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-            (0, 8),
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": (0, 8),
+                    "details": "",
+                }
+            ],
         ),
         (
             '("device" OR ("mobile application" OR "wearable device")) AND "health tracking"',
-            QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-            (38, 55),
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": (38, 55),
+                    "details": "",
+                }
+            ],
         ),
         (
             '"eHealth"[ab]',
-            QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-            (9, 13),
+            [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (9, 13),
+                    "details": "",
+                },
+            ],
         ),
     ],
 )
-def test_linter_pubmed(
+def test_linter(
     query_str: str,
-    error: QueryErrorCode,
-    position: Tuple,
+    messages: list,
 ) -> None:
     pubmed_parser = PubmedParser(query_str, search_field_general="")
     try:
@@ -164,53 +310,4 @@ def test_linter_pubmed(
     except SearchQueryException:
         pass
 
-    assert any(
-        message["code"] == error.code and message["position"] == position
-        for message in pubmed_parser.linter.messages
-    ), print(pubmed_parser.linter.messages)
-
-
-@pytest.mark.parametrize(
-    "query_string, expected_output_string",
-    [
-        (
-            '"health tracking" OR "remote monitoring" AND "wearable device"',
-            '"health tracking" OR ( "remote monitoring" AND "wearable device" ) ',
-        ),
-        (
-            '"AI" AND "robotics" OR "ethics"',
-            '( "AI" AND "robotics" ) OR "ethics" ',
-        ),
-        (
-            '"AI" OR "robotics" AND "ethics"',
-            '"AI" OR ( "robotics" AND "ethics" ) ',
-        ),
-        (
-            '"AI" NOT "robotics" OR "ethics"',
-            '( "AI" NOT "robotics" ) OR "ethics" ',
-        ),
-        (
-            '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
-            '( "digital health" AND ( "apps" OR ( "wearables" NOT "privacy" ) ) ) OR "ethics" ',
-        ),
-        (
-            '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
-            '"eHealth" OR ( "digital health" AND ( "bias" NOT "equity" ) ) OR "policy" ',
-        ),
-    ],
-)
-def test_add_artificial_parentheses_for_operator_precedence_pubmed(
-    query_string: str, expected_output_string: str
-) -> None:
-    """Test PubMed parser normalization for operator precedence via artificial parentheses."""
-    pubmed_parser = PubmedParser(query_string, "")
-    pubmed_parser.tokenize()
-
-    linter = PubmedQueryStringLinter(pubmed_parser)
-    linter.validate_tokens()
-
-    actual_tokens = pubmed_parser.tokens
-    actual_string = "".join(f"{token.value} " for token in actual_tokens)
-
-    print("actual string: " + actual_string)
-    assert actual_string == expected_output_string
+    assert messages == pubmed_parser.linter.messages

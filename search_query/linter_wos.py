@@ -100,10 +100,10 @@ class WOSQueryStringLinter(QueryStringLinter):
         year_search_field_detected = False
         count_search_fields = 0
         for token in self.parser.tokens:
-            if re.match(self.parser.YEAR_REGEX, token.value):
+            if token.value in WOSSearchFieldList.year_published_list:
                 year_search_field_detected = True
 
-            if re.match(self.parser.SEARCH_FIELD_REGEX, token.value):
+            if token.type == TokenTypes.SEARCH_TERM:
                 count_search_fields += 1
 
         if year_search_field_detected and count_search_fields < 2:

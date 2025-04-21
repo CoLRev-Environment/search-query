@@ -47,9 +47,3 @@ def format_query_string_positions(
     # Add remaining unhighlighted part
     highlighted += query_str[last_index:]
     return highlighted
-
-
-def print_tokens(tokens: list) -> None:
-    """Print the tokens in a formatted table."""
-    for token in tokens:
-        print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")

@@ -7,7 +7,6 @@ from abc import ABC
 from abc import abstractmethod
 
 import search_query.exception as search_query_exception
-from search_query.constants import Colors
 from search_query.constants import LinterMode
 from search_query.constants import ListTokenTypes
 from search_query.constants import Token
@@ -37,46 +36,11 @@ class QueryStringParser(ABC):
         self.search_field_general = search_field_general
         self.verbosity = verbosity
 
-    def get_token_types(self, tokens: list, *, legend: bool = False) -> str:
-        """Print the token types"""
-
-        mismatch = False
-
-        for i in range(len(tokens) - 1):
-            _, (_, current_end) = tokens[i]
-            _, (next_start, _) = tokens[i + 1]
-            if current_end + 1 != next_start:
-                if re.match(r"\s*", self.query_str[current_end:next_start]):
-                    continue
-                # Position mismatch means: not tokenized
-                print(
-                    "NOT-TOKENIZED: "
-                    f"{Colors.RED}{self.query_str[current_end:next_start]}{Colors.END} "
-                    f"(positions {current_end}-{next_start} in query_str)"
-                )
-                mismatch = True
-
-        output = ""
-        for token, _ in tokens:
-            if self.is_term(token):
-                output += token
-            elif self.is_search_field(token):
-                output += f"{Colors.GREEN}{token}{Colors.END}"
-            elif self.is_operator(token):
-                output += f" {Colors.ORANGE}{token}{Colors.END} "
-            elif self.is_parenthesis(token):
-                output += f"{Colors.BLUE}{token}{Colors.END}"
-            else:
-                output += f"{Colors.RED}{token}{Colors.END}"
-
-        if legend:
-            output += f"\n Term\n {Colors.BLUE}Parenthesis{Colors.END}"
-            output += f"\n {Colors.GREEN}Search field{Colors.END}"
-            output += f"\n {Colors.ORANGE}Operator {Colors.END}"
-            output += f"\n {Colors.RED}NOT-MATCHED{Colors.END}"
-        if mismatch:
-            raise ValueError
-        return output
+    def print_tokens(self) -> None:
+        """Print the tokens in a formatted table."""
+        for token in self.tokens:
+            # UNKNOWN could be color-coded
+            print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
     @abstractmethod
     def is_search_field(self, token: str) -> bool:

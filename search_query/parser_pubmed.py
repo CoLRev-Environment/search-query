@@ -21,7 +21,6 @@ from search_query.query import SearchField
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    search_fields = ""
     silence_warnings = False
     last_read_index = -1
 
@@ -385,8 +384,7 @@ class PubmedParser(QueryStringParser):
 
         # Search field mapping
         self.translate_search_fields(query)
-        user_field_values = self.parse_user_provided_fields(self.search_fields)
-        self.linter.validate_search_fields(query, user_field_values)
+        self.linter.validate_search_fields(query)
         self.check_linter_status()
 
         return query

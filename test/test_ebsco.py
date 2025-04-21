@@ -8,7 +8,6 @@ import pytest
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
 
@@ -52,7 +51,7 @@ from search_query.parser_ebsco import EBSCOParser
         # Add more test cases as needed
     ],
 )
-def test_tokenization_ebsco(
+def test_tokenization(
     query_string: str, expected_tokens: List[Tuple[str, str, Tuple[int, int]]]
 ) -> None:
     """Test EBSCO parser tokenization."""
@@ -66,58 +65,7 @@ def test_tokenization_ebsco(
     )
 
 
-@pytest.mark.parametrize(
-    "query_string, updated_string",
-    [
-        (
-            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'TI "Artificial Intelligence" AND ( ( AB Future NOT AB Past ) ) ',
-        ),
-        (
-            'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
-        ),
-        (
-            'TI "AI" OR AB Robots AND AB Ethics',
-            'TI "AI" OR ( AB Robots AND AB Ethics ) ',
-        ),
-        (
-            'TI "AI" AND AB Robots OR AB Ethics',
-            '( TI "AI" AND AB Robots ) OR AB Ethics ',
-        ),
-        (
-            'TI "AI" NOT AB Robots OR AB Ethics',
-            '( TI "AI" NOT AB Robots ) OR AB Ethics ',
-        ),
-        (
-            'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
-        ),
-        (
-            'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'TI "Robo*" OR ( AB Robots AND ( AB Ethics NOT AB Bias ) ) OR SU "Technology" ',
-        ),
-    ],
-)
-def test_add_artificial_parentheses_for_operator_precedence(
-    query_string: str, updated_string: List[Tuple[str, str, Tuple[int, int]]]
-) -> None:
-    """Test EBSCO parser tokenization."""
-    ebsco_parser = EBSCOParser(query_string, "")
-    ebsco_parser.tokenize()
-
-    linter = EBSCOQueryStringLinter(ebsco_parser)
-    linter.validate_tokens()
-    actual_tokens = ebsco_parser.tokens
-    actual_string = "".join([f"{token.value} " for token in actual_tokens])
-
-    # Assert equality with error message on failure
-    print("actual string: " + actual_string)
-    assert actual_string == updated_string, print_debug_tokens(
-        ebsco_parser, updated_string, query_string
-    )
-
-
+# TODO : move to parser_base?
 def print_debug_tokens(
     ebsco_parser: QueryStringParser,
     expected_tokens: List[Tuple[str, str, Tuple[int, int]]],
@@ -179,20 +127,6 @@ def print_debug_tokens(
         ),
         # 4. Correct query (no linter messages expected)
         ("TI Artificial Intelligence AND AB Future", []),
-    ],
-)
-def test_linter_ebsco(query_string: str, messages: list) -> None:
-    ebsco_parser = EBSCOParser(query_string, "")
-    try:
-        ebsco_parser.parse()
-    except Exception:
-        pass
-    assert ebsco_parser.linter.messages == messages
-
-
-@pytest.mark.parametrize(
-    "query_string, messages",
-    [
         # 1. Ambiguous token
         (
             "AI governance OR AB Future",
@@ -219,9 +153,12 @@ def test_linter_ebsco(query_string: str, messages: list) -> None:
         # ),
     ],
 )
-def test_linter_ebsco_non_strict(query_string: str, messages: list) -> None:
-    ebsco_parser = EBSCOParser(query_string, "", mode=LinterMode.NONSTRICT)
-    ebsco_parser.parse()
+def test_linter(query_string: str, messages: list) -> None:
+    ebsco_parser = EBSCOParser(query_string, "")
+    try:
+        ebsco_parser.parse()
+    except Exception:
+        pass
     assert ebsco_parser.linter.messages == messages
 
 
@@ -244,7 +181,7 @@ def test_linter_ebsco_non_strict(query_string: str, messages: list) -> None:
         ),
     ],
 )
-def test_linter_ebsco_general_search_field(query_string: str, messages: list) -> None:
+def test_linter_general_search_field(query_string: str, messages: list) -> None:
     ebsco_parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
     try:
         ebsco_parser.parse()
@@ -253,20 +190,64 @@ def test_linter_ebsco_general_search_field(query_string: str, messages: list) ->
     assert ebsco_parser.linter.messages == messages
 
 
-def test_query_parsing_1() -> None:
+@pytest.mark.parametrize(
+    "query_str, expected_translation",
+    [
+        (
+            'TI example AND (AU "John Doe" OR AU "John Wayne")',
+            'AND[example[ti], OR["John Doe"[au], "John Wayne"[au]]]',
+        ),
+        # Artificial parentheses
+        # TODO : check NOT (should be unary!?)
+        (
+            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
+            'AND["Artificial Intelligence"[ti], NOT[Future[ab], Past[ab]]]'
+            # 'TI "Artificial Intelligence" AND ( ( AB Future NOT AB Past ) ) ',
+        ),
+        # TODO : check NOT (should be unary!?)
+        (
+            'TI "Artificial Intelligence" NOT AB Future AND AB Past',
+            'AND[NOT["Artificial Intelligence"[ti], Future[ab]], Past[ab]]'
+            # '( TI "Artificial Intelligence" NOT AB Future ) AND AB Past ',
+        ),
+        (
+            'TI "AI" OR AB Robots AND AB Ethics',
+            'OR["AI"[ti], AND[Robots[ab], Ethics[ab]]]'
+            # 'TI "AI" OR ( AB Robots AND AB Ethics ) ',
+        ),
+        (
+            'TI "AI" AND AB Robots OR AB Ethics',
+            'OR[AND["AI"[ti], Robots[ab]], Ethics[ab]]'
+            # '( TI "AI" AND AB Robots ) OR AB Ethics ',
+        ),
+        # TODO : check NOT (should be unary!?)
+        (
+            'TI "AI" NOT AB Robots OR AB Ethics',
+            'OR[NOT["AI"[ti], Robots[ab]], Ethics[ab]]'
+            # '( TI "AI" NOT AB Robots ) OR AB Ethics ',
+        ),
+        # TODO : check NOT (should be unary!?)
+        (
+            'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
+            'OR[AND["AI"[ti], OR[Robots[ab], NOT[Ethics[ab], Bias[ab]]]], "Technology"[st]]'
+            # '( TI "AI" AND ( AB Robots OR ( AB Ethics NOT AB Bias ) ) ) OR SU "Technology" ',
+        ),
+        # TODO : check NOT (should be unary!?)
+        (
+            'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
+            'OR["Robo*"[ti], AND[Robots[ab], NOT[Ethics[ab], Bias[ab]]], "Technology"[st]]'
+            # 'TI "Robo*" OR ( AB Robots AND ( AB Ethics NOT AB Bias ) ) OR SU "Technology" ',
+        ),
+    ],
+)
+def test_parser(query_str: str, expected_translation: str) -> None:
     parser = EBSCOParser(
-        query_str="TI example AND (AU John Doe OR AU John Wayne)",
+        query_str=query_str,
         search_field_general="",
         mode="",
     )
-    query = parser.parse()
-    assert query.value == "AND"
-    assert query.operator
-    assert len(query.children) == 2
-    assert query.children[0].value == "example"
-    assert not query.children[0].operator
-    assert query.children[1].value == "OR"
+    query_tree = parser.parse()
 
-    assert query.children[1].children[1].value == "John Wayne"
-    assert query.children[1].children[1].search_field
-    assert query.children[1].children[1].search_field.value == "au"
+    parser.print_tokens()
+
+    assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
