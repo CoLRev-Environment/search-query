@@ -177,11 +177,7 @@ class WOSParser(QueryStringParser):
                 )
 
                 # Add the parsed expression to the list of children
-                children = self.append_children(
-                    children=children,
-                    sub_query=sub_query,
-                    current_operator=current_operator,
-                )
+                children.append(sub_query)
                 current_negation = False
 
             # Handle closing parentheses
@@ -381,51 +377,6 @@ class WOSParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
-    def append_children(
-        self,
-        children: typing.List[Query],
-        sub_query: Query,
-        current_operator: str,
-    ) -> list:
-        """Check where to append the sub expression."""
-        if children:
-            # Check if the current operator is the same as the last child
-            # and if the last child is the same as the last child of the sub expression
-            if (
-                current_operator == sub_query.value
-                and sub_query.value == children[-1].value
-            ):
-                # Append the children of the sub expression to the last child
-                for child in sub_query.children:
-                    children[-1].children.append(child)
-
-            # Check if the last child is an operator and the sub expression is a term
-            # and the current operator is the same as the last child
-            elif (
-                current_operator == sub_query.value
-                or self.is_term(sub_query.value)
-                and self.is_operator(children[0].value)
-                and sub_query.children
-            ):
-                # Append the sub expression to the last child
-                for child in sub_query.children:
-                    children.append(child)
-            # Check if the sub_query is an operator or the sub expression is a term
-            # and the current operator is the same as the last child
-            elif (
-                self.is_operator(sub_query.value) or self.is_term(sub_query.value)
-            ) and current_operator == children[0].value:
-                # Append the sub expression to the last child
-                children[-1].children.append(sub_query)
-            else:
-                # Append the sub expression to the list of children
-                children.append(sub_query)
-        else:
-            # Append the sub expression to the list of children
-            children.append(sub_query)
-
-        return children
-
     def handle_year_search(
         self, token: Token, children: list, current_operator: str
     ) -> typing.List[Query]:
@@ -586,7 +537,6 @@ class WOSParser(QueryStringParser):
                 and self.linter.messages
             ):
                 raise FatalLintingException(
-                    message="LinterDetected",
                     query_string=self.query_str,
                     messages=self.linter.messages,
                 )

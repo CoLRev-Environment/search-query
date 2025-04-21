@@ -1,4 +1,6 @@
 """Web-of-Science linter unit tests."""
+from collections.abc import Callable
+
 import pytest
 
 from search_query.constants import LinterMode
@@ -12,26 +14,34 @@ from search_query.utils import print_tokens
 # flake8: noqa: E501
 
 
-def test_no_parentheses() -> None:
-    parser = WOSParser("test query")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+@pytest.fixture(scope="module")
+def linter_factory() -> Callable[[str], WOSQueryStringLinter]:
+    def _build_linter(query_str: str) -> WOSQueryStringLinter:
+        parser = WOSParser(query_str)
+        parser.tokenize()
+        return WOSQueryStringLinter(parser)
+
+    return _build_linter
+
+
+def test_no_parentheses(linter_factory: Callable[[str], WOSQueryStringLinter]) -> None:
+    linter = linter_factory("test query")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 0
 
 
-def test_matched_parentheses() -> None:
-    parser = WOSParser("(test query)")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_matched_parentheses(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("(test query)")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 0
 
 
-def test_unmatched_opening_parenthesis() -> None:
-    parser = WOSParser("(test query")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_unmatched_opening_parenthesis(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("(test query")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -44,10 +54,10 @@ def test_unmatched_opening_parenthesis() -> None:
     }
 
 
-def test_unmatched_closing_parenthesis() -> None:
-    parser = WOSParser("test query)")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_unmatched_closing_parenthesis(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("test query)")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -60,10 +70,10 @@ def test_unmatched_closing_parenthesis() -> None:
     }
 
 
-def test_multiple_unmatched_parentheses() -> None:
-    parser = WOSParser("(test query))")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_multiple_unmatched_parentheses(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("(test query))")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -76,10 +86,10 @@ def test_multiple_unmatched_parentheses() -> None:
     }
 
 
-def test_nested_unmatched_parentheses() -> None:
-    parser = WOSParser("((test query)")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_nested_unmatched_parentheses(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("((test query)")
     linter.check_unbalanced_parentheses()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -92,10 +102,10 @@ def test_nested_unmatched_parentheses() -> None:
     }
 
 
-def test_two_operators_in_a_row() -> None:
-    parser = WOSParser("term1 AND OR")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_two_operators_in_a_row(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("term1 AND OR")
     linter.check_invalid_token_sequences()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -108,10 +118,10 @@ def test_two_operators_in_a_row() -> None:
     }
 
 
-def test_two_search_fields_in_a_row() -> None:
-    parser = WOSParser("term1 au= ti=")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_two_search_fields_in_a_row(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("term1 au= ti=")
     linter.check_invalid_token_sequences()
     assert len(linter.messages) == 2
     assert linter.messages[0] == {
@@ -124,10 +134,10 @@ def test_two_search_fields_in_a_row() -> None:
     }
 
 
-def test_missing_operator_between_term_and_parenthesis() -> None:
-    parser = WOSParser("term1 (query)")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_missing_operator_between_term_and_parenthesis(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("term1 (query)")
     linter.check_invalid_token_sequences()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -140,10 +150,10 @@ def test_missing_operator_between_term_and_parenthesis() -> None:
     }
 
 
-def test_missing_operator_between_parentheses() -> None:
-    parser = WOSParser(") (query)")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_missing_operator_between_parentheses(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory(") (query)")
     linter.check_invalid_token_sequences()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -156,10 +166,10 @@ def test_missing_operator_between_parentheses() -> None:
     }
 
 
-def test_missing_operator_between_term_and_search_field() -> None:
-    parser = WOSParser("term1 au=")
-    parser.tokenize()
-    linter = WOSQueryStringLinter(parser)
+def test_missing_operator_between_term_and_search_field(
+    linter_factory: Callable[[str], WOSQueryStringLinter]
+) -> None:
+    linter = linter_factory("term1 au=")
     linter.check_invalid_token_sequences()
     assert len(linter.messages) == 1
     assert linter.messages[0] == {
@@ -466,7 +476,7 @@ def test_invalid_field() -> None:
         "label": "search-field-unsupported",
         "message": "Search field is not supported for this database",
         "is_fatal": True,
-        "details": "",
+        "details": "Search field IY= at position (10, 13) is not supported.",
         "position": (10, 13),
     }
 

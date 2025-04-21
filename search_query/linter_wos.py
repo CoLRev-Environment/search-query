@@ -158,6 +158,8 @@ class WOSQueryStringLinter(QueryStringLinter):
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         position=token.position,
+                        details=f"Search field {token.value} at position "
+                        f"{token.position} is not supported.",
                     )
 
     def check_implicit_near(self) -> None:
@@ -387,11 +389,12 @@ class WOSQueryListLinter(QueryListLinter):
             for level, message_list in self.messages.items():
                 print(f"\n[INFO:] Linter messages for level {level}:")
                 for msg in message_list:
+                    details = msg["details"] if msg["details"] else msg["message"]
                     print(
                         "[Linter:] "
                         + msg["label"]
                         + "\t"
-                        + msg["message"]
+                        + details
                         + " At position "
                         + str(msg["position"])
                     )
@@ -407,7 +410,6 @@ class WOSQueryListLinter(QueryListLinter):
                 l_messages = [y for x in self.messages.values() if x for y in x if y]
                 print(l_messages)
                 raise FatalLintingException(
-                    message="LinterDetected",
                     query_string=self.parser.query_list,
                     messages=l_messages,
                 )

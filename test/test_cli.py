@@ -21,19 +21,10 @@ def test_translate_cli() -> None:
         text=True,
     )
 
-    print(result.stderr)
-    print(result.stdout)
-
     assert result.returncode == 0
     assert "Converting from wos to ebscohost" in result.stdout
     assert "Writing converted query to" in result.stdout
     assert output_file.exists()
-
-    # # Optionally, validate output content
-    # with open(output_file) as f:
-    #     data = json.load(f)
-    #     assert "search_string" in data
-    #     assert isinstance(data["search_string"], str)
 
 
 def test_linter_cli() -> None:
