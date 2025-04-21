@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Tests for search query translation."""
-import json
-from pathlib import Path
 from typing import List
 from typing import Tuple
 
@@ -11,10 +9,8 @@ from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_ebsco import EBSCOQueryStringLinter
-from search_query.parser import parse
 from search_query.parser_base import QueryStringParser
 from search_query.parser_ebsco import EBSCOParser
-from search_query.query import Query
 
 # flake8: noqa: E501
 
@@ -134,38 +130,6 @@ def print_debug_tokens(
         f"Actual Tokens: {ebsco_parser.tokens}\n\n"
     )
     return debug_message
-
-
-directory_path = Path(
-    "/home/ubuntu1/Thesis/example/searchRxiv_scraper/search-query/data/ebscohost"
-)
-file_list = list(directory_path.glob("*.json"))
-
-
-# Use the list of files with pytest.mark.parametrize
-@pytest.mark.parametrize("file_path", file_list)
-def test_ebsco_query_parser(file_path: str) -> None:
-    """Test the translation of a search query to an EBSCO query."""
-
-    with open(file_path) as file:
-        data = json.load(file)
-        query_string = data["search_string"]
-        expected = data["parsed"]["search"]
-
-        query = parse(query_string, search_field_general="", syntax="ebscohost")
-        query_str = query.to_string("pre_notation")
-
-        assert query_str == expected, print_debug(  # type: ignore
-            query, query_string, query_str
-        )
-
-
-def print_debug(query: Query, query_string: str, query_str: str) -> None:
-    """Debugging utility for query parsing mismatches."""
-    print(query_string)
-    print()
-    print(query_str)
-    print(query.to_string("structured"))
 
 
 @pytest.mark.parametrize(

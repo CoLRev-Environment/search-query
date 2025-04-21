@@ -1,5 +1,5 @@
 """Web-of-Science linter unit tests."""
-from collections.abc import Callable
+from typing import Callable
 
 import pytest
 
