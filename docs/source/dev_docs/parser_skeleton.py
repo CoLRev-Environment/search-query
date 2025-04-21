@@ -7,7 +7,6 @@ import typing
 
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
-from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -63,8 +62,8 @@ class XYParser(QueryStringParser):
                 token_type = TokenTypes.LOGIC_OPERATOR
             # ...
             else:
-                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
-                continue
+                token_type = TokenTypes.UNKNOWN
+                # linter raises QueryErrorCode.TOKENIZING_FAILED
 
             self.tokens.append((token, token_type, (start, end)))
 
@@ -94,7 +93,7 @@ class XYParser(QueryStringParser):
         """Parse a query string."""
 
         self.tokenize()
-        self.add_artificial_parentheses_for_operator_precedence()
+        self.linter.validate_tokens()
 
         query = self.parse_query_tree(self.tokens)
         self.translate_search_fields(query)

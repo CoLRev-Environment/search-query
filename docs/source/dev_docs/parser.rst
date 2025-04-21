@@ -31,10 +31,12 @@ A code skeleton is available for the parser, linter, and tests:
 
 To parse a list format, the numbered sub-queries should be replaced to create a search string, which can be parsed with the standard string-parser. This helps to avoid redundant implementation.
 
-Tokenization
+Linter
 ------------
 
-`Regex <https://regex101.com/>`_
+The linter checks should reuse (or extend) the messages from the constants module, which are documented in the `messages <../messages/errors_index.html>`_ section.
+The linter message should be unambiguously defined in the constants module.
+An additional *details* parameter can be added to the linter message, explaining the specific problem.
 
 Translate search fields: Mapping Fields to Standard-Fields
 ----------------------------------------------------------
