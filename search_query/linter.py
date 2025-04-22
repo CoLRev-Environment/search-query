@@ -8,7 +8,7 @@ from abc import ABCMeta
 import search_query.parser
 from search_query.constants import Colors
 from search_query.constants import ExitCodes
-from search_query.search_file import load_search_file
+from search_query.search_file import SearchFile
 from search_query.utils import format_query_string_pos
 
 

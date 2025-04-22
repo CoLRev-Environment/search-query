@@ -241,7 +241,7 @@ class PubmedParser(QueryStringParser):
         return Query(
             value=operator_type,
             operator=True,
-            search_field=SearchField(value=Fields.ALL),
+            search_field=None,
             children=list(children),
             position=(query_start_pos, query_end_pos),
         )
@@ -340,7 +340,7 @@ class PubmedParser(QueryStringParser):
 
         query.value = Operators.OR
         query.operator = True
-        query.search_field = SearchField(value=Fields.ALL)
+        query.search_field = None
         query.children = query_children
 
     def get_query_leaves(self, query: Query) -> list:

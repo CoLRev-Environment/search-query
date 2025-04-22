@@ -61,8 +61,7 @@ def test_tokenization_pubmed(query_str: str, expected_tokens: list) -> None:
     [
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
-            # TODO : should the operators have search_field?
-            'AND[all][OR[all][OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
+            'AND[OR[OR[eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
         )
     ],
 )
