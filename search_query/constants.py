@@ -145,6 +145,7 @@ class Fields:
     ISBN = "ib"
     LANGUAGE = "la"
     DESCRIPTORS = "de"
+    PUBLICATION_DATE = "dp"
 
     @classmethod
     def all(cls) -> list:
@@ -213,6 +214,7 @@ PLATFORM_FIELD_MAP = {
         Fields.TEXT_WORD: "[tw]",
         Fields.AFFILIATION: "[ad]",
         Fields.LANGUAGE: "[la]",
+        Fields.PUBLICATION_DATE: "[dp]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
@@ -586,6 +588,13 @@ class QueryErrorCode(Enum):
         "W0010",
         "character-replacement",
         "Character replacement",
+        "",
+    )
+    DATE_FILTER_IN_SUBQUERY = (
+        [PLATFORM.PUBMED],
+        "W0011",
+        "date-filter-in-subquery",
+        "Date filter in subquery",
         "",
     )
 

@@ -183,7 +183,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 # Wildcard * is invalid
                 # when applied to terms with less than 4 characters
                 self.add_linter_message(
-                    QueryErrorCode.INVALID_WILDCARD_USE, token.position
+                    QueryErrorCode.INVALID_WILDCARD_USE, position=token.position
                 )
 
     def check_invalid_proximity_operator(self) -> None:
@@ -200,7 +200,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details = f"Not matching regex {self.PROXIMITY_REGEX}"
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    field_token.position,
+                    position=field_token.position,
                     details=details,
                 )
                 continue
@@ -211,7 +211,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details = f"Proximity value '{prox_value}' is not a digit"
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    field_token.position,
+                    position=field_token.position,
                     details=details,
                 )
                 continue
@@ -231,7 +231,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    field_token.position,
+                    position=field_token.position,
                     details=details,
                 )
 
@@ -246,7 +246,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    field_token.position,
+                    position=field_token.position,
                     details=details,
                 )
             # Update search field token
@@ -254,8 +254,30 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
+        # Note: search fields are not yet translated.
         self._check_nested_not_query(query)
         self._check_redundant_terms(query)
+        self._check_date_filters_in_subquery(query)
+
+    def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
+        """Check for date filters in subqueries"""
+
+        # Skip top-level queries
+        if level == 0:
+            for child in query.children:
+                self._check_date_filters_in_subquery(child, level + 1)
+            return
+        if query.operator:
+            for child in query.children:
+                self._check_date_filters_in_subquery(child, level + 1)
+            return
+
+        # TODO : extend for variations...
+        if query.search_field and query.search_field.value in ["[publication date]"]:
+            self.add_linter_message(
+                QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
+                position=query.position or (-1, -1),
+            )
 
     def _check_nested_not_query(self, query: Query) -> None:
         """Check query tree for nested NOT queries"""
@@ -312,13 +334,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         if operator == Operators.AND:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                term_a.position,
+                                position=term_a.position,
                             )
                             redundant_terms.append(term_a)
                         elif operator in {Operators.OR, Operators.NOT}:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                term_b.position,
+                                position=term_b.position,
                             )
                             redundant_terms.append(term_b)
 
@@ -374,7 +396,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ):
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                search_field.position or (-1, -1),
+                position=search_field.position or (-1, -1),
             )
             search_field.value = Fields.ALL
             search_field.position = None
@@ -387,16 +409,22 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if user_field_values != query_field_values:
                 # User-provided fields and fields in the query do not match
                 self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, (-1, -1)
+                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, position=(-1, -1)
                 )
             else:
                 # User-provided fields match fields in the query
-                self.add_linter_message(QueryErrorCode.SEARCH_FIELD_REDUNDANT, (-1, -1))
+                self.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, position=(-1, -1)
+                )
 
         elif user_field_values and not query_field_values:
             # User-provided fields are missing in the query
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1))
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING, position=(-1, -1)
+            )
 
         elif not user_field_values and not query_field_values:
             # Fields not specified
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1))
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING, position=(-1, -1)
+            )

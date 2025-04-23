@@ -285,6 +285,20 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                 },
             ],
         ),
+        (
+            # '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND ("2020/01/01"[Date - Publication] : "2022/12/31"[Date - Publication])) OR ("ehealth"[Title/Abstract])',
+            '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])',
+            [
+                {
+                    "code": "W0011",
+                    "label": "date-filter-in-subquery",
+                    "message": "Date filter in subquery",
+                    "is_fatal": False,
+                    "position": (70, 109),
+                    "details": "",
+                }
+            ],
+        ),
     ],
 )
 def test_linter(

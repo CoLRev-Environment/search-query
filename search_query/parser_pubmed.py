@@ -125,7 +125,7 @@ class PubmedParser(QueryStringParser):
 
             if start > prev_end and self.query_str[prev_end:start].strip():
                 self.linter.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, (prev_end, start)
+                    QueryErrorCode.TOKENIZING_FAILED, position=(prev_end, start)
                 )
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
@@ -146,7 +146,8 @@ class PubmedParser(QueryStringParser):
 
         if prev_end < len(self.query_str) and self.query_str[:prev_end].strip():
             self.linter.add_linter_message(
-                QueryErrorCode.TOKENIZING_FAILED, (prev_end, len(self.query_str))
+                QueryErrorCode.TOKENIZING_FAILED,
+                position=(prev_end, len(self.query_str)),
             )
 
         self.combine_subsequent_terms()

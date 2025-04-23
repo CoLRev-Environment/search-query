@@ -119,7 +119,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         # TODO : the messages should not depend on the mode?!
         if self.search_field_general != "" and self.parser.mode == LinterMode.STRICT:
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, ())
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, position=())
 
     def check_invalid_token_sequences(self) -> None:
         """

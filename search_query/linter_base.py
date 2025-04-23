@@ -28,7 +28,7 @@ class QueryStringLinter:
         self.messages: typing.List[dict] = []
 
     def add_linter_message(
-        self, error: QueryErrorCode, position: tuple, details: str = ""
+        self, error: QueryErrorCode, *, position: tuple, details: str = ""
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
@@ -146,7 +146,7 @@ class QueryStringLinter:
         for token in self.parser.tokens:
             if token.type == TokenTypes.UNKNOWN:
                 self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, token.position
+                    QueryErrorCode.TOKENIZING_FAILED, position=token.position
                 )
 
     def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
