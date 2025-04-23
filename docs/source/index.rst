@@ -292,3 +292,4 @@ References
    :maxdepth: 1
 
    dev_docs/parser
+   api_search/api_search
