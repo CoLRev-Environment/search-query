@@ -16,13 +16,11 @@ Search-Query Documentation
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
 
-Search-query is a Python package for **translating academic literature search queries (i.e., parsing and serializing)**, but also for **validating, simplifying, and improving** them.
-It implements various syntax validation checks (aka. linters) and prints instructive messages to inform users about potential issues.
-These checks are valuable for preventing errors—an important step given that previous studies have found high error rates in search queries (Li & Rainer, 2023: **50%**; Salvador-Oliván et al., 2019: **90%**; Sampson & McGowan, 2006: **80%**).
-
-We currently support PubMed, EBSCOHost, and Web of Science, but plan to extend search-query to support other databases.
-The package can be used programmatically or through the command line, has zero dependencies, and can therefore be integrated in a variety of environments.
-The parsers, and linters are battle-tested on over **500 (TO UPDATE)** peer-reviewed queries registered at `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_.
+**Search-query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
+It currently supports PubMed, EBSCOHost, and Web of Science, and it is extensible to support other databases.
+The package can be used programmatically, through the command line, or as a pre-commit hook.
+It has zero dependencies, and can therefore be integrated in a variety of environments.
+The parsers, and linters are battle-tested on peer-reviewed queries registered at `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_.
 
 A Jupyter Notebook demo (hosted on Binder) is available here:
 
@@ -60,7 +58,7 @@ Creating a query programmatically is simple:
     - ``search_field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
    Search strings can be either in string or list format.
 
-We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers (syntax) </parser/parser_index>`):
+We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers (syntax) </platforms/platform_index>`):
 
 .. code-block:: python
 
@@ -82,7 +80,7 @@ Note how the syntax is translated and how the search for :literal:`Title/Abstrac
    # Output:
    # (TI=("digital health") OR AB=("digital health")) AND (TI=("privacy") OR AB=("privacy"))
 
-Another useful feature of search-query is its **validation (linter)** functionality, which helps us to identify syntactical errors:
+Another useful feature of search-query is its **linter** functionality, which helps us to validate the query by identifying syntactical errors:
 
 .. code-block:: python
 
@@ -116,180 +114,47 @@ Beyond the instructive error message, additional information on the specific mes
     An additional "silent" option may be used to silence warnings.
 
 
-.. _json-search-files:
-
-JSON search files
------------------------
-
-Search-query can parse queries from strings and JSON files in the standard format (Haddaway et al. 2022). Example:
-
-.. code-block:: json
-
-   {
-      "record_info": {},
-      "authors": [{"name": "Wagner, G.", "ORCID": "0000-0000-0000-1111"}],
-      "date": {"data_entry": "2019.07.01", "search_conducted": "2019.07.01"},
-      "platform": "Web of Science",
-      "database": ["SCI-EXPANDED", "SSCI", "A&HCI"],
-      "search_string": "TS=(quantum AND dot AND spin)"
-   }
-
-To load a JSON query file, run the parser:
-
-.. code-block:: python
-
-    from search_query.search_file import SearchFile
-    from search_query.parser import parse
-
-    search = SearchFile("search-file.json")
-    query = parse(search.search_string, syntax=search.platform)
-
-To write a query to a JSON file, run the serializer:
-
-.. code-block:: python
-
-    from search_query import save_file
-
-    save_file(
-        filename="search-file.json",
-        query_str=query.to_string(syntax="wos"),
-        syntax="wos",
-        authors=[{"name": "Tom Brady"}],
-        record_info={},
-        date={}
-    )
-
-CLI Use
-=======
-
-The CLI reads a query from an input file, converts it from a specified source format
-to a target format, and writes the converted query to an output file.
-
-To translate a search query on the command line, run
-
-.. code-block:: bash
-
-    search-query-translate --from colrev_web_of_science \
-                            --input input_query.txt \
-                            --to colrev_pubmed \
-                            --output output_query.txt
-
-Arguments
----------
-
-- ``--from`` (required):
-  The source query format.
-  Example: ``colrev_web_of_science``
-
-- ``--input`` (required):
-  Path to the input file containing the original query.
-
-- ``--to`` (required):
-  The target query format.
-  Example: ``colrev_pubmed``
-
-- ``--output`` (required):
-  Path to the file where the converted query will be written.
-
-
-
-Example
--------
-
-Suppose you have a Web of Science search query saved in ``input_query.txt`` and you want to convert it to a PubMed-compatible format. Run:
-
-.. code-block:: bash
-
-    search-query-translate --from colrev_web_of_science \
-                            --input input_query.txt \
-                            --to colrev_pubmed \
-                            --output output_query.txt
-
-The converted query will be saved in ``output_query.txt``.
-
-Linters can be run on the CLI:
-
-.. code-block:: bash
-
-    search-query-lint search-file.json
-
-
-Pre-commit Hooks
-================
-
-Linters can be included as pre-commit hooks by adding the following to the ``.pre-commit-config.yaml``:
-
-.. code-block:: yaml
-
-    repos:
-      - repo: https://github.com/CoLRev-Environment/search-query
-        rev: main  # or version of search-query
-        hooks:
-          - id: search-query-lint
-
-For development and testing, use the following:
-
-.. code-block:: yaml
-
-    repos:
-      - repo: local
-        hooks:
-          - id: search-query-lint
-            name: Search-file linter
-            entry: search-query-lint
-            language: python
-            files: \.json$
-
-To activate and run:
-
-.. code-block:: bash
-
-    pre-commit install
-    pre-commit run --all
-
 Parser development
 -------------------------
 
 To develop a parser, see `dev-parser <dev_docs/parser.html>`_ docs.
 
-References
-----------------
-
-.. parsed-literal::
-
-   Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyhan, K., & Young, S. (2022).
-     A suggested data structure for transparent and repeatable reporting of bibliographic searching.
-     *Campbell Systematic Reviews*, 18(4), e1288. doi: `10.1002/cl2.1288 <https://onlinelibrary.wiley.com/doi/full/10.1002/cl2.1288>`_
-
-    Li, Z., & Rainer, A. (2023). Reproducible Searches in Systematic Reviews: An Evaluation and Guidelines.
-      IEEE Access, 11, 84048–84060. IEEE Access. doi: `10.1109/ACCESS.2023.3299211 <https://doi.org/10.1109/ACCESS.2023.3299211>`_
-
-    Salvador-Oliván, J. A., Marco-Cuenca, G., & Arquero-Avilés, R. (2019).
-      Errors in search strategies used in systematic reviews and their effects on information retrieval.
-      Journal of the Medical Library Association : JMLA, 107(2), 210. doi: `10.5195/jmla.2019.567 <https://doi.org/10.5195/jmla.2019.567>`_
-
-    Sampson, M., & McGowan, J. (2006). Errors in search strategies were identified by type and frequency.
-      Journal of Clinical Epidemiology, 59(10), 1057–1063. doi: `10.1016/j.jclinepi.2006.01.007 <https://doi.org/10.1016/j.jclinepi.2006.01.007>`_
-
 
 .. toctree::
    :hidden:
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
 .. toctree::
    :hidden:
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Manual
 
-   parser/parser_index
-   messages/errors_index
-   api_search/api_search
+   load
+   lint/index
+   translate
+   save
+   improve
+   automate
 
 .. toctree::
    :hidden:
-   :caption: Developer documentation
+   :maxdepth: 3
+   :caption: Platforms
+
+   platforms/platform_index
+
+.. toctree::
+   :hidden:
+   :maxdepth: 3
+   :caption: Interfaces
+
+   cli
+   pre_commit
+
+.. toctree::
+   :hidden:
    :maxdepth: 1
+   :caption: Developer documentation
 
    dev_docs/parser
-   api_search/api_search

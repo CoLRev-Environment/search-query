@@ -1,0 +1,14 @@
+.. _W0010:
+
+W0010 — character-replacement
+=============================
+
+**Error Code**: W0010
+
+**Message**: ``Character replacement``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Character replacement
+
+**Back to**: :ref:`lint`

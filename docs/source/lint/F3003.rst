@@ -1,0 +1,14 @@
+.. _F3003:
+
+F3003 — invalid-list-reference
+==============================
+
+**Error Code**: F3003
+
+**Message**: ``Invalid list reference in list query (not found)``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Invalid list reference in list query (not found)
+
+**Back to**: :ref:`lint`

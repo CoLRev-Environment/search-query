@@ -1,0 +1,26 @@
+.. _F2002:
+
+F2002 — wildcard-in-year
+========================
+
+**Error Code**: F2002
+
+**Message**: ``Wildcard characters (*, ?, $) not supported in year search.``
+
+**Scope**: PLATFORM.WOS
+
+**Typical fix**: Replace with year range.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    A AND year=201*
+
+**Correct query**:
+
+.. code-block:: python
+
+    A AND (year >= 2010 AND year < 2020)
+
+**Back to**: :ref:`lint`

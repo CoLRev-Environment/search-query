@@ -1,17 +1,17 @@
 # scripts/generate_errors_index.py
 from pathlib import Path
 
-from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 
-OUTPUT_FILE = Path("docs/source/messages/errors_index.rst")
+OUTPUT_FILE = Path("docs/source/lint/errors_index.rst")
 
 
-OUTPUT_FILE.write_text(".. _query-error-messages:\n\n")
+# OUTPUT_FILE.write_text(".. _query-error-messages:\n\n")
+OUTPUT_FILE.write_text("")
 with OUTPUT_FILE.open("a", encoding="utf-8") as f:
-    f.write("Messages\n")
-    f.write("====================\n\n")
-    f.write("Overview of query error messages grouped by type.\n\n")
+    # f.write("Lint\n")
+    # f.write("====================\n\n")
+    # f.write("Overview of query error messages grouped by type.\n\n")
 
     for group_title, filter_fn in [
         ("Fatal Errors", lambda e: e.is_fatal()),
@@ -25,7 +25,7 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
             f.write(f"   {error.code}\n")
             f.write("\n")
 
-OUTPUT_DIR = Path("docs/source/messages")
+OUTPUT_DIR = Path("docs/source/lint")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -51,7 +51,7 @@ def generate_rst_file(error: QueryErrorCode) -> None:
         if error.docs.strip()
         else "**Description**: " + error.message,
         "",
-        "**Back to**: :ref:`query-error-messages`",
+        "**Back to**: :ref:`lint`",
         "",
     ]
 
@@ -63,15 +63,15 @@ for error in QueryErrorCode:
     generate_rst_file(error)
 
 
-OUTPUT_FILE = Path("docs/source/parser/parser_index.rst")
-OUTPUT_FILE.write_text(".. _parsers:\n\n")
-with OUTPUT_FILE.open("a", encoding="utf-8") as f:
-    f.write("Parsers\n")
-    f.write("====================\n\n")
-    f.write("Overview of query parsers:\n\n")
-    # f.write(".. toctree::\n   :maxdepth: 1\n\n")
+# OUTPUT_FILE = Path("docs/source/parser/parser_index.rst")
+# OUTPUT_FILE.write_text(".. _parsers:\n\n")
+# with OUTPUT_FILE.open("a", encoding="utf-8") as f:
+#     f.write("Parsers\n")
+#     f.write("====================\n\n")
+#     f.write("Overview of query parsers:\n\n")
+#     # f.write(".. toctree::\n   :maxdepth: 1\n\n")
 
-    for platform in PLATFORM:
-        f.write(f"- {platform.value}\n")
-        # f.write(f" parser/{platform}.rst\n")
-        f.write("\n")
+#     for platform in PLATFORM:
+#         f.write(f"- {platform.value}\n")
+#         # f.write(f" parser/{platform}.rst\n")
+#         f.write("\n")

@@ -1,0 +1,14 @@
+.. _F1004:
+
+F1004 — invalid-token-sequence
+==============================
+
+**Error Code**: F1004
+
+**Message**: ``The sequence of tokens is invalid.``
+
+**Scope**: PLATFORM.EBSCO
+
+**Description**: The sequence of tokens is invalid.
+
+**Back to**: :ref:`lint`

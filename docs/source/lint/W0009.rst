@@ -1,0 +1,14 @@
+.. _W0009:
+
+W0009 — boolean-operator-readability
+====================================
+
+**Error Code**: W0009
+
+**Message**: ``Boolean operator readability``
+
+**Scope**: all
+
+**Description**: Boolean operator readability
+
+**Back to**: :ref:`lint`
