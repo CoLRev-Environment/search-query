@@ -343,45 +343,17 @@ class EBSCOParser(QueryStringParser):
         for child in query.children:
             self.translate_search_fields(child)
 
-    # def print_messages(self, messages: list[dict]) -> None:
-    #     """Print linter messages in a readable format"""
-    #     if not messages:
-    #         print("No linter messages to display.")
-    #         return
-
-    #     print("Linter Messages:")
-    #     print("-" * 20)
-
-    #     for message in messages:
-    #         if not isinstance(message, dict):
-    #             print(f"Invalid message format: {message}")
-    #             continue
-
-    #         level = message.get("level", "Unknown Level")
-    #         msg = message.get("msg", "No message provided")
-    #         pos = message.get("pos", "Position not specified")
-
-    #         print(f"Level: {level}")
-    #         print(f"Message: {msg}")
-    #         print(f"Position: {pos}")
-    #         print("-" * 20)
-
     def parse(self) -> Query:
         """Parse a query string."""
 
-        # Tokenize the search string
         self.tokenize()
 
         self.linter.validate_tokens()
 
-        # Parse query on basis of tokens and recursively build a query-tree
         query = self.parse_query_tree(self.tokens)
 
         # Translate EBSCO host search_fields into standardized search_fields
         self.translate_search_fields(query)
-
-        # Uncomment if messages should be printed (e.g. for testing)
-        # self.print_messages(self.messages)
 
         return query
 

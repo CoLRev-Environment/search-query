@@ -67,6 +67,8 @@ class XYParser(QueryStringParser):
 
             self.tokens.append((token, token_type, (start, end)))
 
+        self.combine_subsequent_tokens()
+
     # Override methods of parent class (as needed)
 
     def parse_query_tree(
