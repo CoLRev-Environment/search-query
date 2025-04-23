@@ -8,8 +8,8 @@ from pathlib import Path
 import search_query.parser
 from search_query.constants import Colors
 from search_query.constants import ExitCodes
+from search_query.search_file import load_search_file
 from search_query.utils import format_query_string_positions
-from search_query.search_file import SearchFile
 
 
 def run_linter(search_string: str, *, syntax: str, search_field_general: str) -> list:
@@ -30,7 +30,7 @@ def pre_commit_hook(file_path: str) -> int:
     """Entrypoint for the query linter hook"""
 
     try:
-        search_file = SearchFile(file_path, platform="unknown")
+        search_file = load_search_file(file_path)
         platform = search_query.parser.get_platform(search_file.platform)
     except Exception as e:  # pylint: disable=broad-except
         print(e)

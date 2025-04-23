@@ -59,20 +59,20 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
             # TODO : should the operators have search_field?
-            'AND[all][OR[all][OR[all][eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
+            'AND[OR[OR[eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
         ),
         # Artificial parentheses:
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
-            'OR[all]["health tracking"[all], AND[all]["remote monitoring"[all], "wearable device"[all]]]',
+            'OR["health tracking"[all], AND["remote monitoring"[all], "wearable device"[all]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
-            'OR[all][AND[all]["AI"[all], "robotics"[all]], "ethics"[all]]',
+            'OR[AND["AI"[all], "robotics"[all]], "ethics"[all]]',
         ),
         (
             '"AI" OR "robotics" AND "ethics"',
-            'OR[all]["AI"[all], AND[all]["robotics"[all], "ethics"[all]]]',
+            'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
         ),
         # TODO : check (invalid queries)?
         # (
