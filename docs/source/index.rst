@@ -15,17 +15,18 @@
             onclick="window.open('https://pypi.org/project/search-query/')">
        <img src="https://img.shields.io/github/license/CoLRev-Environment/search-query" alt="License"
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
-       <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
-            onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
    </div>
 
+.. 
+       <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
+            onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
 \
 
-**Search-query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
-It currently supports PubMed, EBSCOHost, and Web of Science, and it is extensible to support other databases.
+**Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
+It is extensible and currently supports PubMed, EBSCOHost, and Web of Science.
 The package can be used programmatically, through the command line, or as a pre-commit hook.
-It has zero dependencies, and can therefore be integrated in a variety of environments.
-The parsers, and linters are battle-tested on peer-reviewed queries registered at `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_.
+It has zero dependencies and integrates in a variety of environments.
+The parsers and linters are battle-tested on peer-reviewed `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_ queries.
 
 Demo
 ============
