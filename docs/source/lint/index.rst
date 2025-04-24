@@ -19,14 +19,9 @@ These checks help to prevent errors—an important step given that previous stud
 
 .. include:: errors_index.rst
 
-References
-----------------
+**References**
 
 .. parsed-literal::
-
-   Haddaway, N. R., Rethlefsen, M. L., Davies, M., Glanville, J., McGowan, B., Nyhan, K., & Young, S. (2022).
-     A suggested data structure for transparent and repeatable reporting of bibliographic searching.
-     *Campbell Systematic Reviews*, 18(4), e1288. doi: `10.1002/cl2.1288 <https://onlinelibrary.wiley.com/doi/full/10.1002/cl2.1288>`_
 
     Li, Z., & Rainer, A. (2023). Reproducible Searches in Systematic Reviews: An Evaluation and Guidelines.
       IEEE Access, 11, 84048–84060. IEEE Access. doi: `10.1109/ACCESS.2023.3299211 <https://doi.org/10.1109/ACCESS.2023.3299211>`_

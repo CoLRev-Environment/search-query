@@ -1,26 +1,34 @@
-Search-Query Documentation
-========================================
+.. raw:: html
 
-.. image:: https://img.shields.io/github/actions/workflow/status/CoLRev-Environment/search-query/.github%2Fworkflows%2Ftests.yml?label=tests
-   :target: https://github.com/CoLRev-Environment/search-query/actions/workflows/tests.yml
+    <h1 style="display:none;">Search-Query Documentation</h1>
 
-.. image:: https://img.shields.io/github/v/release/CoLRev-Environment/search-query
-   :target: https://github.com/CoLRev-Environment/search-query/releases/
+.. raw:: html
 
-.. image:: https://img.shields.io/pypi/v/search-query?color=blue
-   :target: https://pypi.org/project/search-query/
+   <div style="text-align: center;">
+       <img src="_static/search_query_logo.svg" alt="Search Query Logo" width="350"><br><br>
 
-.. image:: https://img.shields.io/github/license/CoLRev-Environment/search-query
-   :target: https://github.com/CoLRev-Environment/search-query/releases/
+       <img src="https://img.shields.io/github/actions/workflow/status/CoLRev-Environment/search-query/.github%2Fworkflows%2Ftests.yml?label=tests" alt="Build Status"
+            onclick="window.open('https://github.com/CoLRev-Environment/search-query/actions/workflows/tests.yml')">
+       <img src="https://img.shields.io/github/v/release/CoLRev-Environment/search-query" alt="GitHub Release"
+            onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
+       <img src="https://img.shields.io/pypi/v/search-query?color=blue" alt="PyPI Version"
+            onclick="window.open('https://pypi.org/project/search-query/')">
+       <img src="https://img.shields.io/github/license/CoLRev-Environment/search-query" alt="License"
+            onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
+       <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
+            onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
+   </div>
 
-.. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
+\
 
 **Search-query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
 It currently supports PubMed, EBSCOHost, and Web of Science, and it is extensible to support other databases.
 The package can be used programmatically, through the command line, or as a pre-commit hook.
 It has zero dependencies, and can therefore be integrated in a variety of environments.
 The parsers, and linters are battle-tested on peer-reviewed queries registered at `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_.
+
+Demo
+============
 
 A Jupyter Notebook demo (hosted on Binder) is available here:
 
@@ -93,9 +101,10 @@ Another useful feature of search-query is its **linter** functionality, which he
     #   ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
     #                                                                    ^^
 
-Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.
 
 ..
+   Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.
+
     Each query parser has a corresponding linter that checks for errors and warnings in the query.
     To validate a JSON query file, run the linter:
 
@@ -113,11 +122,19 @@ Beyond the instructive error message, additional information on the specific mes
 
     An additional "silent" option may be used to silence warnings.
 
+Functional Overview
+================
 
-Parser development
--------------------------
+The search-query package is built to support researchers throughout the entire lifecycle of academic search query management.
+Below is a high-level overview of the core functionalities:
 
-To develop a parser, see `dev-parser <dev_docs/parser.html>`_ docs.
+.. image:: presenatation.png
+
+..
+   Parser development
+   -------------------------
+
+   To develop a parser, see `dev-parser <dev_docs/parser.html>`_ docs.
 
 
 .. toctree::
