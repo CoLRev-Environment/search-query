@@ -172,7 +172,7 @@ class PubmedQueryStringValidator(QueryStringValidator):
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i += 1
             if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
-                for operator_group in [{"AND", "&"}, {"OR", "|"}]:
+                for operator_group in [{"AND", "&"}, {"OR", "|"}, {"NOT"}]:
                     if tokens[index].value.upper() in operator_group:
                         if token.value.upper() not in operator_group:
                             self.parser.add_linter_message(
