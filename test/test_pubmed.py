@@ -58,7 +58,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
     [
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
-            # TODO : should the operators have search_field?
             'AND[OR[OR[eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
         ),
         # Artificial parentheses:
