@@ -311,13 +311,6 @@ class QueryErrorCode(Enum):
         "The sequence of tokens is invalid." "",
         "",
     )
-    NESTED_NOT_QUERY = (
-        [PLATFORM.PUBMED],
-        "F1008",
-        "nested-not-query",
-        "Nesting of NOT operator is not supported for this database",
-        "",
-    )
     EMPTY_PARENTHESES = (
         [PLATFORM.PUBMED],
         "F1009",

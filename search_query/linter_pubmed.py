@@ -255,7 +255,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
         # Note: search fields are not yet translated.
-        self._check_nested_not_query(query)
+
         self._check_redundant_terms(query)
         self._check_date_filters_in_subquery(query)
 
@@ -278,15 +278,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
                 position=query.position or (-1, -1),
             )
-
-    def _check_nested_not_query(self, query: Query) -> None:
-        """Check query tree for nested NOT queries"""
-        for child in query.children:
-            if child.operator and child.value == Operators.NOT:
-                self.add_linter_message(
-                    QueryErrorCode.NESTED_NOT_QUERY, position=child.position or (-1, -1)
-                )
-            self._check_nested_not_query(child)
 
     def _check_redundant_terms(self, query: Query) -> None:
         """Check query for redundant search terms"""

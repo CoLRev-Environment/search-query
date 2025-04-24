@@ -74,19 +74,18 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             '"AI" OR "robotics" AND "ethics"',
             'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
         ),
-        # TODO : check (invalid queries)?
-        # (
-        #     '"AI" NOT "robotics" OR "ethics"',
-        #     '( "AI" NOT "robotics" ) OR "ethics" ',
-        # ),
-        # (
-        #     '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
-        #     '( "digital health" AND ( "apps" OR ( "wearables" NOT "privacy" ) ) ) OR "ethics" ',
-        # ),
-        # (
-        #     '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
-        #     '"eHealth" OR ( "digital health" AND ( "bias" NOT "equity" ) ) OR "policy" ',
-        # ),
+        (
+            '"AI" NOT "robotics" OR "ethics"',
+            'OR[NOT["AI"[all], "robotics"[all]], "ethics"[all]]',
+        ),
+        (
+            '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
+            'OR[AND["digital health"[all], OR["apps"[all], NOT["wearables"[all], "privacy"[all]]]], "ethics"[all]]',
+        ),
+        (
+            '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
+            'OR["eHealth"[all], AND["digital health"[all], NOT["bias"[all], "equity"[all]]], "policy"[all]]',
+        ),
     ],
 )
 def test_parser(query_str: str, expected_translation: str) -> None:
@@ -235,16 +234,7 @@ def test_parser(query_str: str, expected_translation: str) -> None:
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
-            [
-                {
-                    "code": "F1008",
-                    "label": "nested-not-query",
-                    "message": "Nesting of NOT operator is not supported for this database",
-                    "is_fatal": True,
-                    "position": (1, 36),
-                    "details": "",
-                }
-            ],
+            [],
         ),
         (
             '"device" AND ("wearable device" AND "health tracking")',
