@@ -78,21 +78,23 @@ class PubmedQueryStringLinter(QueryStringLinter):
             self.add_linter_message(
                 QueryErrorCode.IMPLICIT_OPERATOR,
                 position=token.position,
-                details=f"Implicit operator detected. The space at position {position_of_whitespace} will be interpreted as an AND connection. Please add an explicit operator to clarify this.",
+                details="Implicit operator detected. "
+                f"The space at position {position_of_whitespace} "
+                "will be interpreted as an AND connection. "
+                "Please add an explicit operator to clarify this.",
             )
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
 
         # Check for erroneous field syntax
-        # e.g. "TIAB=" or "TI="
-        match = re.match(r"\b[A-Z]{2}=", self.parser.query_str)
+        match = re.search(r"\b[A-Z]{2}=", self.parser.query_str)
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 position=match.span(),
-                details="PubMed fields must be "
-                "enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. "
+                details="PubMed fields must be enclosed in brackets and "
+                "after a search term, e.g. robot[TIAB] or monitor[TI]. "
                 f"'{match.group(0)}' is invalid.",
             )
 

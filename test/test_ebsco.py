@@ -143,6 +143,27 @@ def test_tokenization(
                 },
             ],
         ),
+        (
+            "governance[tiab]",
+            [
+                {
+                    "code": "F1010",
+                    "label": "invalid-syntax",
+                    "message": "Query contains invalid syntax",
+                    "is_fatal": True,
+                    "position": (10, 16),
+                    "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
+                },
+                {
+                    "code": "E0004",
+                    "label": "invalid-character",
+                    "message": "Search term contains invalid character",
+                    "is_fatal": False,
+                    "position": (0, 16),
+                    "details": "",
+                },
+            ],
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:

@@ -525,6 +525,35 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 },
             ],
         ),
+        (
+            "term1 AND ehealth[ti]",
+            [
+                {
+                    "code": "F1010",
+                    "label": "invalid-syntax",
+                    "message": "Query contains invalid syntax",
+                    "is_fatal": True,
+                    "position": (17, 21),
+                    "details": "WOS fields must be before search terms and without brackets, e.g. AB=robot or TI=monitor. '[ti]' is invalid.",
+                },
+                {
+                    "code": "F0001",
+                    "label": "tokenizing-failed",
+                    "message": "Fatal error during tokenization",
+                    "is_fatal": True,
+                    "position": (9, 21),
+                    "details": "Unparsed segment: 'ehealth[ti]'",
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "",
+                },
+            ],
+        ),
     ],
 )
 def test_linter(

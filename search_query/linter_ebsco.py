@@ -62,6 +62,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Pre-linting checks."""
 
+        self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_quoted_search_terms()
         self.check_unknown_token_types()
@@ -73,6 +74,20 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         self.check_token_ambiguity()
         self.check_search_field_general()
+
+    def check_invalid_syntax(self) -> None:
+        """Check for invalid syntax in the query string."""
+
+        # Check for erroneous field syntax
+        match = re.search(r"\[[A-Za-z]*\]", self.parser.query_str)
+        if match:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_SYNTAX,
+                position=match.span(),
+                details="EBSCOHOst fields must be before search terms "
+                "and without brackets, e.g. AB robot or TI monitor. "
+                f"'{match.group(0)}' is invalid.",
+            )
 
     def check_token_ambiguity(self) -> None:
         """Check for ambiguous tokens in the query."""

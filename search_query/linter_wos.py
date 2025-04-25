@@ -78,6 +78,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Performs a pre-linting"""
 
+        self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
@@ -94,6 +95,20 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
         self.check_unsupported_wildcards()
+
+    def check_invalid_syntax(self) -> None:
+        """Check for invalid syntax in the query string."""
+
+        # Check for erroneous field syntax
+        match = re.search(r"\[[A-Za-z]*\]", self.parser.query_str)
+        if match:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_SYNTAX,
+                position=match.span(),
+                details="WOS fields must be before search terms and "
+                "without brackets, e.g. AB=robot or TI=monitor. "
+                f"'{match.group(0)}' is invalid.",
+            )
 
     def check_year_without_search_field(self) -> None:
         """Check if the year is used without a search field."""
