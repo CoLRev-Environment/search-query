@@ -74,21 +74,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_token_ambiguity()
         self.check_search_field_general()
 
-    def check_quoted_search_terms(self) -> None:
-        """Check quoted search terms."""
-        for token in self.parser.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
-            if '"' not in token.value:
-                continue
-
-            if token.value[0] != '"' or token.value[-1] != '"':
-                self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    position=token.position,
-                    details=f"Token '{token.value}' should be fully quoted",
-                )
-
     def check_token_ambiguity(self) -> None:
         """Check for ambiguous tokens in the query."""
         # Note: EBSCO-specific

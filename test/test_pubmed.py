@@ -205,13 +205,21 @@ def test_parser(query_str: str, expected_translation: str) -> None:
             "digital health[tiab:~5]",
             [
                 {
+                    "code": "W0012",
+                    "label": "implicit-operator",
+                    "message": "Implicit operator",
+                    "is_fatal": False,
+                    "position": (0, 14),
+                    "details": "Implicit operator detected. The space at position 7 will be interpreted as an AND connection. Please add an explicit operator to clarify this.",
+                },
+                {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator :~",
                     "is_fatal": False,
-                    "position": (14, 23),
+                    "position": (0, 14),
                     "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
-                }
+                },
             ],
         ),
         (
@@ -288,6 +296,35 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                 }
             ],
         ),
+        (
+            'TI="eHealth"',
+            [
+                {
+                    "code": "F1010",
+                    "label": "invalid-syntax",
+                    "message": "Query contains invalid syntax",
+                    "is_fatal": True,
+                    "position": (0, 3),
+                    "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
+                },
+                {
+                    "code": "F0001",
+                    "label": "tokenizing-failed",
+                    "message": "Fatal error during tokenization",
+                    "is_fatal": True,
+                    "position": (0, 12),
+                    "details": "Token 'TI=\"eHealth\"' should be fully quoted",
+                },
+                {
+                    "code": "W0010",
+                    "label": "character-replacement",
+                    "message": "Character replacement",
+                    "is_fatal": False,
+                    "position": (2, 3),
+                    "details": "Character '=' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
+                },
+            ],
+        ),
     ],
 )
 def test_linter(
@@ -300,5 +337,6 @@ def test_linter(
     except SearchQueryException:
         pass
     print(query_str)
+    parser.print_tokens()
     print(parser.linter.messages)
     assert messages == parser.linter.messages

@@ -48,24 +48,60 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
+        self.check_invalid_syntax()
         self.check_missing_tokens()
+        self.check_quoted_search_terms()
         # No tokens marked as unknown token-type
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
         self.check_character_replacement_in_search_term()
+        self.check_implicit_operator()
 
         self.check_invalid_wildcard()
         self.check_invalid_proximity_operator()
         self.check_boolean_operator_readability()
+
+    def check_implicit_operator(self) -> None:
+        """Check for implicit operators in the query string"""
+
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+
+            if token.value[0] == '"' and token.value[-1] == '"':
+                continue
+            if " " not in token.value:
+                continue
+            position_of_whitespace = token.position[0] + token.value.index(" ")
+            self.add_linter_message(
+                QueryErrorCode.IMPLICIT_OPERATOR,
+                position=token.position,
+                details=f"Implicit operator detected. The space at position {position_of_whitespace} will be interpreted as an AND connection. Please add an explicit operator to clarify this.",
+            )
+
+    def check_invalid_syntax(self) -> None:
+        """Check for invalid syntax in the query string."""
+
+        # Check for erroneous field syntax
+        # e.g. "TIAB=" or "TI="
+        match = re.match(r"\b[A-Z]{2}=", self.parser.query_str)
+        if match:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_SYNTAX,
+                position=match.span(),
+                details="PubMed fields must be "
+                "enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. "
+                f"'{match.group(0)}' is invalid.",
+            )
 
     def check_character_replacement_in_search_term(self) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
 
-        invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
+        invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
         for token in self.parser.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
@@ -217,8 +253,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 continue
 
             nr_of_terms = len(search_phrase_token.value.strip('"').split())
-            print(search_phrase_token)
-            print(search_phrase_token.value.strip('"').split())
             if nr_of_terms >= 2 and not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
@@ -231,7 +265,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=field_token.position,
+                    position=self.parser.tokens[index - 1].position,
                     details=details,
                 )
 

@@ -645,7 +645,7 @@ def test_query_parsing_basic_vs_advanced() -> None:
         (
             "TS=(eHealth) AND TS=(Review)",
             "AND[ts][eHealth[ts], Review[ts]]",
-        )
+        ),
     ],
 )
 def test_parser_wos(query_str: str, expected_translation: str) -> None:

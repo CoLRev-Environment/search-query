@@ -318,6 +318,13 @@ class QueryErrorCode(Enum):
         "Query contains empty parentheses",
         "",
     )
+    INVALID_SYNTAX = (
+        ["all"],
+        "F1010",
+        "invalid-syntax",
+        "Query contains invalid syntax",
+        "",
+    )
 
     WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
@@ -588,6 +595,13 @@ class QueryErrorCode(Enum):
         "W0011",
         "date-filter-in-subquery",
         "Date filter in subquery",
+        "",
+    )
+    IMPLICIT_OPERATOR = (
+        [PLATFORM.PUBMED],
+        "W0012",
+        "implicit-operator",
+        "Implicit operator",
         "",
     )
 

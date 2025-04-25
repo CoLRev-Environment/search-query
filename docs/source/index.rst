@@ -17,7 +17,7 @@
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
    </div>
 
-.. 
+..
        <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
             onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
 \
