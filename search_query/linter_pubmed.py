@@ -124,7 +124,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         position=(token.position[0] + i, token.position[0] + i + 1),
                         details=details,
                     )
-                    value = value[:i] + " " + value[i + 1 :]
+                    # TBD: really change?
+                    # value = value[:i] + " " + value[i + 1 :]
             # Update token
             if value != token.value:
                 token.value = value
