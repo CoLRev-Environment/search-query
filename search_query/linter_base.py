@@ -174,12 +174,13 @@ class QueryStringLinter:
 
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
-            for i, char in enumerate(token.value):
+            for char in token.value:
                 if char in invalid_characters:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_CHARACTER, position=token.position
                     )
-                    value = value[:i] + " " + value[i + 1 :]
+                    # TBD: really change?
+                    # value = value[:i] + " " + value[i + 1 :]
             # Update token
             if value != token.value:
                 token.value = value

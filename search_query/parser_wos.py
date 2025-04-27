@@ -135,7 +135,6 @@ class WOSParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
     def parse_query_tree(

@@ -103,6 +103,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
 
+        # pylint: disable=duplicate-code
         invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
         for token in self.parser.tokens:
             if token.type != TokenTypes.SEARCH_TERM:

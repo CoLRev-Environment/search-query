@@ -152,7 +152,6 @@ class PubmedParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-
     def get_operator_type(self, operator: str) -> str:
         """Get operator type"""
         if operator.upper() in {"&", "AND"}:
