@@ -42,27 +42,6 @@ class QueryStringParser(ABC):
             # UNKNOWN could be color-coded
             print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
-    @abstractmethod
-    def is_search_field(self, token: str) -> bool:
-        """Token is search field"""
-
-    # TODO: should be attributes of Token  # pylint: disable=fixme
-    def is_parenthesis(self, token: str) -> bool:
-        """Token is parenthesis"""
-        return token in ["(", ")"]
-
-    def is_operator(self, token: str) -> bool:
-        """Token is operator"""
-        return bool(re.match(r"^(AND|OR|NOT)$", token, re.IGNORECASE))
-
-    def is_term(self, token: str) -> bool:
-        """Check if a token is a term."""
-        return (
-            not self.is_operator(token)
-            and not self.is_parenthesis(token)
-            and not self.is_search_field(token)
-        )
-
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
         # Combine subsequent terms (without quotes)

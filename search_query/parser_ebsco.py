@@ -141,10 +141,6 @@ class EBSCOParser(QueryStringParser):
         distance = int(distance_string)
         return operator, distance
 
-    def is_search_field(self, token: str) -> bool:
-        """Check if the token is a valid search field."""
-        return re.fullmatch(self.SEARCH_FIELD_REGEX, token) is not None
-
     def get_precedence(self, token: str) -> int:
         """Returns operator precedence for logical and proximity operators."""
 

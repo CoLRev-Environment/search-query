@@ -152,9 +152,6 @@ class PubmedParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-    def is_search_field(self, token: str) -> bool:
-        """Token is search field"""
-        return bool(re.match(r"^\[.*]$", token))
 
     def get_operator_type(self, operator: str) -> str:
         """Get operator type"""

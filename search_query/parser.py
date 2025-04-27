@@ -2,6 +2,8 @@
 """Query parser."""
 from __future__ import annotations
 
+import typing
+
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.parser_ebsco import EBSCOListParser
@@ -12,13 +14,17 @@ from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 
-PARSERS = {
+if typing.TYPE_CHECKING:
+    from search_query.parser_base import QueryListParser
+    from search_query.parser_base import QueryStringParser
+
+PARSERS: typing.Dict[str, type[QueryStringParser]] = {
     PLATFORM.WOS.value: WOSParser,
     PLATFORM.PUBMED.value: PubmedParser,
     PLATFORM.EBSCO.value: EBSCOParser,
 }
 
-LIST_PARSERS = {
+LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
     PLATFORM.WOS.value: WOSListParser,
     PLATFORM.PUBMED.value: PubmedListParser,
     PLATFORM.EBSCO.value: EBSCOListParser,
@@ -40,7 +46,14 @@ def parse(
         if syntax not in LIST_PARSERS:
             raise ValueError(f"Invalid syntax: {syntax}")
 
-        return LIST_PARSERS[syntax](query_str, search_field_general, mode).parse()
+        string_parser = PARSERS[syntax]
+
+        return LIST_PARSERS[syntax](
+            query_list=query_str,
+            parser_class=string_parser,
+            search_field_general=search_field_general,
+            mode=mode,
+        ).parse()
 
     if syntax not in PARSERS:
         raise ValueError(f"Invalid syntax: {syntax}")

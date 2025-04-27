@@ -135,13 +135,6 @@ class WOSParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-    # Implement and override methods of parent class (as needed)
-    def is_search_field(self, token: str) -> bool:
-        """Token is search field"""
-        return (
-            bool(re.match(self.SEARCH_FIELD_REGEX, token))
-            or token in WOSSearchFieldList.language_list
-        )
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
