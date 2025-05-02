@@ -16,7 +16,9 @@ def run_linter(search_string: str, *, syntax: str, search_field_general: str) ->
     """Run the linter on the search string"""
 
     parser_class = search_query.parser.PARSERS[syntax]
-    parser = parser_class(search_string, search_field_general, verbosity=0)  # type: ignore
+    parser = parser_class(
+        search_string, search_field_general=search_field_general
+    )  # type: ignore
 
     try:
         parser.parse()
@@ -90,7 +92,6 @@ def pre_commit_hook(file_path: str) -> int:
             )
             print(f"  {query_info}")
 
-        # TODO : only fail when fatal (linter-mode)?
         return ExitCodes.FAIL
 
     print("No errors detected")

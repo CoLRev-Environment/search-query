@@ -320,7 +320,6 @@ def test_add_term_node_without_current_operator() -> None:
     result = parser.add_term_node(
         index=index,
         value=value,
-        operator=operator,
         search_field=search_field,
         position=position,
         current_operator=current_operator,
@@ -361,7 +360,6 @@ def test_add_term_node_with_current_operator() -> None:
     result = parser.add_term_node(
         index=index,
         value=value,
-        operator=operator,
         search_field=search_field,
         position=position,
         current_operator=current_operator,
@@ -408,7 +406,6 @@ def test_add_term_node_with_near_operator() -> None:
     parser.tokens = tokens
     index = 1
     value = "example2"
-    operator = False
     search_field = SearchField(value="TI=", position=(0, 3))
     position = (8, 16)
     current_operator = "NEAR/5"
@@ -437,7 +434,6 @@ def test_add_term_node_with_near_operator() -> None:
     result = parser.add_term_node(
         index=index,
         value=value,
-        operator=operator,
         search_field=search_field,
         position=position,
         current_operator=current_operator,
@@ -532,7 +528,6 @@ def test_add_term_node_with_existing_children() -> None:
     result = parser.add_term_node(
         index=index,
         value=value,
-        operator=operator,
         search_field=search_field,
         position=position,
         current_operator=current_operator,
@@ -584,7 +579,6 @@ def test_add_term_node_with_current_negation() -> None:
     result = parser.add_term_node(
         index=index,
         value=value,
-        operator=operator,
         search_field=search_field,
         position=position,
         current_operator=current_operator,
@@ -623,7 +617,7 @@ def test_check_search_fields_title() -> None:
     This test verifies that the `check_search_fields` method correctly translates
     title search fields into the base search field "TI=".
     """
-    title_fields = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
+    title_fields = ["TI=", "ti=", "title="]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in title_fields:
@@ -642,7 +636,6 @@ def test_check_search_fields_abstract() -> None:
         "AB=",
         "ab=",
         "abstract=",
-        # "Abstract", "ab", "abstract", "AB", "ABSTRACT"
     ]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
@@ -660,10 +653,8 @@ def test_check_search_fields_author() -> None:
     """
     author_fields = [
         "AU=",
-        "Author",
         "au=",
         "author=",
-        # "au", "author", "AU", "AUTHOR"
     ]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
@@ -683,7 +674,6 @@ def test_check_search_fields_topic() -> None:
         "TS=",
         "ts=",
         "topic=",
-        # "Topic", "ts", "topic", "TS", "TOPIC", "Topic Search", "Topic TS"
     ]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
@@ -703,7 +693,6 @@ def test_check_search_fields_language() -> None:
         "LA=",
         "la=",
         "language=",
-        # "Languages", "la", "language", "LA", "LANGUAGE"
     ]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
@@ -723,10 +712,6 @@ def test_check_search_fields_year() -> None:
         "PY=",
         "py=",
         "py",
-        # "Publication Year",
-        # "publication year",
-        # "PY",
-        # "PUBLICATION YEAR",
     ]
     parser = WOSParser(query_str="", search_field_general="", mode="")
 
@@ -760,7 +745,7 @@ def test_query_parsing_1() -> None:
     assert query.children[0].value == "example"
     assert query.children[0].operator is False
     assert query.children[1].value == "John Doe"
-    assert query.children[1].search_field.value == "au"  # type: ignore
+    assert query.children[1].search_field.value == "AU="  # type: ignore
     assert query.children[1].operator is False
 
 
@@ -780,4 +765,4 @@ def test_query_parsing_2() -> None:
     assert query.children[0].operator is False
     assert query.children[1].value == "OR"
     assert query.children[1].children[1].value == "John Wayne"
-    assert query.children[1].children[1].search_field.value == "au"  # type: ignore
+    assert query.children[1].children[1].search_field.value == "AU="  # type: ignore

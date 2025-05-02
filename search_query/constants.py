@@ -238,12 +238,6 @@ PLATFORM_FIELD_TRANSLATION_MAP = {
     db: {v: k for k, v in fields.items()} for db, fields in PLATFORM_FIELD_MAP.items()
 }
 
-PLATFORM_COMBINED_FIELDS_MAP = {
-    PLATFORM.PUBMED: {
-        "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
-    },
-}
-
 
 class ExitCodes:
     """Exit codes"""
@@ -434,6 +428,14 @@ class QueryErrorCode(Enum):
         "A search for publication years must include at least another search term.",
         "",
     )
+    NESTED_QUERY_WITH_SEARCH_FIELD = (
+        [PLATFORM.PUBMED],
+        "F2013",
+        "nested-query-with-search-field",
+        "A Nested query cannot have a search field.",
+        "",
+    )
+
     MISSING_ROOT_NODE = (
         [PLATFORM.WOS],
         "F3001",
@@ -606,7 +608,6 @@ class QueryErrorCode(Enum):
     )
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

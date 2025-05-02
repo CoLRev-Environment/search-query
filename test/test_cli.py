@@ -3,6 +3,8 @@
 import subprocess
 from pathlib import Path
 
+from search_query import load_search_file
+
 
 def test_translate_cli() -> None:
     test_data_dir = Path(__file__).parent
@@ -20,11 +22,15 @@ def test_translate_cli() -> None:
         capture_output=True,
         text=True,
     )
-
+    print(result.stdout)
+    print(result.stderr)
     assert result.returncode == 0
     assert "Converting from wos to ebscohost" in result.stdout
     assert "Writing converted query to" in result.stdout
     assert output_file.exists()
+
+    result_file = load_search_file(output_file)
+    assert result_file.search_string == "TP (quantum AND dot AND spin)"
 
 
 def test_linter_cli() -> None:

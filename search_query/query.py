@@ -62,6 +62,9 @@ class Query:
         self.position = position
         self.marked = False
 
+        # only set for root node
+        self.origin_syntax = ""
+
         if children:
             for child in children:
                 self.add_child(child)

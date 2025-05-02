@@ -9,6 +9,7 @@ import search_query.parser_base
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.exception import QuerySyntaxError
 
 
 # Could indeed be a general Validator class
@@ -26,6 +27,7 @@ class QueryStringLinter:
         self.search_field_general = parser.search_field_general
         self.parser = parser
         self.messages: typing.List[dict] = []
+        self.last_read_index = -1
 
     def add_linter_message(
         self, error: QueryErrorCode, *, position: tuple, details: str = ""
@@ -48,6 +50,33 @@ class QueryStringLinter:
                 "details": details,
             }
         )
+
+    def check_status(self) -> None:
+        """Check the output of the linter and report errors to the user"""
+        new_messages = self.messages[self.last_read_index + 1 :]
+        for msg in new_messages:
+            e = QuerySyntaxError(msg["message"], self.parser.query_str, msg["position"])
+
+            code = msg["code"]
+            print(msg["details"])
+            # Always raise an exception for fatal messages
+            if code.startswith("F"):
+                raise e
+
+            # Raise an exception for error messages if in strict mode
+            if code.startswith("E"):
+                # TODO : print all messages (add all messages to exception)
+                # and raise once?
+                if self.parser.mode == "strict":
+                    raise e
+                print(e)
+
+            elif code.startswith("W"):
+                print(e)
+            print("\n")
+
+        if new_messages:
+            self.last_read_index = len(self.messages) - 1
 
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""
@@ -498,3 +527,30 @@ class QueryListLinter:
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
+
+    def check_status(self) -> None:
+        """Check the output of the linter and report errors to the user"""
+
+        new_messages = self.messages
+        for list_position, messages in new_messages.items():
+            query_str = self.parser.query_list[list_position]
+            for msg in messages:
+                e = QuerySyntaxError(msg["message"], query_str, msg["position"])
+
+                code = msg["code"]
+                print(msg["details"])
+                # Always raise an exception for fatal messages
+                if code.startswith("F"):
+                    raise e
+
+                # Raise an exception for error messages if in strict mode
+                if code.startswith("E"):
+                    # TODO : print all messages (add all messages to exception)
+                    # and raise once?
+                    if self.parser.mode == "strict":
+                        raise e
+                    print(e)
+
+                elif code.startswith("W"):
+                    print(e)
+                print("\n")

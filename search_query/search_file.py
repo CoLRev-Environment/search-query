@@ -14,7 +14,6 @@ class SearchFile:
     """SearchFile class."""
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         search_string: str,
@@ -30,6 +29,7 @@ class SearchFile:
         self.authors = authors or []
         self.record_info = record_info or {}
         self.date = date or {}
+        # Note: this will be called search_field_general
         self.search_field = ""
         self._filepath = Path(filepath) if filepath else None
 

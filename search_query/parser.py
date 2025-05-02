@@ -60,7 +60,9 @@ def parse(
 
     parser_class = PARSERS[syntax]
 
-    return parser_class(query_str, search_field_general, mode).parse()  # type: ignore
+    return parser_class(
+        query_str, search_field_general=search_field_general, mode=mode
+    ).parse()  # type: ignore
 
 
 def get_platform(platform_str: str) -> str:

@@ -1,5 +1,5 @@
 {
-    "search_string": "(TP quantum AND TP dot AND TP spin)",
+    "search_string": "TP (quantum AND dot AND spin)",
     "platform": "Web of Science",
     "authors": [
         {
@@ -17,11 +17,5 @@
         "SCI-EXPANDED",
         "SSCI",
         "A&HCI"
-    ],
-    "parsed": {
-        "Search": "TS=(quantum AND dot AND spin)",
-        "Coder": "GW",
-        "Timestamp": "2024-07-01 20:23",
-        "Comment": ""
-    }
+    ]
 }

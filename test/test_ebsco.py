@@ -5,6 +5,7 @@ from typing import Tuple
 
 import pytest
 
+from search_query.constants import Colors
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -53,7 +54,7 @@ def test_tokenization(
     query_string: str, expected_tokens: List[Tuple[str, str, Tuple[int, int]]]
 ) -> None:
     """Test EBSCO parser tokenization."""
-    parser = EBSCOParser(query_string, "")
+    parser = EBSCOParser(query_string, search_field_general="")
     parser.tokenize()
 
     actual_tokens = parser.tokens
@@ -167,7 +168,7 @@ def test_tokenization(
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
-    parser = EBSCOParser(query_string, "")
+    parser = EBSCOParser(query_string, search_field_general="")
     try:
         parser.parse()
     except Exception:
@@ -201,7 +202,9 @@ def test_linter(query_string: str, messages: list) -> None:
     ],
 )
 def test_linter_general_search_field(query_string: str, messages: list) -> None:
-    parser = EBSCOParser(query_string, "AB", mode=LinterMode.STRICT)
+    parser = EBSCOParser(
+        query_string, search_field_general="AB", mode=LinterMode.STRICT
+    )
     try:
         parser.parse()
     except Exception:
@@ -214,40 +217,44 @@ def test_linter_general_search_field(query_string: str, messages: list) -> None:
     [
         (
             'TI example AND (AU "John Doe" OR AU "John Wayne")',
-            'AND[example[ti], OR["John Doe"[au], "John Wayne"[au]]]',
+            'AND[example[TI], OR["John Doe"[AU], "John Wayne"[AU]]]',
         ),
         # Implicit precedence / artificial parentheses
         (
             'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'AND["Artificial Intelligence"[ti], NOT[Future[ab], Past[ab]]]',
+            'AND["Artificial Intelligence"[TI], NOT[Future[AB], Past[AB]]]',
         ),
         (
             'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            'AND[NOT["Artificial Intelligence"[ti], Future[ab]], Past[ab]]',
+            'AND[NOT["Artificial Intelligence"[TI], Future[AB]], Past[AB]]',
         ),
         (
             'TI "AI" OR AB Robots AND AB Ethics',
-            'OR["AI"[ti], AND[Robots[ab], Ethics[ab]]]',
+            'OR["AI"[TI], AND[Robots[AB], Ethics[AB]]]',
         ),
         (
             'TI "AI" AND AB Robots OR AB Ethics',
-            'OR[AND["AI"[ti], Robots[ab]], Ethics[ab]]',
+            'OR[AND["AI"[TI], Robots[AB]], Ethics[AB]]',
         ),
         (
             'TI "AI" NOT AB Robots OR AB Ethics',
-            'OR[NOT["AI"[ti], Robots[ab]], Ethics[ab]]',
+            'OR[NOT["AI"[TI], Robots[AB]], Ethics[AB]]',
         ),
         (
             'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            'OR[AND["AI"[ti], OR[Robots[ab], NOT[Ethics[ab], Bias[ab]]]], "Technology"[st]]',
+            'OR[AND["AI"[TI], OR[Robots[AB], NOT[Ethics[AB], Bias[AB]]]], "Technology"[SU]]',
         ),
         (
             'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'OR["Robo*"[ti], AND[Robots[ab], NOT[Ethics[ab], Bias[ab]]], "Technology"[st]]',
+            'OR["Robo*"[TI], AND[Robots[AB], NOT[Ethics[AB], Bias[AB]]], "Technology"[SU]]',
         ),
     ],
 )
 def test_parser(query_str: str, expected_translation: str) -> None:
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
     parser = EBSCOParser(
         query_str=query_str,
         search_field_general="",
@@ -255,6 +262,8 @@ def test_parser(query_str: str, expected_translation: str) -> None:
     )
     query_tree = parser.parse()
 
-    parser.print_tokens()
+    # print("--------------------")
+    # print("Tokens: \n")
+    # parser.print_tokens()
 
     assert expected_translation == query_tree.to_string(), print(query_tree.to_string())

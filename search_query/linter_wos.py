@@ -4,13 +4,11 @@ import re
 import typing
 
 from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import LinterMode
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.exception import FatalLintingException
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.parser_wos_constants import WOSSearchFieldList
@@ -90,11 +88,17 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_search_fields_from_json()
         self.check_implicit_near()
         self.check_year_format()
-        self.check_fields()
+        self.check_unsupported_search_fields(
+            valid_fields=list(
+                set().union(*WOSSearchFieldList.search_field_dict.values())
+            )
+        )
         self.check_year_without_search_field()
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
         self.check_unsupported_wildcards()
+        self.check_issn_isbn_format()
+        self.check_doi_format()
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -163,19 +167,6 @@ class WOSQueryStringLinter(QueryStringLinter):
                 # break: only consider the first FIELD
                 # (which may come after parentheses)
                 break
-
-    def check_fields(self) -> None:
-        """Check for the correct format of fields."""
-        valid_fields = set().union(*WOSSearchFieldList.search_field_dict.values())
-        for token in self.parser.tokens:
-            if token.type == TokenTypes.FIELD:
-                if token.value not in valid_fields:
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                        position=token.position,
-                        details=f"Search field {token.value} at position "
-                        f"{token.position} is not supported.",
-                    )
 
     def check_implicit_near(self) -> None:
         """Check for implicit NEAR operator."""
@@ -336,27 +327,39 @@ class WOSQueryStringLinter(QueryStringLinter):
                 position=token.position,
             )
 
-    def check_issn_isbn_format(self, token: Token) -> None:
+    def check_issn_isbn_format(self) -> None:
         """Check for the correct format of ISSN and ISBN."""
-        token_vale = token.value.replace('"', "")
-        if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
-            self.parser.ISBN_REGEX, token_vale
-        ):
-            # Add messages to self.messages
-            self.add_linter_message(
-                QueryErrorCode.ISBN_FORMAT_INVALID,
-                position=token.position,
-            )
+        for i, token in enumerate(self.parser.tokens):
+            if (
+                token.type == TokenTypes.FIELD
+                and token.value in WOSSearchFieldList.issn_isbn_list
+            ):
+                token_vale = self.parser.tokens[i + 1].value.replace('"', "")
+                if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
+                    self.parser.ISBN_REGEX, token_vale
+                ):
+                    # Add messages to self.messages
+                    self.add_linter_message(
+                        QueryErrorCode.ISBN_FORMAT_INVALID,
+                        position=self.parser.tokens[i + 1].position,
+                    )
 
-    def check_doi_format(self, token: Token) -> None:
+    def check_doi_format(self) -> None:
         """Check for the correct format of DOI."""
-        token_value = token.value.replace('"', "").upper()
-        if not re.match(self.parser.DOI_REGEX, token_value):
-            # Add messages to self.messages
-            self.add_linter_message(
-                QueryErrorCode.DOI_FORMAT_INVALID,
-                position=token.position,
-            )
+
+        for i, token in enumerate(self.parser.tokens):
+            if (
+                token.type == TokenTypes.FIELD
+                and token.value in WOSSearchFieldList.doi_list
+            ):
+                token_value = self.parser.tokens[i + 1].value.replace('"', "").upper()
+                print(token_value)
+                if not re.match(self.parser.DOI_REGEX, token_value):
+                    # Add messages to self.messages
+                    self.add_linter_message(
+                        QueryErrorCode.DOI_FORMAT_INVALID,
+                        position=self.parser.tokens[i + 1].position,
+                    )
 
 
 class WOSQueryListLinter(QueryListLinter):
@@ -392,42 +395,6 @@ class WOSQueryListLinter(QueryListLinter):
         self._check_invalid_list_reference()
         self._check_query_tokenization()
         self._validate_operator_node()
-
-        if self.has_fatal_errors():
-            print("\n[FATAL:] Fatal error detected in pre-linting")
-            # Print linter messages
-            if self.parser.mode != LinterMode.STRICT and not self.has_fatal_errors():
-                print(
-                    "\n[INFO:] The following errors have been corrected by the linter:"
-                )
-
-            for level, message_list in self.messages.items():
-                print(f"\n[INFO:] Linter messages for level {level}:")
-                for msg in message_list:
-                    details = msg["details"] if msg["details"] else msg["message"]
-                    print(
-                        "[Linter:] "
-                        + msg["label"]
-                        + "\t"
-                        + details
-                        + " At position "
-                        + str(msg["position"])
-                    )
-
-            # Raise an exception
-            # if the linter is in strict mode
-            # or if a fatal error has occurred
-            if (
-                self.parser.mode == LinterMode.STRICT
-                or self.has_fatal_errors()
-                and self.messages
-            ):
-                l_messages = [y for x in self.messages.values() if x for y in x if y]
-                print(l_messages)
-                raise FatalLintingException(
-                    query_string=self.parser.query_list,
-                    messages=l_messages,
-                )
 
     def _check_missing_root(self) -> bool:
         missing_root = False
@@ -546,11 +513,10 @@ class WOSQueryListLinter(QueryListLinter):
                 query_str=query_node["node_content"],
                 search_field_general=self.parser.search_field_general,
                 mode=self.parser.mode,
-                verbosity=0,  # errors are printed by the list linter
             )
             try:
                 query_parser.parse()
-            except FatalLintingException:  # add more specific message?""
+            except ValueError:
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     list_position=ind,

@@ -15,7 +15,6 @@ from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.exception import FatalLintingException
 from search_query.linter_wos import WOSQueryListLinter
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
@@ -74,34 +73,17 @@ class WOSParser(QueryStringParser):
     def __init__(
         self,
         query_str: str,
+        *,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
-        verbosity: int = 1,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str=query_str,
+            query_str,
             search_field_general=search_field_general,
             mode=mode,
-            verbosity=verbosity,
         )
         self.linter = WOSQueryStringLinter(parser=self)
-
-        # if self.parser.tokens[0].value in [
-        #     "Web of Science",
-        #     "wos",
-        #     "WoS",
-        #     "WOS",
-        #     "WOS:",
-        #     "WoS:",
-        #     "WOS=",
-        #     "WoS=",
-        # ]:
-        #     self.linter.add_linter_message(
-        #         QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
-        #         position=self.parser.tokens[0][1],
-        #     )
-        #     # non-fatal error: remove identifier from tokens
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -141,7 +123,6 @@ class WOSParser(QueryStringParser):
         self,
         index: int = 0,
         search_field: typing.Optional[SearchField] = None,
-        superior_search_field: typing.Optional[SearchField] = None,
         current_negation: bool = False,
     ) -> typing.Tuple[Query, int]:
         """Parse tokens starting at the given index,
@@ -151,22 +132,20 @@ class WOSParser(QueryStringParser):
 
         if current_negation:
             current_operator = "NOT"
-
+        search_field = None
         while index < len(self.tokens):
             token = self.tokens[index]
 
             # Handle nested expressions within parentheses
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                if self.tokens[index - 1].type == TokenTypes.FIELD:
-                    superior_search_field = self.tokens[index - 1].value
-
                 # Parse the expression inside the parentheses
                 sub_query, index = self.parse_query_tree(
                     index=index + 1,
                     search_field=search_field,
-                    superior_search_field=superior_search_field,
                     current_negation=current_negation,
                 )
+                sub_query.search_field = search_field
+                search_field = None
 
                 # Add the parsed expression to the list of children
                 children.append(sub_query)
@@ -174,11 +153,11 @@ class WOSParser(QueryStringParser):
 
             # Handle closing parentheses
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                superior_search_field = None
                 return (
                     self.handle_closing_parenthesis(
                         children=children,
                         current_operator=current_operator,
+                        search_field=search_field,
                     ),
                     index,
                 )
@@ -197,9 +176,7 @@ class WOSParser(QueryStringParser):
                 )
 
             # Handle search fields
-            elif token.type == TokenTypes.FIELD or (
-                token.value in WOSSearchFieldList.language_list
-            ):
+            elif token.type == TokenTypes.FIELD:
                 search_field = SearchField(value=token.value, position=token.position)
 
             # Handle terms
@@ -214,43 +191,18 @@ class WOSParser(QueryStringParser):
                         index += 1
                         continue
 
-                # Set search field to superior search field
-                # if no search field is given
-                if not search_field and superior_search_field:
-                    search_field = superior_search_field
-
-                # Set search field to ALL if no search field is given
-                if not search_field:
-                    search_field = SearchField(Fields.ALL, position=None)
-
-                # Check if the token is ISSN or ISBN
-                if search_field.value in WOSSearchFieldList.issn_isbn_list:
-                    self.linter.check_issn_isbn_format(token)
-
-                # Check if the token is a doi
-                if search_field.value in WOSSearchFieldList.doi_list:
-                    self.linter.check_doi_format(token)
-
                 # Add term nodes
                 children = self.add_term_node(
                     index=index,
                     value=token.value,
-                    operator=False,
                     search_field=search_field,
                     position=token.position,
                     children=children,
                     current_operator=current_operator,
                     current_negation=current_negation,
                 )
-
+                search_field = None
                 current_operator = ""
-                search_field_for_check = search_field.value
-
-                if not (
-                    superior_search_field
-                    and superior_search_field == search_field_for_check
-                ):
-                    search_field = None
 
             index += 1
 
@@ -261,6 +213,10 @@ class WOSParser(QueryStringParser):
 
         # Return the operator and children if there is an operator
         if current_operator:
+            if self.search_field_general:
+                search_field = SearchField(
+                    value=self.search_field_general, position=(-1, -1)
+                )
             return (
                 Query(
                     value=current_operator,
@@ -278,6 +234,7 @@ class WOSParser(QueryStringParser):
         self,
         children: list,
         current_operator: str,
+        search_field: typing.Optional[SearchField] = None,
     ) -> Query:
         """Handle closing parentheses."""
         # Return the children if there is only one child
@@ -290,6 +247,7 @@ class WOSParser(QueryStringParser):
                 value=current_operator,
                 operator=True,
                 children=children,
+                search_field=search_field,
             )
 
         # Multiple children without operator are not allowed
@@ -383,7 +341,6 @@ class WOSParser(QueryStringParser):
         return self.add_term_node(
             index=0,
             value=token.value,
-            operator=False,
             search_field=search_field,
             position=token.position,
             children=children,
@@ -396,7 +353,6 @@ class WOSParser(QueryStringParser):
         *,
         index: int,
         value: str,
-        operator: bool,
         search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
         current_operator: str = "",
@@ -408,7 +364,7 @@ class WOSParser(QueryStringParser):
             children = []
         # Create a new term node
         term_node = Query(
-            value=value, operator=operator, search_field=search_field, position=position
+            value=value, operator=False, search_field=search_field, position=position
         )
 
         # Append the term node to the list of children
@@ -474,13 +430,11 @@ class WOSParser(QueryStringParser):
     def translate_search_fields(self, query: Query) -> None:
         """Translate search fields."""
 
+        if query.search_field:
+            query.search_field.value = cls._map_default_field(query.search_field.value)
         if query.children:
             for child in query.children:
-                self.translate_search_fields(child)
-            return
-
-        if query.search_field:
-            query.search_field.value = self._map_default_field(query.search_field.value)
+                cls.translate_search_fields(child)
 
         # at this point it may be necessary to split (OR)
         # queries for combined search fields
@@ -493,46 +447,27 @@ class WOSParser(QueryStringParser):
 
         self.tokenize()
         self.linter.validate_tokens()
+        self.linter.check_status()
 
-        if not self.linter.has_fatal_errors():
-            query, _ = self.parse_query_tree()
-            self.translate_search_fields(query)
+        query, _ = self.parse_query_tree()
 
-        # Print linter messages
-        if self.linter.messages:
-            if self.verbosity > 0:
-                if self.linter.has_fatal_errors():
-                    print("\n[FATAL:] Fatal error detected in pre-linting")
+        query.origin_syntax = PLATFORM.WOS.value
 
-                if (
-                    self.mode != LinterMode.STRICT
-                    and not self.linter.has_fatal_errors()
-                ):
-                    print("\n[INFO:] The following errors have been corrected:")
+        return query
 
-                for msg in self.linter.messages:
-                    print(
-                        "[Linter:] "
-                        + msg["label"]
-                        + "\t"
-                        + msg["message"]
-                        + " At position "
-                        + str(msg["position"])
-                    )
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement this method
+        cls.translate_search_fields(query)
+        # TODO : translate / apply search_field_general
 
-            # Raise an exception
-            # if the linter is in strict mode
-            # or if a fatal error has occurred
-            if (
-                self.mode == LinterMode.STRICT
-                or self.linter.has_fatal_errors()
-                and self.linter.messages
-            ):
-                raise FatalLintingException(
-                    query_string=self.query_str,
-                    messages=self.linter.messages,
-                )
+        return query
 
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
         return query
 
 
@@ -628,6 +563,7 @@ class WOSListParser(QueryListParser):
         self.tokenize_list()
         # note: messages printed in linter
         self.linter.validate_list_tokens()
+        self.linter.check_status()
 
         query = self._parse_list_query()
         return query

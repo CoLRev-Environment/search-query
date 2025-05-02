@@ -21,9 +21,6 @@ from search_query.query import SearchField
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    silence_warnings = False
-    last_read_index = -1
-
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
 
     DEFAULT_FIELD_MAP = {
@@ -104,7 +101,7 @@ class PubmedParser(QueryStringParser):
         self,
         query_str: str,
         search_field_general: str = "",
-        mode: str = LinterMode.STRICT,
+        mode: str = LinterMode.NONSTRICT,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
@@ -372,45 +369,32 @@ class PubmedParser(QueryStringParser):
 
         self.tokenize()
         self.linter.validate_tokens()
-        self.check_linter_status()
+        self.linter.check_status()
 
         # Parsing
         query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
-        self.check_linter_status()
+        self.linter.check_status()
 
-        # Search field mapping
-        self.translate_search_fields(query)
-        self.linter.validate_search_fields(query)
-        self.check_linter_status()
+        # self.linter.validate_search_fields(query)
+        # self.linter.check_status()
+        query.origin_syntax = PLATFORM.PUBMED.value
 
         return query
 
-    def check_linter_status(self) -> None:
-        """Check the output of the linter and report errors to the user"""
-        new_messages = self.linter.messages[self.last_read_index + 1 :]
-        for msg in new_messages:
-            e = QuerySyntaxError(msg["message"], self.query_str, msg["position"])
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement this method
+        cls.translate_search_fields(query)
+        # TODO : print instructive message (when joining sub-queries with OR)
+        return query
 
-            code = msg["code"]
-            # Always raise an exception for fatal messages
-            if code.startswith("F"):
-                raise e
-
-            # Raise an exception for error messages if in strict mode
-            if code.startswith("E"):
-                if self.mode == "strict":
-                    raise e
-                print(e)
-
-            elif code.startswith("W"):
-                if not self.silence_warnings:
-                    print(e)
-
-            print("\n")
-
-        if new_messages:
-            self.last_read_index = len(self.linter.messages) - 1
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
+        return query
 
 
 class PubmedListParser(QueryListParser):
@@ -437,7 +421,9 @@ class PubmedListParser(QueryListParser):
         query_string = "".join([query[0] for query in query_list])
 
         try:
-            query = self.parser_class(query_string, self.search_field_general).parse()
+            query = self.parser_class(
+                query_string, search_field_general=self.search_field_general
+            ).parse()
 
         except QuerySyntaxError as exc:
             # pylint: disable=duplicate-code

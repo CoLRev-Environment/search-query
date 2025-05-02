@@ -2,6 +2,7 @@
 """Tests for Pubmed search query parser."""
 import pytest
 
+from search_query.constants import Colors
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import SearchQueryException
@@ -48,56 +49,21 @@ from search_query.parser_pubmed import PubmedParser
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
     parser = PubmedParser(query_str, "")
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
 
 
 @pytest.mark.parametrize(
-    "query_str, expected_translation",
-    [
-        (
-            '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
-            'AND[OR[OR[eHealth[ti], eHealth[ab]], "eHealth"[mh]], Review[pt]]',
-        ),
-        # Artificial parentheses:
-        (
-            '"health tracking" OR "remote monitoring" AND "wearable device"',
-            'OR["health tracking"[all], AND["remote monitoring"[all], "wearable device"[all]]]',
-        ),
-        (
-            '"AI" AND "robotics" OR "ethics"',
-            'OR[AND["AI"[all], "robotics"[all]], "ethics"[all]]',
-        ),
-        (
-            '"AI" OR "robotics" AND "ethics"',
-            'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
-        ),
-        (
-            '"AI" NOT "robotics" OR "ethics"',
-            'OR[NOT["AI"[all], "robotics"[all]], "ethics"[all]]',
-        ),
-        (
-            '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
-            'OR[AND["digital health"[all], OR["apps"[all], NOT["wearables"[all], "privacy"[all]]]], "ethics"[all]]',
-        ),
-        (
-            '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
-            'OR["eHealth"[all], AND["digital health"[all], NOT["bias"[all], "equity"[all]]], "policy"[all]]',
-        ),
-    ],
-)
-def test_parser(query_str: str, expected_translation: str) -> None:
-    parser = PubmedParser(query_str)
-    query = parser.parse()
-    assert expected_translation == query.to_string(), print(query.to_string())
-
-
-@pytest.mark.parametrize(
-    "query_str, messages",
+    "query_str, search_field_general, messages",
     [
         (
             '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
+            "Title",
             [
                 {
                     "code": "F1001",
@@ -106,11 +72,34 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": True,
                     "position": (47, 48),
                     "details": "Unbalanced opening parenthesis",
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
+            ],
+        ),
+        (
+            '"eHealth[ti]',
+            "",
+            [
+                {
+                    "code": "F0001",
+                    "label": "tokenizing-failed",
+                    "message": "Fatal error during tokenization",
+                    "is_fatal": True,
+                    "position": (0, 8),
+                    "details": "Token '\"eHealth' should be fully quoted",
                 }
             ],
         ),
         (
             '("health tracking" OR "remote monitoring")) AND ("mobile application" OR "wearable device")',
+            "Title",
             [
                 {
                     "code": "F1001",
@@ -119,11 +108,20 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": True,
                     "position": (42, 43),
                     "details": "Unbalanced closing parenthesis",
-                }
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
             ],
         ),
         (
             '"health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")',
+            "Title",
             [
                 {
                     "code": "W0007",
@@ -132,12 +130,21 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": False,
                     "position": (18, 20),
                     "details": "",
-                }
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
             ],
         ),
         # Note: corresponds to the search for "Industry 4 0" (replaced dot with space)
         (
             '"healthcare" AND "Industry 4.0"',
+            "Title",
             [
                 {
                     "code": "W0010",
@@ -146,24 +153,42 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": False,
                     "position": (28, 29),
                     "details": "Character '.' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
-                }
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
             ],
         ),
         (
             '"health tracking" AND AI*',
+            "Title",
             [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
                 {
                     "code": "E0006",
                     "label": "invalid-wildcard-use",
                     "message": "Invalid use of the wildcard operator *",
                     "is_fatal": False,
                     "position": (22, 25),
-                    "details": "",
-                }
+                    "details": "Wildcards cannot be used for short strings (shorter than 4 characters).",
+                },
             ],
         ),
         (
             '("eHealth" OR "digital health")[tiab]',
+            "",
             [
                 {
                     "code": "F1004",
@@ -171,12 +196,13 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": (31, 37),
-                    "details": "Invalid search field position",
+                    "details": "Nested queries cannot have search fields",
                 }
             ],
         ),
         (
             '"eHealth"[tiab] "digital health"[tiab]',
+            "Title",
             [
                 {
                     "code": "F1004",
@@ -185,11 +211,28 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": True,
                     "position": (9, 32),
                     "details": "Missing operator",
-                }
+                },
+                {
+                    "code": "E0002",
+                    "label": "search-field-contradiction",
+                    "message": "Contradictory search fields specified",
+                    "is_fatal": False,
+                    "position": (9, 15),
+                    "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
+                },
+                {
+                    "code": "E0002",
+                    "label": "search-field-contradiction",
+                    "message": "Contradictory search fields specified",
+                    "is_fatal": False,
+                    "position": (32, 38),
+                    "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
+                },
             ],
         ),
         (
             '("health tracking" OR "remote monitoring")("mobile application" OR "wearable device")',
+            "Title",
             [
                 {
                     "code": "F1004",
@@ -198,11 +241,20 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": True,
                     "position": (41, 43),
                     "details": "Missing operator",
-                }
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
             ],
         ),
         (
             "digital health[tiab:~5]",
+            "",
             [
                 {
                     "code": "W0012",
@@ -224,7 +276,16 @@ def test_parser(query_str: str, expected_translation: str) -> None:
         ),
         (
             '"digital health"[tiab:~0.5]',
+            "",
             [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (16, 27),
+                    "details": "Search field [tiab:~0.5] at position (16, 27) is not supported.",
+                },
                 {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
@@ -232,33 +293,62 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": False,
                     "position": (16, 27),
                     "details": "Proximity value '0.5' is not a digit",
-                }
+                },
             ],
         ),
         (
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
+            "",
             [],
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
-            [],
+            "Title",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                }
+            ],
         ),
         (
             '"device" AND ("wearable device" AND "health tracking")',
+            "Title",
             [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
                 {
                     "code": "W0004",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": (0, 8),
-                    "details": "",
-                }
+                    "details": 'Term "device" is contained in term "wearable device" and both are connected with AND.',
+                },
             ],
         ),
         (
             '("device" OR ("mobile application" OR "wearable device")) AND "health tracking"',
+            "Title",
             [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
                 {
                     "code": "W0004",
                     "label": "query-structure-unnecessarily-complex",
@@ -266,11 +356,12 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "is_fatal": False,
                     "position": (38, 55),
                     "details": "",
-                }
+                },
             ],
         ),
         (
             '"eHealth"[ab]',
+            "",
             [
                 {
                     "code": "F2011",
@@ -278,13 +369,14 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": (9, 13),
-                    "details": "",
-                },
+                    "details": "Search field [ab] at position (9, 13) is not supported.",
+                }
             ],
         ),
         (
             # '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND ("2020/01/01"[Date - Publication] : "2022/12/31"[Date - Publication])) OR ("ehealth"[Title/Abstract])',
             '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])',
+            "",
             [
                 {
                     "code": "W0011",
@@ -298,6 +390,7 @@ def test_parser(query_str: str, expected_translation: str) -> None:
         ),
         (
             'TI="eHealth"',
+            "",
             [
                 {
                     "code": "F1010",
@@ -323,20 +416,208 @@ def test_parser(query_str: str, expected_translation: str) -> None:
                     "position": (2, 3),
                     "details": "Character '=' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search field is missing (TODO: default?)",
+                },
+            ],
+        ),
+        (
+            "(eHealth OR mHealth)[tiab]",
+            "",
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": (20, 26),
+                    "details": "Nested queries cannot have search fields",
+                }
             ],
         ),
     ],
 )
 def test_linter(
     query_str: str,
+    search_field_general: str,
     messages: list,
 ) -> None:
-    parser = PubmedParser(query_str, search_field_general="")
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
+    parser = PubmedParser(query_str, search_field_general=search_field_general)
     try:
         parser.parse()
     except SearchQueryException:
         pass
-    print(query_str)
     parser.print_tokens()
     print(parser.linter.messages)
     assert messages == parser.linter.messages
+
+
+@pytest.mark.parametrize(
+    "query_str, search_field_general, messages",
+    [
+        (
+            "eHealth[tiab]",
+            "Title",
+            [
+                {
+                    "code": "E0002",
+                    "label": "search-field-contradiction",
+                    "message": "Contradictory search fields specified",
+                    "is_fatal": False,
+                    "position": (7, 13),
+                    "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
+                }
+            ],
+        ),
+        (
+            "eHealth[ti]",
+            "Title",
+            [
+                {
+                    "code": "W0001",
+                    "label": "search-field-redundant",
+                    "message": "Recommend specifying search field only once in the search string",
+                    "is_fatal": False,
+                    "position": (7, 11),
+                    "details": "The search_field_general (Title) and the search_field [ti] are redundant.",
+                }
+            ],
+        ),
+        (
+            "eHealth",
+            "Title",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search fields should be specified in the query instead of the search_field_general",
+                }
+            ],
+        ),
+        (
+            "eHealth",
+            "",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": (-1, -1),
+                    "details": "Search field is missing (TODO: default?)",
+                }
+            ],
+        ),
+    ],
+)
+def test_linter_with_genera_search_field(
+    query_str: str,
+    search_field_general: str,
+    messages: list,
+) -> None:
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
+    parser = PubmedParser(query_str, search_field_general=search_field_general)
+    try:
+        parser.parse()
+    except SearchQueryException:
+        pass
+
+    parser.print_tokens()
+    print(parser.linter.messages)
+
+    assert messages == parser.linter.messages
+
+
+@pytest.mark.parametrize(
+    "query_str, search_field_general, expected_parsed",
+    [
+        (
+            '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
+            "",
+            'AND[OR[eHealth[[Title/Abstract]], "eHealth"[[MeSH Terms]]], Review[[Publication Type]]]',
+        ),
+        # Artificial parentheses:
+        (
+            '"health tracking" OR "remote monitoring" AND "wearable device"',
+            "All Fields",
+            'OR["health tracking"[all], AND["remote monitoring"[all], "wearable device"[all]]]',
+        ),
+        (
+            '"AI" AND "robotics" OR "ethics"',
+            "All Fields",
+            'OR[AND["AI"[all], "robotics"[all]], "ethics"[all]]',
+        ),
+        (
+            '"AI" OR "robotics" AND "ethics"',
+            "All Fields",
+            'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
+        ),
+        (
+            '"AI" NOT "robotics" OR "ethics"',
+            "All Fields",
+            'OR[NOT["AI"[all], "robotics"[all]], "ethics"[all]]',
+        ),
+        (
+            '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
+            "All Fields",
+            'OR[AND["digital health"[all], OR["apps"[all], NOT["wearables"[all], "privacy"[all]]]], "ethics"[all]]',
+        ),
+        (
+            '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
+            "All Fields",
+            'OR["eHealth"[all], AND["digital health"[all], NOT["bias"[all], "equity"[all]]], "policy"[all]]',
+        ),
+    ],
+)
+def test_parser(
+    query_str: str, search_field_general: str, expected_parsed: str
+) -> None:
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
+    parser = PubmedParser(query_str, search_field_general=search_field_general)
+    query = parser.parse()
+
+    assert expected_parsed == query.to_string(), print(query.to_string())
+
+
+@pytest.mark.parametrize(
+    "query_str, expected_generic",
+    [
+        (
+            "eHealth[ti]",
+            "eHealth[ti]",
+        ),
+        (
+            "eHealth[tiab] OR mHealth[tiab]",
+            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
+        ),
+        (
+            "eHealth[tiab] AND mHealth[tiab]",
+            "AND[OR[eHealth[ti], eHealth[ab]], OR[mHealth[ti], mHealth[ab]]]",
+        ),
+    ],
+)
+def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
+    parser = PubmedParser(query_str, "")
+    query = parser.parse()
+    generic = parser.to_generic_syntax(query, search_field_general="")
+    print(generic.to_string())
+
+    assert expected_generic == generic.to_string(), print(generic.to_string())

@@ -51,9 +51,13 @@ def translate() -> None:
     if Path(args.input_file).suffix == ".json":
         search_file = load_search_file(args.input_file)
         query = search_query.parser.parse(
-            search_file.search_string, syntax=args.source, search_field_general=""
+            search_file.search_string,
+            syntax=args.source,
+            search_field_general=search_file.search_field,
         )
-        converted_query = query.to_string(syntax=args.target)
+
+        translated_query = query.translate(args.target)
+        converted_query = translated_query.to_string(syntax=args.target)
         search_file.search_string = converted_query
         search_file.save(args.output_file)
 

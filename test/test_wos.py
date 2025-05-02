@@ -4,11 +4,12 @@ import typing
 
 import pytest
 
+from search_query.constants import Colors
 from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.exception import FatalLintingException
+from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
@@ -577,11 +578,11 @@ def test_linter(
     [
         (
             "TI=(term1 OR term2 AND term3)",
-            "OR[term1[ti], AND[ti][term2[ti], term3[ti]]]",
+            "OR[TI=][term1, AND[term2, term3]]",
         ),
         (
             "TI=term1 AND term2 OR term3",
-            "OR[all][AND[all][term1[ti], term2[all]], term3[all]]",
+            "OR[AND[term1[TI=], term2], term3]",
         ),
         # TODO : proximity operators not yet handled by wos
         # (
@@ -601,6 +602,7 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     query = parser.parse()
     parser.print_tokens()
 
+    print(f"{Colors.GREEN}{query.to_string()}{Colors.END}")
     assert expected_query == query.to_string()
 
     assert len(parser.linter.messages) == 1
@@ -673,12 +675,12 @@ def test_query_parsing_basic_vs_advanced() -> None:
     [
         (
             "TS=(eHealth) AND TS=(Review)",
-            "AND[ts][eHealth[ts], Review[ts]]",
+            "AND[eHealth[TS=], Review[TS=]]",
         ),
     ],
 )
 def test_parser_wos(query_str: str, expected_translation: str) -> None:
-    wos_parser = WOSParser(query_str, "")
+    wos_parser = WOSParser(query_str)
     query_tree = wos_parser.parse()
     assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
 
@@ -717,10 +719,7 @@ def test_artificial_parentheses() -> None:
         "is_fatal": False,
         "details": "",
     }
-    assert (
-        query.to_string("pre_notation")
-        == "OR[remote[all], AND[all][online[all], work[all]]]"
-    )
+    assert query.to_string() == "OR[ALL=][remote, AND[online, work]]"
 
 
 # Test case 1
@@ -738,7 +737,7 @@ def test_list_parser_case_2() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except FatalLintingException:
+    except QuerySyntaxError:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F3001",
@@ -757,7 +756,7 @@ def test_list_parser_case_3() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except FatalLintingException:
+    except QuerySyntaxError:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F1004",
@@ -776,7 +775,7 @@ def test_list_parser_case_4() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except FatalLintingException:
+    except QuerySyntaxError:
         pass
     assert list_parser.linter.messages[2][0] == {
         "code": "F3003",

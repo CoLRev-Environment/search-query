@@ -55,12 +55,13 @@ class EBSCOParser(QueryStringParser):
     def __init__(
         self,
         query_str: str,
+        *,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str=query_str, search_field_general=search_field_general, mode=mode
+            query_str, search_field_general=search_field_general, mode=mode
         )
         self.linter = EBSCOQueryStringLinter(self)
 
@@ -223,7 +224,7 @@ class EBSCOParser(QueryStringParser):
 
     def parse_query_tree(
         self,
-        tokens: list,
+        tokens: typing.Optional[list] = None,
         search_field: typing.Optional[SearchField] = None,
         search_field_par: typing.Optional[SearchField] = None,
     ) -> Query:
@@ -231,7 +232,8 @@ class EBSCOParser(QueryStringParser):
         Build a query tree from a list of tokens
         dynamic tree restructuring based on PRECEDENCE.
         """
-
+        if not tokens:
+            tokens = list(self.tokens)
         root: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
 
@@ -345,12 +347,23 @@ class EBSCOParser(QueryStringParser):
         self.tokenize()
 
         self.linter.validate_tokens()
+        self.linter.check_status()
 
-        query = self.parse_query_tree(self.tokens)
+        query = self.parse_query_tree()
+        query.origin_syntax = PLATFORM.EBSCO.value
+        return query
 
-        # Translate EBSCO host search_fields into standardized search_fields
-        self.translate_search_fields(query)
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement/test this method
+        cls.translate_search_fields(query)
+        return query
 
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
         return query
 
 

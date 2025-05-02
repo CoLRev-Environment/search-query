@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import LinterMode
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
@@ -117,8 +116,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     def check_search_field_general(self) -> None:
         """Check field 'Search Fields' in content."""
 
-        # TODO : the messages should not depend on the mode?!
-        if self.search_field_general != "" and self.parser.mode == LinterMode.STRICT:
+        if self.search_field_general != "":
             self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, position=())
 
     def check_invalid_token_sequences(self) -> None:
