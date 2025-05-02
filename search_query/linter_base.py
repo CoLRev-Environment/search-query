@@ -128,6 +128,29 @@ class QueryStringLinter:
                     details=f"Unparsed segment: '{segment.strip()}'",
                 )
 
+    def check_unsupported_search_fields(
+        self, *, valid_fields: list, ignore_case: bool = True
+    ) -> None:
+        """Check for the correct format of fields."""
+        if ignore_case:
+            valid_fields = [field.lower() for field in valid_fields]
+
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.FIELD:
+                continue
+
+            t_value = token.value
+            if ignore_case:
+                t_value = t_value.lower()
+
+            if t_value not in valid_fields:
+                self.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                    position=token.position,
+                    details=f"Search field {token.value} at position "
+                    f"{token.position} is not supported.",
+                )
+
     def check_quoted_search_terms(self) -> None:
         """Check quoted search terms."""
         for token in self.parser.tokens:
