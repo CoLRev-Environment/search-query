@@ -15,6 +15,7 @@ from search_query.parser_wos_constants import WOSSearchFieldList
 
 if typing.TYPE_CHECKING:
     import search_query.parser_wos
+    from search_query.query import Query
 
 
 class WOSQueryStringLinter(QueryStringLinter):
@@ -360,6 +361,12 @@ class WOSQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.DOI_FORMAT_INVALID,
                         position=self.parser.tokens[i + 1].position,
                     )
+
+    def validate_query_tree(self, query: "Query") -> None:
+        """
+        Validate the query tree.
+        This method is called after the query tree has been built.
+        """
 
 
 class WOSQueryListLinter(QueryListLinter):

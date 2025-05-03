@@ -5,7 +5,9 @@ import pytest
 from search_query.constants import Colors
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
+from search_query.parser_pubmed import PubmedListParser
 from search_query.parser_pubmed import PubmedParser
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
@@ -257,14 +259,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "",
             [
                 {
-                    "code": "W0012",
-                    "label": "implicit-operator",
-                    "message": "Implicit operator",
-                    "is_fatal": False,
-                    "position": (0, 14),
-                    "details": "Implicit operator detected. The space at position 7 will be interpreted as an AND connection. Please add an explicit operator to clarify this.",
-                },
-                {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator :~",
@@ -384,7 +378,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Date filter in subquery",
                     "is_fatal": False,
                     "position": (70, 109),
-                    "details": "",
+                    "details": "It should be double-checked whether date filters should apply to the entire query.",
                 }
             ],
         ),
@@ -438,6 +432,20 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": (20, 26),
                     "details": "Nested queries cannot have search fields",
                 }
+            ],
+        ),
+        (
+            "device[ti] OR (wearable[ti] AND 2000:2010[dp])",
+            "",
+            [
+                {
+                    "code": "W0011",
+                    "label": "date-filter-in-subquery",
+                    "message": "Date filter in subquery",
+                    "is_fatal": False,
+                    "position": (32, 45),
+                    "details": "It should be double-checked whether date filters should apply to the entire query.",
+                },
             ],
         ),
     ],
@@ -522,7 +530,7 @@ def test_linter(
         ),
     ],
 )
-def test_linter_with_genera_search_field(
+def test_linter_with_general_search_field(
     query_str: str,
     search_field_general: str,
     messages: list,
@@ -621,3 +629,77 @@ def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     print(generic.to_string())
 
     assert expected_generic == generic.to_string(), print(generic.to_string())
+
+
+def test_list_parser_case_1() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. #1 AND #2
+"""
+
+    list_parser = PubmedListParser(
+        query_list=query_list  # , search_field_general="", mode=""
+    )
+    list_parser.parse()
+    # raise Exception
+
+
+def test_list_parser_case_2() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. #1 AND #2 AND #4
+"""
+
+    list_parser = PubmedListParser(
+        query_list=query_list, search_field_general="", mode=""
+    )
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError:
+        pass
+
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        "3": [
+            {
+                "code": "F3003",
+                "label": "invalid-list-reference",
+                "message": "Invalid list reference in list query (not found)",
+                "is_fatal": True,
+                "position": (14, 16),
+                "details": "List reference '#4' is invalid (a corresponding list element does not exist).",
+            }
+        ]
+    }
+
+
+def test_list_parser_case_3() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. #1 #2
+"""
+
+    list_parser = PubmedListParser(
+        query_list=query_list, search_field_general="", mode=""
+    )
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError:
+        pass
+
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        "3": [
+            {
+                "code": "F1004",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "is_fatal": True,
+                "position": (0, 5),
+                "details": "Two list references in a row",
+            }
+        ]
+    }

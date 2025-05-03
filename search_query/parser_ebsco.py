@@ -350,21 +350,12 @@ class EBSCOParser(QueryStringParser):
         self.linter.check_status()
 
         query = self.parse_query_tree()
+        self.linter.validate_query_tree(query)
+        self.linter.check_status()
+
         query.origin_syntax = PLATFORM.EBSCO.value
         return query
 
-    @classmethod
-    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
-        """Convert the query to a generic syntax."""
-        # TODO: Implement/test this method
-        cls.translate_search_fields(query)
-        return query
-
-    @classmethod
-    def to_specific_syntax(cls, query: Query) -> Query:
-        """Convert the query to a specific syntax."""
-        # TODO: Implement this method
-        return query
 
 
 class EBSCOListParser(QueryListParser):
@@ -405,4 +396,7 @@ class EBSCOListParser(QueryListParser):
         )
         return token_nr
 
-    # the parse() method of QueryListParser is called to parse the list of queries
+    def parse(self) -> Query:
+        """Parse the query in list format."""
+        # TODO
+        raise NotImplementedError("List parsing not implemented yet.")

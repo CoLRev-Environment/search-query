@@ -2,7 +2,11 @@
 """Exceptions of SearchQuery."""
 from __future__ import annotations
 
-import search_query.utils
+import typing
+
+
+if typing.TYPE_CHECKING:
+    from search_query.linter_base import QueryStringLinter, QueryListLinter
 
 
 class SearchQueryException(Exception):
@@ -14,12 +18,14 @@ class SearchQueryException(Exception):
 class QuerySyntaxError(SearchQueryException):
     """QuerySyntaxError Exception"""
 
-    def __init__(self, msg: str, query_string: str, position: tuple) -> None:
-        # Error position marked in orange
-        query_string_highlighted = search_query.utils.format_query_string_pos(
-            query_string, position
-        )
-        self.message = f"{msg}\n{query_string_highlighted}"
-        self.position = position
-        self.query_string = query_string
-        super().__init__(self.message)
+    def __init__(self, linter: QueryStringLinter) -> None:
+        self.linter = linter
+        super().__init__()
+
+
+class ListQuerySyntaxError(SearchQueryException):
+    """ListQuerySyntaxError Exception"""
+
+    def __init__(self, linter: QueryListLinter) -> None:
+        self.linter = linter
+        super().__init__()

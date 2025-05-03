@@ -450,24 +450,11 @@ class WOSParser(QueryStringParser):
         self.linter.check_status()
 
         query, _ = self.parse_query_tree()
+        self.linter.validate_query_tree(query)
+        self.linter.check_status()
 
         query.origin_syntax = PLATFORM.WOS.value
 
-        return query
-
-    @classmethod
-    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
-        """Convert the query to a generic syntax."""
-        # TODO: Implement this method
-        cls.translate_search_fields(query)
-        # TODO : translate / apply search_field_general
-
-        return query
-
-    @classmethod
-    def to_specific_syntax(cls, query: Query) -> Query:
-        """Convert the query to a specific syntax."""
-        # TODO: Implement this method
         return query
 
 

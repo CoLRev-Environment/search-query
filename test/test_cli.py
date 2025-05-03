@@ -43,6 +43,7 @@ def test_linter_cli() -> None:
         text=True,
     )
 
+    print(result.stdout)
     assert "Lint: search_history_file_2_linter.json (wos)" in result.stdout
     assert "Unbalanced closing parenthesis" in result.stdout
     assert "Operator changed at the same level" in result.stdout

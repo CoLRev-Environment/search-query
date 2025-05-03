@@ -4,14 +4,19 @@ import re
 import typing
 
 from search_query.constants import Fields
+from search_query.constants import ListTokenTypes
+from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
+from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:
     from search_query.parser import PubmedParser
+    from search_query.parser_pubmed import PubmedListParser
+    from search_query.parser_base import QueryStringParser
 
 
 class PubmedQueryStringLinter(QueryStringLinter):
@@ -56,7 +61,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
         self.check_character_replacement_in_search_term()
-        self.check_implicit_operator()
+        # temporarily disabled (until the logic is clear)
+        # self.check_implicit_operator()
 
         self.check_unsupported_pubmed_search_fields()
         self.check_general_search_field_mismatch()
@@ -76,6 +82,25 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 continue
             if " " not in token.value:
                 continue
+
+            # TODO : check the following!??!
+
+            # TS=eHealth[all]
+            # equivalent to:
+            # TS eHealth[all]
+            # TS[all] AND eHealth[all]
+
+            # BUT
+            # Peer leader*[all]
+            # equivalent to:
+            # "Peer leader*"[all]
+            # NOT
+            # Peer[all] AND leader*[all]
+
+            # TODO : pubmed advanced query details show inconsistencies between
+            # ts eHealth*[ti]
+            # peer leader*[ti]
+
             position_of_whitespace = token.position[0] + token.value.index(" ")
             self.add_linter_message(
                 QueryErrorCode.IMPLICIT_OPERATOR,
@@ -337,13 +362,19 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 self._check_date_filters_in_subquery(child, level + 1)
             return
 
-        if query.search_field and query.search_field.value in [
+        if query.search_field and query.search_field.value.lower() in [
             "[publication date]",
-            "[pd]",
+            "[dp]",
+            "[pdat]",
         ]:
+            details = (
+                "It should be double-checked whether date filters "
+                "should apply to the entire query."
+            )
             self.add_linter_message(
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
                 position=query.position or (-1, -1),
+                details=details,
             )
 
     def _check_redundant_terms(self, query: Query) -> None:
@@ -526,3 +557,106 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 position=(-1, -1),
                 details="Search field is missing (TODO: default?)",
             )
+
+
+class PubmedQueryListLinter(QueryListLinter):
+    """Linter for PubMed Query Strings"""
+
+    def __init__(
+        self,
+        parser: "PubmedListParser",
+        string_parser_class: typing.Type["QueryStringParser"],
+    ):
+        self.parser: "PubmedListParser" = parser
+        self.string_parser_class = string_parser_class
+        super().__init__(parser, string_parser_class)
+
+    def validate_tokens(self) -> None:
+        """Validate token list"""
+
+        # self.parser.query_dict.items()
+
+        self.check_invalid_list_reference()
+        # self.check_unknown_tokens()
+        self.check_operator_node_token_sequence()
+
+    def check_operator_node_token_sequence(self) -> None:
+        """Check operator nodes"""
+
+        for level, query in self.parser.query_dict.items():
+            if query["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+
+            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+
+            # check token sequences: operator + list_ref
+            if (
+                operator_node_tokens[0].type
+                != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+            ):
+                details = (
+                    "Operator node must start with a list reference "
+                    f"but starts with {operator_node_tokens[0].type}"
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    list_position=level,
+                    position=operator_node_tokens[0].position,
+                    details=details,
+                )
+
+            prev_token = operator_node_tokens[0]
+            for i, token in enumerate(operator_node_tokens):
+                if i == 0:
+                    continue
+                # token_type = token.type
+                if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                    if prev_token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                        details = "Two list references in a row"
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                            list_position=level,
+                            position=(prev_token.position[0], token.position[1]),
+                            details=details,
+                        )
+                    prev_token = token
+
+                if token.type == OperatorNodeTokenTypes.LOGIC_OPERATOR:
+                    if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                        details = "Invalid operator position"
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                            list_position=level,
+                            position=token.position,
+                            details=details,
+                        )
+                    prev_token = token
+
+    def check_invalid_list_reference(self) -> None:
+        """Check for invalid list reference"""
+
+        for level, query in self.parser.query_dict.items():
+            if query["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+
+            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+
+            for operator_node_token in operator_node_tokens:
+                if (
+                    operator_node_token.type
+                    != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+                ):
+                    continue
+                list_reference = operator_node_token.value.replace("#", "")
+
+                if list_reference not in self.parser.query_dict:
+                    details = (
+                        f"List reference '#{list_reference}' is invalid "
+                        "(a corresponding list element does not exist)."
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_LIST_REFERENCE,
+                        list_position=level,
+                        position=operator_node_token.position,
+                        details=details,
+                    )

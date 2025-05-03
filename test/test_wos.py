@@ -9,7 +9,7 @@ from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.exception import QuerySyntaxError
+from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
@@ -737,7 +737,7 @@ def test_list_parser_case_2() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except QuerySyntaxError:
+    except ListQuerySyntaxError:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F3001",
@@ -756,7 +756,7 @@ def test_list_parser_case_3() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except QuerySyntaxError:
+    except ListQuerySyntaxError:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F1004",
@@ -775,8 +775,9 @@ def test_list_parser_case_4() -> None:
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except QuerySyntaxError:
+    except ListQuerySyntaxError:
         pass
+
     assert list_parser.linter.messages[2][0] == {
         "code": "F3003",
         "is_fatal": True,

@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import re
+import typing
 from abc import ABC
 from abc import abstractmethod
 
-import search_query.exception as search_query_exception
 from search_query.constants import LinterMode
 from search_query.constants import ListTokenTypes
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
+
+if typing.TYPE_CHECKING:
+    from search_query.linter_base import QueryStringLinter
 
 
 class QueryStringParser(ABC):
@@ -21,6 +24,8 @@ class QueryStringParser(ABC):
     PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
     # Note: override the following:
     OPERATOR_REGEX = r"^(AND|and|OR|or|NOT|not)$"
+
+    linter: QueryStringLinter
 
     def __init__(
         self,
@@ -88,8 +93,8 @@ class QueryListParser:
 
     def __init__(
         self,
-        *,
         query_list: str,
+        *,
         parser_class: type[QueryStringParser],
         search_field_general: str,
         mode: str = LinterMode.STRICT,
@@ -176,43 +181,6 @@ class QueryListParser:
 
         return query_list
 
+    @abstractmethod
     def parse(self) -> Query:
         """Parse the query in list format."""
-
-        self.tokenize_list()
-
-        query_list = self.dict_to_positioned_list()
-        query_string = "".join([query[0] for query in query_list])
-        search_field_general = self.search_field_general
-
-        try:
-            query = self.parser_class(
-                query_string, search_field_general=search_field_general
-            ).parse()
-
-        except search_query_exception.QuerySyntaxError as exc:
-            # Correct positions and query string
-            # to display the error for the original (list) query
-            new_pos = exc.position
-            for content, position in query_list:
-                # Note: artificial parentheses cannot be ignored here
-                # because they were counted in teh query_string
-                segment_length = len(content)
-
-                if new_pos[0] - segment_length >= 0:
-                    new_pos = (new_pos[0] - segment_length, new_pos[1] - segment_length)
-                    continue
-                segment_beginning = position[0]
-                new_pos = (
-                    new_pos[0] + segment_beginning,
-                    new_pos[1] + segment_beginning,
-                )
-                exc.position = new_pos
-                break
-
-            exc.query_string = self.query_list
-            raise search_query_exception.QuerySyntaxError(
-                msg="", query_string=self.query_list, position=exc.position
-            )
-
-        return query

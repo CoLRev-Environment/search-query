@@ -2,17 +2,21 @@
 """Query linter hook."""
 from __future__ import annotations
 
-from collections import defaultdict
+import typing
 from pathlib import Path
 
 import search_query.parser
-from search_query.constants import Colors
 from search_query.constants import ExitCodes
 from search_query.search_file import load_search_file
-from search_query.utils import format_query_string_positions
+
+if typing.TYPE_CHECKING:
+    from search_query.parser_base import QueryStringParser
+# pylint: disable=broad-except
 
 
-def run_linter(search_string: str, *, syntax: str, search_field_general: str) -> list:
+def get_parser(
+    search_string: str, *, syntax: str, search_field_general: str
+) -> QueryStringParser:
     """Run the linter on the search string"""
 
     parser_class = search_query.parser.PARSERS[syntax]
@@ -22,9 +26,9 @@ def run_linter(search_string: str, *, syntax: str, search_field_general: str) ->
 
     try:
         parser.parse()
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         assert parser.linter.messages  # type: ignore
-    return parser.linter.messages  # type: ignore
+    return parser
 
 
 # pylint: disable=too-many-locals
@@ -34,7 +38,7 @@ def pre_commit_hook(file_path: str) -> int:
     try:
         search_file = load_search_file(file_path)
         platform = search_query.parser.get_platform(search_file.platform)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         print(e)
         return ExitCodes.FAIL
 
@@ -45,55 +49,16 @@ def pre_commit_hook(file_path: str) -> int:
         )
         return ExitCodes.FAIL
 
-    messages = run_linter(
+    print(f"Lint: {Path(file_path).name} ({platform})")
+
+    parser = get_parser(
         search_file.search_string,
         syntax=search_file.platform,
         search_field_general=search_file.search_field,
     )
 
-    print(f"Lint: {Path(file_path).name} ({platform})")
-    if messages:
-        grouped_messages = defaultdict(list)
-
-        for message in messages:
-            grouped_messages[message["code"]].append(message)
-
-        for code, group in grouped_messages.items():
-            # Take the first message as representative
-            representative = group[0]
-            color = Colors.ORANGE
-            category = "Info"
-
-            if representative["is_fatal"]:
-                color = Colors.RED
-                category = "Fatal"
-            elif code.startswith("E"):
-                category = "Error"
-            elif code.startswith("W"):
-                category = "Warning"
-
-            print(
-                f"- {color}{category}{Colors.END}: "
-                f"{representative['label']} ({code})"
-            )
-            consolidated_messages = []
-            for message in group:
-                if message["details"]:
-                    consolidated_messages.append(f"  {message['details']}")
-                else:
-                    consolidated_messages.append(f"  {message['message']}")
-            for item in set(consolidated_messages):
-                print(item)
-            positions = list(message["position"] for message in group)
-            query_info = format_query_string_positions(
-                search_file.search_string,
-                positions,
-                color=color,
-            )
-            print(f"  {query_info}")
-
+    if parser.linter.messages:
         return ExitCodes.FAIL
 
     print("No errors detected")
-
     return ExitCodes.SUCCESS

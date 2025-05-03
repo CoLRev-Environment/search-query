@@ -11,6 +11,7 @@ from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:
     import search_query.parser_ebsco
+    from search_query.query import Query
 
 
 class EBSCOQueryStringLinter(QueryStringLinter):
@@ -198,3 +199,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     position=position,
                     details=details,
                 )
+
+    def validate_query_tree(self, query: Query) -> None:
+        """
+        Validate the query tree.
+        This method is called after the query tree has been built.
+        """
