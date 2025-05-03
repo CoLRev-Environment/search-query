@@ -92,6 +92,8 @@ class SearchFile:
 def load_search_file(filepath: str | Path) -> SearchFile:
     """Load a search file from a JSON file."""
     path = Path(filepath)
+    if not path.exists():
+        raise FileNotFoundError(f"File {path} does not exist.")
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 

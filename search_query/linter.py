@@ -38,7 +38,7 @@ def pre_commit_hook(file_path: str) -> int:
     try:
         search_file = load_search_file(file_path)
         platform = search_query.parser.get_platform(search_file.platform)
-    except Exception as e:
+    except ValueError as e:
         print(e)
         return ExitCodes.FAIL
 
