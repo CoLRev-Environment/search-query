@@ -13,8 +13,10 @@ These checks help to prevent errors—an important step given that previous stud
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
     query = parse(query_string, syntax="pubmed")
     # Output:
-    # Fatal: unbalanced-parentheses (F0002) at position 66:
-    #   ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+    # ❌ Fatal: unbalanced-parentheses (F1001)
+    #    Unbalanced opening parenthesis
+    #    ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+    #                                          ^^^
 
 
 .. include:: errors_index.rst
