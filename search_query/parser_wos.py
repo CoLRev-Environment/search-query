@@ -498,25 +498,6 @@ class WOSListParser(QueryListParser):
         )
         return operator_query
 
-    def _parse_queries(self) -> typing.Tuple[typing.List[Query], dict]:
-        """Parse the queries from the list of queries."""
-        queries: typing.List[Query] = []
-        operator_nodes = {}
-
-        for node_nr, node_content in self.query_dict.items():
-            if "#" in node_content["node_content"]:
-                operator_nodes[node_nr] = node_content["node_content"]
-                queries.append(Query("Filler for combine queries"))
-            else:
-                query_parser = WOSParser(
-                    query_str=node_content["node_content"],
-                    search_field_general=self.search_field_general,
-                    mode=self.mode,
-                )
-                query = query_parser.parse()
-                queries.append(query)
-        return queries, operator_nodes
-
     def _parse_list_query(self) -> Query:
         for node_nr, node_content in self.query_dict.items():
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
