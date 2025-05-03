@@ -28,14 +28,6 @@ The package can be used programmatically, through the command line, or as a pre-
 It has zero dependencies and integrates in a variety of environments.
 The parsers and linters are battle-tested on peer-reviewed `searchRxiv <https://www.cabidigitallibrary.org/journal/searchrxiv>`_ queries.
 
-Demo
-============
-
-A Jupyter Notebook demo (hosted on Binder) is available here:
-
-.. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
-
 Installation
 ============
 
@@ -97,11 +89,11 @@ Another useful feature of search-query is its **linter** functionality, which he
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
     query = parse(query_string, syntax="pubmed")
-    # Output:
-    # Fatal: unbalanced-parentheses (F0002) at position 66:
-    #   ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
-    #                                                                    ^^
-
+   # Output:
+   # ❌ Fatal: unbalanced-parentheses (F1001)
+   #    Unbalanced opening parenthesis
+   #    ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+   #                                          ^^^
 
 ..
    Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.
@@ -122,6 +114,14 @@ Another useful feature of search-query is its **linter** functionality, which he
     - **Non-strict mode**: Focuses on usability, automatically resolving common issues while maintaining transparency via warnings. This mode fails only on fatal outcomes. Auto-corrects errors as much as possible and prints a message (adds a fatal message if this is not possible). Prints warnings.
 
     An additional "silent" option may be used to silence warnings.
+
+Demo
+============
+
+A Jupyter Notebook demo (hosted on Binder) is available here:
+
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
 
 Functional Overview
 ================
