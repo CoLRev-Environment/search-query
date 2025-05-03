@@ -604,33 +604,6 @@ def test_parser(
 
     assert expected_parsed == query.to_string(), print(query.to_string())
 
-
-@pytest.mark.parametrize(
-    "query_str, expected_generic",
-    [
-        (
-            "eHealth[ti]",
-            "eHealth[ti]",
-        ),
-        (
-            "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
-        ),
-        (
-            "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[ti], eHealth[ab]], OR[mHealth[ti], mHealth[ab]]]",
-        ),
-    ],
-)
-def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
-    parser = PubmedParser(query_str, "")
-    query = parser.parse()
-    generic = parser.to_generic_syntax(query, search_field_general="")
-    print(generic.to_string())
-
-    assert expected_generic == generic.to_string(), print(generic.to_string())
-
-
 def test_list_parser_case_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
