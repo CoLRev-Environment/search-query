@@ -1,6 +1,6 @@
 
 <p align="center">
-<img src="docs/source/_static/search_query_logo.svg" width="400">
+<img src="docs/source/_static/search_query_logo.svg" width="350">
 </p>
 
 <div align="center">
@@ -27,6 +27,10 @@ Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner,
 
 The package was developed as part of Bachelor's theses:
 
+- Fleischmann, T. (2025). Advances in literature search queries: Validation and translation of search strings for EBSCO host. Otto-Friedrich-University of Bamberg.
+- Geßler, A. (2025). Design of an Emulator for API-based Academic Literature Searches. Otto-Friedrich-University of Bamberg.
+- Schnickmann, K. (2025). Validating and Parsing Academic Search Queries: A Design Science Approach. Otto-Friedrich-University of Bamberg.
+- Eckhardt, P. (2025). Advances in literature searches: Evaluation, analysis, and improvement of Web of Science queries. Otto-Friedrich-University of Bamberg.
 - Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
 
 ## Not what you are looking for?
