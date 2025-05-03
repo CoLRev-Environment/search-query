@@ -188,6 +188,63 @@ class Query:
         # Match exact word
         return value.lower() in field_value
 
+    def evaluate(self, records_dict: dict) -> dict:
+        """Evaluate the query against records using colrev_status labels.
+
+        - rev_included: relevant
+        - rev_excluded / rev_prescreen_excluded: irrelevant
+        - others: ignored
+        """
+
+        relevant_ids = set()
+        irrelevant_ids = set()
+        selected_ids = set()
+
+        for record_id, record in records_dict.items():
+            status = record.get("colrev_status")
+            if status == "rev_included":
+                relevant_ids.add(record_id)
+            elif status in {"rev_excluded", "rev_prescreen_excluded"}:
+                irrelevant_ids.add(record_id)
+
+            if self.selects(record_dict=record):
+                selected_ids.add(record_id)
+
+        # Only evaluate against relevant + irrelevant records
+        eval_ids = relevant_ids | irrelevant_ids
+        selected_eval_ids = selected_ids & eval_ids
+
+        true_positives = len(selected_eval_ids & relevant_ids)
+        false_positives = len(selected_eval_ids & irrelevant_ids)
+        false_negatives = len(relevant_ids - selected_ids)
+
+        precision = (
+            true_positives / (true_positives + false_positives)
+            if (true_positives + false_positives) > 0
+            else 0
+        )
+        recall = (
+            true_positives / (true_positives + false_negatives)
+            if (true_positives + false_negatives) > 0
+            else 0
+        )
+        f1 = (
+            (2 * precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0
+        )
+
+        return {
+            "total_evaluated": len(eval_ids),
+            "selected": len(selected_eval_ids),
+            "true_positives": true_positives,
+            "false_positives": false_positives,
+            "false_negatives": false_negatives,
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1,
+        }
+
     def is_operator(self) -> bool:
         """Check whether the SearchQuery is an operator."""
         return self.operator

@@ -3,7 +3,8 @@
 Improve
 ==========================================================
 
-TODO
+Modification
+---------------------
 
 .. code-block:: python
    :linenos:
@@ -51,3 +52,57 @@ TODO
    add_plural_wildcards(query)
 
    print(query.to_string(syntax="pubmed"))
+
+Evaluation
+---------------------
+
+See Cooper et al. 2018
+
+.. code-block:: python
+   :linenos:
+
+   from search_query import AndQuery, OrQuery
+   records_dict = {
+      "r1": {
+         "title": "Microsourcing platforms for online labor",
+         "colrev_status": "rev_included"
+      },
+      "r2": {
+         "title": "Online work and the future of microsourcing",
+         "colrev_status": "rev_included"
+      },
+      "r3": {
+         "title": "Microsourcing case studies",
+         "colrev_status": "rev_excluded"
+      },
+      "r4": {
+         "title": "Freelancing and online job platforms",
+         "colrev_status": "rev_excluded"
+      },
+   }
+
+   query = AndQuery([
+      OrQuery(["microsourcing"], search_field="ti"),
+      OrQuery(["online"], search_field="ti")
+   ], search_field="ti")
+
+   # Evaluate the search
+   results = query.evaluate(records_dict)
+   print(f"Recall: {results['recall']}")
+   print(f"Precision: {results['precision']}")
+   print(f"F1 Score: {results['f1_score']}")
+   # Output:
+   # Recall: 1.0
+   # Precision: 1.0
+   # F1 Score: 1.0
+
+..
+   - functions to visualize (e.g., plot the distribution of results over time, etc.)
+   - functions to compare (e.g., compare the results of two queries, etc.)
+
+References
+----------------
+
+.. parsed-literal::
+
+   Cooper C, Varley-Campbell J, Booth A, et al. (2018) Systematic review identifies six metrics and one method for assessing literature search effectiveness but no consensus on appropriate use. Journal of Clinical Epidemiology 99: 53–63. DOI: 10.1016/J.JCLINEPI.2018.02.025.
