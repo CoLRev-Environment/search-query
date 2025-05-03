@@ -7,7 +7,6 @@ import typing
 
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
-from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -63,10 +62,12 @@ class XYParser(QueryStringParser):
                 token_type = TokenTypes.LOGIC_OPERATOR
             # ...
             else:
-                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
-                continue
+                token_type = TokenTypes.UNKNOWN
+                # linter raises QueryErrorCode.TOKENIZING_FAILED
 
             self.tokens.append((token, token_type, (start, end)))
+
+        self.combine_subsequent_tokens()
 
     # Override methods of parent class (as needed)
 
@@ -79,7 +80,7 @@ class XYParser(QueryStringParser):
 
         # Parse a query tree from tokens (bottom-up or top-down)
 
-        # Add messages to self.linter_messages
+        # Add messages to self.messages
         # self.add_linter_message(QueryErrorCode.ADD_CODE, (start, end))
 
     def translate_search_fields(self, query: Query) -> None:
@@ -87,19 +88,19 @@ class XYParser(QueryStringParser):
 
         # Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
 
-        # Add messages to self.linter_messages if needed
+        # Add messages to self.messages if needed
         # self.add_linter_message(QueryErrorCode.ADD_CODE, (start, end))
 
     def parse(self) -> Query:
         """Parse a query string."""
 
         self.tokenize()
-        self.add_artificial_parentheses_for_operator_precedence()
+        self.linter.validate_tokens()
 
         query = self.parse_query_tree(self.tokens)
         self.translate_search_fields(query)
 
-        # If self.mode == "strict", raise exception if self.linter_messages is not empty
+        # If self.mode == "strict", raise exception if self.messages is not empty
 
         return query
 

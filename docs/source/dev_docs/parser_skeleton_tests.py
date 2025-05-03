@@ -72,7 +72,7 @@ def print_debug(
 
 
 @pytest.mark.parametrize(
-    "query_string, linter_messages",
+    "query_string, messages",
     [
         (
             "AB-(Health)",
@@ -80,10 +80,10 @@ def print_debug(
         ),
     ],
 )
-def test_linter_xy(query_string: str, linter_messages: tuple) -> None:
+def test_linter_xy(query_string: str, messages: tuple) -> None:
     xyparser = XYParser(query_string)
     try:
         xyparser.parse()
     except Exception:
         pass
-    assert xyparser.linter_messages == linter_messages
+    assert xyparser.messages == messages

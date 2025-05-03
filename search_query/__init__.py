@@ -4,9 +4,9 @@ __author__ = """Gerit Wagner"""
 __email__ = "gerit.wagner@hec.ca"
 
 from search_query.query import Query
-from search_query.or_query import OrQuery
-from search_query.and_query import AndQuery
-from search_query.near_query import NEARQuery
+from search_query.query_or import OrQuery
+from search_query.query_and import AndQuery
+from search_query.query_near import NEARQuery
 from search_query.search_file import SearchFile, load_search_file
 from .__version__ import __version__
 

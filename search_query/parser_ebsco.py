@@ -5,15 +5,17 @@ from __future__ import annotations
 import re
 import typing
 
+from search_query.constants import GENERAL_ERROR_POSITION
+from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.linter_ebsco import EBSCOQueryStringValidator
+from search_query.linter_base import QueryListLinter
+from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_validation import QueryStringValidator
 from search_query.query import Query
 from search_query.query import SearchField
 
@@ -24,10 +26,13 @@ class EBSCOParser(QueryStringParser):
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
 
     PARENTHESIS_REGEX = r"[\(\)]"
-    LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
+    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
     PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
+    # https://connect.ebsco.com/s/article/Searching-with-Field-Codes
     SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB|DE|LA|KW)\b"
     SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
+
+    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
 
     pattern = "|".join(
         [
@@ -46,6 +51,19 @@ class EBSCOParser(QueryStringParser):
         "AND": 1,
         "OR": 0,
     }
+
+    def __init__(
+        self,
+        query_str: str,
+        *,
+        search_field_general: str = "",
+        mode: str = LinterMode.STRICT,
+    ) -> None:
+        """Initialize the parser."""
+        super().__init__(
+            query_str, search_field_general=search_field_general, mode=mode
+        )
+        self.linter = EBSCOQueryStringLinter(self)
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
@@ -124,10 +142,6 @@ class EBSCOParser(QueryStringParser):
         distance = int(distance_string)
         return operator, distance
 
-    def is_search_field(self, token: str) -> bool:
-        """Check if the token is a valid search field."""
-        return re.fullmatch(self.SEARCH_FIELD_REGEX, token) is not None
-
     def get_precedence(self, token: str) -> int:
         """Returns operator precedence for logical and proximity operators."""
 
@@ -145,22 +159,8 @@ class EBSCOParser(QueryStringParser):
         if self.query_str is None:
             raise ValueError("No string provided to parse.")
 
-        strict = False
-        # Commented for automatic testing, after pull-request is done, please uncomment
-        # if self.mode == "strict":
-        #     strict = True
-
         self.tokens = []
-
-        validator = EBSCOQueryStringValidator(self)
-        validator.filter_search_field(strict)
-        self.query_str = validator.query_str
-
-        validator.check_search_field_general(strict=self.mode)
-
-        previous_token_type = None
         token_type = TokenTypes.UNKNOWN
-
         for match in re.finditer(self.pattern, self.query_str):
             value = match.group()
             value = value.strip()
@@ -181,15 +181,7 @@ class EBSCOParser(QueryStringParser):
             elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
-                self.add_linter_message(QueryErrorCode.TOKENIZING_FAILED, (start, end))
-                continue
-
-            # Validate token positioning to ensure logical structure
-            validator.validate_token_position(
-                token_type, previous_token_type, (start, end)
-            )
-            # Set token_type for continoued validation
-            previous_token_type = token_type
+                token_type = TokenTypes.UNKNOWN
 
             # Append token with its type and position to self.tokens
             self.tokens.append(
@@ -232,7 +224,7 @@ class EBSCOParser(QueryStringParser):
 
     def parse_query_tree(
         self,
-        tokens: list,
+        tokens: typing.Optional[list] = None,
         search_field: typing.Optional[SearchField] = None,
         search_field_par: typing.Optional[SearchField] = None,
     ) -> Query:
@@ -240,7 +232,8 @@ class EBSCOParser(QueryStringParser):
         Build a query tree from a list of tokens
         dynamic tree restructuring based on PRECEDENCE.
         """
-
+        if not tokens:
+            tokens = list(self.tokens)
         root: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
 
@@ -348,60 +341,21 @@ class EBSCOParser(QueryStringParser):
         for child in query.children:
             self.translate_search_fields(child)
 
-    # def print_linter_messages(self, linter_messages: list[dict]) -> None:
-    #     """Print linter messages in a readable format"""
-    #     if not linter_messages:
-    #         print("No linter messages to display.")
-    #         return
-
-    #     print("Linter Messages:")
-    #     print("-" * 20)
-
-    #     for message in linter_messages:
-    #         if not isinstance(message, dict):
-    #             print(f"Invalid message format: {message}")
-    #             continue
-
-    #         level = message.get("level", "Unknown Level")
-    #         msg = message.get("msg", "No message provided")
-    #         pos = message.get("pos", "Position not specified")
-
-    #         print(f"Level: {level}")
-    #         print(f"Message: {msg}")
-    #         print(f"Position: {pos}")
-    #         print("-" * 20)
-
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.linter_messages.clear()
-
-        # Create an instance of QueryStringValidator
-        validator = QueryStringValidator(self)
-
-        # Call validation methods
-        validator.check_operator()
-
-        validator.check_parenthesis()
-
-        # Update the query string and messages after validation
-        self.query_str = validator.query_str
-
-        # Tokenize the search string
         self.tokenize()
-        # Add artificial parentheses
-        self.add_artificial_parentheses_for_operator_precedence()
 
-        # Parse query on basis of tokens and recursively build a query-tree
-        query = self.parse_query_tree(self.tokens)
+        self.linter.validate_tokens()
+        self.linter.check_status()
 
-        # Translate EBSCO host search_fields into standardized search_fields
-        self.translate_search_fields(query)
+        query = self.parse_query_tree()
+        self.linter.validate_query_tree(query)
+        self.linter.check_status()
 
-        # Uncomment if linter_messages should be printed (e.g. for testing)
-        # self.print_linter_messages(self.linter_messages)
-
+        query.origin_syntax = PLATFORM.EBSCO.value
         return query
+
 
 
 class EBSCOListParser(QueryListParser):
@@ -415,6 +369,7 @@ class EBSCOListParser(QueryListParser):
             search_field_general=search_field_general,
             mode=mode,
         )
+        self.linter = QueryListLinter(parser=self, string_parser_class=EBSCOParser)
 
     def get_token_str(self, token_nr: str) -> str:
         """Format the token string for output or processing."""
@@ -431,9 +386,9 @@ class EBSCOListParser(QueryListParser):
         # Log a linter message and return the token number
         # 1 AND 2 ... are still possible,
         # however for standardization purposes it should be S/#
-        self.add_linter_message(
+        self.linter.add_linter_message(
             QueryErrorCode.INVALID_LIST_REFERENCE,
-            list_position=QueryListParser.GENERAL_ERROR_POSITION,
+            list_position=GENERAL_ERROR_POSITION,
             position=(-1, -1),
             details="Connecting lines possibly failed. "
             "Please use this format for connection: "
@@ -441,4 +396,7 @@ class EBSCOListParser(QueryListParser):
         )
         return token_nr
 
-    # the parse() method of QueryListParser is called to parse the list of queries
+    def parse(self) -> Query:
+        """Parse the query in list format."""
+        # TODO
+        raise NotImplementedError("List parsing not implemented yet.")

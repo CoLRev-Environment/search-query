@@ -14,7 +14,6 @@ class SearchFile:
     """SearchFile class."""
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         search_string: str,
@@ -30,6 +29,8 @@ class SearchFile:
         self.authors = authors or []
         self.record_info = record_info or {}
         self.date = date or {}
+        # Note: this will be called search_field_general
+        self.search_field = ""
         self._filepath = Path(filepath) if filepath else None
 
         for key, value in kwargs.items():
@@ -91,6 +92,8 @@ class SearchFile:
 def load_search_file(filepath: str | Path) -> SearchFile:
     """Load a search file from a JSON file."""
     path = Path(filepath)
+    if not path.exists():
+        raise FileNotFoundError(f"File {path} does not exist.")
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 

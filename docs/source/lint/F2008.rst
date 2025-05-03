@@ -1,0 +1,14 @@
+.. _F2008:
+
+F2008 — isbn-format-invalid
+===========================
+
+**Error Code**: F2008
+
+**Message**: ``Invalid ISBN format.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Invalid ISBN format.
+
+**Back to**: :ref:`lint`

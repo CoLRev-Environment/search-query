@@ -4,20 +4,23 @@ import re
 import typing
 
 from search_query.constants import Fields
+from search_query.constants import ListTokenTypes
+from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
-from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.parser_validation import QueryStringValidator
+from search_query.linter_base import QueryListLinter
+from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.query import SearchField
 
 if typing.TYPE_CHECKING:
     from search_query.parser import PubmedParser
+    from search_query.parser_pubmed import PubmedListParser
+    from search_query.parser_base import QueryStringParser
 
 
-class PubmedQueryStringValidator(QueryStringValidator):
-    """Class for PubMed Query String Validation"""
+class PubmedQueryStringLinter(QueryStringLinter):
+    """Linter for PubMed Query Strings"""
 
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
     parser: "PubmedParser"
@@ -46,220 +49,333 @@ class PubmedQueryStringValidator(QueryStringValidator):
         ],
     }
 
-    def validate_tokens(self, tokens: list) -> list:
+    def validate_tokens(self) -> None:
         """Validate token list"""
-        self._check_unbalanced_parentheses(tokens)
-        self._check_invalid_token_sequence(tokens)
 
-        for index, token in enumerate(tokens):
-            if token.type == TokenTypes.SEARCH_TERM:
-                self._check_invalid_characters(token)
-                if "*" in token.value:
-                    self._check_invalid_wildcard(token)
+        self.check_invalid_syntax()
+        self.check_missing_tokens()
+        self.check_quoted_search_terms()
+        # No tokens marked as unknown token-type
+        self.check_invalid_token_sequences()
+        self.check_unbalanced_parentheses()
+        self.add_artificial_parentheses_for_operator_precedence()
+        self.check_operator_capitalization()
+        self.check_character_replacement_in_search_term()
+        # temporarily disabled (until the logic is clear)
+        # self.check_implicit_operator()
 
-            if token.type == TokenTypes.FIELD:
-                if ":~" in token.value:
-                    self._check_invalid_proximity_operator(index, tokens)
+        self.check_unsupported_pubmed_search_fields()
+        self.check_general_search_field_mismatch()
 
-            if token.type == TokenTypes.LOGIC_OPERATOR:
-                self._check_precedence(index, tokens)
+        self.check_invalid_wildcard()
+        self.check_invalid_proximity_operator()
+        self.check_boolean_operator_readability()
 
-        return tokens
+    def check_implicit_operator(self) -> None:
+        """Check for implicit operators in the query string"""
 
-    def _check_unbalanced_parentheses(self, tokens: list) -> None:
-        """Check query for unbalanced parentheses."""
-        i = 0
-        for token in tokens:
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                i += 1
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                if i == 0:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.UNBALANCED_PARENTHESES,
-                        position=token.position,
-                    )
-                else:
-                    i -= 1
-        if i > 0:
-            # Query contains unbalanced opening parentheses
-            i = 0
-            for token in reversed(tokens):
-                if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                    i += 1
-                if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    if i == 0:
-                        self.parser.add_linter_message(
-                            QueryErrorCode.UNBALANCED_PARENTHESES,
-                            position=token.position,
-                        )
-                    else:
-                        i -= 1
-
-    def _check_invalid_token_sequence(self, tokens: list) -> None:
-        """Check token list for invalid token sequences."""
-        for i in range(0, len(tokens) + 1):
-            if i == len(tokens):
-                if tokens[i - 1].type in [
-                    TokenTypes.PARENTHESIS_OPEN,
-                    TokenTypes.LOGIC_OPERATOR,
-                ]:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=tokens[i - 1].position,
-                        details=f"Cannot end with {tokens[i-1].type}",
-                    )
-                break
-
-            token_type = tokens[i].type  # if i < len(tokens) else None
-            if i == 0:
-                # Skip first token
-                if token_type not in [
-                    TokenTypes.SEARCH_TERM,
-                    TokenTypes.PARENTHESIS_OPEN,
-                ]:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=tokens[i].position,
-                        details=f"Cannot start with {token_type}",
-                    )
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
                 continue
 
-            prev_type = tokens[i - 1].type
+            if token.value[0] == '"' and token.value[-1] == '"':
+                continue
+            if " " not in token.value:
+                continue
 
-            if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
-                if token_type == TokenTypes.FIELD:
-                    details = "Invalid search field position"
-                    position = tokens[i].position
+            # TODO : check the following!??!
 
-                elif token_type == TokenTypes.LOGIC_OPERATOR:
-                    details = "Invalid operator position"
-                    position = tokens[i].position
+            # TS=eHealth[all]
+            # equivalent to:
+            # TS eHealth[all]
+            # TS[all] AND eHealth[all]
 
-                elif (
-                    prev_type == TokenTypes.PARENTHESIS_OPEN
-                    and token_type == TokenTypes.PARENTHESIS_CLOSED
-                ):
-                    details = "Empty parenthesis"
-                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+            # BUT
+            # Peer leader*[all]
+            # equivalent to:
+            # "Peer leader*"[all]
+            # NOT
+            # Peer[all] AND leader*[all]
 
-                elif (
-                    token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
-                ):
-                    details = "Missing operator"
-                    position = (tokens[i - 1].position[0], tokens[i].position[1])
+            # TODO : pubmed advanced query details show inconsistencies between
+            # ts eHealth*[ti]
+            # peer leader*[ti]
 
-                else:
-                    details = ""
-                    position = (
-                        tokens[i].position if token_type else tokens[i - 1].position
+            position_of_whitespace = token.position[0] + token.value.index(" ")
+            self.add_linter_message(
+                QueryErrorCode.IMPLICIT_OPERATOR,
+                position=token.position,
+                details="Implicit operator detected. "
+                f"The space at position {position_of_whitespace} "
+                "will be interpreted as an AND connection. "
+                "Please add an explicit operator to clarify this.",
+            )
+
+    def check_invalid_syntax(self) -> None:
+        """Check for invalid syntax in the query string."""
+
+        # Check for erroneous field syntax
+        match = re.search(r"\b[A-Z]{2}=", self.parser.query_str)
+        if match:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_SYNTAX,
+                position=match.span(),
+                details="PubMed fields must be enclosed in brackets and "
+                "after a search term, e.g. robot[TIAB] or monitor[TI]. "
+                f"'{match.group(0)}' is invalid.",
+            )
+
+    def check_character_replacement_in_search_term(self) -> None:
+        """Check a search term for invalid characters"""
+        # https://pubmed.ncbi.nlm.nih.gov/help/
+        # PubMed character conversions
+
+        # pylint: disable=duplicate-code
+        invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+            value = token.value
+
+            # Iterate over term to identify invalid characters
+            # and replace them with whitespace
+            for i, char in enumerate(token.value):
+                if char in invalid_characters:
+                    details = (
+                        f"Character '{char}' in search term "
+                        "will be replaced with whitespace "
+                        "(see PubMed character conversions in "
+                        "https://pubmed.ncbi.nlm.nih.gov/help/)"
                     )
+                    self.add_linter_message(
+                        QueryErrorCode.CHARACTER_REPLACEMENT,
+                        position=(token.position[0] + i, token.position[0] + i + 1),
+                        details=details,
+                    )
+                    # TBD: really change?
+                    # value = value[:i] + " " + value[i + 1 :]
+            # Update token
+            if value != token.value:
+                token.value = value
 
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=position,
+    def check_invalid_token_sequences(self) -> None:
+        """Check token list for invalid token sequences."""
+
+        # Check the first token
+        if self.parser.tokens[0].type not in [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+        ]:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                position=self.parser.tokens[0].position,
+                details=f"Cannot start with {self.parser.tokens[0].type}",
+            )
+
+        # Check following token sequences
+        for i, token in enumerate(self.parser.tokens):
+            if i == 0:
+                continue
+            if i == len(self.parser.tokens):
+                break
+
+            token_type = token.type
+            prev_type = self.parser.tokens[i - 1].type
+
+            if token_type in self.VALID_TOKEN_SEQUENCES[prev_type]:
+                continue
+
+            details = ""
+            position = (
+                token.position if token_type else self.parser.tokens[i - 1].position
+            )
+
+            if token_type == TokenTypes.FIELD:
+                if self.parser.tokens[i - 1].type in [TokenTypes.PARENTHESIS_CLOSED]:
+                    details = "Nested queries cannot have search fields"
+                else:
+                    details = "Invalid search field position"
+                position = token.position
+
+            elif token_type == TokenTypes.LOGIC_OPERATOR:
+                details = "Invalid operator position"
+                position = token.position
+
+            elif (
+                prev_type == TokenTypes.PARENTHESIS_OPEN
+                and token_type == TokenTypes.PARENTHESIS_CLOSED
+            ):
+                details = "Empty parenthesis"
+                position = (
+                    self.parser.tokens[i - 1].position[0],
+                    token.position[1],
+                )
+
+            elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
+                details = "Missing operator"
+                position = (
+                    self.parser.tokens[i - 1].position[0],
+                    token.position[1],
+                )
+
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                position=position,
+                details=details,
+            )
+
+        # Check the last token
+        if self.parser.tokens[-1].type in [
+            TokenTypes.PARENTHESIS_OPEN,
+            TokenTypes.LOGIC_OPERATOR,
+        ]:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                position=self.parser.tokens[-1].position,
+                details=f"Cannot end with {self.parser.tokens[-1].type}",
+            )
+
+    def check_invalid_wildcard(self) -> None:
+        """Check search term for invalid wildcard *"""
+
+        details = (
+            "Wildcards cannot be used for short strings (shorter than 4 characters)."
+        )
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+
+            if "*" not in token.value:
+                continue
+
+            if token.value == '"':
+                k = 5
+            else:
+                k = 4
+            if "*" in token.value[:k]:
+                # Wildcard * is invalid
+                # when applied to terms with less than 4 characters
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_WILDCARD_USE,
+                    position=token.position,
                     details=details,
                 )
 
-    def _check_precedence(self, index: int, tokens: list) -> None:
-        """Check whether token list contains unspecified precedence
-        (OR & AND operator in the same subquery)"""
-        i = 0
-        for token in reversed(tokens[:index]):
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                if i == 0:
-                    return
-                i -= 1
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                i += 1
-            if token.type == TokenTypes.LOGIC_OPERATOR and i == 0:
-                for operator_group in [{"AND", "&"}, {"OR", "|"}, {"NOT"}]:
-                    if tokens[index].value.upper() in operator_group:
-                        if token.value.upper() not in operator_group:
-                            self.parser.add_linter_message(
-                                QueryErrorCode.IMPLICIT_PRECEDENCE,
-                                position=tokens[index].position,
-                            )
-
-    def _check_invalid_characters(self, token: Token) -> None:
-        """Check a search term for invalid characters"""
-        invalid_characters = "!#$%+.;<>?\\^_{}~'()[]"
-        value = token.value
-        # Iterate over term to identify invalid characters
-        # and replace them with whitespace
-        for i, char in enumerate(token.value):
-            if char in invalid_characters:
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_CHARACTER, position=token.position
-                )
-                value = value[:i] + " " + value[i + 1 :]
-        # Update token
-        if value != token.value:
-            token.value = value
-
-    def _check_invalid_wildcard(self, token: Token) -> None:
-        """Check search term for invalid wildcard *"""
-        if token.value == '"':
-            k = 5
-        else:
-            k = 4
-        if "*" in token.value[:k]:
-            # Wildcard * is invalid when applied to terms with less than 4 characters
-            self.parser.add_linter_message(
-                QueryErrorCode.INVALID_WILDCARD_USE, token.position
-            )
-
-    def _check_invalid_proximity_operator(self, index: int, tokens: list) -> None:
+    def check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
-        field_token = tokens[index]
-        search_phrase_token = tokens[index - 1]
 
-        match = re.match(self.PROXIMITY_REGEX, field_token.value)
-        if match:
+        for index, token in enumerate(self.parser.tokens):
+            if ":~" not in token.value:
+                continue
+            field_token = self.parser.tokens[index]
+            search_phrase_token = self.parser.tokens[index - 1]
+
+            match = re.match(self.PROXIMITY_REGEX, field_token.value)
+            if not match:
+                details = f"Not matching regex {self.PROXIMITY_REGEX}"
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    position=field_token.position,
+                    details=details,
+                )
+                continue
+
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
-                self.parser.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
+                details = f"Proximity value '{prox_value}' is not a digit"
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    position=field_token.position,
+                    details=details,
                 )
-            else:
-                nr_of_terms = len(search_phrase_token.value.strip('"').split())
-                if not (
-                    search_phrase_token.value[0] == '"'
-                    and search_phrase_token.value[-1] == '"'
-                    and nr_of_terms >= 2
-                ):
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                    )
+                continue
 
-                if self.parser.map_search_field(field_value) not in {
-                    "[tiab]",
-                    Fields.TITLE,
-                    Fields.AFFILIATION,
-                }:
-                    self.parser.add_linter_message(
-                        QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-                    )
+            nr_of_terms = len(search_phrase_token.value.strip('"').split())
+            if nr_of_terms >= 2 and not (
+                search_phrase_token.value[0] == '"'
+                and search_phrase_token.value[-1] == '"'
+            ):
+                details = (
+                    "When using proximity operators, "
+                    + "search terms consisting of 2 or more words "
+                    + f"(i.e., {search_phrase_token.value}) "
+                    + "must be enclosed in double quotes"
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    position=self.parser.tokens[index - 1].position,
+                    details=details,
+                )
+
+            if self.parser.map_search_field(field_value) not in {
+                "[tiab]",
+                Fields.TITLE,
+                Fields.AFFILIATION,
+            }:
+                details = (
+                    f"Proximity operator '{field_value}' is not supported "
+                    + "for this search field (supported: [tiab], [ti], [ad])"
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    position=field_token.position,
+                    details=details,
+                )
             # Update search field token
-            tokens[index].value = field_value
-        else:
-            self.parser.add_linter_message(
-                QueryErrorCode.INVALID_PROXIMITY_USE, field_token.position
-            )
+            self.parser.tokens[index].value = field_value
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
-        self._check_nested_not_query(query)
-        self._check_redundant_terms(query)
+        # Note: search fields are not yet translated.
 
-    def _check_nested_not_query(self, query: Query) -> None:
-        """Check query tree for nested NOT queries"""
-        for child in query.children:
-            if child.operator and child.value == Operators.NOT:
-                self.parser.add_linter_message(
-                    QueryErrorCode.NESTED_NOT_QUERY, position=child.position or (-1, -1)
+        self._check_redundant_terms(query)
+        self._check_date_filters_in_subquery(query)
+        self._check_nested_query_with_search_field(query)
+
+    def _check_nested_query_with_search_field(self, query: Query) -> None:
+        # Walk the query (its children)
+        if query.operator:
+            if query.search_field:
+                details = (
+                    "In PubMed, operators (nested queries) "
+                    "cannot be used with a search field."
                 )
-            self._check_nested_not_query(child)
+                self.add_linter_message(
+                    QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
+                    position=query.position or (-1, -1),
+                    details=details,
+                )
+            for child in query.children:
+                self._check_nested_query_with_search_field(child)
+
+    def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
+        """Check for date filters in subqueries"""
+
+        # Skip top-level queries
+        if level == 0:
+            for child in query.children:
+                self._check_date_filters_in_subquery(child, level + 1)
+            return
+        if query.operator:
+            for child in query.children:
+                self._check_date_filters_in_subquery(child, level + 1)
+            return
+
+        if query.search_field and query.search_field.value.lower() in [
+            "[publication date]",
+            "[dp]",
+            "[pdat]",
+        ]:
+            details = (
+                "It should be double-checked whether date filters "
+                "should apply to the entire query."
+            )
+            self.add_linter_message(
+                QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
+                position=query.position or (-1, -1),
+                details=details,
+            )
 
     def _check_redundant_terms(self, query: Query) -> None:
         """Check query for redundant search terms"""
@@ -305,15 +421,17 @@ class PubmedQueryStringValidator(QueryStringValidator):
                         # Terms in AND queries follow different redundancy logic
                         # than terms in OR queries
                         if operator == Operators.AND:
-                            self.parser.add_linter_message(
+                            self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                term_a.position,
+                                position=term_a.position,
+                                details=f"Term {term_a.value} is contained in term "
+                                f"{term_b.value} and both are connected with AND.",
                             )
                             redundant_terms.append(term_a)
                         elif operator in {Operators.OR, Operators.NOT}:
-                            self.parser.add_linter_message(
+                            self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                term_b.position,
+                                position=term_b.position,
                             )
                             redundant_terms.append(term_b)
 
@@ -340,59 +458,205 @@ class PubmedQueryStringValidator(QueryStringValidator):
         if not query.children:
             subqueries[subquery_id].append(query)
 
-    def validate_search_fields(self, query: Query, user_field_values: list) -> None:
-        """Validate search terms and fields"""
-        leaf_queries = self.parser.get_query_leaves(query)
+    def check_unsupported_pubmed_search_fields(self) -> None:
+        """Check for the correct format of fields."""
 
-        for leaf_query in leaf_queries:
-            self._check_unsupported_search_field(leaf_query.search_field)
-
-        query_field_values = [
-            q.search_field.value
-            for q in leaf_queries
-            if not (q.search_field.value == "all" and not q.search_field.position)
-        ]
-        self._check_search_field_alignment(
-            set(query_field_values), set(user_field_values)
+        valid_fields = list(self.parser.DEFAULT_FIELD_MAP.keys()) + list(
+            self.parser.DEFAULT_FIELD_MAP.values()
         )
 
-    def _check_unsupported_search_field(self, search_field: SearchField) -> None:
-        """Check unsupported search field"""
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.FIELD:
+                continue
 
-        if search_field.value not in Fields.all() or (
-            search_field.position and search_field.value == "ab"
-        ):
-            self.parser.add_linter_message(
+            t_value = token.value.lower()
+
+            if t_value in valid_fields:
+                continue
+
+            if re.match(r"^\[[a-z\/]*\:~\d+\]$", t_value):
+                continue
+
+            self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                search_field.position or (-1, -1),
+                position=token.position,
+                details=f"Search field {token.value} at position "
+                f"{token.position} is not supported.",
             )
-            search_field.value = Fields.ALL
-            search_field.position = None
 
-    def _check_search_field_alignment(
-        self, query_field_values: set, user_field_values: set
-    ) -> None:
-        """Compare user-provided fields with the fields found in query string"""
-        if user_field_values and query_field_values:
-            if user_field_values != query_field_values:
-                # User-provided fields and fields in the query do not match
-                self.parser.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_CONTRADICTION, (-1, -1)
-                )
-            else:
-                # User-provided fields match fields in the query
-                self.parser.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_REDUNDANT, (-1, -1)
-                )
+    def check_general_search_field_mismatch(self) -> None:
+        """Check general search field mismatch"""
 
-        elif user_field_values and not query_field_values:
+        general_sf_parentheses = f"[{self.parser.search_field_general.lower()}]"
+        if general_sf_parentheses in self.parser.DEFAULT_FIELD_MAP.values():
+            general_sf = general_sf_parentheses
+        elif general_sf_parentheses in self.parser.DEFAULT_FIELD_MAP:
+            general_sf = self.parser.DEFAULT_FIELD_MAP[general_sf_parentheses]
+        else:
+            general_sf = ""
+
+        standardized_sf_list = []
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.FIELD:
+                continue
+            if (
+                token.value.lower() not in self.parser.DEFAULT_FIELD_MAP
+                and token.value.lower() not in self.parser.DEFAULT_FIELD_MAP.values()
+            ):
+                continue
+
+            standardized_sf = token.value.lower()
+            if (
+                token.value.lower() in self.parser.DEFAULT_FIELD_MAP
+                and token.value.lower()
+            ):
+                standardized_sf = self.parser.DEFAULT_FIELD_MAP[token.value.lower()]
+
+            standardized_sf_list.append(standardized_sf)
+            if general_sf and standardized_sf:
+                if general_sf != standardized_sf:
+                    details = (
+                        "The search_field_general "
+                        f"({self.parser.search_field_general}) "
+                        f"and the search_field {token.value} do not match."
+                    )
+                    # User-provided fields and fields in the query do not match
+                    self.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
+                        position=token.position,
+                        details=details,
+                    )
+                else:
+                    details = (
+                        "The search_field_general "
+                        f"({self.parser.search_field_general}) "
+                        f"and the search_field {token.value} are redundant."
+                    )
+                    # User-provided fields match fields in the query
+                    self.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_REDUNDANT,
+                        position=token.position,
+                        details=details,
+                    )
+
+        if general_sf and not standardized_sf_list:
             # User-provided fields are missing in the query
-            self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING,
+                position=(-1, -1),
+                details="Search fields should be specified in the query "
+                "instead of the search_field_general",
             )
 
-        elif not user_field_values and not query_field_values:
+        if not general_sf and not any(
+            t.type == TokenTypes.FIELD for t in self.parser.tokens
+        ):
             # Fields not specified
-            self.parser.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING, (-1, -1)
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING,
+                position=(-1, -1),
+                details="Search field is missing (TODO: default?)",
             )
+
+
+class PubmedQueryListLinter(QueryListLinter):
+    """Linter for PubMed Query Strings"""
+
+    def __init__(
+        self,
+        parser: "PubmedListParser",
+        string_parser_class: typing.Type["QueryStringParser"],
+    ):
+        self.parser: "PubmedListParser" = parser
+        self.string_parser_class = string_parser_class
+        super().__init__(parser, string_parser_class)
+
+    def validate_tokens(self) -> None:
+        """Validate token list"""
+
+        # self.parser.query_dict.items()
+
+        self.check_invalid_list_reference()
+        # self.check_unknown_tokens()
+        self.check_operator_node_token_sequence()
+
+    def check_operator_node_token_sequence(self) -> None:
+        """Check operator nodes"""
+
+        for level, query in self.parser.query_dict.items():
+            if query["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+
+            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+
+            # check token sequences: operator + list_ref
+            if (
+                operator_node_tokens[0].type
+                != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+            ):
+                details = (
+                    "Operator node must start with a list reference "
+                    f"but starts with {operator_node_tokens[0].type}"
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    list_position=level,
+                    position=operator_node_tokens[0].position,
+                    details=details,
+                )
+
+            prev_token = operator_node_tokens[0]
+            for i, token in enumerate(operator_node_tokens):
+                if i == 0:
+                    continue
+                # token_type = token.type
+                if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                    if prev_token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                        details = "Two list references in a row"
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                            list_position=level,
+                            position=(prev_token.position[0], token.position[1]),
+                            details=details,
+                        )
+                    prev_token = token
+
+                if token.type == OperatorNodeTokenTypes.LOGIC_OPERATOR:
+                    if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
+                        details = "Invalid operator position"
+                        self.add_linter_message(
+                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                            list_position=level,
+                            position=token.position,
+                            details=details,
+                        )
+                    prev_token = token
+
+    def check_invalid_list_reference(self) -> None:
+        """Check for invalid list reference"""
+
+        for level, query in self.parser.query_dict.items():
+            if query["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+
+            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+
+            for operator_node_token in operator_node_tokens:
+                if (
+                    operator_node_token.type
+                    != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+                ):
+                    continue
+                list_reference = operator_node_token.value.replace("#", "")
+
+                if list_reference not in self.parser.query_dict:
+                    details = (
+                        f"List reference '#{list_reference}' is invalid "
+                        "(a corresponding list element does not exist)."
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_LIST_REFERENCE,
+                        list_position=level,
+                        position=operator_node_token.position,
+                        details=details,
+                    )

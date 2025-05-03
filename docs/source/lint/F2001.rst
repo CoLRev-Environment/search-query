@@ -1,0 +1,14 @@
+.. _F2001:
+
+F2001 — wildcard-unsupported
+============================
+
+**Error Code**: F2001
+
+**Message**: ``Unsupported wildcard in search string.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Unsupported wildcard in search string.
+
+**Back to**: :ref:`lint`

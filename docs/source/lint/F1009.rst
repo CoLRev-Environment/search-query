@@ -1,0 +1,14 @@
+.. _F1009:
+
+F1009 — empty-parentheses
+=========================
+
+**Error Code**: F1009
+
+**Message**: ``Query contains empty parentheses``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Query contains empty parentheses
+
+**Back to**: :ref:`lint`

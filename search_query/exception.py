@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import typing
 
-import search_query.utils
-from search_query.constants import Colors
+
+if typing.TYPE_CHECKING:
+    from search_query.linter_base import QueryStringLinter, QueryListLinter
 
 
 class SearchQueryException(Exception):
@@ -17,35 +18,14 @@ class SearchQueryException(Exception):
 class QuerySyntaxError(SearchQueryException):
     """QuerySyntaxError Exception"""
 
-    def __init__(self, msg: str, query_string: str, position: tuple) -> None:
-        # Error position marked in orange
-        query_string_highlighted = search_query.utils.format_query_string_pos(
-            query_string, position
-        )
-        self.message = f"{msg}\n{query_string_highlighted}"
-        self.position = position
-        self.query_string = query_string
-        super().__init__(self.message)
+    def __init__(self, linter: QueryStringLinter) -> None:
+        self.linter = linter
+        super().__init__()
 
 
-class FatalLintingException(SearchQueryException):
-    """FatalLintingException Exception"""
+class ListQuerySyntaxError(SearchQueryException):
+    """ListQuerySyntaxError Exception"""
 
-    def __init__(
-        self, message: str, query_string: str, linter_messages: typing.List[dict]
-    ) -> None:
-        # Error positions marked in orange
-        query_string_highlighted = query_string
-
-        # need to sort the linter_messages
-        sorted_linter_messages = sorted(
-            linter_messages, key=lambda x: x["position"][0], reverse=True
-        )
-
-        for msg in sorted_linter_messages:
-            query_string_highlighted = search_query.utils.format_query_string_pos(
-                query_string_highlighted, msg["position"], color=Colors.RED
-            )
-        self.message = f"{message}\n{query_string_highlighted}"
-        self.query_string = query_string
-        super().__init__(self.message)
+    def __init__(self, linter: QueryListLinter) -> None:
+        self.linter = linter
+        super().__init__()

@@ -1,0 +1,26 @@
+.. _F1001:
+
+F1001 — unbalanced-parentheses
+==============================
+
+**Error Code**: F1001
+
+**Message**: ``Parentheses are unbalanced in the query``
+
+**Scope**: all
+
+**Typical fix**: Check the parentheses in the query
+
+**Problematic query**:
+
+.. code-block:: python
+
+    (a AND b OR c
+
+**Correct query**:
+
+.. code-block:: python
+
+    (a AND b) OR c
+
+**Back to**: :ref:`lint`

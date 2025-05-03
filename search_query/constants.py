@@ -47,6 +47,9 @@ class ListTokenTypes(Enum):
     QUERY_NODE = "QUERY_NODE"
 
 
+GENERAL_ERROR_POSITION = -1
+
+
 @dataclass
 class Token:
     """Token class"""
@@ -142,6 +145,7 @@ class Fields:
     ISBN = "ib"
     LANGUAGE = "la"
     DESCRIPTORS = "de"
+    PUBLICATION_DATE = "dp"
 
     @classmethod
     def all(cls) -> list:
@@ -210,11 +214,13 @@ PLATFORM_FIELD_MAP = {
         Fields.TEXT_WORD: "[tw]",
         Fields.AFFILIATION: "[ad]",
         Fields.LANGUAGE: "[la]",
+        Fields.PUBLICATION_DATE: "[dp]",
     },
     # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
     PLATFORM.EBSCO: {
         Fields.TITLE: "TI",
         Fields.ABSTRACT: "AB",
+        Fields.TOPIC: "TP",
         Fields.ALL: "TX",
         Fields.AUTHOR_KEYWORDS: "AU",
         Fields.SUBJECT_TERMS: "SU",
@@ -230,12 +236,6 @@ PLATFORM_FIELD_MAP = {
 # For convenience, modules can use the following to translate fields to a DB
 PLATFORM_FIELD_TRANSLATION_MAP = {
     db: {v: k for k, v in fields.items()} for db, fields in PLATFORM_FIELD_MAP.items()
-}
-
-PLATFORM_COMBINED_FIELDS_MAP = {
-    PLATFORM.PUBMED: {
-        "[tiab]": [Fields.TITLE, Fields.ABSTRACT],
-    },
 }
 
 
@@ -261,328 +261,6 @@ class LinterMode:
 
     STRICT = "strict"
     NONSTRICT = "non-strict"
-
-
-class WOSSearchFieldList:
-    """List of search fields"""
-
-    # Define lists for all search fields
-    abstract_list = [
-        "AB=",
-        "Abstract",
-        "ab=",
-        "abstract=",
-        "ab",
-        "abstract",
-        "AB",
-        "ABSTRACT",
-    ]
-    language_list = [
-        "LA=",
-        "Languages",
-        "la=",
-        "language=",
-        "la",
-        "language",
-        "LA",
-        "LANGUAGE",
-    ]
-    address_list = [
-        "AD=",
-        "Address",
-        "ad=",
-        "address=",
-        "ad",
-        "address",
-        "AD",
-        "ADDRESS",
-    ]
-    all_fields_list = [
-        "ALL=",
-        "All Fields",
-        "all=",
-        "all fields=",
-        "all",
-        "all fields",
-        "ALL",
-        "ALL FIELDS",
-    ]
-    author_identifiers_list = [
-        "AI=",
-        "Author Identifiers",
-        "ai=",
-        "author identifiers=",
-        "ai",
-        "author identifiers",
-        "AI",
-        "AUTHOR IDENTIFIERS",
-    ]
-    author_keywords_list = [
-        "AK=",
-        "Author Keywords",
-        "ak=",
-        "author keywords=",
-        "ak",
-        "author keywords",
-        "AK",
-        "AUTHOR KEYWORDS",
-    ]
-    author_list = ["AU=", "Author", "au=", "author=", "au", "author", "AU", "AUTHOR"]
-    conference_list = [
-        "CF=",
-        "Conference",
-        "cf=",
-        "conference=",
-        "cf",
-        "conference",
-        "CF",
-        "CONFERENCE",
-    ]
-    city_list = ["CI=", "City", "ci=", "city=", "ci", "city", "CI", "CITY"]
-    country_region_list = [
-        "CU=",
-        "Country/Region",
-        "cu=",
-        "country/region=",
-        "cu",
-        "country/region",
-        "CU",
-        "COUNTRY/REGION",
-    ]
-    doi_list = ["DO=", "DOI", "do=", "doi=", "do", "doi", "DO", "DOI"]
-    editor_list = ["ED=", "Editor", "ed=", "editor=", "ed", "editor", "ED", "EDITOR"]
-    grant_number_list = [
-        "FG=",
-        "Grant Number",
-        "fg=",
-        "grant number=",
-        "fg",
-        "grant number",
-        "FG",
-        "GRANT NUMBER",
-    ]
-    funding_agency_list = [
-        "FO=",
-        "Funding Agency",
-        "fo=",
-        "funding agency=",
-        "fo",
-        "funding agency",
-        "FO",
-        "FUNDING AGENCY",
-    ]
-    funding_text_list = [
-        "FT=",
-        "Funding Text",
-        "ft=",
-        "funding text=",
-        "ft",
-        "funding text",
-        "FT",
-        "FUNDING TEXT",
-    ]
-    group_author_list = [
-        "GP=",
-        "Group Author",
-        "gp=",
-        "group author=",
-        "gp",
-        "group author",
-        "GP",
-        "GROUP AUTHOR",
-    ]
-    issn_isbn_list = [
-        "IS=",
-        "ISSN/ISBN",
-        "is=",
-        "issn/isbn=",
-        "is",
-        "issn/isbn",
-        "IS",
-        "ISSN/ISBN",
-    ]
-    keywords_plus_list = [
-        "KP=",
-        "Keywords Plus®",
-        "kp=",
-        "keywords plus=",
-        "kp",
-        "keywords plus",
-        "KP",
-        "KEYWORDS PLUS",
-    ]
-    organization_enhanced_list = [
-        "OG=",
-        "Organization - Enhanced",
-        "og=",
-        "organization - enhanced=",
-        "og",
-        "organization - enhanced",
-        "OG",
-        "ORGANIZATION - ENHANCED",
-    ]
-    organization_list = [
-        "OO=",
-        "Organization",
-        "oo=",
-        "organization=",
-        "oo",
-        "organization",
-        "OO",
-        "ORGANIZATION",
-    ]
-    pubmed_id_list = [
-        "PMID=",
-        "PubMed ID",
-        "pmid=",
-        "pubmed id=",
-        "pmid",
-        "pubmed id",
-        "PMID",
-        "PUBMED ID",
-    ]
-    province_state_list = [
-        "PS=",
-        "Province/State",
-        "ps=",
-        "province/state=",
-        "ps",
-        "province/state",
-        "PS",
-        "PROVINCE/STATE",
-    ]
-    year_published_list = [
-        "PY=",
-        "Year Published",
-        "py=",
-        "year published=",
-        "py",
-        "year published",
-        "PY",
-        "YEAR PUBLISHED",
-        "Publication Year",
-        "publication year",
-        "PUBLICATION YEAR",
-        "PUBLICATION YEAR",
-    ]
-    street_address_list = [
-        "SA=",
-        "Street Address",
-        "sa=",
-        "street address=",
-        "sa",
-        "street address",
-        "SA",
-        "STREET ADDRESS",
-    ]
-    suborganization_list = [
-        "SG=",
-        "Suborganization",
-        "sg=",
-        "suborganization=",
-        "sg",
-        "suborganization",
-        "SG",
-        "SUBORGANIZATION",
-    ]
-    publication_name_list = [
-        "SO=",
-        "Publication Name",
-        "so=",
-        "publication name=",
-        "so",
-        "publication name",
-        "SO",
-        "PUBLICATION NAME",
-    ]
-    research_area_list = [
-        "SU=",
-        "Research Area",
-        "su=",
-        "research area=",
-        "su",
-        "research area",
-        "SU",
-        "RESEARCH AREA",
-    ]
-    title_list = ["TI=", "Title", "ti=", "title=", "ti", "title", "TI", "TITLE"]
-    topic_list = [
-        "TS=",
-        "Topic",
-        "ts=",
-        "topic=",
-        "ts",
-        "topic",
-        "TS",
-        "TOPIC",
-        "Topic Search",
-        "Topic TS",
-    ]
-    accession_number_list = [
-        "UT=",
-        "Accession Number",
-        "ut=",
-        "accession number=",
-        "ut",
-        "accession number",
-        "UT",
-        "ACCESSION NUMBER",
-    ]
-    web_of_science_category_list = [
-        "WC=",
-        "Web of Science Category",
-        "wc=",
-        "web of science category=",
-        "wc",
-        "web of science category",
-        "WC",
-        "WEB OF SCIENCE CATEGORY",
-    ]
-    zip_postal_code_list = [
-        "ZP=",
-        "Zip/Postal Code",
-        "zp=",
-        "zip/postal code=",
-        "zp",
-        "zip/postal code",
-        "ZP",
-        "ZIP/POSTAL CODE",
-    ]
-
-    search_field_dict = {
-        "AB=": abstract_list,
-        "AD=": address_list,
-        "ALL=": all_fields_list,
-        "AI=": author_identifiers_list,
-        "AK=": author_keywords_list,
-        "AU=": author_list,
-        "CF=": conference_list,
-        "CI=": city_list,
-        "CU=": country_region_list,
-        "DO=": doi_list,
-        "ED=": editor_list,
-        "FG=": grant_number_list,
-        "FO=": funding_agency_list,
-        "FT=": funding_text_list,
-        "GP=": group_author_list,
-        "IS=": issn_isbn_list,
-        "KP=": keywords_plus_list,
-        "LA=": language_list,
-        "OG=": organization_enhanced_list,
-        "OO=": organization_list,
-        "PMID=": pubmed_id_list,
-        "PS=": province_state_list,
-        "PY=": year_published_list,
-        "SA=": street_address_list,
-        "SG=": suborganization_list,
-        "SO=": publication_name_list,
-        "SU=": research_area_list,
-        "TI=": title_list,
-        "TS=": topic_list,
-        "UT=": accession_number_list,
-        "WC=": web_of_science_category_list,
-        "ZP=": zip_postal_code_list,
-    }
 
 
 class QueryErrorCode(Enum):
@@ -617,36 +295,6 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
-    UNMATCHED_OPENING_PARENTHESIS = (
-        ["all"],
-        "F1002",
-        "unmatched-opening-parenthesis",
-        "Unmatched opening parenthesis",
-        """**Typical fix**: Check the parentheses in the query
-**Problematic query**:
-.. code-block:: python
-
-    (a AND b OR c
-**Correct query**:
-.. code-block:: python
-
-
-    (a AND b) OR c""",
-    )
-    UNMATCHED_CLOSING_PARENTHESIS = (
-        ["all"],
-        "F1003",
-        "unmatched-closing-parenthesis",
-        "Unmatched closing parenthesis",
-        """**Typical fix**: Check the parentheses in the query
-**Problematic query**:
-.. code-block:: python
-    a AND b) OR c
-**Correct query**:
-.. code-block:: python
-
-    (a AND b) OR c""",
-    )
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],
@@ -657,18 +305,18 @@ class QueryErrorCode(Enum):
         "The sequence of tokens is invalid." "",
         "",
     )
-    NESTED_NOT_QUERY = (
-        [PLATFORM.PUBMED],
-        "F1008",
-        "nested-not-query",
-        "Nesting of NOT operator is not supported for this database",
-        "",
-    )
     EMPTY_PARENTHESES = (
         [PLATFORM.PUBMED],
         "F1009",
         "empty-parentheses",
         "Query contains empty parentheses",
+        "",
+    )
+    INVALID_SYNTAX = (
+        ["all"],
+        "F1010",
+        "invalid-syntax",
+        "Query contains invalid syntax",
         "",
     )
 
@@ -780,6 +428,14 @@ class QueryErrorCode(Enum):
         "A search for publication years must include at least another search term.",
         "",
     )
+    NESTED_QUERY_WITH_SEARCH_FIELD = (
+        [PLATFORM.PUBMED],
+        "F2013",
+        "nested-query-with-search-field",
+        "A Nested query cannot have a search field.",
+        "",
+    )
+
     MISSING_ROOT_NODE = (
         [PLATFORM.WOS],
         "F3001",
@@ -796,7 +452,7 @@ class QueryErrorCode(Enum):
         "",
     )
     INVALID_LIST_REFERENCE = (
-        [PLATFORM.WOS],
+        [PLATFORM.WOS, PLATFORM.PUBMED],
         "F3003",
         "invalid-list-reference",
         "Invalid list reference in list query (not found)",
@@ -918,14 +574,40 @@ class QueryErrorCode(Enum):
         ["all", PLATFORM.PUBMED],
         "W0007",
         "implicit-precedence",
-        "Operator changed at the same level "
-        "(currently relying on implicit operator precedence, "
-        "explicit parentheses are recommended)",
+        "Operator changed at the same level (explicit parentheses are recommended)",
+        "",
+    )
+    TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
+    BOOLEAN_OPERATOR_READABILITY = (
+        ["all"],
+        "W0009",
+        "boolean-operator-readability",
+        "Boolean operator readability",
+        "",
+    )
+    CHARACTER_REPLACEMENT = (
+        [PLATFORM.PUBMED],
+        "W0010",
+        "character-replacement",
+        "Character replacement",
+        "",
+    )
+    DATE_FILTER_IN_SUBQUERY = (
+        [PLATFORM.PUBMED],
+        "W0011",
+        "date-filter-in-subquery",
+        "Date filter in subquery",
+        "",
+    )
+    IMPLICIT_OPERATOR = (
+        [PLATFORM.PUBMED],
+        "W0012",
+        "implicit-operator",
+        "Implicit operator",
         "",
     )
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

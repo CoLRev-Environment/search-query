@@ -1,0 +1,14 @@
+.. _E0004:
+
+E0004 — invalid-character
+=========================
+
+**Error Code**: E0004
+
+**Message**: ``Search term contains invalid character``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Search term contains invalid character
+
+**Back to**: :ref:`lint`

@@ -1,0 +1,14 @@
+.. _E0002:
+
+E0002 — search-field-contradiction
+==================================
+
+**Error Code**: E0002
+
+**Message**: ``Contradictory search fields specified``
+
+**Scope**: all
+
+**Description**: Contradictory search fields specified
+
+**Back to**: :ref:`lint`

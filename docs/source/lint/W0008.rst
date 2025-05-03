@@ -1,0 +1,14 @@
+.. _W0008:
+
+W0008 — token-ambiguity
+=======================
+
+**Error Code**: W0008
+
+**Message**: ``Token ambiguity``
+
+**Scope**: all
+
+**Description**: Token ambiguity
+
+**Back to**: :ref:`lint`

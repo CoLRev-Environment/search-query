@@ -1,6 +1,9 @@
-<div align="center">
 
-#  search-query
+<p align="center">
+<img src="docs/source/_static/search_query_logo.svg" width="400">
+</p>
+
+<div align="center">
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CoLRev-Environment/search-query/.github%2Fworkflows%2Ftests.yml?label=tests)](https://github.com/CoLRev-Environment/search-query/actions/workflows/tests.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
@@ -10,8 +13,11 @@
 
 </div>
 
-Search-query is a Python package for **translating academic literature search queries (i.e., parsing and serializing)**, but also for **validating, simplifying, and improving** them.
-It implements various syntax validation checks ("linters" for search queries) and prints instructive messages to inform users about potential issues.
+**Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
+It is extensible and currently supports PubMed, EBSCOHost, and Web of Science.
+The package can be used programmatically, through the command line, or as a pre-commit hook.
+It has zero dependencies and integrates in a variety of environments.
+The parsers and linters are battle-tested on peer-reviewed [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv) queries.
 
 For more information, see the [documentation](https://colrev-environment.github.io/search-query/).
 

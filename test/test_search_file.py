@@ -9,5 +9,4 @@ def test_search_history_file_parser() -> None:
     """Test SearchFile parser."""
 
     result = load_search_file("test/search_history_file_1.json")
-
-    assert hasattr(result, "parsed")
+    assert hasattr(result, "search_string")

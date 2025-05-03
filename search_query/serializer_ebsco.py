@@ -45,6 +45,9 @@ def to_string_ebsco(node: Query) -> str:
     if needs_parentheses:
         query_str = f"({query_str})"
 
+    if node.search_field:
+        # Add search field if present
+        query_str = get_search_field_ebsco(str(node.search_field)) + query_str
     return query_str
 
 

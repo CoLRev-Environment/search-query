@@ -1,3 +1,5 @@
+import datetime
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -5,8 +7,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Search-Query"
-copyright = "2024, Gerit Wagner"
+project = "Search Query"
+current_year = datetime.datetime.now().year
+copyright = f"{current_year}, Gerit Wagner"
 author = "Gerit Wagner"
 release = "0.10.0"
 

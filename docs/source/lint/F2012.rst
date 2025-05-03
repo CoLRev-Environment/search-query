@@ -1,0 +1,14 @@
+.. _F2012:
+
+F2012 — year-without-search-field
+=================================
+
+**Error Code**: F2012
+
+**Message**: ``A search for publication years must include at least another search term.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: A search for publication years must include at least another search term.
+
+**Back to**: :ref:`lint`

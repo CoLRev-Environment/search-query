@@ -1,0 +1,8 @@
+{
+    "record_info": {},
+    "authors": [{"name": "Wagner, G.", "ORCID": "0000-0000-0000-1111"}],
+    "date": {"data_entry": "2019.07.01", "search_conducted": "2019.07.01"},
+    "platform": "wos",
+    "database": ["SCI-EXPANDED", "SSCI", "A&HCI"],
+    "search_string": "TS=(quantum AND dot OR spin))"
+}
