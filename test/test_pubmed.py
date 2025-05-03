@@ -604,6 +604,7 @@ def test_parser(
 
     assert expected_parsed == query.to_string(), print(query.to_string())
 
+
 def test_list_parser_case_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
