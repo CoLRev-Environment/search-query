@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sys
 import typing
 from abc import abstractmethod
 from collections import defaultdict
@@ -65,6 +66,7 @@ class QueryStringLinter:
             return
 
         grouped_messages = defaultdict(list)
+        utf_output = str(sys.stdout.encoding).lower().startswith("utf")
 
         for message in self.messages[self.last_read_index :]:
             grouped_messages[message["code"]].append(message)
@@ -77,11 +79,14 @@ class QueryStringLinter:
 
             if code.startswith("F"):
                 color = Colors.RED
-                category = "❌ Fatal"
+                category = "❌" if utf_output else "X"
+                category += " Fatal"
             elif code.startswith("E"):
-                category = "⚠️ Error"
+                category = "⚠️" if utf_output else "-"
+                category += " Error"
             elif code.startswith("W"):
-                category = "💡 Warning"
+                category = "💡" if utf_output else "i"
+                category += " Warning"
 
             print(
                 f"{color}{category}{Colors.END}: " f"{representative['label']} ({code})"
