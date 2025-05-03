@@ -137,9 +137,7 @@ class Query:
     def add_child(self, child: typing.Union[str, Query]) -> None:
         """Add child to the query."""
         if isinstance(child, str):
-            self._children.append(
-                Query(child, operator=False, search_field=self.search_field)
-            )
+            self._children.append(Term(child, search_field=self.search_field))
         elif isinstance(child, Query):
             self._children.append(child)
         else:
@@ -254,3 +252,22 @@ class Query:
             return to_string_ebsco(self)
 
         raise ValueError(f"Syntax not supported ({syntax})")
+
+
+class Term(Query):
+    """Term"""
+
+    def __init__(
+        self,
+        value: str,
+        *,
+        search_field: typing.Optional[SearchField],
+        position: typing.Optional[tuple] = None,
+    ) -> None:
+        super().__init__(
+            value=value,
+            operator=False,
+            children=None,
+            search_field=search_field,
+            position=position,
+        )

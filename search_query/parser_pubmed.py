@@ -20,6 +20,7 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query import Term
 
 
 class PubmedParser(QueryStringParser):
@@ -280,9 +281,8 @@ class PubmedParser(QueryStringParser):
             # Select default field "all" if no search field is found.
             search_field = SearchField(value=Fields.ALL)
 
-        return Query(
+        return Term(
             value=search_term_token.value,
-            operator=False,
             search_field=search_field,
             position=(tokens[0].position[0], query_end_pos),
         )
@@ -344,7 +344,7 @@ class PubmedParser(QueryStringParser):
 
         for search_field in search_fields:
             query_children.append(
-                Query(
+                Term(
                     value=query.value,
                     operator=False,
                     search_field=SearchField(value=search_field),
@@ -355,7 +355,7 @@ class PubmedParser(QueryStringParser):
         query.value = Operators.OR
         query.operator = True
         query.search_field = None
-        query.children = query_children
+        query.children = query_children  # type: ignore
 
     def get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,

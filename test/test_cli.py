@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 
+
 def test_linter_cli() -> None:
     test_data_dir = Path(__file__).parent
     input_file = test_data_dir / "search_history_file_2_linter.json"

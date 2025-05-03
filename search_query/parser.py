@@ -34,8 +34,8 @@ LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
 # pylint: disable=too-many-return-statements
 def parse(
     query_str: str,
-    search_field_general: str,
     *,
+    search_field_general: str = "",
     syntax: str = "wos",
     mode: str = LinterMode.STRICT,
 ) -> Query:

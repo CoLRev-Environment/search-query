@@ -3,8 +3,8 @@
 import pytest
 
 from search_query.constants import Fields
-from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query import Term
 from search_query.query_and import AndQuery
 from search_query.query_not import NotQuery
 from search_query.query_or import OrQuery
@@ -15,7 +15,7 @@ from search_query.query_or import OrQuery
 
 @pytest.fixture
 def query_setup() -> dict:
-    test_node = Query(
+    test_node = Term(
         "testvalue", position=(1, 10), search_field=SearchField(Fields.TITLE)
     )
     query_robot = NotQuery(["robot*"], search_field=SearchField(Fields.TITLE))

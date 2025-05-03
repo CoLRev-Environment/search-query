@@ -22,6 +22,7 @@ from search_query.parser_base import QueryStringParser
 from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query import Term
 
 # pylint: disable=duplicate-code
 
@@ -363,9 +364,7 @@ class WOSParser(QueryStringParser):
         if not children:
             children = []
         # Create a new term node
-        term_node = Query(
-            value=value, operator=False, search_field=search_field, position=position
-        )
+        term_node = Term(value=value, search_field=search_field, position=position)
 
         # Append the term node to the list of children
         if current_operator:
@@ -379,11 +378,11 @@ class WOSParser(QueryStringParser):
                     # Get previous term to append
                     while index > 0:
                         if self.tokens[index - 1].type == TokenTypes.SEARCH_TERM:
-                            term_node = Query(
+                            near_operator = Query(
                                 value=current_operator,
                                 operator=True,
                                 children=[
-                                    Query(
+                                    Term(
                                         value=self.tokens[index - 1].value,
                                         operator=False,
                                         search_field=search_field,
@@ -399,7 +398,7 @@ class WOSParser(QueryStringParser):
                         Query(
                             value=Operators.AND,
                             operator=True,
-                            children=[*children, term_node],
+                            children=[*children, near_operator],
                             search_field=search_field,
                         )
                     ]
