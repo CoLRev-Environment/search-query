@@ -46,6 +46,74 @@ class QueryStringParser(ABC):
             # UNKNOWN could be color-coded
             print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
+    @classmethod
+    @abstractmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax.
+
+        Typical steps:
+
+        # standard_key and variation_regex
+        PREPROCESSING_MAP = {
+            "TI=": r"TI=|Title=",
+        }
+
+
+        # Map standard_syntax_str to set of generic_search_field_set
+        SYNTAX_GENERIC_MAP = {
+            "TIAB=": {"TI=", "AB="},
+            "TI=": {"TI="},
+            "AB=": {"AB="},
+            "TP=": {"TP="},
+            "ATP=": {"TP="},
+            "WOSTP=": {"TP="},
+        }
+
+        def map_to_standard(syntax_str: str) -> set:
+            for standard_key, variation_regex in PREPROCESSING_MAP.items():
+                if re.match(variation_regex, syntax_str, flags=re.IGNORECASE):
+                    return standard_key
+            return "default"
+
+        def syntax_str_to_generic_search_field_set(syntax_str: str) -> set:
+            standard_syntax_str = map_to_standard(syntax_str)
+            generic_search_field_set = SYNTAX_GENERIC_MAP[standard_syntax_str]
+            return generic_search_field_set
+
+        def convert_search_fields(cls, query: Query) -> Qeury:
+
+            if query.search_field:
+                # Convert the search field to a generic syntax
+                search_field = query.search_field.value
+                generic_search_field_set =
+                    syntax_str_to_generic_search_field_set(search_field)
+                query.search_field = SearchField(
+                    value=generic_search_field_set,
+                    position=query.search_field.position,
+                )
+            # Convert the children recursively
+            for child in query.children:
+                if isinstance(child, Query):
+                    query.children = cls.convert_search_fields(child)
+
+            return query
+
+        def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+
+            # Handle special cases (such as [ti:~5])
+
+            # Recursively convert the query
+            # by using syntax_str_to_generic_search_field_set
+
+
+
+        """
+
+    @classmethod
+    @abstractmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
         # Combine subsequent terms (without quotes)

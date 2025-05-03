@@ -286,20 +286,91 @@ class PubmedParser(QueryStringParser):
             position=(tokens[0].position[0], query_end_pos),
         )
 
-    def translate_search_fields(self, query: Query) -> None:
+    @classmethod
+    def translate_search_fields(cls, query: Query) -> None:
         """Translate search fields"""
 
         if query.children:
-            for child in query.children:
-                self.translate_search_fields(child)
+            expanded = cls._translate_or_chains_without_nesting(query)
+            if not expanded:
+                for child in query.children:
+                    cls.translate_search_fields(child)
             return
 
         if query.search_field:
-            query.search_field.value = self.map_search_field(query.search_field.value)
+            query.search_field.value = cls.map_search_field(query.search_field.value)
 
             # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
             if query.search_field.value == "[tiab]":
-                self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
+                cls._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
+
+    @classmethod
+    def map_search_field(cls, field_value: str) -> str:
+        """Translate a search field"""
+        field_value = field_value.lower()
+        # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
+        if field_value in cls.DEFAULT_FIELD_MAP:
+            field_value = cls.DEFAULT_FIELD_MAP[field_value]
+        # Convert search fields to default field constants
+        if field_value in cls.FIELD_TRANSLATION_MAP:
+            field_value = cls.FIELD_TRANSLATION_MAP[field_value]
+        return field_value
+
+    @classmethod
+    def _expand_combined_fields(cls, query: Query, search_fields: list) -> None:
+        """Expand queries with combined search fields into an OR query"""
+        query_children = []
+
+        for search_field in search_fields:
+            query_children.append(
+                Query(
+                    value=query.value,
+                    operator=False,
+                    search_field=SearchField(value=search_field),
+                    children=None,
+                )
+            )
+
+        query.value = Operators.OR
+        query.operator = True
+        query.search_field = None
+        query.children = query_children  # type: ignore
+
+    @classmethod
+    def _translate_or_chains_without_nesting(cls, query: Query) -> bool:
+        """Translate without nesting"""
+        if not (query.operator and query.value == Operators.OR):
+            return False
+        if not all(not child.operator for child in query.children):
+            return False
+        if not all(child.search_field for child in query.children):
+            return False
+        search_fields = {
+            child.search_field.value for child in query.children if child.search_field
+        }
+        if len(search_fields) != 1:
+            return False
+
+        if next(iter(search_fields)) in {"[title and abstract]", "[tiab]"}:
+            additional_children = []
+            for child in query.children:
+                if not child.search_field:
+                    continue
+                child.search_field.value = Fields.TITLE
+                additional_children.append(
+                    Query(
+                        value=child.value,
+                        operator=False,
+                        search_field=SearchField(value=Fields.ABSTRACT),
+                        children=None,
+                    )
+                )
+            query.children += additional_children
+            return True
+
+        # elif ... other cases?
+
+        return False
 
     def parse_user_provided_fields(self, field_values: str) -> list:
         """Extract and translate user-provided search fields (return as a list)"""
@@ -325,34 +396,6 @@ class PubmedParser(QueryStringParser):
             field_values_list[index] = value
 
         return field_values_list
-
-    def map_search_field(self, field_value: str) -> str:
-        """Translate a search field"""
-        field_value = field_value.lower()
-        # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
-        if field_value in self.DEFAULT_FIELD_MAP:
-            field_value = self.DEFAULT_FIELD_MAP[field_value]
-        # Convert search fields to default field constants
-        if field_value in self.FIELD_TRANSLATION_MAP:
-            field_value = self.FIELD_TRANSLATION_MAP[field_value]
-        return field_value
-
-    def _expand_combined_fields(self, query: Query, search_fields: list) -> None:
-        """Expand queries with combined search fields into an OR query"""
-        query_children = []
-
-        for search_field in search_fields:
-            query_children.append(
-                Term(
-                    value=query.value,
-                    search_field=SearchField(value=search_field),
-                )
-            )
-
-        query.value = Operators.OR
-        query.operator = True
-        query.search_field = None
-        query.children = query_children  # type: ignore
 
     def get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,
@@ -382,6 +425,20 @@ class PubmedParser(QueryStringParser):
         # self.linter.check_status()
         query.origin_platform = PLATFORM.PUBMED.value
 
+        return query
+
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement this method
+        cls.translate_search_fields(query)
+        # TODO : print instructive message (when joining sub-queries with OR)
+        return query
+
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
         return query
 
 

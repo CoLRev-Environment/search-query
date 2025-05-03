@@ -314,14 +314,15 @@ class EBSCOParser(QueryStringParser):
 
         return root
 
-    def translate_search_fields(self, query: Query) -> None:
+    @classmethod
+    def translate_search_fields(cls, query: Query) -> None:
         """
         Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
         """
 
         # Error not included in linting, mainly for programming purposes
-        if not hasattr(self, "FIELD_TRANSLATION_MAP") or not isinstance(
-            self.FIELD_TRANSLATION_MAP, dict
+        if not hasattr(cls, "FIELD_TRANSLATION_MAP") or not isinstance(
+            cls.FIELD_TRANSLATION_MAP, dict
         ):
             raise AttributeError(
                 "FIELD_TRANSLATION_MAP is not defined or is not a dictionary."
@@ -330,14 +331,14 @@ class EBSCOParser(QueryStringParser):
         # Filter out search_fields and translate based on FIELD_TRANSLATION_MAP
         if query.search_field:
             original_value = query.search_field.value
-            translated_value = self.FIELD_TRANSLATION_MAP.get(
+            translated_value = cls.FIELD_TRANSLATION_MAP.get(
                 original_value, original_value
             )
             query.search_field.value = translated_value
 
         # Iterate through queries
         for child in query.children:
-            self.translate_search_fields(child)
+            cls.translate_search_fields(child)
 
     def parse(self) -> Query:
         """Parse a query string."""
@@ -352,6 +353,19 @@ class EBSCOParser(QueryStringParser):
         self.linter.check_status()
 
         query.origin_platform = PLATFORM.EBSCO.value
+        return query
+
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement/test this method
+        cls.translate_search_fields(query)
+        return query
+
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
         return query
 
 

@@ -310,6 +310,33 @@ class Query:
 
         raise ValueError(f"Platform not supported ({platform})")
 
+    def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
+        """Translate the query to the target syntax using the provided translator."""
+        # possible extension: inject custom parser:
+        # parser: QueryStringParser | None = None
+
+        # pylint: disable=import-outside-toplevel
+        import search_query.parser
+
+        # If the target syntax is the same as the origin, no translation is needed
+        if target_syntax == self.origin_syntax:
+            return self
+
+        if self.origin_syntax not in search_query.parser.PARSERS:
+            raise ValueError(f"Invalid/unknown syntax: {self.origin_syntax}")
+
+        origin_parser = search_query.parser.PARSERS[self.origin_syntax]
+        target_parser = search_query.parser.PARSERS[target_syntax]
+
+        generic_query = origin_parser.to_generic_syntax(
+            self, search_field_general=search_field_general
+        )
+
+        if target_syntax == "generic":
+            return generic_query
+
+        return target_parser.to_specific_syntax(generic_query)
+
 
 class Term(Query):
     """Term"""

@@ -413,22 +413,24 @@ class WOSParser(QueryStringParser):
 
         return children
 
-    def _map_default_field(self, search_field: str) -> str:
+    @classmethod
+    def _map_default_field(cls, search_field: str) -> str:
         """Get the key of the search field."""
         for key, value_list in WOSSearchFieldList.search_field_dict.items():
             if search_field in value_list:
-                translated_field = self.FIELD_TRANSLATION_MAP[key]
+                translated_field = cls.FIELD_TRANSLATION_MAP[key]
                 return translated_field
         return search_field
 
-    def translate_search_fields(self, query: Query) -> None:
+    @classmethod
+    def translate_search_fields(cls, query: Query) -> None:
         """Translate search fields."""
 
         if query.search_field:
-            query.search_field.value = self._map_default_field(query.search_field.value)
+            query.search_field.value = cls._map_default_field(query.search_field.value)
         if query.children:
             for child in query.children:
-                self.translate_search_fields(child)
+                cls.translate_search_fields(child)
 
         # at this point it may be necessary to split (OR)
         # queries for combined search fields
@@ -449,6 +451,21 @@ class WOSParser(QueryStringParser):
 
         query.origin_platform = PLATFORM.WOS.value
 
+        return query
+
+    @classmethod
+    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+        """Convert the query to a generic syntax."""
+        # TODO: Implement this method
+        cls.translate_search_fields(query)
+        # TODO : translate / apply search_field_general (according to drop-down field)
+
+        return query
+
+    @classmethod
+    def to_specific_syntax(cls, query: Query) -> Query:
+        """Convert the query to a specific syntax."""
+        # TODO: Implement this method
         return query
 
 
