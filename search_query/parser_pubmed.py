@@ -346,7 +346,6 @@ class PubmedParser(QueryStringParser):
                 Term(
                     value=query.value,
                     search_field=SearchField(value=search_field),
-                    children=None,
                 )
             )
 

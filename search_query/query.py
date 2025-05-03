@@ -41,7 +41,7 @@ class Query:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        value: str = "NOT_INITIALIZED",
+        value: str,
         *,
         operator: bool = True,
         search_field: typing.Optional[SearchField] = None,
