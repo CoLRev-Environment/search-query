@@ -431,10 +431,10 @@ class WOSParser(QueryStringParser):
         """Translate search fields."""
 
         if query.search_field:
-            query.search_field.value = cls._map_default_field(query.search_field.value)
+            query.search_field.value = self._map_default_field(query.search_field.value)
         if query.children:
             for child in query.children:
-                cls.translate_search_fields(child)
+                self.translate_search_fields(child)
 
         # at this point it may be necessary to split (OR)
         # queries for combined search fields
