@@ -27,7 +27,6 @@ class NotQuery(Query):
 
         super().__init__(
             value=Operators.NOT,
-            operator=True,
             children=children,
             search_field=search_field
             if isinstance(search_field, SearchField)

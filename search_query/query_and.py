@@ -27,7 +27,6 @@ class AndQuery(Query):
 
         super().__init__(
             value=Operators.AND,
-            operator=True,
             children=children,
             search_field=search_field
             if isinstance(search_field, SearchField)

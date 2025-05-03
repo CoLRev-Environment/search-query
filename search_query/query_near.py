@@ -29,7 +29,6 @@ class NEARQuery(Query):
 
         super().__init__(
             value=value,
-            operator=True,
             children=children,
             search_field=search_field
             if isinstance(search_field, SearchField)

@@ -221,7 +221,6 @@ class WOSParser(QueryStringParser):
             return (
                 Query(
                     value=current_operator,
-                    operator=True,
                     children=list(children),
                     search_field=search_field,
                 ),
@@ -246,7 +245,6 @@ class WOSParser(QueryStringParser):
         if current_operator:
             return Query(
                 value=current_operator,
-                operator=True,
                 children=children,
                 search_field=search_field,
             )
@@ -380,11 +378,9 @@ class WOSParser(QueryStringParser):
                         if self.tokens[index - 1].type == TokenTypes.SEARCH_TERM:
                             near_operator = Query(
                                 value=current_operator,
-                                operator=True,
                                 children=[
                                     Term(
                                         value=self.tokens[index - 1].value,
-                                        operator=False,
                                         search_field=search_field,
                                     ),
                                     term_node,
@@ -406,7 +402,6 @@ class WOSParser(QueryStringParser):
                     children = [
                         Query(
                             value=current_operator,
-                            operator=True,
                             children=[*children, term_node],
                             search_field=search_field,
                         )
@@ -499,7 +494,6 @@ class WOSListParser(QueryListParser):
 
         operator_query = Query(
             value=operator,
-            operator=True,
             children=children,
         )
         return operator_query

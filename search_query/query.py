@@ -43,7 +43,7 @@ class Query:
         self,
         value: str = "NOT_INITIALIZED",
         *,
-        operator: bool = False,
+        operator: bool = True,
         search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,

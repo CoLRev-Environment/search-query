@@ -255,7 +255,6 @@ class PubmedParser(QueryStringParser):
 
         return Query(
             value=operator_type,
-            operator=True,
             search_field=None,
             children=list(children),
             position=(query_start_pos, query_end_pos),
@@ -346,7 +345,6 @@ class PubmedParser(QueryStringParser):
             query_children.append(
                 Term(
                     value=query.value,
-                    operator=False,
                     search_field=SearchField(value=search_field),
                     children=None,
                 )
@@ -452,7 +450,6 @@ class PubmedListParser(QueryListParser):
 
         return Query(
             value=operator,
-            operator=True,
             search_field=None,
             children=children,
             position=(1, 1),

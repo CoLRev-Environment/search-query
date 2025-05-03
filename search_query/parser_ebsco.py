@@ -249,7 +249,6 @@ class EBSCOParser(QueryStringParser):
                 # Create new search_term and in case tree is empty, sets first root
                 term_node = Term(
                     value=token.value,
-                    operator=False,
                     position=token.position,
                     search_field=search_field or search_field_par,
                 )
@@ -270,7 +269,6 @@ class EBSCOParser(QueryStringParser):
                 # Create new proximity_operator from token (N3, W1, N13, ...)
                 proximity_node = Query(
                     value=token.value,
-                    operator=True,
                     position=token.position,
                     search_field=search_field or search_field_par,
                     distance=distance,
@@ -283,7 +281,6 @@ class EBSCOParser(QueryStringParser):
                 # Create new operator node
                 new_operator_node = Query(
                     value=token.value,
-                    operator=True,
                     position=token.position,
                     search_field=search_field or search_field_par,
                 )
