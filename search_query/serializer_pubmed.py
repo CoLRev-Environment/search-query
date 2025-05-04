@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:  # pragma: no
 def to_string_pubmed(node: Query) -> str:
     """actual translation logic for PubMed"""
 
-    # to do combine nodes for SYNTAX_COMBINED_FIELDS_MAP
+    # to do combine nodes for PLATFORM_COMBINED_FIELDS_MAP
 
     result = ""
     for child in node.children:

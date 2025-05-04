@@ -15,11 +15,11 @@ if typing.TYPE_CHECKING:
 
 
 def get_parser(
-    search_string: str, *, syntax: str, search_field_general: str
+    search_string: str, *, platform: str, search_field_general: str
 ) -> QueryStringParser:
     """Run the linter on the search string"""
 
-    parser_class = search_query.parser.PARSERS[syntax]
+    parser_class = search_query.parser.PARSERS[platform]
     parser = parser_class(
         search_string, search_field_general=search_field_general
     )  # type: ignore
@@ -54,7 +54,7 @@ def pre_commit_hook(file_path: str) -> int:
 
     parser = get_parser(
         search_file.search_string,
-        syntax=search_file.platform,
+        platform=search_file.platform,
         search_field_general=search_file.search_field,
     )
 

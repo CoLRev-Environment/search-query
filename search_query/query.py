@@ -63,7 +63,7 @@ class Query:
         self.marked = False
 
         # only set for root node
-        self.origin_syntax = ""
+        self.origin_platform = ""
 
         if children:
             for child in children:
@@ -294,21 +294,21 @@ class Query:
             f"search field: {self.search_field}"
         )
 
-    def to_string(self, syntax: str = "pre_notation") -> str:
-        """prints the query in the selected syntax"""
+    def to_string(self, platform: str = "pre_notation") -> str:
+        """prints the query in the selected platform"""
 
-        if syntax == PLATFORM.PRE_NOTATION.value:
+        if platform == PLATFORM.PRE_NOTATION.value:
             return to_string_pre_notation(self)
-        if syntax == PLATFORM.STRUCTURED.value:
+        if platform == PLATFORM.STRUCTURED.value:
             return to_string_structured(self)
-        if syntax == PLATFORM.WOS.value:
+        if platform == PLATFORM.WOS.value:
             return to_string_wos(self)
-        if syntax == PLATFORM.PUBMED.value:
+        if platform == PLATFORM.PUBMED.value:
             return to_string_pubmed(self)
-        if syntax == PLATFORM.EBSCO.value:
+        if platform == PLATFORM.EBSCO.value:
             return to_string_ebsco(self)
 
-        raise ValueError(f"Syntax not supported ({syntax})")
+        raise ValueError(f"Platform not supported ({platform})")
 
 
 class Term(Query):

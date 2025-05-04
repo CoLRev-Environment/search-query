@@ -12,7 +12,7 @@ To load a JSON query file, run the parser:
     from search_query.parser import parse
 
     search = SearchFile("search-file.json")
-    query = parse(search.search_string, syntax=search.platform)
+    query = parse(search.search_string, platform=search.platform)
 
 
 JSON files in the standard format (Haddaway et al. 2022). Example:

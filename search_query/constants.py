@@ -158,9 +158,9 @@ class Fields:
 
 
 # The PLATFORM_FIELD_MAP contains the current mapping of standard Fields to the
-# syntax of the databases. If a field is not present in the map, it is assumed
+# syntax of the platform. If a field is not present in the map, it is assumed
 # that the field is not supported by the database.
-# If multiple options exist for valid database syntax, only the most common
+# If multiple options exist for valid platform syntax, only the most common
 # option is included in the map. Less common options are replaced in the parser.
 # For instance, pubmed recommends [mh]. However, [mesh] is also valid and is replaced
 # in the parser.

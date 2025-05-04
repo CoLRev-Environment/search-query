@@ -59,25 +59,25 @@ Creating a query programmatically is simple:
     - ``search_field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
    Search strings can be either in string or list format.
 
-We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers (syntax) </platforms/platform_index>`):
+We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
 
 .. code-block:: python
 
     from search_query.parser import parse
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
-    query = parse(query_string, syntax="pubmed")
+    query = parse(query_string, platform="pubmed")
 
 Once we have created a :literal:`query` object, we can translate it for different databases.
 Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
 
 .. code-block:: python
 
-    query.to_string(syntax="ebsco")
+    query.to_string(platform="ebsco")
    # Output:
    # (TI("digital health") OR AB("digital health")) AND (TI("privacy") OR AB("privacy"))
 
-    query.to_string(syntax="wos")
+    query.to_string(platform="wos")
    # Output:
    # (TI=("digital health") OR AB=("digital health")) AND (TI=("privacy") OR AB=("privacy"))
 
@@ -88,7 +88,7 @@ Another useful feature of search-query is its **linter** functionality, which he
     from search_query.parser import parse
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
-    query = parse(query_string, syntax="pubmed")
+    query = parse(query_string, platform="pubmed")
    # Output:
    # ❌ Fatal: unbalanced-parentheses (F1001)
    #    Unbalanced opening parenthesis
@@ -105,7 +105,7 @@ Another useful feature of search-query is its **linter** functionality, which he
 
         from search_query.linter import run_linter
 
-        messages = run_linter(search.search_string, syntax=search.platform)
+        messages = run_linter(search.search_string, platform=search.platform)
         print(messages)
 
     There are two modes:

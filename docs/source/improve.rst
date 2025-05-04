@@ -51,7 +51,7 @@ Modification
    expand_spelling_variants(query)
    add_plural_wildcards(query)
 
-   print(query.to_string(syntax="pubmed"))
+   print(query.to_string(platform="pubmed"))
 
 Evaluation
 ---------------------

@@ -11,7 +11,7 @@ These checks help to prevent errors—an important step given that previous stud
     from search_query.parser import parse
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
-    query = parse(query_string, syntax="pubmed")
+    query = parse(query_string, platform="pubmed")
     # Output:
     # ❌ Fatal: unbalanced-parentheses (F1001)
     #    Unbalanced opening parenthesis

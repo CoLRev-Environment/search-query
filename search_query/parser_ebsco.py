@@ -351,7 +351,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.origin_syntax = PLATFORM.EBSCO.value
+        query.origin_platform = PLATFORM.EBSCO.value
         return query
 
 

@@ -380,7 +380,7 @@ class PubmedParser(QueryStringParser):
 
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.origin_syntax = PLATFORM.PUBMED.value
+        query.origin_platform = PLATFORM.PUBMED.value
 
         return query
 

@@ -36,29 +36,29 @@ def parse(
     query_str: str,
     *,
     search_field_general: str = "",
-    syntax: str = "wos",
+    platform: str = "wos",
     mode: str = LinterMode.STRICT,
 ) -> Query:
     """Parse a query string."""
-    syntax = syntax.lower()
+    platform = platform.lower()
 
     if "1." in query_str[:10]:
-        if syntax not in LIST_PARSERS:
-            raise ValueError(f"Invalid syntax: {syntax}")
+        if platform not in LIST_PARSERS:
+            raise ValueError(f"Invalid platform: {platform}")
 
-        string_parser = PARSERS[syntax]
+        string_parser = PARSERS[platform]
 
-        return LIST_PARSERS[syntax](
+        return LIST_PARSERS[platform](
             query_list=query_str,
             parser_class=string_parser,
             search_field_general=search_field_general,
             mode=mode,
         ).parse()
 
-    if syntax not in PARSERS:
-        raise ValueError(f"Invalid syntax: {syntax}")
+    if platform not in PARSERS:
+        raise ValueError(f"Invalid platform: {platform}")
 
-    parser_class = PARSERS[syntax]
+    parser_class = PARSERS[platform]
 
     return parser_class(
         query_str, search_field_general=search_field_general, mode=mode

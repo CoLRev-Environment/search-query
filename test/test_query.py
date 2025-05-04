@@ -87,25 +87,25 @@ def test_nested_queries(query_setup: dict) -> None:
 
 def test_translation_wos_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
-    assert query_health.to_string(syntax="wos") == 'TI=("health care" OR medicine)'
+    assert query_health.to_string(platform="wos") == 'TI=("health care" OR medicine)'
 
 
 def test_translation_wos_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(TI=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND TI=("health care" OR medicine) AND AB=(ethic* OR moral*))'
-    assert query_complete.to_string(syntax="wos") == expected
+    assert query_complete.to_string(platform="wos") == expected
 
 
 def test_translation_pubmed_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
     expected = '("health care"[ti] OR medicine[ti])'
-    assert query_health.to_string(syntax="pubmed") == expected
+    assert query_health.to_string(platform="pubmed") == expected
 
 
 def test_translation_pubmed_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(("AI"[ti] OR "Artificial Intelligence"[ti] OR "Machine Learning"[ti] NOT robot*[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[ab] OR moral*[ab]))'
-    assert query_complete.to_string(syntax="pubmed") == expected
+    assert query_complete.to_string(platform="pubmed") == expected
 
 
 def test_invalid_tree_structure(query_setup: dict) -> None:

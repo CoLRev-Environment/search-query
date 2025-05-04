@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Release 0.11.0
 
 - Refactoring (AND/OR/NOT-Queries, method signatures, public to private methods)
-- Rename methods: `query.translate_xy()` to `query.write(syntax=xy)`, `query.print_query_xy()` to `query.to_string(syntax=xy)`
+- Rename methods: `query.translate_xy()` to `query.write(platform=xy)`, `query.print_query_xy()` to `query.to_string(platform=xy)`
 - Integrate Query tree into node attribute
 - Make dev dependencies optional
 - Add tests on GitHub actions
