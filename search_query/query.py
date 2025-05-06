@@ -295,7 +295,7 @@ class Query:
         )
 
     def to_string(self, platform: str = "pre_notation") -> str:
-        """prints the query in the selected platform"""
+        """prints the query in the selected syntax"""
 
         if platform == PLATFORM.PRE_NOTATION.value:
             return to_string_pre_notation(self)
@@ -319,13 +319,13 @@ class Query:
         import search_query.parser
 
         # If the target syntax is the same as the origin, no translation is needed
-        if target_syntax == self.origin_syntax:
+        if target_syntax == self.origin_platform:
             return self
 
-        if self.origin_syntax not in search_query.parser.PARSERS:
-            raise ValueError(f"Invalid/unknown syntax: {self.origin_syntax}")
+        if self.origin_platform not in search_query.parser.PARSERS:
+            raise ValueError(f"Invalid/unknown syntax: {self.origin_platform}")
 
-        origin_parser = search_query.parser.PARSERS[self.origin_syntax]
+        origin_parser = search_query.parser.PARSERS[self.origin_platform]
         target_parser = search_query.parser.PARSERS[target_syntax]
 
         generic_query = origin_parser.to_generic_syntax(
