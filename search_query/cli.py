@@ -57,7 +57,7 @@ def translate() -> None:
         )
 
         translated_query = query.translate(args.target)
-        converted_query = translated_query.to_string(platform=args.target)
+        converted_query = translated_query.to_string()
         search_file.search_string = converted_query
         search_file.save(args.output_file)
 

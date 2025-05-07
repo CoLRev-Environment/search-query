@@ -10,9 +10,9 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.serializer_ebsco import EBSCOStringSerializer
-from search_query.serializer_pre_notation import to_string_pre_notation
+from search_query.serializer_generic import GenericStringSerializer
 from search_query.serializer_pubmed import PubmedStringSerializer
-from search_query.serializer_structured import to_string_structured
+from search_query.serializer_structured import StructuredStringSerializer
 from search_query.serializer_wos import WOSStringSerializer
 
 # pylint: disable=too-few-public-methods
@@ -303,24 +303,32 @@ class Query:
             f"search field: {self.search_field}"
         )
 
-    def to_string(self, platform: str = "pre_notation") -> str:
-        """prints the query in the selected syntax"""
+    def to_structured_string(self) -> str:
+        """Prints the query in generic syntax"""
+        structured_serializer = StructuredStringSerializer()
+        return structured_serializer.to_string(self)
 
-        if platform == PLATFORM.PRE_NOTATION.value:
-            return to_string_pre_notation(self)
-        if platform == PLATFORM.STRUCTURED.value:
-            return to_string_structured(self)
-        if platform == PLATFORM.WOS.value:
+    def to_generic_string(self) -> str:
+        """Prints the query in generic syntax"""
+        generic_serializer = GenericStringSerializer()
+        return generic_serializer.to_string(self)
+
+    def to_string(self) -> str:
+        """Prints the query as a string"""
+
+        assert self.origin_platform != ""
+
+        if self.origin_platform == PLATFORM.WOS.value:
             wos_serializer = WOSStringSerializer()
             return wos_serializer.to_string(self)
-        if platform == PLATFORM.PUBMED.value:
+        if self.origin_platform == PLATFORM.PUBMED.value:
             pubmed_serializer = PubmedStringSerializer()
             return pubmed_serializer.to_string(self)
-        if platform == PLATFORM.EBSCO.value:
+        if self.origin_platform == PLATFORM.EBSCO.value:
             ebsco_serializer = EBSCOStringSerializer()
             return ebsco_serializer.to_string(self)
 
-        raise ValueError(f"Platform not supported ({platform})")
+        raise ValueError(f"Syntax not supported ({self.origin_platform})")
 
     def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
         """Translate the query to the target syntax using the provided translator."""
@@ -334,20 +342,27 @@ class Query:
         if target_syntax == self.origin_platform:
             return self
 
-        if self.origin_platform not in search_query.parser.PARSERS:
-            raise ValueError(f"Invalid/unknown syntax: {self.origin_platform}")
+        if self.origin_platform == "generic":
+            generic_query = self.copy()
+        else:
+            if self.origin_platform not in search_query.parser.PARSERS:
+                raise ValueError(f"Invalid/unknown syntax: {self.origin_platform}")
 
-        origin_parser = search_query.parser.PARSERS[self.origin_platform]
+            origin_parser = search_query.parser.PARSERS[self.origin_platform]
 
-        generic_query = origin_parser.to_generic_syntax(
-            self, search_field_general=search_field_general
-        )
+            generic_query = origin_parser.to_generic_syntax(
+                self, search_field_general=search_field_general
+            )
 
         if target_syntax == "generic":
+            generic_query.origin_platform = target_syntax
             return generic_query
 
         target_parser = search_query.parser.PARSERS[target_syntax]
-        return target_parser.to_specific_syntax(generic_query)
+        target_query = target_parser.to_specific_syntax(generic_query)
+        target_query.origin_platform = target_syntax
+
+        return target_query
 
 
 class Term(Query):

@@ -11,6 +11,8 @@ from search_query.serializer_base import StringSerializer
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
 
+# pylint: disable=too-few-public-methods
+
 
 class EBSCOStringSerializer(StringSerializer):
     """EBSCO query serializer."""
@@ -24,7 +26,11 @@ class EBSCOStringSerializer(StringSerializer):
 
         if not query.children:
             # Leaf query (single search term)
-            field = self._get_search_field_ebsco(str(query.search_field))
+            field = (
+                self._get_search_field_ebsco(str(query.search_field))
+                if query.search_field
+                else ""
+            )
             return f"{field}{query.value}"
 
         result = []
@@ -76,19 +82,29 @@ class EBSCOStringSerializer(StringSerializer):
     def _get_search_field_ebsco(self, search_field: str) -> str:
         """Transform search field to EBSCO Syntax."""
 
-        if search_field is None or search_field == "None":
-            return ""  # Return empty string if no search field is provided
-
         if search_field in self.EBSCO_FIELD_MAP:
             return f"{self.EBSCO_FIELD_MAP[search_field]} "
 
         raise ValueError(f"Field {search_field} not supported by EBSCO")
+
+    def _translate_search_fields(self, query: Query) -> None:
+        if query.operator:
+            for child in query.children:
+                self._translate_search_fields(child)
+
+        else:
+            if query.search_field:
+                query.search_field.value = self._get_search_field_ebsco(
+                    query.search_field.value
+                )
 
     def to_string(self, query: Query) -> str:
         """Convert the query to a string representation for EBSCO."""
 
         # Important: do not modify the original query
         query = query.copy()
+
+        self._translate_search_fields(query)
 
         # Serialize the query tree into an EBSCO search string
         result = self._stringify(query)

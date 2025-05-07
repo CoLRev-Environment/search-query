@@ -602,8 +602,8 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     query = parser.parse()
     parser.print_tokens()
 
-    print(f"{Colors.GREEN}{query.to_string()}{Colors.END}")
-    assert expected_query == query.to_string()
+    print(f"{Colors.GREEN}{query.to_generic_string()}{Colors.END}")
+    assert expected_query == query.to_generic_string()
 
     assert len(parser.linter.messages) == 1
     msg = parser.linter.messages[0]
@@ -682,7 +682,9 @@ def test_query_parsing_basic_vs_advanced() -> None:
 def test_parser_wos(query_str: str, expected_translation: str) -> None:
     wos_parser = WOSParser(query_str)
     query_tree = wos_parser.parse()
-    assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
+    assert expected_translation == query_tree.to_generic_string(), print(
+        query_tree.to_generic_string()
+    )
 
 
 def test_query_in_quotes() -> None:
@@ -719,7 +721,7 @@ def test_artificial_parentheses() -> None:
         "is_fatal": False,
         "details": "",
     }
-    assert query.to_string() == "OR[ALL=][remote, AND[online, work]]"
+    assert query.to_generic_string() == "OR[ALL=][remote, AND[online, work]]"
 
 
 # Test case 1

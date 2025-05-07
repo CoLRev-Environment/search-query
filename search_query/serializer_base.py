@@ -11,7 +11,10 @@ if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
 
 
+# pylint: disable=too-few-public-methods
 class StringSerializer(ABC):
+    """Base class for query serializers."""
+
     @abstractmethod
     def to_string(self, query: Query) -> str:
         """Convert the query to a string.

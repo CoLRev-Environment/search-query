@@ -4,6 +4,7 @@ import copy
 
 import pytest
 
+import search_query.parser
 from search_query.constants import Fields
 from search_query.query import SearchField
 from search_query.query import Term
@@ -96,25 +97,43 @@ def test_nested_queries(query_setup: dict) -> None:
 
 def test_translation_wos_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
-    assert query_health.to_string(platform="wos") == 'TI=("health care" OR medicine)'
+    translated_query = query_health.translate("wos")
+    assert translated_query.to_string() == 'TI=("health care" OR medicine)'
 
 
 def test_translation_wos_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(TI=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND TI=("health care" OR medicine) AND AB=(ethic* OR moral*))'
-    assert query_complete.to_string(platform="wos") == expected
+    translated_query = query_complete.translate("wos")
+    assert translated_query.to_string() == expected
 
 
 def test_translation_pubmed_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
     expected = '("health care"[ti] OR medicine[ti])'
-    assert query_health.to_string(platform="pubmed") == expected
+    translated_query = query_health.translate("pubmed")
+    assert translated_query.to_string() == expected
 
 
 def test_translation_pubmed_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(("AI"[ti] OR "Artificial Intelligence"[ti] OR "Machine Learning"[ti] NOT robot*[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[tiab] OR moral*[tiab]))'
-    assert query_complete.to_string(platform="pubmed") == expected
+    translated_query = query_complete.translate("pubmed")
+    assert translated_query.to_string() == expected
+
+
+def test_translation_wos_ebsco() -> None:
+    query_str = "TS=(quantum AND dot AND spin)"
+    print(query_str)
+    query = search_query.parser.parse(
+        query_str,
+        platform="wos",
+    )
+    translated_query = query.translate("ebscohost")
+    converted_query = translated_query.to_string()
+    expected = "TP (quantum AND dot AND spin)"
+
+    assert converted_query == expected
 
 
 def test_invalid_tree_structure(query_setup: dict) -> None:

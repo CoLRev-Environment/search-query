@@ -602,7 +602,9 @@ def test_parser(
     parser = PubmedParser(query_str, search_field_general=search_field_general)
     query = parser.parse()
 
-    assert expected_parsed == query.to_string(), print(query.to_string())
+    assert expected_parsed == query.to_generic_string(), print(
+        query.to_generic_string()
+    )
 
 
 def test_list_parser_case_1() -> None:
@@ -700,6 +702,8 @@ def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     parser = PubmedParser(query_str, "")
     query = parser.parse()
     generic = parser.to_generic_syntax(query, search_field_general="")
-    print(generic.to_string())
+    print(generic.to_generic_string())
 
-    assert expected_generic == generic.to_string(), print(generic.to_string())
+    assert expected_generic == generic.to_generic_string(), print(
+        generic.to_generic_string()
+    )

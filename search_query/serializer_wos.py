@@ -13,6 +13,7 @@ if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
 
 
+# pylint: disable=too-few-public-methods
 class WOSStringSerializer(StringSerializer):
     """WOS query serializer."""
 
