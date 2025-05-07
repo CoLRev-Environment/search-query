@@ -9,11 +9,11 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.serializer_ebsco import to_string_ebsco
+from search_query.serializer_ebsco import EBSCOStringSerializer
 from search_query.serializer_pre_notation import to_string_pre_notation
-from search_query.serializer_pubmed import to_string_pubmed
+from search_query.serializer_pubmed import PubmedStringSerializer
 from search_query.serializer_structured import to_string_structured
-from search_query.serializer_wos import to_string_wos
+from search_query.serializer_wos import WOSStringSerializer
 
 # pylint: disable=too-few-public-methods
 
@@ -311,11 +311,14 @@ class Query:
         if platform == PLATFORM.STRUCTURED.value:
             return to_string_structured(self)
         if platform == PLATFORM.WOS.value:
-            return to_string_wos(self)
+            wos_serializer = WOSStringSerializer()
+            return wos_serializer.to_string(self)
         if platform == PLATFORM.PUBMED.value:
-            return to_string_pubmed(self)
+            pubmed_serializer = PubmedStringSerializer()
+            return pubmed_serializer.to_string(self)
         if platform == PLATFORM.EBSCO.value:
-            return to_string_ebsco(self)
+            ebsco_serializer = EBSCOStringSerializer()
+            return ebsco_serializer.to_string(self)
 
         raise ValueError(f"Platform not supported ({platform})")
 
