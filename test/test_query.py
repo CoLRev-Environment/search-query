@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Tests for search query translation"""
+import copy
+
 import pytest
 
 from search_query.constants import Fields
@@ -35,15 +37,22 @@ def query_setup() -> dict:
         [query_ai, query_health, query_ethics],
         search_field=SearchField(Fields.TITLE),
     )
+    query_complete.origin_platform = "generic"
+    query_health.origin_platform = "generic"
+    query_ai.origin_platform = "generic"
+    query_robot.origin_platform = "generic"
+    query_ethics.origin_platform = "generic"
 
-    return {
-        "test_node": test_node,
-        "query_robot": query_robot,
-        "query_ai": query_ai,
-        "query_health": query_health,
-        "query_ethics": query_ethics,
-        "query_complete": query_complete,
-    }
+    return copy.deepcopy(
+        {
+            "test_node": test_node,
+            "query_robot": query_robot,
+            "query_ai": query_ai,
+            "query_health": query_health,
+            "query_ethics": query_ethics,
+            "query_complete": query_complete,
+        }
+    )
 
 
 def test_print_node(query_setup: dict) -> None:
@@ -104,7 +113,7 @@ def test_translation_pubmed_part(query_setup: dict) -> None:
 
 def test_translation_pubmed_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
-    expected = '(("AI"[ti] OR "Artificial Intelligence"[ti] OR "Machine Learning"[ti] NOT robot*[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[ab] OR moral*[ab]))'
+    expected = '(("AI"[ti] OR "Artificial Intelligence"[ti] OR "Machine Learning"[ti] NOT robot*[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[tiab] OR moral*[tiab]))'
     assert query_complete.to_string(platform="pubmed") == expected
 
 

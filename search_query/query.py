@@ -2,6 +2,7 @@
 """Query class."""
 from __future__ import annotations
 
+import copy
 import re
 import typing
 
@@ -32,6 +33,10 @@ class SearchField:
 
     def __str__(self) -> str:
         return self.value
+
+    def copy(self) -> SearchField:
+        """Return a copy of the SearchField instance."""
+        return SearchField(self.value, position=self.position)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -70,6 +75,10 @@ class Query:
                 self.add_child(child)
 
         self._ensure_children_not_circular()
+
+    def copy(self) -> Query:
+        """Return a copy of the Query instance."""
+        return copy.deepcopy(self)
 
     @property
     def value(self) -> str:
@@ -151,7 +160,7 @@ class Query:
     @search_field.setter
     def search_field(self, sf: typing.Optional[SearchField]) -> None:
         """Set search field property."""
-        self._search_field = sf
+        self._search_field = copy.deepcopy(sf) if sf else None
 
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""
@@ -326,7 +335,6 @@ class Query:
             raise ValueError(f"Invalid/unknown syntax: {self.origin_platform}")
 
         origin_parser = search_query.parser.PARSERS[self.origin_platform]
-        target_parser = search_query.parser.PARSERS[target_syntax]
 
         generic_query = origin_parser.to_generic_syntax(
             self, search_field_general=search_field_general
@@ -335,6 +343,7 @@ class Query:
         if target_syntax == "generic":
             return generic_query
 
+        target_parser = search_query.parser.PARSERS[target_syntax]
         return target_parser.to_specific_syntax(generic_query)
 
 

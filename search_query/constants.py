@@ -203,9 +203,9 @@ PLATFORM_FIELD_MAP = {
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {
+        # Note : abstract [ab] is not supported by PubMed
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
-        Fields.ABSTRACT: "[ab]",
         Fields.AUTHOR_KEYWORDS: "[au]",
         Fields.FILTER: "[sb]",
         Fields.JOURNAL: "[ta]",
