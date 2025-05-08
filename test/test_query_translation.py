@@ -1,59 +1,11 @@
 #!/usr/bin/env python
 """Tests for search query translation"""
-import copy
 
-import pytest
 
 import search_query.parser
-from search_query.constants import Fields
-from search_query.query import SearchField
-from search_query.query import Term
-from search_query.query_and import AndQuery
-from search_query.query_not import NotQuery
-from search_query.query_or import OrQuery
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501
-
-
-@pytest.fixture
-def query_setup() -> dict:
-    test_node = Term(
-        "testvalue", position=(1, 10), search_field=SearchField(Fields.TITLE)
-    )
-    query_robot = NotQuery(["robot*"], search_field=SearchField(Fields.TITLE))
-    query_ai = OrQuery(
-        ['"AI"', '"Artificial Intelligence"', '"Machine Learning"', query_robot],
-        search_field=SearchField(Fields.TITLE),
-    )
-    query_health = OrQuery(
-        ['"health care"', "medicine"],
-        search_field=SearchField(Fields.TITLE),
-    )
-    query_ethics = OrQuery(
-        ["ethic*", "moral*"],
-        search_field=SearchField(Fields.ABSTRACT),
-    )
-    query_complete = AndQuery(
-        [query_ai, query_health, query_ethics],
-        search_field=SearchField(Fields.TITLE),
-    )
-    query_complete.origin_platform = "generic"
-    query_health.origin_platform = "generic"
-    query_ai.origin_platform = "generic"
-    query_robot.origin_platform = "generic"
-    query_ethics.origin_platform = "generic"
-
-    return copy.deepcopy(
-        {
-            "test_node": test_node,
-            "query_robot": query_robot,
-            "query_ai": query_ai,
-            "query_health": query_health,
-            "query_ethics": query_ethics,
-            "query_complete": query_complete,
-        }
-    )
 
 
 def test_print_node(query_setup: dict) -> None:
@@ -134,43 +86,3 @@ def test_translation_wos_ebsco() -> None:
     expected = "TP (quantum AND dot AND spin)"
 
     assert converted_query == expected
-
-
-def test_invalid_tree_structure(query_setup: dict) -> None:
-    with pytest.raises(ValueError):
-        AndQuery(
-            ["invalid", query_setup["query_complete"], query_setup["query_ai"]],
-            search_field=SearchField("Author Keywords"),
-        )
-
-
-def test_selects(query_setup: dict) -> None:
-    query_ai = query_setup["query_ai"]
-    query_health = query_setup["query_health"]
-    query_complete = query_setup["query_complete"]
-
-    record_1 = {
-        "title": "Artificial Intelligence in Health Care",
-        "abstract": "This study explores the role of AI and machine learning in improving health outcomes.",
-    }
-
-    record_2 = {
-        "title": "Moral Implications of Artificial Intelligence",
-        "abstract": "Examines ethical concerns in AI development.",
-    }
-
-    record_3 = {
-        "title": "Unrelated Title",
-        "abstract": "This abstract is about something else entirely.",
-    }
-
-    record_4 = {
-        "title": "Title with AI and medicine",
-        "abstract": "abstract containing ethics.",
-    }
-
-    assert query_ai.selects(record_dict=record_1)
-    assert not query_health.selects(record_dict=record_2)
-    assert not query_health.selects(record_dict=record_3)
-    assert query_complete.selects(record_dict=record_4)
-    assert not query_complete.selects(record_dict=record_3)
