@@ -129,7 +129,7 @@ Functional Overview
 The search-query package is built to support researchers throughout the entire lifecycle of academic search query management.
 Below is a high-level overview of the core functionalities:
 
-.. image:: presenatation.png
+.. image:: presentation.png
 
 ..
    Parser development
