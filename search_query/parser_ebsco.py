@@ -8,6 +8,7 @@ import typing
 from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_MAP
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -25,6 +26,7 @@ class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
+    EBSCO_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.EBSCO]
 
     PARENTHESIS_REGEX = r"[\(\)]"
     LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
@@ -315,7 +317,7 @@ class EBSCOParser(QueryStringParser):
         return root
 
     @classmethod
-    def translate_search_fields(cls, query: Query) -> None:
+    def translate_search_fields_to_generic(cls, query: Query) -> None:
         """
         Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
         """
@@ -338,7 +340,7 @@ class EBSCOParser(QueryStringParser):
 
         # Iterate through queries
         for child in query.children:
-            cls.translate_search_fields(child)
+            cls.translate_search_fields_to_generic(child)
 
     def parse(self) -> Query:
         """Parse a query string."""
@@ -358,14 +360,38 @@ class EBSCOParser(QueryStringParser):
     @classmethod
     def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
         """Convert the query to a generic syntax."""
-        # TODO: Implement/test this method
-        cls.translate_search_fields(query)
+
+        query = query.copy()
+        cls.translate_search_fields_to_generic(query)
+
         return query
+
+    @classmethod
+    def _get_search_field_ebsco(cls, search_field: str) -> str:
+        """Transform search field to EBSCO Syntax."""
+
+        if search_field in cls.EBSCO_FIELD_MAP:
+            return f"{cls.EBSCO_FIELD_MAP[search_field]} "
+
+        raise ValueError(f"Field {search_field} not supported by EBSCO")
+
+    @classmethod
+    def _translate_search_fields(cls, query: Query) -> None:
+        if query.search_field:
+            query.search_field.value = cls._get_search_field_ebsco(
+                query.search_field.value
+            )
+        if query.operator:
+            for child in query.children:
+                cls._translate_search_fields(child)
 
     @classmethod
     def to_specific_syntax(cls, query: Query) -> Query:
         """Convert the query to a specific syntax."""
-        # TODO: Implement this method
+
+        query = query.copy()
+        cls._translate_search_fields(query)
+
         return query
 
 

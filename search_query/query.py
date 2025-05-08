@@ -9,11 +9,11 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.serializer_ebsco import EBSCOStringSerializer
-from search_query.serializer_generic import GenericStringSerializer
-from search_query.serializer_pubmed import PubmedStringSerializer
-from search_query.serializer_structured import StructuredStringSerializer
-from search_query.serializer_wos import WOSStringSerializer
+from search_query.serializer_ebsco import to_string_ebsco
+from search_query.serializer_generic import to_string_generic
+from search_query.serializer_pubmed import to_string_pubmed
+from search_query.serializer_structured import to_string_structured
+from search_query.serializer_wos import to_string_wos
 
 # pylint: disable=too-few-public-methods
 
@@ -313,13 +313,11 @@ class Query:
 
     def to_structured_string(self) -> str:
         """Prints the query in generic syntax"""
-        structured_serializer = StructuredStringSerializer()
-        return structured_serializer.to_string(self)
+        return to_string_structured(self)
 
     def to_generic_string(self) -> str:
         """Prints the query in generic syntax"""
-        generic_serializer = GenericStringSerializer()
-        return generic_serializer.to_string(self)
+        return to_string_generic(self)
 
     def to_string(self) -> str:
         """Prints the query as a string"""
@@ -327,14 +325,11 @@ class Query:
         assert self.origin_platform != ""
 
         if self.origin_platform == PLATFORM.WOS.value:
-            wos_serializer = WOSStringSerializer()
-            return wos_serializer.to_string(self)
+            return to_string_wos(self)
         if self.origin_platform == PLATFORM.PUBMED.value:
-            pubmed_serializer = PubmedStringSerializer()
-            return pubmed_serializer.to_string(self)
+            return to_string_pubmed(self)
         if self.origin_platform == PLATFORM.EBSCO.value:
-            ebsco_serializer = EBSCOStringSerializer()
-            return ebsco_serializer.to_string(self)
+            return to_string_ebsco(self)
 
         raise ValueError(f"Syntax not supported ({self.origin_platform})")
 

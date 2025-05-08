@@ -9,6 +9,7 @@ from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_MAP
 from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -27,6 +28,7 @@ class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
     FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
+    PUBMED_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.PUBMED]
 
     DEFAULT_FIELD_MAP = {
         "[affiliation]": "[ad]",
@@ -287,14 +289,14 @@ class PubmedParser(QueryStringParser):
         )
 
     @classmethod
-    def translate_search_fields(cls, query: Query) -> None:
+    def translate_search_fields_to_generic(cls, query: Query) -> None:
         """Translate search fields"""
 
         if query.children:
             expanded = cls._translate_or_chains_without_nesting(query)
             if not expanded:
                 for child in query.children:
-                    cls.translate_search_fields(child)
+                    cls.translate_search_fields_to_generic(child)
             return
 
         if query.search_field:
@@ -430,15 +432,98 @@ class PubmedParser(QueryStringParser):
     @classmethod
     def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
         """Convert the query to a generic syntax."""
-        # TODO: Implement this method
-        cls.translate_search_fields(query)
-        # TODO : print instructive message (when joining sub-queries with OR)
+
+        query = query.copy()
+        cls.translate_search_fields_to_generic(query)
+
         return query
+
+    @classmethod
+    def _get_search_field_pubmed(cls, search_field: str) -> str:
+        """transform search field to PubMed Syntax"""
+        if search_field == "[tiab]":
+            return "[tiab]"
+        if search_field in cls.PUBMED_FIELD_MAP:
+            return cls.PUBMED_FIELD_MAP[search_field]
+        raise ValueError(f"Field {search_field} not supported by PubMed")
+
+    @classmethod
+    def _translate_search_fields(cls, query: Query) -> None:
+        if query.operator:
+            for child in query.children:
+                cls._translate_search_fields(child)
+
+        else:
+            if query.search_field:
+                query.search_field.value = cls._get_search_field_pubmed(
+                    query.search_field.value
+                )
+
+    @classmethod
+    def _combine_tiab(cls, query: Query) -> None:
+        """Recursively combine identical terms from TI and AB into TIAB."""
+
+        if query.operator and query.value == "OR":
+            # ab does not exist: always expand to tiab
+            terms = []
+            for child in query.children:
+                if (
+                    not child.operator
+                    and child.search_field
+                    and child.search_field.value == "ab"
+                ):
+                    child.search_field.value = "[tiab]"
+                    terms.append(child.value)
+
+            if terms:
+                print(f"Info: combining terms from AB OR TI to TIAB: {terms}")
+
+            # Warn if the same terms are not available with ti
+            missing_terms = []
+            for term in terms:
+                if not any(
+                    term == child.value
+                    and child.search_field
+                    and child.search_field.value == "ti"
+                    for child in query.children
+                ):
+                    missing_terms.append(term)
+            if missing_terms:
+                print(
+                    "Info/Warning: Search field broadened for term "
+                    "(AB "
+                    "(without corresponding search for the same term with TI)"
+                    " -> TIAB): "
+                    f"{missing_terms}"
+                )
+
+            # Remove duplicates with ti
+            new_children = []
+            for child in query.children:
+                if child.operator:
+                    # unconditionally append operators
+                    new_children.append(child)
+                elif child.search_field and not (
+                    child.search_field.value == "ti" and child.value in terms
+                ):
+                    new_children.append(child)
+            query.children = new_children
+
+        # Recursively apply to child querys
+        for child in query.children:
+            cls._combine_tiab(child)
 
     @classmethod
     def to_specific_syntax(cls, query: Query) -> Query:
         """Convert the query to a specific syntax."""
-        # TODO: Implement this method
+
+        query = query.copy()
+
+        cls.move_field_from_operator_to_terms(query)
+        cls.flatten_nested_operators(query)
+        cls._combine_tiab(query)
+        cls._translate_search_fields(query)
+
         return query
 
 
@@ -540,6 +625,6 @@ class PubmedListParser(QueryListParser):
 
         query = list(self.query_dict.values())[-1]["query"]
 
-        # TODO : linter.check_status()
+        # linter.check_status() ?
 
         return query

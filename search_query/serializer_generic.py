@@ -4,40 +4,29 @@ from __future__ import annotations
 
 import typing
 
-from search_query.serializer_base import StringSerializer
-
 if typing.TYPE_CHECKING:  # pragma: no
     from search_query.query import Query
 
 
-# pylint: disable=too-few-public-methods
-class GenericStringSerializer(StringSerializer):
-    """Generic format query serializer."""
+def to_string_generic(query: Query) -> str:
+    """Convert the query to a string."""
+    if not hasattr(query, "value"):
+        return " (?) "
 
-    def _stringify(self, node: Query) -> str:
-        """actual translation logic for pre-notation"""
+    result = ""
+    query_content = query.value
+    if query.search_field:
+        query_content += f"[{query.search_field}]"
 
-        if not hasattr(node, "value"):
-            return " (?) "
+    if hasattr(query, "near_param"):
+        query_content += f"({query.near_param})"
+    result = f"{result}{query_content}"
+    if query.children == []:
+        return result
 
-        result = ""
-        node_content = node.value
-        if node.search_field:
-            node_content += f"[{node.search_field}]"
-
-        if hasattr(node, "near_param"):
-            node_content += f"({node.near_param})"
-        result = f"{result}{node_content}"
-        if node.children == []:
-            return result
-
-        result = f"{result}["
-        for child in node.children:
-            result = f"{result}{self._stringify(child)}"
-            if child != node.children[-1]:
-                result = f"{result}, "
-        return f"{result}]"
-
-    def to_string(self, query: Query) -> str:
-        """Convert the query to a string."""
-        return self._stringify(query)
+    result = f"{result}["
+    for child in query.children:
+        result = f"{result}{to_string_generic(child)}"
+        if child != query.children[-1]:
+            result = f"{result}, "
+    return f"{result}]"
