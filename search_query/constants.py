@@ -608,6 +608,7 @@ class QueryErrorCode(Enum):
     )
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

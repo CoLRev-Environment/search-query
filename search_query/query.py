@@ -197,14 +197,7 @@ class Query:
         # Match exact word
         return value.lower() in field_value
 
-    def evaluate(self, records_dict: dict) -> dict:
-        """Evaluate the query against records using colrev_status labels.
-
-        - rev_included: relevant
-        - rev_excluded / rev_prescreen_excluded: irrelevant
-        - others: ignored
-        """
-
+    def _get_confusion_matrix(self, records_dict: dict) -> dict:
         relevant_ids = set()
         irrelevant_ids = set()
         selected_ids = set()
@@ -227,14 +220,34 @@ class Query:
         false_positives = len(selected_eval_ids & irrelevant_ids)
         false_negatives = len(relevant_ids - selected_ids)
 
+        return {
+            "total_evaluated": len(eval_ids),
+            "selected": len(selected_eval_ids),
+            "true_positives": true_positives,
+            "false_positives": false_positives,
+            "false_negatives": false_negatives,
+        }
+
+    def evaluate(self, records_dict: dict) -> dict:
+        """Evaluate the query against records using colrev_status labels.
+
+        - rev_included: relevant
+        - rev_excluded / rev_prescreen_excluded: irrelevant
+        - others: ignored
+        """
+
+        results = self._get_confusion_matrix(records_dict)
+
         precision = (
-            true_positives / (true_positives + false_positives)
-            if (true_positives + false_positives) > 0
+            results["true_positives"]
+            / (results["true_positives"] + results["false_positives"])
+            if (results["true_positives"] + results["false_positives"]) > 0
             else 0
         )
         recall = (
-            true_positives / (true_positives + false_negatives)
-            if (true_positives + false_negatives) > 0
+            results["true_positives"]
+            / (results["true_positives"] + results["false_negatives"])
+            if (results["true_positives"] + results["false_negatives"]) > 0
             else 0
         )
         f1 = (
@@ -243,16 +256,11 @@ class Query:
             else 0
         )
 
-        return {
-            "total_evaluated": len(eval_ids),
-            "selected": len(selected_eval_ids),
-            "true_positives": true_positives,
-            "false_positives": false_positives,
-            "false_negatives": false_negatives,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
-        }
+        results["precision"] = precision
+        results["recall"] = recall
+        results["f1_score"] = f1
+
+        return results
 
     def is_operator(self) -> bool:
         """Check whether the SearchQuery is an operator."""
