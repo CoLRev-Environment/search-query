@@ -9,6 +9,7 @@ from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser_pubmed import PubmedListParser
 from search_query.parser_pubmed import PubmedParser
+from search_query.translator_pubmed import PubmedTranslator
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 
@@ -701,7 +702,9 @@ def test_list_parser_case_3() -> None:
 def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     parser = PubmedParser(query_str, "")
     query = parser.parse()
-    generic = parser.to_generic_syntax(query, search_field_general="")
+
+    translator = PubmedTranslator()
+    generic = translator.to_generic_syntax(query, search_field_general="")
     print(generic.to_generic_string())
 
     assert expected_generic == generic.to_generic_string(), print(

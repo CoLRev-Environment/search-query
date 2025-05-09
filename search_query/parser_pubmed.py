@@ -9,8 +9,6 @@ from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_MAP
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -26,67 +24,6 @@ from search_query.query import Term
 
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
-
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
-    PUBMED_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.PUBMED]
-
-    DEFAULT_FIELD_MAP = {
-        "[affiliation]": "[ad]",
-        "[all fields]": "[all]",
-        "[article identifier]": "[aid]",
-        "[author]": "[au]",
-        "[author identifier]": "[auid]",
-        "[completion date]": "[dcom]",
-        "[conflict of interest statement]": "[cois]",
-        "[corporate author]": "[cn]",
-        "[create date]": "[crdt]",
-        "[ec/rn number]": "[rn]",
-        "[editor]": "[ed]",
-        "[entry date]": "[edat]",
-        "[filter]": "[sb]",
-        "[first author name]": "[1au]",
-        "[full author name]": "[fau]",
-        "[full investigator name]": "[fir]",
-        "[grants and funding]": "[gr]",
-        "[investigator]": "[ir]",
-        "[isbn]": "[isbn]",
-        "[issue]": "[ip]",
-        "[journal]": "[ta]",
-        "[language]": "[la]",
-        "[last author name]": "[lastau]",
-        "[location id]": "[lid]",
-        "[mesh date]": "[mhda]",
-        "[mesh]": "[mh]",
-        "[mesh terms]": "[mh]",
-        "[mesh terms:noexp]": "[mh]",
-        "[mh:noexp]": "[mh]",
-        "[mesh:noexp]": "[mh]",
-        "[mesh major topic]": "[mh]",
-        "[majr]": "[mh]",
-        "[mj]": "[mh]",
-        "[mesh subheading]": "[mh]",
-        "[subheading]": "[mh]",
-        "[sh]": "[mh]",
-        "[modification date]": "[lr]",
-        "[nlm unique id]": "[jid]",
-        "[other term]": "[ot]",
-        "[pagination]": "[pg]",
-        "[personal name as subject]": "[ps]",
-        "[pharmacological action]": "[pa]",
-        "[place of publication]": "[pl]",
-        "[publication date]": "[dp]",
-        "[pdate]": "[dp]",
-        "[publication type]": "[pt]",
-        "[publisher]": "[pubn]",
-        "[secondary source id]": "[si]",
-        "[subset]": "[sb]",
-        "[supplementary concept]": "[nm]",
-        "[text word]": "[tw]",
-        "[title]": "[ti]",
-        "[title/abstract]": "[tiab]",
-        "[transliterated title]": "[tt]",
-        "[volume]": "[vi]",
-    }
 
     SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
@@ -288,116 +225,30 @@ class PubmedParser(QueryStringParser):
             position=(tokens[0].position[0], query_end_pos),
         )
 
-    @classmethod
-    def translate_search_fields_to_generic(cls, query: Query) -> None:
-        """Translate search fields"""
+    # def parse_user_provided_fields(self, field_values: str) -> list:
+    #     """Extract and translate user-provided search fields (return as a list)"""
+    #     if not field_values:
+    #         return []
 
-        if query.children:
-            expanded = cls._translate_or_chains_without_nesting(query)
-            if not expanded:
-                for child in query.children:
-                    cls.translate_search_fields_to_generic(child)
-            return
+    #     field_values_list = [
+    #         search_field.strip() for search_field in field_values.split(",")
+    #     ]
 
-        if query.search_field:
-            query.search_field.value = cls.map_search_field(query.search_field.value)
+    #     for index, value in enumerate(field_values_list):
+    #         value = "[" + value.lower() + "]"
 
-            # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
-            if query.search_field.value == "[tiab]":
-                cls._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
+    #         value = self.map_search_field(value)
 
-    @classmethod
-    def map_search_field(cls, field_value: str) -> str:
-        """Translate a search field"""
-        field_value = field_value.lower()
-        # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
-        if field_value in cls.DEFAULT_FIELD_MAP:
-            field_value = cls.DEFAULT_FIELD_MAP[field_value]
-        # Convert search fields to default field constants
-        if field_value in cls.FIELD_TRANSLATION_MAP:
-            field_value = cls.FIELD_TRANSLATION_MAP[field_value]
-        return field_value
+    #         if value in {"[title and abstract]", "[tiab]"}:
+    #             value = Fields.TITLE
+    #             field_values_list.insert(index + 1, Fields.ABSTRACT)
 
-    @classmethod
-    def _expand_combined_fields(cls, query: Query, search_fields: list) -> None:
-        """Expand queries with combined search fields into an OR query"""
-        query_children = []
+    #         if value in {"[subject headings]"}:
+    #             value = Fields.MESH_TERM
 
-        for search_field in search_fields:
-            query_children.append(
-                Query(
-                    value=query.value,
-                    operator=False,
-                    search_field=SearchField(value=search_field),
-                    children=None,
-                )
-            )
+    #         field_values_list[index] = value
 
-        query.value = Operators.OR
-        query.operator = True
-        query.search_field = None
-        query.children = query_children  # type: ignore
-
-    @classmethod
-    def _translate_or_chains_without_nesting(cls, query: Query) -> bool:
-        """Translate without nesting"""
-        if not (query.operator and query.value == Operators.OR):
-            return False
-        if not all(not child.operator for child in query.children):
-            return False
-        if not all(child.search_field for child in query.children):
-            return False
-        search_fields = {
-            child.search_field.value for child in query.children if child.search_field
-        }
-        if len(search_fields) != 1:
-            return False
-
-        if next(iter(search_fields)) in {"[title and abstract]", "[tiab]"}:
-            additional_children = []
-            for child in query.children:
-                if not child.search_field:
-                    continue
-                child.search_field.value = Fields.TITLE
-                additional_children.append(
-                    Query(
-                        value=child.value,
-                        operator=False,
-                        search_field=SearchField(value=Fields.ABSTRACT),
-                        children=None,
-                    )
-                )
-            query.children += additional_children
-            return True
-
-        # elif ... other cases?
-
-        return False
-
-    def parse_user_provided_fields(self, field_values: str) -> list:
-        """Extract and translate user-provided search fields (return as a list)"""
-        if not field_values:
-            return []
-
-        field_values_list = [
-            search_field.strip() for search_field in field_values.split(",")
-        ]
-
-        for index, value in enumerate(field_values_list):
-            value = "[" + value.lower() + "]"
-
-            value = self.map_search_field(value)
-
-            if value in {"[title and abstract]", "[tiab]"}:
-                value = Fields.TITLE
-                field_values_list.insert(index + 1, Fields.ABSTRACT)
-
-            if value in {"[subject headings]"}:
-                value = Fields.MESH_TERM
-
-            field_values_list[index] = value
-
-        return field_values_list
+    #     return field_values_list
 
     def get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,
@@ -426,103 +277,6 @@ class PubmedParser(QueryStringParser):
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
         query.origin_platform = PLATFORM.PUBMED.value
-
-        return query
-
-    @classmethod
-    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
-        """Convert the query to a generic syntax."""
-
-        query = query.copy()
-        cls.translate_search_fields_to_generic(query)
-
-        return query
-
-    @classmethod
-    def _get_search_field_pubmed(cls, search_field: str) -> str:
-        """transform search field to PubMed Syntax"""
-        if search_field == "[tiab]":
-            return "[tiab]"
-        if search_field in cls.PUBMED_FIELD_MAP:
-            return cls.PUBMED_FIELD_MAP[search_field]
-        raise ValueError(f"Field {search_field} not supported by PubMed")
-
-    @classmethod
-    def _translate_search_fields(cls, query: Query) -> None:
-        if query.operator:
-            for child in query.children:
-                cls._translate_search_fields(child)
-
-        else:
-            if query.search_field:
-                query.search_field.value = cls._get_search_field_pubmed(
-                    query.search_field.value
-                )
-
-    @classmethod
-    def _combine_tiab(cls, query: Query) -> None:
-        """Recursively combine identical terms from TI and AB into TIAB."""
-
-        if query.operator and query.value == "OR":
-            # ab does not exist: always expand to tiab
-            terms = []
-            for child in query.children:
-                if (
-                    not child.operator
-                    and child.search_field
-                    and child.search_field.value == "ab"
-                ):
-                    child.search_field.value = "[tiab]"
-                    terms.append(child.value)
-
-            if terms:
-                print(f"Info: combining terms from AB OR TI to TIAB: {terms}")
-
-            # Warn if the same terms are not available with ti
-            missing_terms = []
-            for term in terms:
-                if not any(
-                    term == child.value
-                    and child.search_field
-                    and child.search_field.value == "ti"
-                    for child in query.children
-                ):
-                    missing_terms.append(term)
-            if missing_terms:
-                print(
-                    "Info/Warning: Search field broadened for term "
-                    "(AB "
-                    "(without corresponding search for the same term with TI)"
-                    " -> TIAB): "
-                    f"{missing_terms}"
-                )
-
-            # Remove duplicates with ti
-            new_children = []
-            for child in query.children:
-                if child.operator:
-                    # unconditionally append operators
-                    new_children.append(child)
-                elif child.search_field and not (
-                    child.search_field.value == "ti" and child.value in terms
-                ):
-                    new_children.append(child)
-            query.children = new_children
-
-        # Recursively apply to child querys
-        for child in query.children:
-            cls._combine_tiab(child)
-
-    @classmethod
-    def to_specific_syntax(cls, query: Query) -> Query:
-        """Convert the query to a specific syntax."""
-
-        query = query.copy()
-
-        cls.move_field_from_operator_to_terms(query)
-        cls.flatten_nested_operators(query)
-        cls._combine_tiab(query)
-        cls._translate_search_fields(query)
 
         return query
 

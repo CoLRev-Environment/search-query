@@ -13,14 +13,13 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import PLATFORM_FIELD_MAP
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.constants_wos import WOSSearchFieldList
 from search_query.linter_wos import WOSQueryListLinter
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
@@ -31,7 +30,6 @@ from search_query.query import Term
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
     WOS_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.WOS]
 
     SEARCH_TERM_REGEX = (
@@ -416,29 +414,6 @@ class WOSParser(QueryStringParser):
 
         return children
 
-    @classmethod
-    def _map_default_field(cls, search_field: str) -> str:
-        """Get the key of the search field."""
-        for key, value_list in WOSSearchFieldList.search_field_dict.items():
-            if search_field in value_list:
-                translated_field = cls.FIELD_TRANSLATION_MAP[key]
-                return translated_field
-        return search_field
-
-    @classmethod
-    def translate_search_fields_to_generic(cls, query: Query) -> None:
-        """Translate search fields."""
-
-        if query.search_field:
-            query.search_field.value = cls._map_default_field(query.search_field.value)
-        if query.children:
-            for child in query.children:
-                cls.translate_search_fields_to_generic(child)
-
-        # at this point it may be necessary to split (OR)
-        # queries for combined search fields
-        # see _expand_combined_fields() in pubmed
-
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -453,65 +428,6 @@ class WOSParser(QueryStringParser):
         self.linter.check_status()
 
         query.origin_platform = PLATFORM.WOS.value
-
-        return query
-
-    @classmethod
-    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
-        """Convert the query to a generic syntax."""
-
-        query = query.copy()
-        cls.translate_search_fields_to_generic(query)
-
-        # TODO : translate / apply search_field_general (according to drop-down field)
-
-        return query
-
-    @classmethod
-    def _remove_contradicting_search_fields(cls, query: Query) -> None:
-        """remove search fields that contradict the operator"""
-
-        if not query.operator:
-            return
-
-        for child in query.children:
-            # recursive call
-            cls._remove_contradicting_search_fields(child)
-
-        child_fields = [
-            child.search_field.value for child in query.children if child.search_field
-        ]
-        if len(child_fields) > 1:
-            # all children have the same search field
-            # move search field to operator
-            query.search_field = None
-
-    @classmethod
-    def _get_search_field_wos(cls, search_field: str) -> str:
-        """transform search field to WoS Syntax"""
-        if search_field in cls.WOS_FIELD_MAP:
-            return cls.WOS_FIELD_MAP[search_field]
-        raise ValueError(f"Search field not supported ({search_field})")
-
-    @classmethod
-    def _translate_search_fields(cls, query: Query) -> None:
-        if query.search_field:
-            query.search_field.value = cls._get_search_field_wos(
-                query.search_field.value
-            )
-
-        for child in query.children:
-            cls._translate_search_fields(child)
-
-    @classmethod
-    def to_specific_syntax(cls, query: Query) -> Query:
-        """Convert the query to a specific syntax."""
-
-        query = query.copy()
-
-        cls._translate_search_fields(query)
-        cls.move_fields_to_operator(query)
-        cls._remove_contradicting_search_fields(query)
 
         return query
 

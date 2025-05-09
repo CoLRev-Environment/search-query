@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Tests for search query translation"""
-
-
 import search_query.parser
 
 # pylint: disable=line-too-long

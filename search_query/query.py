@@ -15,6 +15,7 @@ from search_query.serializer_pubmed import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
 from search_query.serializer_wos import to_string_wos
 
+
 # pylint: disable=too-few-public-methods
 
 
@@ -339,7 +340,9 @@ class Query:
         # parser: QueryStringParser | None = None
 
         # pylint: disable=import-outside-toplevel
-        import search_query.parser
+        from search_query.translator_pubmed import PubmedTranslator
+        from search_query.translator_ebsco import EBSCOTranslator
+        from search_query.translator_wos import WOSTranslator
 
         # If the target syntax is the same as the origin, no translation is needed
         if target_syntax == self.origin_platform:
@@ -348,24 +351,44 @@ class Query:
         if self.origin_platform == "generic":
             generic_query = self.copy()
         else:
-            if self.origin_platform not in search_query.parser.PARSERS:
-                raise ValueError(f"Invalid/unknown syntax: {self.origin_platform}")
-
-            origin_parser = search_query.parser.PARSERS[self.origin_platform]
-
-            generic_query = origin_parser.to_generic_syntax(
-                self, search_field_general=search_field_general
-            )
+            if self.origin_platform == "pubmed":
+                pubmed_translator = PubmedTranslator()
+                generic_query = pubmed_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            elif self.origin_platform == "ebsco":
+                ebsco_translator = EBSCOTranslator()
+                generic_query = ebsco_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            elif self.origin_platform == "wos":
+                wos_translator = WOSTranslator()
+                generic_query = wos_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            else:
+                raise NotImplementedError(
+                    f"Translation from {self.origin_platform} "
+                    "to generic is not implemented"
+                )
 
         if target_syntax == "generic":
             generic_query.origin_platform = target_syntax
             return generic_query
+        if target_syntax == "pubmed":
+            target_query = PubmedTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
+        if target_syntax == "ebscohost":
+            target_query = EBSCOTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
+        if target_syntax == "wos":
+            target_query = WOSTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
 
-        target_parser = search_query.parser.PARSERS[target_syntax]
-        target_query = target_parser.to_specific_syntax(generic_query)
-        target_query.origin_platform = target_syntax
-
-        return target_query
+        raise NotImplementedError(f"Translation to {target_syntax} is not implemented")
 
 
 class Term(Query):
