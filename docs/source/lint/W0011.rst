@@ -1,0 +1,14 @@
+.. _W0011:
+
+W0011 — date-filter-in-subquery
+===============================
+
+**Error Code**: W0011
+
+**Message**: ``Date filter in subquery``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Date filter in subquery
+
+**Back to**: :ref:`lint`

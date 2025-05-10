@@ -1,0 +1,14 @@
+.. _W0012:
+
+W0012 — implicit-operator
+=========================
+
+**Error Code**: W0012
+
+**Message**: ``Implicit operator``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Implicit operator
+
+**Back to**: :ref:`lint`

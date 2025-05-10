@@ -10,7 +10,9 @@ Overview of supported platforms:
 +================+===========================+
 | `wos`          | :doc:`wos <wos>`          |
 +----------------+---------------------------+
-| `ebsco`        | :doc:`ebsco <ebsco>`      |
+| `ebscohost`    | :doc:`ebsco <ebsco>`      |
++----------------+---------------------------+
+| `pubmed`       | :doc:`pubmed <pubmed>`    |
 +----------------+---------------------------+
 
 .. toctree::
@@ -19,15 +21,4 @@ Overview of supported platforms:
 
    wos
    ebsco
-
-
-..
-    - `Web of Science <wos.html>`_
-
-    - pubmed
-
-    - ebscohost
-
-    - structured
-
-    - pre_notation
+   pubmed

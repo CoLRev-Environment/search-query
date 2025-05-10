@@ -1,0 +1,14 @@
+.. _F2013:
+
+F2013 — nested-query-with-search-field
+======================================
+
+**Error Code**: F2013
+
+**Message**: ``A Nested query cannot have a search field.``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: A Nested query cannot have a search field.
+
+**Back to**: :ref:`lint`

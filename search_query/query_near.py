@@ -10,6 +10,7 @@ class NEARQuery(Query):
     """NEAR Query"""
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=duplicate-code
 
     def __init__(
         self,
