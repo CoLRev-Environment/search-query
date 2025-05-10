@@ -7,7 +7,7 @@ F3003 — invalid-list-reference
 
 **Message**: ``Invalid list reference in list query (not found)``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.WOS, PLATFORM.PUBMED
 
 **Description**: Invalid list reference in list query (not found)
 

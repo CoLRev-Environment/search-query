@@ -20,7 +20,6 @@
 ..
        <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
             onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
-\
 
 **Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
 It is extensible and currently supports PubMed, EBSCOHost, and Web of Science.
@@ -67,6 +66,8 @@ We can also parse a query from a string or a `JSON search file <#json-search-fil
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
     query = parse(query_string, platform="pubmed")
+
+TODO : update the following:
 
 Once we have created a :literal:`query` object, we can translate it for different databases.
 Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
@@ -124,7 +125,7 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
    :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
 
 Functional Overview
-================
+=======================
 
 The search-query package is built to support researchers throughout the entire lifecycle of academic search query management.
 Below is a high-level overview of the core functionalities:
@@ -175,4 +176,8 @@ Below is a high-level overview of the core functionalities:
    :maxdepth: 1
    :caption: Developer documentation
 
-   dev_docs/parser
+   dev_docs/overview
+   dev_docs/parser_development
+   dev_docs/linter_development
+   dev_docs/translator_development
+   dev_docs/tests

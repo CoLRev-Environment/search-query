@@ -105,4 +105,6 @@ References
 
 .. parsed-literal::
 
-   Cooper C, Varley-Campbell J, Booth A, et al. (2018) Systematic review identifies six metrics and one method for assessing literature search effectiveness but no consensus on appropriate use. Journal of Clinical Epidemiology 99: 53–63. DOI: 10.1016/J.JCLINEPI.2018.02.025.
+   Cooper C, Varley-Campbell J, Booth A, et al. (2018) Systematic review identifies six metrics and one method for assessin
+      literature search effectiveness but no consensus on appropriate use. Journal of Clinical Epidemiology 99: 53–63.
+      DOI: 10.1016/J.JCLINEPI.2018.02.025.

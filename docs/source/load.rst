@@ -28,6 +28,15 @@ JSON files in the standard format (Haddaway et al. 2022). Example:
       "search_string": "TS=(quantum AND dot AND spin)"
    }
 
+Query objects can also be created programmatically.
+
+Filters (TODO)
+---------------------
+
+- `search blocks <https://blocks.bmi-online.nl/>`_ are available under a creative-commons license
+- `overview_1 <https://sites.google.com/york.ac.uk/sureinfo/home/search-filters>`_
+- `overview_2 <https://sites.google.com/a/york.ac.uk/issg-search-filters-resource/home/https-sites-google-com-a-york-ac-uk-issg-search-filters-resource-collections-of-search-filters>`_
+
 References
 ----------------
 

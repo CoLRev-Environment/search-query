@@ -1,0 +1,14 @@
+.. _F1010:
+
+F1010 — invalid-syntax
+======================
+
+**Error Code**: F1010
+
+**Message**: ``Query contains invalid syntax``
+
+**Scope**: all
+
+**Description**: Query contains invalid syntax
+
+**Back to**: :ref:`lint`
