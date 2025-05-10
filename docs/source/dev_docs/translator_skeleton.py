@@ -8,11 +8,13 @@ PREPROCESSING_MAP = {
     "TI=": r"TI=|Title=",
 }
 
+
 def map_to_standard(syntax_str: str) -> set:
     for standard_key, variation_regex in PREPROCESSING_MAP.items():
         if re.match(variation_regex, syntax_str, flags=re.IGNORECASE):
             return standard_key
     return "default"
+
 
 # Map standard_syntax_str to set of generic_search_field_set
 SYNTAX_GENERIC_MAP = {
@@ -24,10 +26,12 @@ SYNTAX_GENERIC_MAP = {
     "WOSTP=": {"TP="},
 }
 
+
 def syntax_str_to_generic_search_field_set(syntax_str: str) -> set:
     standard_syntax_str = map_to_standard(syntax_str)
     generic_search_field_set = SYNTAX_GENERIC_MAP[standard_syntax_str]
     return generic_search_field_set
+
 
 def generic_search_field_set_to_syntax_set(generic_search_field_set: set) -> set:
     syntax_set = {}
@@ -69,7 +73,6 @@ sf_1 = "TP"
 sf = {"TP"}
 # mapped to a set of strings in syntax_2
 sf_2 = {"[tp]", "[atp]", "[wostp]"}
-
 
 
 # linters: operate on syntax-specific fields
