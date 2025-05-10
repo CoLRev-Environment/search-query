@@ -266,4 +266,6 @@ def test_parser(query_str: str, expected_translation: str) -> None:
     # print("Tokens: \n")
     # parser.print_tokens()
 
-    assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
+    assert expected_translation == query_tree.to_generic_string(), print(
+        query_tree.to_generic_string()
+    )

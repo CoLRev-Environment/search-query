@@ -12,14 +12,14 @@ from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+from search_query.constants import PLATFORM_FIELD_MAP
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.constants_wos import WOSSearchFieldList
 from search_query.linter_wos import WOSQueryListLinter
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
@@ -30,7 +30,8 @@ from search_query.query import Term
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
+    WOS_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.WOS]
+
     SEARCH_TERM_REGEX = (
         r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
         r'|"[^"]+"'
@@ -412,27 +413,6 @@ class WOSParser(QueryStringParser):
             children.append(term_node)
 
         return children
-
-    def _map_default_field(self, search_field: str) -> str:
-        """Get the key of the search field."""
-        for key, value_list in WOSSearchFieldList.search_field_dict.items():
-            if search_field in value_list:
-                translated_field = self.FIELD_TRANSLATION_MAP[key]
-                return translated_field
-        return search_field
-
-    def translate_search_fields(self, query: Query) -> None:
-        """Translate search fields."""
-
-        if query.search_field:
-            query.search_field.value = self._map_default_field(query.search_field.value)
-        if query.children:
-            for child in query.children:
-                self.translate_search_fields(child)
-
-        # at this point it may be necessary to split (OR)
-        # queries for combined search fields
-        # see _expand_combined_fields() in pubmed
 
     def parse(self) -> Query:
         """Parse a query string."""

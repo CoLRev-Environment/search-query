@@ -203,9 +203,9 @@ PLATFORM_FIELD_MAP = {
     },
     # fields from https://pubmed.ncbi.nlm.nih.gov/help/
     PLATFORM.PUBMED: {
+        # Note : abstract [ab] is not supported by PubMed
         Fields.ALL: "[all]",
         Fields.TITLE: "[ti]",
-        Fields.ABSTRACT: "[ab]",
         Fields.AUTHOR_KEYWORDS: "[au]",
         Fields.FILTER: "[sb]",
         Fields.JOURNAL: "[ta]",
@@ -608,6 +608,7 @@ class QueryErrorCode(Enum):
     )
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

@@ -22,29 +22,30 @@ def _reindent(input_str: str, num_spaces: int) -> str:
     return "\n".join(lines)
 
 
-def to_string_structured(node: Query, *, level: int = 0) -> str:
-    """actual translation logic for structured syntax"""
+def to_string_structured(query: Query, *, level: int = 0) -> str:
+    """Convert the query to a string."""
 
     indent = "   "
     result = ""
 
-    if not hasattr(node, "value"):
+    if not hasattr(query, "value"):
         return f"{indent} (?)"
 
-    search_field = ""
-    if not node.operator:
-        search_field = f"[{node.search_field}]"
+    if query.search_field:
+        search_field = f"[{query.search_field}]"
+    else:
+        search_field = "[None]"
 
-    node_value = node.value
-    if hasattr(node, "near_param"):
-        node_value += f"/{node.near_param}"
-    result = _reindent(f"{node_value} {search_field}", level)
+    query_value = query.value
+    if hasattr(query, "near_param"):
+        query_value += f"/{query.near_param}"
+    result = _reindent(f"{query_value} {search_field}", level)
 
-    if node.children == []:
+    if query.children == []:
         return result
 
     result = f"{result}[\n"
-    for child in node.children:
+    for child in query.children:
         result = f"{result}{to_string_structured(child, level=level + 1)}\n"
     result = f"{result}{'|' + ' ' * level * 3 + ' '}]"
 

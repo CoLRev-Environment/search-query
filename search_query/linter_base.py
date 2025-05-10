@@ -618,6 +618,7 @@ class QueryListLinter:
                 code = message["code"]
                 color = Colors.ORANGE
 
+                category = ""
                 if code.startswith("F"):
                     color = Colors.RED
                     category = "❌ Fatal"

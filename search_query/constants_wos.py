@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Constants for Web-of-Science."""
 # pylint: disable=too-few-public-methods
+from search_query.constants import PLATFORM
+from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+
+FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
 
 
 class WOSSearchFieldList:
@@ -194,3 +198,12 @@ class WOSSearchFieldList:
         "WC=": web_of_science_category_list,
         "ZP=": zip_postal_code_list,
     }
+
+
+def map_default_field(search_field: str) -> str:
+    """Get the key of the search field."""
+    for key, value_list in WOSSearchFieldList.search_field_dict.items():
+        if search_field in value_list:
+            translated_field = FIELD_TRANSLATION_MAP[key]
+            return translated_field
+    return search_field

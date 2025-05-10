@@ -9,6 +9,8 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
+from search_query.constants_pubmed import DEFAULT_FIELD_MAP
+from search_query.constants_pubmed import map_search_field
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
@@ -172,6 +174,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details=f"Cannot start with {self.parser.tokens[0].type}",
             )
 
+        # pylint: disable=duplicate-code
         # Check following token sequences
         for i, token in enumerate(self.parser.tokens):
             if i == 0:
@@ -308,7 +311,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
 
-            if self.parser.map_search_field(field_value) not in {
+            if map_search_field(field_value) not in {
                 "[tiab]",
                 Fields.TITLE,
                 Fields.AFFILIATION,
@@ -407,8 +410,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     ):
                         continue
 
-                    field_a = self.parser.map_search_field(term_a.search_field.value)
-                    field_b = self.parser.map_search_field(term_b.search_field.value)
+                    field_a = map_search_field(term_a.search_field.value)
+                    field_b = map_search_field(term_b.search_field.value)
 
                     if field_a == field_b and (
                         term_a.value == term_b.value
@@ -461,9 +464,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def check_unsupported_pubmed_search_fields(self) -> None:
         """Check for the correct format of fields."""
 
-        valid_fields = list(self.parser.DEFAULT_FIELD_MAP.keys()) + list(
-            self.parser.DEFAULT_FIELD_MAP.values()
-        )
+        valid_fields = list(DEFAULT_FIELD_MAP.keys()) + list(DEFAULT_FIELD_MAP.values())
 
         for token in self.parser.tokens:
             if token.type != TokenTypes.FIELD:
@@ -488,29 +489,24 @@ class PubmedQueryStringLinter(QueryStringLinter):
         """Check general search field mismatch"""
 
         general_sf_parentheses = f"[{self.parser.search_field_general.lower()}]"
-        if general_sf_parentheses in self.parser.DEFAULT_FIELD_MAP.values():
+        if general_sf_parentheses in DEFAULT_FIELD_MAP.values():
             general_sf = general_sf_parentheses
-        elif general_sf_parentheses in self.parser.DEFAULT_FIELD_MAP:
-            general_sf = self.parser.DEFAULT_FIELD_MAP[general_sf_parentheses]
         else:
-            general_sf = ""
+            general_sf = DEFAULT_FIELD_MAP.get(general_sf_parentheses, "")
 
         standardized_sf_list = []
         for token in self.parser.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
             if (
-                token.value.lower() not in self.parser.DEFAULT_FIELD_MAP
-                and token.value.lower() not in self.parser.DEFAULT_FIELD_MAP.values()
+                token.value.lower() not in DEFAULT_FIELD_MAP
+                and token.value.lower() not in DEFAULT_FIELD_MAP.values()
             ):
                 continue
 
             standardized_sf = token.value.lower()
-            if (
-                token.value.lower() in self.parser.DEFAULT_FIELD_MAP
-                and token.value.lower()
-            ):
-                standardized_sf = self.parser.DEFAULT_FIELD_MAP[token.value.lower()]
+            if token.value.lower() in DEFAULT_FIELD_MAP and token.value.lower():
+                standardized_sf = DEFAULT_FIELD_MAP[token.value.lower()]
 
             standardized_sf_list.append(standardized_sf)
             if general_sf and standardized_sf:

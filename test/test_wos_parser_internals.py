@@ -5,6 +5,7 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.constants_wos import map_default_field
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -618,10 +619,9 @@ def test_check_search_fields_title() -> None:
     title search fields into the base search field "TI=".
     """
     title_fields = ["TI=", "ti=", "title="]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in title_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "ti"
 
 
@@ -637,10 +637,9 @@ def test_check_search_fields_abstract() -> None:
         "ab=",
         "abstract=",
     ]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in abstract_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "ab"
 
 
@@ -656,10 +655,9 @@ def test_check_search_fields_author() -> None:
         "au=",
         "author=",
     ]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in author_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "au"
 
 
@@ -675,10 +673,9 @@ def test_check_search_fields_topic() -> None:
         "ts=",
         "topic=",
     ]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in topic_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "ts"
 
 
@@ -694,10 +691,9 @@ def test_check_search_fields_language() -> None:
         "la=",
         "language=",
     ]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in language_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "la"
 
 
@@ -713,10 +709,9 @@ def test_check_search_fields_year() -> None:
         "py=",
         "py",
     ]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in year_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == "py"
 
 
@@ -725,10 +720,9 @@ def test_check_search_fields_misc() -> None:
     Test the `check_search_fields` method with unknown search fields.
     """
     misc_fields = ["INVALID", "123", "random", "field"]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
 
     for field in misc_fields:
-        result = parser._map_default_field(field)
+        result = map_default_field(field)
         assert result == field
 
 
