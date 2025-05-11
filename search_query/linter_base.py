@@ -182,21 +182,17 @@ class QueryStringLinter:
                 )
 
     def check_unsupported_search_fields(
-        self, *, valid_fields: list, ignore_case: bool = True
+        self, *, valid_fields_regex: re.Pattern[str]
     ) -> None:
-        """Check for the correct format of fields."""
-        if ignore_case:
-            valid_fields = [field.lower() for field in valid_fields]
+        """Check for the correct format of fields.
+
+        Note: compile valid_field_regex with/out flags=re.IGNORECASE
+        """
 
         for token in self.parser.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
-
-            t_value = token.value
-            if ignore_case:
-                t_value = t_value.lower()
-
-            if t_value not in valid_fields:
+            if not re.match(valid_fields_regex, token.value):
                 self.add_linter_message(
                     QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                     position=token.position,

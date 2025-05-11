@@ -1,209 +1,132 @@
 #!/usr/bin/env python3
 """Constants for Web-of-Science."""
-# pylint: disable=too-few-public-methods
-from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
+import re
+from copy import deepcopy
 
-FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
+from search_query.constants import Fields
 
-
-class WOSSearchFieldList:
-    """List of search fields"""
-
-    # Define lists for all search fields
-    abstract_list = [
-        "AB=",
-        "ab=",
-        "abstract=",
-    ]
-    language_list = [
-        "LA=",
-        "la=",
-        "language=",
-    ]
-    address_list = [
-        "AD=",
-        "ad=",
-        "address=",
-    ]
-    all_fields_list = [
-        "ALL=",
-        "all=",
-        "all fields=",
-    ]
-    author_identifiers_list = [
-        "AI=",
-        "ai=",
-        "author identifiers=",
-    ]
-    author_keywords_list = [
-        "AK=",
-        "ak=",
-        "author keywords=",
-    ]
-    author_list = [
-        "AU=",
-        "au=",
-        "author=",
-    ]
-    conference_list = [
-        "CF=",
-        "cf=",
-        "conference=",
-    ]
-    city_list = [
-        "CI=",
-        "ci=",
-        "city=",
-    ]
-    country_region_list = [
-        "CU=",
-        "cu=",
-        "country/region=",
-    ]
-    doi_list = [
-        "DO=",
-        "do=",
-        "doi=",
-    ]
-    editor_list = ["ED=", "ed=", "editor="]
-    grant_number_list = [
-        "FG=",
-        "fg=",
-        "grant number=",
-    ]
-    funding_agency_list = [
-        "FO=",
-        "fo=",
-        "funding agency=",
-    ]
-    funding_text_list = [
-        "FT=",
-        "ft=",
-        "funding text=",
-    ]
-    group_author_list = [
-        "GP=",
-        "gp=",
-        "group author=",
-    ]
-    issn_isbn_list = [
-        "IS=",
-        "is=",
-        "issn/isbn=",
-    ]
-    keywords_plus_list = [
-        "KP=",
-        "kp=",
-        "keywords plus=",
-    ]
-    organization_enhanced_list = [
-        "OG=",
-        "og=",
-        "organization - enhanced=",
-    ]
-    organization_list = [
-        "OO=",
-        "oo=",
-        "organization=",
-    ]
-    pubmed_id_list = [
-        "PMID=",
-        "pmid=",
-        "pubmed id=",
-    ]
-    province_state_list = [
-        "PS=",
-        "ps=",
-        "province/state=",
-    ]
-    year_published_list = [
-        "PY=",
-        "py=",
-        "year published=",
-    ]
-    street_address_list = [
-        "SA=",
-        "sa=",
-        "street address=",
-    ]
-    suborganization_list = [
-        "SG=",
-        "sg=",
-        "suborganization=",
-    ]
-    publication_name_list = [
-        "SO=",
-        "so=",
-        "publication name=",
-    ]
-    research_area_list = [
-        "SU=",
-        "su=",
-        "research area=",
-    ]
-    title_list = ["TI=", "ti=", "title="]
-    topic_list = [
-        "TS=",
-        "ts=",
-        "topic=",
-    ]
-    accession_number_list = [
-        "UT=",
-        "ut=",
-        "accession number=",
-    ]
-    web_of_science_category_list = [
-        "WC=",
-        "wc=",
-        "web of science category=",
-    ]
-    zip_postal_code_list = [
-        "ZP=",
-        "zp=",
-        "zip/postal code=",
-    ]
-
-    search_field_dict = {
-        "AB=": abstract_list,
-        "AD=": address_list,
-        "ALL=": all_fields_list,
-        "AI=": author_identifiers_list,
-        "AK=": author_keywords_list,
-        "AU=": author_list,
-        "CF=": conference_list,
-        "CI=": city_list,
-        "CU=": country_region_list,
-        "DO=": doi_list,
-        "ED=": editor_list,
-        "FG=": grant_number_list,
-        "FO=": funding_agency_list,
-        "FT=": funding_text_list,
-        "GP=": group_author_list,
-        "IS=": issn_isbn_list,
-        "KP=": keywords_plus_list,
-        "LA=": language_list,
-        "OG=": organization_enhanced_list,
-        "OO=": organization_list,
-        "PMID=": pubmed_id_list,
-        "PS=": province_state_list,
-        "PY=": year_published_list,
-        "SA=": street_address_list,
-        "SG=": suborganization_list,
-        "SO=": publication_name_list,
-        "SU=": research_area_list,
-        "TI=": title_list,
-        "TS=": topic_list,
-        "UT=": accession_number_list,
-        "WC=": web_of_science_category_list,
-        "ZP=": zip_postal_code_list,
-    }
+# https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
 
 
-def map_default_field(search_field: str) -> str:
-    """Get the key of the search field."""
-    for key, value_list in WOSSearchFieldList.search_field_dict.items():
-        if search_field in value_list:
-            translated_field = FIELD_TRANSLATION_MAP[key]
-            return translated_field
-    return search_field
+# Mapping from standard WOS syntax to generic Fields
+SYNTAX_GENERIC_MAP = {
+    "ALL=": {Fields.ALL},
+    "AB=": {Fields.ABSTRACT},
+    "TI=": {Fields.TITLE},
+    "TS=": {Fields.TOPIC},
+    "LA=": {Fields.LANGUAGE},
+    "PY=": {Fields.YEAR},
+    "AD=": {Fields.ADDRESS},
+    "AI=": {Fields.AUTHOR_IDENTIFIERS},
+    "AK=": {Fields.AUTHOR_KEYWORDS},
+    "AU=": {Fields.AUTHOR},
+    "CF=": {Fields.CONFERENCE},
+    "CI=": {Fields.CITY},
+    "CU=": {Fields.COUNTRY_REGION},
+    "DO=": {Fields.DOI},
+    "ED=": {Fields.EDITOR},
+    "FG=": {Fields.GRANT_NUMBER},
+    "FO=": {Fields.FUNDING_AGENCY},
+    "FT=": {Fields.FUNDING_TEXT},
+    "GP=": {Fields.GROUP_AUTHOR},
+    "IS=": {Fields.ISSN_ISBN},
+    "KP=": {Fields.KEYWORDS_PLUS},
+    "OG=": {Fields.ORGANIZATION_ENHANCED},
+    "OO=": {Fields.ORGANIZATION},
+    "PMID=": {Fields.PUBMED_ID},
+    "PS=": {Fields.PROVINCE_STATE},
+    "SA=": {Fields.STREET_ADDRESS},
+    "SG=": {Fields.SUBORGANIZATION},
+    "SO=": {Fields.PUBLICATION_NAME},
+    "SU=": {Fields.RESEARCH_AREA},
+    "UT=": {Fields.ACCESSION_NUMBER},
+    "WC=": {Fields.WEB_OF_SCIENCE_CATEGORY},
+    "ZP=": {Fields.ZIP_POSTAL_CODE},
+}
+
+
+# Variants of syntax strings to normalize to standard WOS fields
+# Note: instead of lising capitlized options, use re.IGNORECASE in matching
+# YEAR_PUBLISHED_FIELD_REGEX = r"py=|year published="
+# ISSN_ISBN_FIELD_REGEX = r"is=|issn/isbn="
+# DOI_FIELD_REGEX = r"do=|doi="
+
+YEAR_PUBLISHED_FIELD_REGEX: re.Pattern = re.compile(
+    r"py=|year published=", re.IGNORECASE
+)
+ISSN_ISBN_FIELD_REGEX: re.Pattern = re.compile(r"is=|issn/isbn=", re.IGNORECASE)
+DOI_FIELD_REGEX: re.Pattern = re.compile(r"do=|doi=", re.IGNORECASE)
+_RAW_PREPROCESSING_MAP = {
+    "AB=": r"ab=|abstract=",
+    "LA=": r"la=|language=",
+    "AD=": r"ad=|address=",
+    "ALL=": r"all=|all fields=",
+    "AI=": r"ai=|author identifiers=",
+    "AK=": r"ak=|author keywords=",
+    "AU=": r"au=|author=",
+    "CF=": r"cf=|conference=",
+    "CI=": r"ci=|city=",
+    "CU=": r"cu=|country/region=",
+    "DO=": DOI_FIELD_REGEX,
+    "ED=": r"ed=|editor=",
+    "FG=": r"fg=|grant number=",
+    "FO=": r"fo=|funding agency=",
+    "FT=": r"ft=|funding text=",
+    "GP=": r"gp=|group author=",
+    "IS=": ISSN_ISBN_FIELD_REGEX,
+    "KP=": r"kp=|keywords plus=",
+    "OG=": r"og=|organization - enhanced=",
+    "OO=": r"oo=|organization=",
+    "PMID=": r"pmid=|pubmed id=",
+    "PS=": r"ps=|province/state=",
+    "PY=": YEAR_PUBLISHED_FIELD_REGEX,
+    "SA=": r"sa=|street address=",
+    "SG=": r"sg=|suborganization=",
+    "SO=": r"so=|publication name=",
+    "SU=": r"su=|research area=",
+    "TI=": r"ti=|title=",
+    "TS=": r"ts=|topic=",
+    "UT=": r"ut=|accession number=",
+    "WC=": r"wc=|web of science category=",
+    "ZP=": r"zp=|zip/postal code=",
+}
+
+PREPROCESSING_MAP = {
+    k: re.compile(v, re.IGNORECASE) if isinstance(v, str) else v
+    for k, v in _RAW_PREPROCESSING_MAP.items()
+}
+
+VALID_FIELDS_REGEX = re.compile(
+    "|".join(v.pattern for v in PREPROCESSING_MAP.values()), flags=re.IGNORECASE  # type: ignore
+)
+
+
+def map_to_standard(syntax_str: str) -> str:
+    """Normalize search field string to a standard WOS field syntax."""
+    for standard_key, variation_regex in PREPROCESSING_MAP.items():
+        if variation_regex.match(syntax_str):  # type: ignore
+            return standard_key
+    raise ValueError(f"Search field not recognized: {syntax_str}")
+
+
+def map_search_field(field_value: str) -> set:
+    """Translate a search field string to a generic set of Fields."""
+    field_value = field_value.strip().lower()
+    field_value = map_to_standard(field_value.upper())
+    for key, value in SYNTAX_GENERIC_MAP.items():
+        if field_value.upper() == key:
+            return deepcopy(value)
+    raise ValueError(f"Field {field_value} not supported by Web of Science")
+
+
+def generic_search_field_set_to_syntax_set(generic_search_field_set: set) -> set:
+    """Convert a set of generic search fields to WOS syntax strings."""
+    syntax_set = set()
+    for key, value in SYNTAX_GENERIC_MAP.items():
+        if generic_search_field_set == value:
+            syntax_set.add(key)
+    if not syntax_set:
+        raise ValueError(
+            f"Generic search field set {generic_search_field_set} not supported by WOS"
+        )
+    return syntax_set

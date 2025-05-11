@@ -68,7 +68,7 @@ class Query:
         self.position = position
         self.marked = False
 
-        # only set for root node
+        # Note: origin_platform is only set for root nodes
         self.origin_platform = ""
 
         if children:

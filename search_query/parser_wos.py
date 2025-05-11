@@ -5,17 +5,15 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import Fields
 from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_MAP
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import WOSSearchFieldList
+from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_wos import WOSQueryListLinter
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
@@ -30,8 +28,6 @@ from search_query.query import Term
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    WOS_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.WOS]
-
     SEARCH_TERM_REGEX = (
         r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
         r'|"[^"]+"'
@@ -44,11 +40,6 @@ class WOSParser(QueryStringParser):
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
-    ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
-    ISBN_REGEX = (
-        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
-    )
-    DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
     OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
 
@@ -186,7 +177,7 @@ class WOSParser(QueryStringParser):
                 # Check if the token is a search field which has constraints
                 # Check if the token is a year
                 if re.findall(self.YEAR_REGEX, token.value) and search_field:
-                    if search_field.value in WOSSearchFieldList.year_published_list:
+                    if YEAR_PUBLISHED_FIELD_REGEX.match(search_field.value):
                         children = self.handle_year_search(
                             token, children, current_operator
                         )
@@ -333,7 +324,7 @@ class WOSParser(QueryStringParser):
         """Handle the year search field."""
 
         search_field = SearchField(
-            value=Fields.YEAR,
+            value="py=",
             position=token.position,
         )
 

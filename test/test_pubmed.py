@@ -529,6 +529,20 @@ def test_linter(
                 }
             ],
         ),
+        (
+            "eHealth[tldr]",
+            "",
+            [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (7, 13),
+                    "details": "Search field [tldr] at position (7, 13) is not supported.",
+                }
+            ],
+        ),
     ],
 )
 def test_linter_with_general_search_field(
@@ -564,32 +578,32 @@ def test_linter_with_general_search_field(
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
             "All Fields",
-            'OR["health tracking"[all], AND["remote monitoring"[all], "wearable device"[all]]]',
+            'OR["health tracking"[[all]], AND["remote monitoring"[[all]], "wearable device"[[all]]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
             "All Fields",
-            'OR[AND["AI"[all], "robotics"[all]], "ethics"[all]]',
+            'OR[AND["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"AI" OR "robotics" AND "ethics"',
             "All Fields",
-            'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
+            'OR["AI"[[all]], AND["robotics"[[all]], "ethics"[[all]]]]',
         ),
         (
             '"AI" NOT "robotics" OR "ethics"',
             "All Fields",
-            'OR[NOT["AI"[all], "robotics"[all]], "ethics"[all]]',
+            'OR[NOT["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
             "All Fields",
-            'OR[AND["digital health"[all], OR["apps"[all], NOT["wearables"[all], "privacy"[all]]]], "ethics"[all]]',
+            'OR[AND["digital health"[[all]], OR["apps"[[all]], NOT["wearables"[[all]], "privacy"[[all]]]]], "ethics"[[all]]]',
         ),
         (
             '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
             "All Fields",
-            'OR["eHealth"[all], AND["digital health"[all], NOT["bias"[all], "equity"[all]]], "policy"[all]]',
+            'OR["eHealth"[[all]], AND["digital health"[[all]], NOT["bias"[[all]], "equity"[[all]]]], "policy"[[all]]]',
         ),
     ],
 )
@@ -695,7 +709,7 @@ def test_list_parser_case_3() -> None:
         ),
         (
             "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[ti], eHealth[ab]], OR[mHealth[ti], mHealth[ab]]]",
+            "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
         ),
     ],
 )

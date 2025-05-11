@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """WOS query translator."""
-from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_MAP
-from search_query.constants_wos import map_default_field
+from search_query.constants_wos import generic_search_field_set_to_syntax_set
+from search_query.constants_wos import map_search_field
 from search_query.query import Query
 from search_query.translator_base import QueryTranslator
 
@@ -10,14 +9,17 @@ from search_query.translator_base import QueryTranslator
 class WOSTranslator(QueryTranslator):
     """Translator for WOS queries."""
 
-    WOS_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.WOS]
-
+    # pylint: disable=duplicate-code
     @classmethod
     def translate_search_fields_to_generic(cls, query: Query) -> None:
         """Translate search fields."""
 
         if query.search_field:
-            query.search_field.value = map_default_field(query.search_field.value)
+            generic_fields = map_search_field(query.search_field.value)
+            if len(generic_fields) == 1:
+                query.search_field.value = generic_fields.pop()
+            else:
+                raise NotImplementedError
         if query.children:
             for child in query.children:
                 cls.translate_search_fields_to_generic(child)
@@ -57,18 +59,15 @@ class WOSTranslator(QueryTranslator):
             query.search_field = None
 
     @classmethod
-    def _get_search_field_wos(cls, search_field: str) -> str:
-        """transform search field to WoS Syntax"""
-        if search_field in cls.WOS_FIELD_MAP:
-            return cls.WOS_FIELD_MAP[search_field]
-        raise ValueError(f"Search field not supported ({search_field})")
-
-    @classmethod
     def _translate_search_fields(cls, query: Query) -> None:
         if query.search_field:
-            query.search_field.value = cls._get_search_field_wos(
-                query.search_field.value
+            generic_fields = generic_search_field_set_to_syntax_set(
+                {query.search_field.value}
             )
+            if len(generic_fields) == 1:
+                query.search_field.value = generic_fields.pop()
+            else:
+                raise NotImplementedError
 
         for child in query.children:
             cls._translate_search_fields(child)

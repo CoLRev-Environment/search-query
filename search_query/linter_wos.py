@@ -9,7 +9,10 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import WOSSearchFieldList
+from search_query.constants_wos import DOI_FIELD_REGEX
+from search_query.constants_wos import ISSN_ISBN_FIELD_REGEX
+from search_query.constants_wos import VALID_FIELDS_REGEX
+from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 
@@ -21,16 +24,13 @@ if typing.TYPE_CHECKING:
 class WOSQueryStringLinter(QueryStringLinter):
     """Linter for WOS Query Strings"""
 
-    language_list = [
-        "LA=",
-        "Languages",
-        "la=",
-        "language=",
-        "la",
-        "language",
-        "LA",
-        "LANGUAGE",
-    ]
+    ISSN_VALUE_REGEX = re.compile(r"^\d{4}-\d{3}[\dX]$", re.IGNORECASE)
+    ISBN_VALUE_REGEX = re.compile(
+        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$",
+        re.IGNORECASE,
+    )
+    DOI_VALUE_REGEX = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
+
     WILDCARD_CHARS = ["?", "$", "*"]
 
     VALID_TOKEN_SEQUENCES = {
@@ -89,11 +89,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_search_fields_from_json()
         self.check_implicit_near()
         self.check_year_format()
-        self.check_unsupported_search_fields(
-            valid_fields=list(
-                set().union(*WOSSearchFieldList.search_field_dict.values())
-            )
-        )
+        self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
         self.check_year_without_search_field()
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
@@ -120,7 +116,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         year_search_field_detected = False
         count_search_fields = 0
         for token in self.parser.tokens:
-            if token.value in WOSSearchFieldList.year_published_list:
+            if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
                 year_search_field_detected = True
 
             if token.type == TokenTypes.SEARCH_TERM:
@@ -182,7 +178,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_year_format(self) -> None:
         """Check for the correct format of year."""
         for index, token in enumerate(self.parser.tokens):
-            if token.value in WOSSearchFieldList.year_published_list:
+            if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
                 year_token = self.parser.tokens[index + 1]
 
                 if any(char in year_token.value for char in ["*", "?", "$"]):
@@ -224,7 +220,9 @@ class WOSQueryStringLinter(QueryStringLinter):
                 continue
 
             # Allow known languages after parenthesis (custom rule)
-            if token.value == ")" and next_token.value in self.language_list:
+            if token.value == ")" and YEAR_PUBLISHED_FIELD_REGEX.match(
+                next_token.value
+            ):
                 continue
 
             # Two operators in a row
@@ -331,14 +329,13 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_issn_isbn_format(self) -> None:
         """Check for the correct format of ISSN and ISBN."""
         for i, token in enumerate(self.parser.tokens):
-            if (
-                token.type == TokenTypes.FIELD
-                and token.value in WOSSearchFieldList.issn_isbn_list
+            if token.type == TokenTypes.FIELD and ISSN_ISBN_FIELD_REGEX.match(
+                token.value
             ):
                 token_vale = self.parser.tokens[i + 1].value.replace('"', "")
-                if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
-                    self.parser.ISBN_REGEX, token_vale
-                ):
+                if not self.ISSN_VALUE_REGEX.match(
+                    token_vale
+                ) and not self.ISBN_VALUE_REGEX.match(token_vale):
                     # Add messages to self.messages
                     self.add_linter_message(
                         QueryErrorCode.ISBN_FORMAT_INVALID,
@@ -349,13 +346,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct format of DOI."""
 
         for i, token in enumerate(self.parser.tokens):
-            if (
-                token.type == TokenTypes.FIELD
-                and token.value in WOSSearchFieldList.doi_list
-            ):
+            if token.type == TokenTypes.FIELD and DOI_FIELD_REGEX.match(token.value):
                 token_value = self.parser.tokens[i + 1].value.replace('"', "").upper()
-                print(token_value)
-                if not re.match(self.parser.DOI_REGEX, token_value):
+                if not self.DOI_VALUE_REGEX.match(token_value):
                     # Add messages to self.messages
                     self.add_linter_message(
                         QueryErrorCode.DOI_FORMAT_INVALID,

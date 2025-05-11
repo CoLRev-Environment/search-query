@@ -5,7 +5,7 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import map_default_field
+from search_query.constants_wos import map_search_field
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -242,9 +242,7 @@ def test_handle_year_search_valid_year_span() -> None:
                 Query(
                     value=token.value,
                     operator=False,
-                    search_field=SearchField(
-                        value=Fields.YEAR, position=token.position
-                    ),
+                    search_field=SearchField(value="py=", position=token.position),
                     position=token.position,
                 )
             ],
@@ -282,9 +280,7 @@ def test_handle_year_search_single_year() -> None:
                 Query(
                     value=token.value,
                     operator=False,
-                    search_field=SearchField(
-                        value=Fields.YEAR, position=token.position
-                    ),
+                    search_field=SearchField(value="py=", position=token.position),
                     position=token.position,
                 )
             ],
@@ -621,8 +617,8 @@ def test_check_search_fields_title() -> None:
     title_fields = ["TI=", "ti=", "title="]
 
     for field in title_fields:
-        result = map_default_field(field)
-        assert result == "ti"
+        result = map_search_field(field)
+        assert result == {Fields.TITLE}
 
 
 def test_check_search_fields_abstract() -> None:
@@ -639,8 +635,8 @@ def test_check_search_fields_abstract() -> None:
     ]
 
     for field in abstract_fields:
-        result = map_default_field(field)
-        assert result == "ab"
+        result = map_search_field(field)
+        assert result == {Fields.ABSTRACT}
 
 
 def test_check_search_fields_author() -> None:
@@ -657,8 +653,8 @@ def test_check_search_fields_author() -> None:
     ]
 
     for field in author_fields:
-        result = map_default_field(field)
-        assert result == "au"
+        result = map_search_field(field)
+        assert result == {Fields.AUTHOR}
 
 
 def test_check_search_fields_topic() -> None:
@@ -675,8 +671,8 @@ def test_check_search_fields_topic() -> None:
     ]
 
     for field in topic_fields:
-        result = map_default_field(field)
-        assert result == "ts"
+        result = map_search_field(field)
+        assert result == {Fields.TOPIC}
 
 
 def test_check_search_fields_language() -> None:
@@ -693,8 +689,8 @@ def test_check_search_fields_language() -> None:
     ]
 
     for field in language_fields:
-        result = map_default_field(field)
-        assert result == "la"
+        result = map_search_field(field)
+        assert result == {Fields.LANGUAGE}
 
 
 def test_check_search_fields_year() -> None:
@@ -707,23 +703,11 @@ def test_check_search_fields_year() -> None:
     year_fields = [
         "PY=",
         "py=",
-        "py",
     ]
 
     for field in year_fields:
-        result = map_default_field(field)
-        assert result == "py"
-
-
-def test_check_search_fields_misc() -> None:
-    """
-    Test the `check_search_fields` method with unknown search fields.
-    """
-    misc_fields = ["INVALID", "123", "random", "field"]
-
-    for field in misc_fields:
-        result = map_default_field(field)
-        assert result == field
+        result = map_search_field(field)
+        assert result == {Fields.YEAR}
 
 
 def test_query_parsing_1() -> None:

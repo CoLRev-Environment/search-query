@@ -3,14 +3,13 @@
 import re
 import typing
 
-from search_query.constants import Fields
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
-from search_query.constants_pubmed import DEFAULT_FIELD_MAP
-from search_query.constants_pubmed import map_search_field
+from search_query.constants_pubmed import map_to_standard
+from search_query.constants_pubmed import PROXIMITY_SEARCH_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
@@ -311,10 +310,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
 
-            if map_search_field(field_value) not in {
+            if map_to_standard(field_value) not in {
                 "[tiab]",
-                Fields.TITLE,
-                Fields.AFFILIATION,
+                "[ti]",
+                "[ad]",
             }:
                 details = (
                     f"Proximity operator '{field_value}' is not supported "
@@ -410,8 +409,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     ):
                         continue
 
-                    field_a = map_search_field(term_a.search_field.value)
-                    field_b = map_search_field(term_b.search_field.value)
+                    field_a = map_to_standard(term_a.search_field.value)
+                    field_b = map_to_standard(term_b.search_field.value)
 
                     if field_a == field_b and (
                         term_a.value == term_b.value
@@ -464,49 +463,47 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def check_unsupported_pubmed_search_fields(self) -> None:
         """Check for the correct format of fields."""
 
-        valid_fields = list(DEFAULT_FIELD_MAP.keys()) + list(DEFAULT_FIELD_MAP.values())
-
         for token in self.parser.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
 
-            t_value = token.value.lower()
-
-            if t_value in valid_fields:
+            if PROXIMITY_SEARCH_REGEX.match(token.value):
                 continue
-
-            if re.match(r"^\[[a-z\/]*\:~\d+\]$", t_value):
-                continue
-
-            self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                position=token.position,
-                details=f"Search field {token.value} at position "
-                f"{token.position} is not supported.",
-            )
+            try:
+                map_to_standard(token.value)
+            except ValueError:
+                self.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                    position=token.position,
+                    details=f"Search field {token.value} at position "
+                    f"{token.position} is not supported.",
+                )
 
     def check_general_search_field_mismatch(self) -> None:
         """Check general search field mismatch"""
 
         general_sf_parentheses = f"[{self.parser.search_field_general.lower()}]"
-        if general_sf_parentheses in DEFAULT_FIELD_MAP.values():
-            general_sf = general_sf_parentheses
-        else:
-            general_sf = DEFAULT_FIELD_MAP.get(general_sf_parentheses, "")
+        try:
+            general_sf = map_to_standard(general_sf_parentheses)
+        except ValueError:
+            # If the search field is not supported, we can skip the check
+            general_sf = None
 
         standardized_sf_list = []
         for token in self.parser.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
-            if (
-                token.value.lower() not in DEFAULT_FIELD_MAP
-                and token.value.lower() not in DEFAULT_FIELD_MAP.values()
-            ):
+            try:
+                map_to_standard(token.value)
+            except ValueError:
+                # If the search field is not supported, we can skip the check
                 continue
 
-            standardized_sf = token.value.lower()
-            if token.value.lower() in DEFAULT_FIELD_MAP and token.value.lower():
-                standardized_sf = DEFAULT_FIELD_MAP[token.value.lower()]
+            try:
+                standardized_sf = map_to_standard(token.value)
+            except ValueError:
+                # If the search field is not supported, we can skip the check
+                standardized_sf = token.value.lower()
 
             standardized_sf_list.append(standardized_sf)
             if general_sf and standardized_sf:

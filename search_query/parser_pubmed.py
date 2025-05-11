@@ -2,7 +2,6 @@
 """Pubmed query parser."""
 import re
 
-from search_query.constants import Fields
 from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
@@ -217,7 +216,7 @@ class PubmedParser(QueryStringParser):
             query_end_pos = tokens[1].position[1]
         else:
             # Select default field "all" if no search field is found.
-            search_field = SearchField(value=Fields.ALL)
+            search_field = SearchField(value="[all]", position=(-1, -1))
 
         return Term(
             value=search_term_token.value,

@@ -2,8 +2,7 @@
 """Pubmed query translator."""
 from search_query.constants import Fields
 from search_query.constants import Operators
-from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_MAP
+from search_query.constants_pubmed import generic_search_field_set_to_syntax_set
 from search_query.constants_pubmed import map_search_field
 from search_query.query import Query
 from search_query.query import SearchField
@@ -12,8 +11,6 @@ from search_query.translator_base import QueryTranslator
 
 class PubmedTranslator(QueryTranslator):
     """Translator for Pubmed queries."""
-
-    PUBMED_FIELD_MAP = PLATFORM_FIELD_MAP[PLATFORM.PUBMED]
 
     @classmethod
     def _translate_or_chains_without_nesting(cls, query: "Query") -> bool:
@@ -52,25 +49,19 @@ class PubmedTranslator(QueryTranslator):
         return False
 
     @classmethod
-    def _get_search_field_pubmed(cls, search_field: str) -> str:
-        """transform search field to PubMed Syntax"""
-        if search_field == "[tiab]":
-            return "[tiab]"
-        if search_field in cls.PUBMED_FIELD_MAP:
-            return cls.PUBMED_FIELD_MAP[search_field]
-        raise ValueError(f"Field {search_field} not supported by PubMed")
-
-    @classmethod
     def _translate_search_fields(cls, query: "Query") -> None:
         if query.operator:
             for child in query.children:
                 cls._translate_search_fields(child)
 
         else:
-            if query.search_field:
-                query.search_field.value = cls._get_search_field_pubmed(
-                    query.search_field.value
+            if query.search_field and query.search_field.value not in ["[tiab]"]:
+                search_field_set = generic_search_field_set_to_syntax_set(
+                    {query.search_field.value}
                 )
+                # TODO : implement version for multiple search fields
+                assert len(search_field_set) == 1
+                query.search_field.value = search_field_set.pop()
 
     @classmethod
     def _combine_tiab(cls, query: "Query") -> None:
@@ -138,18 +129,20 @@ class PubmedTranslator(QueryTranslator):
             return
 
         if query.search_field:
-            query.search_field.value = map_search_field(query.search_field.value)
-
-            # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
-            if query.search_field.value == "[tiab]":
-                cls._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
+            search_field_set = map_search_field(query.search_field.value)
+            if len(search_field_set) == 1:
+                query.search_field.value = search_field_set.pop()
+            else:
+                # Convert queries in the form 'Term [tiab]'
+                # into 'Term [ti] OR Term [ab]'.
+                cls._expand_combined_fields(query, search_field_set)
 
     @classmethod
-    def _expand_combined_fields(cls, query: Query, search_fields: list) -> None:
+    def _expand_combined_fields(cls, query: Query, search_fields: set) -> None:
         """Expand queries with combined search fields into an OR query"""
         query_children = []
-
-        for search_field in search_fields:
+        # Note: sorted list for deterministic order of fields
+        for search_field in sorted(list(search_fields)):
             query_children.append(
                 Query(
                     value=query.value,
