@@ -236,7 +236,7 @@ class PubmedParser(QueryStringParser):
     #     for index, value in enumerate(field_values_list):
     #         value = "[" + value.lower() + "]"
 
-    #         value = self.map_search_field(value)
+    #         value = self.syntax_str_to_generic_search_field_set(value)
 
     #         if value in {"[title and abstract]", "[tiab]"}:
     #             value = Fields.TITLE

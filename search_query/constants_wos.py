@@ -109,7 +109,7 @@ def map_to_standard(syntax_str: str) -> str:
     raise ValueError(f"Search field not recognized: {syntax_str}")
 
 
-def map_search_field(field_value: str) -> set:
+def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     """Translate a search field string to a generic set of Fields."""
     field_value = field_value.strip().lower()
     field_value = map_to_standard(field_value.upper())
@@ -161,7 +161,7 @@ SEARCH_FIELD_GENERAL_TO_GENERIC_MAP = {
 }
 
 
-def map_search_field_general_to_generic(
+def syntax_str_to_generic_search_field_set_general_to_generic(
     search_field: str,
 ) -> set:
     """Map a search field to a set of generic fields."""

@@ -100,7 +100,7 @@ def map_to_standard(syntax_str: str) -> str:
     raise ValueError
 
 
-def map_search_field(field_value: str) -> set:
+def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     """Translate a search field"""
 
     field_value = field_value.lower()

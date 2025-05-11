@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """WOS query translator."""
 from search_query.constants_wos import generic_search_field_set_to_syntax_set
-from search_query.constants_wos import map_search_field
-from search_query.constants_wos import map_search_field_general_to_generic
+from search_query.constants_wos import syntax_str_to_generic_search_field_set
+from search_query.constants_wos import (
+    syntax_str_to_generic_search_field_set_general_to_generic,
+)
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.translator_base import QueryTranslator
@@ -17,7 +19,9 @@ class WOSTranslator(QueryTranslator):
         """Translate search fields."""
 
         if query.search_field:
-            generic_fields = map_search_field(query.search_field.value)
+            generic_fields = syntax_str_to_generic_search_field_set(
+                query.search_field.value
+            )
             if len(generic_fields) == 1:
                 query.search_field.value = generic_fields.pop()
             else:
@@ -39,7 +43,9 @@ class WOSTranslator(QueryTranslator):
         if not search_field_general:
             return
 
-        translated = map_search_field_general_to_generic(search_field_general)
+        translated = syntax_str_to_generic_search_field_set_general_to_generic(
+            search_field_general
+        )
 
         if len(translated) == 1:
             query.search_field = SearchField(

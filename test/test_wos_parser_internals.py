@@ -5,7 +5,7 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import map_search_field
+from search_query.constants_wos import syntax_str_to_generic_search_field_set
 from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -617,7 +617,7 @@ def test_check_search_fields_title() -> None:
     title_fields = ["TI=", "ti=", "title="]
 
     for field in title_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.TITLE}
 
 
@@ -635,7 +635,7 @@ def test_check_search_fields_abstract() -> None:
     ]
 
     for field in abstract_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.ABSTRACT}
 
 
@@ -653,7 +653,7 @@ def test_check_search_fields_author() -> None:
     ]
 
     for field in author_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.AUTHOR}
 
 
@@ -671,7 +671,7 @@ def test_check_search_fields_topic() -> None:
     ]
 
     for field in topic_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.TOPIC}
 
 
@@ -689,7 +689,7 @@ def test_check_search_fields_language() -> None:
     ]
 
     for field in language_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.LANGUAGE}
 
 
@@ -706,7 +706,7 @@ def test_check_search_fields_year() -> None:
     ]
 
     for field in year_fields:
-        result = map_search_field(field)
+        result = syntax_str_to_generic_search_field_set(field)
         assert result == {Fields.YEAR}
 
 

@@ -1,7 +1,8 @@
-from search_query.translator_base import QueryTranslator
+from search_query.constants_example import generic_search_field_set_to_syntax_set
+from search_query.constants_example import map_search_field
 from search_query.query import Query
-from search_query.query import SearchField
-from search_query.constants_example import map_search_field, generic_search_field_set_to_syntax_set
+from search_query.translator_base import QueryTranslator
+
 
 class CustomTranslator(QueryTranslator):
     """Translator for Custom queries."""
@@ -32,7 +33,9 @@ class CustomTranslator(QueryTranslator):
     @classmethod
     def _translate_search_fields(cls, query: Query) -> None:
         if query.search_field:
-            specific = generic_search_field_set_to_syntax_set({query.search_field.value})
+            specific = generic_search_field_set_to_syntax_set(
+                {query.search_field.value}
+            )
             if len(specific) == 1:
                 query.search_field.value = specific.pop()
             else:

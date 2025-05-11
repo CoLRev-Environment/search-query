@@ -3,7 +3,7 @@
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants_pubmed import generic_search_field_set_to_syntax_set
-from search_query.constants_pubmed import map_search_field
+from search_query.constants_pubmed import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.translator_base import QueryTranslator
@@ -132,7 +132,9 @@ class PubmedTranslator(QueryTranslator):
             return
 
         if query.search_field:
-            search_field_set = map_search_field(query.search_field.value)
+            search_field_set = syntax_str_to_generic_search_field_set(
+                query.search_field.value
+            )
             if len(search_field_set) == 1:
                 query.search_field.value = search_field_set.pop()
             else:
