@@ -75,7 +75,9 @@ Implement ``parse_query_tree()`` to build the query object, creating nested quer
 
 .. note::
 
-   Check whether ``SearchFields`` can be created for nested queries (e.g., ``TI=(eHealth OR mHealth)``or only for individual terms, e.g., ``eHealth[ti] OR mHealth[ti]``.)
+    Parsers can be developed as top-down parsers (see PubMed) or bottom-up parsers (see Web of Science).
+
+Check whether ``SearchFields`` can be created for nested queries (e.g., ``TI=(eHealth OR mHealth)``or only for individual terms, e.g., ``eHealth[ti] OR mHealth[ti]``.)
 
 **Parser Skeleton**
 

@@ -180,4 +180,5 @@ Below is a high-level overview of the core functionalities:
    dev_docs/parser_development
    dev_docs/linter_development
    dev_docs/translator_development
+   dev_docs/serializer_development
    dev_docs/tests
