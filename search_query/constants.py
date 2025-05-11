@@ -109,6 +109,7 @@ class Fields:
     AUTHOR_KEYWORDS = "ak"
     AUTHOR = "au"
     CONFERENCE = "cf"
+    PUBLISHER = "pb"
     CITY = "ci"
     COUNTRY_REGION = "cu"
     DOI = "do"

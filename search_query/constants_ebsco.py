@@ -25,8 +25,6 @@ SYNTAX_GENERIC_MAP = {
     "DE": {Fields.DESCRIPTORS},
 }
 
-
-# TODO : test whether lower case is accepted
 _RAW_PREPROCESSING_MAP = {
     "TI": r"TI",
     "AB": r"AB",
@@ -41,10 +39,8 @@ _RAW_PREPROCESSING_MAP = {
     "KW": r"KW",
     "DE": r"DE",
 }
-
-PREPROCESSING_MAP = {
-    k: re.compile(v, re.IGNORECASE) for k, v in _RAW_PREPROCESSING_MAP.items()
-}
+# Note: lower-case fields return different results
+PREPROCESSING_MAP = {k: re.compile(v) for k, v in _RAW_PREPROCESSING_MAP.items()}
 
 VALID_FIELDS_REGEX = re.compile(
     "|".join(v.pattern for v in PREPROCESSING_MAP.values()), flags=re.IGNORECASE  # type: ignore

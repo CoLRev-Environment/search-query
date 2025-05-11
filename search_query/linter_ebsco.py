@@ -179,7 +179,17 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.parser.tokens[i - 1].position[0],
                         token.position[1],
                     )
-
+                elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
+                    r"^[a-z]{2}$", self.parser.tokens[i - 1].value
+                ):
+                    details = "Search field is not supported (must be upper case)"
+                    position = self.parser.tokens[i - 1].position
+                    self.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                        position=position,
+                        details=details,
+                    )
+                    continue
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):

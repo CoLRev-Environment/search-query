@@ -130,3 +130,42 @@ def generic_search_field_set_to_syntax_set(generic_search_field_set: set) -> set
             f"Generic search field set {generic_search_field_set} not supported by WOS"
         )
     return syntax_set
+
+
+SEARCH_FIELD_GENERAL_TO_GENERIC_MAP = {
+    "All Fields": {Fields.ALL},
+    "Topic": {Fields.TOPIC},
+    "Title": {Fields.TITLE},
+    "Author": {Fields.AUTHOR},
+    "Publication Titles": {Fields.PUBLICATION_NAME},
+    "Year Published": {Fields.YEAR},
+    "Affiliation": {Fields.AFFILIATION},
+    "Funding Agency": {Fields.FUNDING_AGENCY},
+    "Publisher": {Fields.PUBLISHER},
+    "Publiation Date": {Fields.PUBLICATION_DATE},
+    "Abstract": {Fields.ABSTRACT},
+    "Accession Number": {Fields.ACCESSION_NUMBER},
+    "Address": {Fields.ADDRESS},
+    "Author Identifiers": {Fields.AUTHOR_IDENTIFIERS},
+    "Author Keywords": {Fields.AUTHOR_KEYWORDS},
+    "Conference": {Fields.CONFERENCE},
+    "Document Type": {Fields.PUBLICATION_TYPE},
+    "DOI": {Fields.DOI},
+    "Editor": {Fields.EDITOR},
+    "Grant Number": {Fields.GRANT_NUMBER},
+    "Group Author": {Fields.GROUP_AUTHOR},
+    "Keywords Plus": {Fields.KEYWORDS_PLUS},
+    "Language": {Fields.LANGUAGE},
+    "PubMed ID": {Fields.PUBMED_ID},
+    "Web of Science Categories": {Fields.WEB_OF_SCIENCE_CATEGORY},
+}
+
+
+def map_search_field_general_to_generic(
+    search_field: str,
+) -> set:
+    """Map a search field to a set of generic fields."""
+    search_field = search_field.strip()
+    if search_field in SEARCH_FIELD_GENERAL_TO_GENERIC_MAP:
+        return SEARCH_FIELD_GENERAL_TO_GENERIC_MAP[search_field]
+    raise ValueError(f"Search field {search_field} not supported by WOS")

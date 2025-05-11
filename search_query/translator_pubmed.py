@@ -59,9 +59,12 @@ class PubmedTranslator(QueryTranslator):
                 search_field_set = generic_search_field_set_to_syntax_set(
                     {query.search_field.value}
                 )
-                # TODO : implement version for multiple search fields
-                assert len(search_field_set) == 1
-                query.search_field.value = search_field_set.pop()
+                if len(search_field_set) == 1:
+                    query.search_field.value = search_field_set.pop()
+                else:
+                    raise NotImplementedError(
+                        f"Multiple search fields not implemented: {search_field_set}"
+                    )
 
     @classmethod
     def _combine_tiab(cls, query: "Query") -> None:

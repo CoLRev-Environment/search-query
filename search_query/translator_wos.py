@@ -2,7 +2,9 @@
 """WOS query translator."""
 from search_query.constants_wos import generic_search_field_set_to_syntax_set
 from search_query.constants_wos import map_search_field
+from search_query.constants_wos import map_search_field_general_to_generic
 from search_query.query import Query
+from search_query.query import SearchField
 from search_query.translator_base import QueryTranslator
 
 
@@ -29,13 +31,30 @@ class WOSTranslator(QueryTranslator):
         # see _expand_combined_fields() in pubmed
 
     @classmethod
+    def apply_generic_search_field(
+        cls, query: Query, search_field_general: str
+    ) -> None:
+        """Apply the generic search field to the query."""
+
+        if not search_field_general:
+            return
+
+        translated = map_search_field_general_to_generic(search_field_general)
+
+        if len(translated) == 1:
+            query.search_field = SearchField(
+                value=translated.pop(),
+            )
+        else:
+            raise NotImplementedError
+
+    @classmethod
     def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
         """Convert the query to a generic syntax."""
 
         query = query.copy()
         cls.translate_search_fields_to_generic(query)
-
-        # TODO : translate / apply search_field_general (according to drop-down field)
+        cls.apply_generic_search_field(query, search_field_general)
 
         return query
 

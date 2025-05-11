@@ -137,6 +137,19 @@ def test_tokenization(
             ],
         ),
         (
+            "ti (ehealth OR mhealth)",
+            [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (0, 2),
+                    "details": "Search field is not supported (must be upper case)",
+                }
+            ],
+        ),
+        (
             "governance[tiab]",
             [
                 {

@@ -84,7 +84,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if " " not in token.value:
                 continue
 
-            # TODO : check the following!??!
+            # check the following:
 
             # TS=eHealth[all]
             # equivalent to:
@@ -98,7 +98,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             # NOT
             # Peer[all] AND leader*[all]
 
-            # TODO : pubmed advanced query details show inconsistencies between
+            # pubmed advanced query details show inconsistencies between
             # ts eHealth*[ti]
             # peer leader*[ti]
 

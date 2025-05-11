@@ -366,5 +366,4 @@ class EBSCOListParser(QueryListParser):
 
     def parse(self) -> Query:
         """Parse the query in list format."""
-        # TODO
         raise NotImplementedError("List parsing not implemented yet.")
