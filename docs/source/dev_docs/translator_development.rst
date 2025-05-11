@@ -1,29 +1,60 @@
 Translator
 ============
 
-.. literalinclude:: parser_skeleton.py
+Translators convert between:
+
+- Generic query syntax used in internal logic, and
+- Specific query syntax required by a given search engine (e.g., PubMed, EBSCO, Web of Science).
+
+Each translator implements `QueryTranslator`, the abstract base class from ``translator_base.py``.
+
+Translator Responsibilities
+---------------------------
+
+A translator must implement the following two class methods:
+
+- ``to_generic_syntax(query, *, search_field_general) -> Query``
+- ``to_specific_syntax(query) -> Query``
+
+Each method receives a `Query` object (the internal AST) and must return a new `Query` object with appropriately translated search fields and structure.
+
+Utility Methods Provided
+------------------------
+
+From the base class (`QueryTranslator`), you can use:
+
+- ``move_field_from_operator_to_terms(query)``:
+  Moves a shared search field from the operator level to each child query.
+- ``flatten_nested_operators(query)``:
+  Merges nested logical operators of the same type into a flat structure.
+- ``move_fields_to_operator(query)``:
+  If all children have the same field, moves it to the parent node.
+
+Search Field Mapping
+--------------------
+
+Field mapping is expected to be defined in a `constants_<source>.py` file and typically includes:
+
+- ``map_search_field()``: maps specific syntax (e.g., `TI`, `AB`) to generic `Fields`.
+- ``generic_search_field_set_to_syntax_set()``: reverses the mapping.
+- Optionally, ``map_search_field_general_to_generic()``: maps user input like `"title"` to internal fields.
+
+Each translator should:
+
+1. Translate fields in both directions
+2. Handle combined fields (e.g., `[tiab]` in PubMed)
+3. Optionally restructure the query for consistency
+
+Code Skeleton
+-------------
+
+.. literalinclude:: translator_skeleton.py
    :language: python
 
 
-Mapping Fields to Standard-Fields
-----------------------------------------------------------
+Advanced Features
+-----------------
 
-The search fields supported by the database (Platform-Fields) may not necessarily match exactly with the standard fields (Standard-Fields) in ``constants.Fields``.
+Some translators include advanced restructuring logic:
 
-TODO : revisit this part:
-
-We distinguish the following cases:
-
-**1:1 matches**
-
-Cases where a 1:1 match exists between DB-Fields and Standard-Fields are added to the ``constants.PLATFORM_FIELD_MAP``.
-
-**1:n matches**
-
-Cases where a DB-Field combines multiple Standard-Fields are added to the ``constants.PLATFORM_COMBINED_FIELDS_MAP``. For example, Pubmed offers a search for ``[tiab]``, which combines ``Fields.TITLE`` and ``Fields.ABSTRACT``.
-
-When parsing combined DB-Fields, the standard platform should consist of n nodes, each with the same search term and an atomic Standard-Field. For example, ``Literacy[tiab]`` should become ``(Literacy[ti] OR Literacy[ab])``. When serializing a database string, it is recommended to combine Standard-Fields into DB-Fields whenever possible.
-
-**n:1 matches**
-
-If multiple Database-Fields correspond to the same Standard-Field, a combination of the default Database-Field and Standard-Field are added to the ``constants.PLATFORM_FIELD_MAP``. Non-default Database-Fields are replaced by the parser. For example, the default for MeSH terms at Pubmed is ``[mh]``, but the parser also supports ``[mesh]``.
+- **PubMed**: supports `[tiab]` expansion into OR combinations of `[ti]` and `[ab]`
