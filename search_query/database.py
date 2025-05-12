@@ -20,7 +20,7 @@ def load_query(name: str) -> "Query":
     """Load a query object from JSON by name."""
     try:
         name = name.replace(".json", "")
-        json_path = files("search_query") / f"database/{name}.json"  # mypy: ignore
+        json_path = files("search_query") / f"json_db/{name}.json"  # mypy: ignore
         # print(json_path)
         search = load_search_file(json_path)
         query = parse(search.search_string, platform=search.platform)
@@ -29,6 +29,17 @@ def load_query(name: str) -> "Query":
     except FileNotFoundError as exc:
         raise KeyError(f"No query file named {name}.json found") from exc
 
+def list_queries() -> list[str]:
+    """List all available predefined query identifiers (without .json)."""
+
+    # TODO : also give details (dictionary?)
+
+    json_dir = files("search_query") / "json_db"
+    return [
+        file.name.replace(".json", "")
+        for file in json_dir.iterdir()
+        if file.suffix == ".json"
+    ]
 
 # # TODO : offer an alternative load_search_file() function
 # (which gives users access to more information)
