@@ -14,11 +14,8 @@ from search_query.exception import SearchQueryException
 from search_query.parser_wos import WOSListParser
 from search_query.parser_wos import WOSParser
 
-# ruff: noqa: E501
-# flake8: noqa: E501
 
 # ruff: noqa: E501
-# pylint: disable=too-many-lines
 # flake8: noqa: E501
 
 
