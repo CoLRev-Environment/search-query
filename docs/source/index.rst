@@ -67,22 +67,8 @@ We can also parse a query from a string or a `JSON search file <#json-search-fil
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
     query = parse(query_string, platform="pubmed")
 
-TODO : update the following:
 
-Once we have created a :literal:`query` object, we can translate it for different databases.
-Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
-
-.. code-block:: python
-
-    query.to_string(platform="ebsco")
-   # Output:
-   # (TI("digital health") OR AB("digital health")) AND (TI("privacy") OR AB("privacy"))
-
-    query.to_string(platform="wos")
-   # Output:
-   # (TI=("digital health") OR AB=("digital health")) AND (TI=("privacy") OR AB=("privacy"))
-
-Another useful feature of search-query is its **linter** functionality, which helps us to validate the query by identifying syntactical errors:
+A useful feature of parsers is the built-in **linter** functionality, which helps us to validate the query by identifying syntactical errors:
 
 .. code-block:: python
 
@@ -95,6 +81,24 @@ Another useful feature of search-query is its **linter** functionality, which he
    #    Unbalanced opening parenthesis
    #    ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
    #                                          ^^^
+
+
+Once we have created a :literal:`query` object, we can translate it for different databases.
+Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
+
+.. code-block:: python
+   :linenos:
+
+   from search_query.parser import parse
+
+
+   query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
+   query = parse(query_string, platform="pubmed")
+   wos_query = query.translate(target_syntax="wos")
+   print(wos_query.to_string())
+   # Output:
+   # ((AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy"))
+
 
 ..
    Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.

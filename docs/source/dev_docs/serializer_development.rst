@@ -1,4 +1,4 @@
-Serializers
+Serializer
 ===========
 
 Serializers convert a query object into a string representation.

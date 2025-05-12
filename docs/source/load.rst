@@ -51,45 +51,61 @@ Query objects can also be created programmatically.
 Database
 ---------------------
 
+Queries can be loaded from the internal database directly:
+
+.. code-block:: python
+
+   from search_query.database_queries import AIS_8
+
+   print(AIS_8.to_string())
+   # Output:
+   # (SO=("European Journal of Information Systems" OR
+   #      "Information Systems Journal" OR
+   #      "Information Systems Research" OR
+   #      "Journal of the Association for Information Systems" OR
+   #      "Journal of Information Technology" OR
+   #      "Journal of Management Information Systems" OR
+   #      "Journal of Strategic Information Systems" OR
+   #      "MIS Quarterly") OR
+   # IS=(0960-085X OR
+   #     1476-9344 OR
+   #     1350-1917 OR
+   #     1365-2575 OR
+   #     1047-7047 OR
+   #     1526-5536 OR
+   #     1536-9323 OR
+   #     0268-3962 OR
+   #     1466-4437 OR
+   #     0742-1222 OR
+   #     1557-928X OR
+   #     0963-8687 OR
+   #     1873-1198 OR
+   #     0276-7783 OR
+   #     2162-9730))
+
+
+It is also possible to load queries from the database using the `database` module:
+
 .. code-block:: python
 
    from search-query import database
 
-   query = database.load_query("journals_FT50")
+   FT50 = database.load_query("journals_FT50")
 
-
+Once loaded, the query can be used as a building block for other queries:
 
 .. code-block:: python
-
-   from search_query.database import FT50, clinical_trials
-
-   print(FT50)
-   > OR[issn=1234, issn=5678, JN="MIS Quartery", ...]
-
-   print(clinical_trials)
-   > OR[title=rct, title="clinical trial", title="randomized controlled trial", title="experiment", ...]
 
    # Combination with custom query blocks
    custom_block = ORQuery(....)
-   full_query = ANDQuery(custom_block, clinical_trials, FT50)
+   full_query = ANDQuery(custom_block, AIS_8)
 
-In addition, the ``database_queries`` offer direct programmatic access to full queries and filters:
+Links and references
+--------------------------
 
-.. code-block:: python
-
-   from search_query.database_queries import FT50
-
-   print(FT50)
-
-
-Links:
-
-- `search blocks <https://blocks.bmi-online.nl/>`_ are available under a creative-commons license
-- `overview_1 <https://sites.google.com/york.ac.uk/sureinfo/home/search-filters>`_
-- `overview_2 <https://sites.google.com/a/york.ac.uk/issg-search-filters-resource/home/https-sites-google-com-a-york-ac-uk-issg-search-filters-resource-collections-of-search-filters>`_
-
-References
-----------------
+- `bmi Search blocks <https://blocks.bmi-online.nl/>`_ (available under a creative-commons license)
+- `SuRe: Search filters <https://sites.google.com/york.ac.uk/sureinfo/home/search-filters>`_
+- `ISSG Search Filters Resource <https://sites.google.com/a/york.ac.uk/issg-search-filters-resource/home/https-sites-google-com-a-york-ac-uk-issg-search-filters-resource-collections-of-search-filters>`_
 
 .. parsed-literal::
 
