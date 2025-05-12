@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Database and filters."""
 import typing
-from importlib import resources
+
+try:
+    from importlib.resources import files  # Python 3.9+
+except ImportError:
+    from importlib_resources import files  # pip install importlib_resources
 
 from search_query.parser import parse
 from search_query.search_file import load_search_file
@@ -16,9 +20,7 @@ def load_query(name: str) -> "Query":
     """Load a query object from JSON by name."""
     try:
         name = name.replace(".json", "")
-        json_path = (
-            resources.files("search_query") / f"database/{name}.json"
-        )  # mypy: ignore
+        json_path = files("search_query") / f"database/{name}.json"  # mypy: ignore
         # print(json_path)
         search = load_search_file(json_path)
         query = parse(search.search_string, platform=search.platform)
