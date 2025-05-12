@@ -27,6 +27,9 @@ classifiers = [
 include = ["LICENSE", "README.md"]
 requires-python = ">=3.8"
 
+[project.dependencies]
+importlib-resources = { version = ">=5.1", markers = "python_version < '3.9'" }
+
 [project.optional-dependencies]
 docs = [
     "Sphinx>=5.2.3",
