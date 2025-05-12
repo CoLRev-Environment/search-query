@@ -21,6 +21,13 @@ if typing.TYPE_CHECKING:
 class WOSQueryStringLinter(QueryStringLinter):
     """Linter for WOS Query Strings"""
 
+    ISSN_VALUE_REGEX = re.compile(r"^\d{4}-\d{3}[\dX]$", re.IGNORECASE)
+    ISBN_VALUE_REGEX = re.compile(
+        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$",
+        re.IGNORECASE,
+    )
+    DOI_VALUE_REGEX = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
+
     language_list = [
         "LA=",
         "Languages",
