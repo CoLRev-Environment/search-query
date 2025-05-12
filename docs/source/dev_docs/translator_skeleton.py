@@ -1,4 +1,4 @@
-from search_query.constants_example import generic_search_field_to_syntax_field
+from search_query.constants_example import generic_search_field_set_to_syntax_set
 from search_query.constants_example import map_search_field
 from search_query.query import Query
 from search_query.translator_base import QueryTranslator
