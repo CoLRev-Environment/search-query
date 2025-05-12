@@ -460,6 +460,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if not query.children:
             subqueries[subquery_id].append(query)
 
+    # pylint: disable=duplicate-code
     def check_unsupported_pubmed_search_fields(self) -> None:
         """Check for the correct format of fields."""
 
