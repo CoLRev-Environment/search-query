@@ -98,8 +98,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
         self.check_unsupported_wildcards()
-        self.check_issn_isbn_format()
-        self.check_doi_format()
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -328,45 +326,57 @@ class WOSQueryStringLinter(QueryStringLinter):
                 position=token.position,
             )
 
-    def check_issn_isbn_format(self) -> None:
+    def check_issn_isbn_format(self, query: "Query") -> None:
         """Check for the correct format of ISSN and ISBN."""
-        for i, token in enumerate(self.parser.tokens):
-            if (
-                token.type == TokenTypes.FIELD
-                and token.value in WOSSearchFieldList.issn_isbn_list
-            ):
-                token_vale = self.parser.tokens[i + 1].value.replace('"', "")
-                if not re.match(self.parser.ISSN_REGEX, token_vale) and not re.match(
-                    self.parser.ISBN_REGEX, token_vale
-                ):
-                    # Add messages to self.messages
+
+        if not query.operator:
+            if not query.search_field:
+                return
+
+            if query.search_field.value == "IS=":
+                if not self.ISSN_VALUE_REGEX.match(
+                    query.value
+                ) and not self.ISBN_VALUE_REGEX.match(query.value):
                     self.add_linter_message(
                         QueryErrorCode.ISBN_FORMAT_INVALID,
-                        position=self.parser.tokens[i + 1].position,
+                        position=query.position or (-1, -1),
                     )
 
-    def check_doi_format(self) -> None:
+            return
+
+        # Recursively call the function on the child querys
+        for child in query.children:
+            self.check_issn_isbn_format(child)
+
+    def check_doi_format(self, query: "Query") -> None:
         """Check for the correct format of DOI."""
 
-        for i, token in enumerate(self.parser.tokens):
-            if (
-                token.type == TokenTypes.FIELD
-                and token.value in WOSSearchFieldList.doi_list
-            ):
-                token_value = self.parser.tokens[i + 1].value.replace('"', "").upper()
-                print(token_value)
-                if not re.match(self.parser.DOI_REGEX, token_value):
-                    # Add messages to self.messages
+        if not query.operator:
+            if not query.search_field:
+                return
+
+            if query.search_field.value == "DO=":
+                if not self.DOI_VALUE_REGEX.match(query.value):
                     self.add_linter_message(
                         QueryErrorCode.DOI_FORMAT_INVALID,
-                        position=self.parser.tokens[i + 1].position,
+                        position=query.position or (-1, -1),
                     )
+            return
+
+        # Recursively call the function on the child querys
+        for child in query.children:
+            self.check_doi_format(child)
 
     def validate_query_tree(self, query: "Query") -> None:
         """
         Validate the query tree.
         This method is called after the query tree has been built.
         """
+
+        term_field_query = self.get_query_with_fields_at_terms(query)
+
+        self.check_issn_isbn_format(term_field_query)
+        self.check_doi_format(term_field_query)
 
 
 class WOSQueryListLinter(QueryListLinter):
