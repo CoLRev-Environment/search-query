@@ -554,6 +554,26 @@ class QueryStringLinter:
 
         return index, output
 
+    def get_query_with_fields_at_terms(self, query: Query) -> Query:
+        """Move the search field from the operator to the terms.
+
+        Note: utility function for validating search terms
+        with efficient access to search fields (at the level of terms).
+
+        """
+        modified_query = query.copy()
+        if modified_query.operator and modified_query.search_field:
+            # move search field from operator to terms
+            for child in modified_query.children:
+                if not child.search_field:
+                    child.search_field = modified_query.search_field.copy()
+            modified_query.search_field = None
+
+        for i, child in enumerate(modified_query.children):
+            modified_query.children[i] = self.get_query_with_fields_at_terms(child)
+
+        return modified_query
+
 
 class QueryListLinter:
     """Class for Query List Validation"""
