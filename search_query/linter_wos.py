@@ -9,8 +9,6 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import DOI_FIELD_REGEX
-from search_query.constants_wos import ISSN_ISBN_FIELD_REGEX
 from search_query.constants_wos import VALID_FIELDS_REGEX
 from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_base import QueryListLinter
@@ -82,9 +80,12 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
+        self.check_unbalanced_quotes()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
+        self.check_invalid_characters_in_search_term("@%$^~\\<>{}()[]#")
+        # Note : "&" is allowed for journals (e.g., "Information & Management")
+        # When used for search terms, it seems to be translated to "AND"
 
         self.check_search_fields_from_json()
         self.check_implicit_near()

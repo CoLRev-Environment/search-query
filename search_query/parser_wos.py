@@ -109,6 +109,7 @@ class WOSParser(QueryStringParser):
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
+        self.add_unbalanced_quotes_to_adjacent_term()
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -317,6 +318,38 @@ class WOSParser(QueryStringParser):
                 j += 1
 
         self.tokens = combined_tokens
+
+    def add_unbalanced_quotes_to_adjacent_term(self) -> None:
+        """Add unbalanced quotes to adjacent terms."""
+
+        s = self.query_str
+        updated_tokens = []
+
+        for i, token in enumerate(self.tokens):
+            start, end = token.position
+            new_start, new_end = start, end
+            new_text = token.value
+
+            # Check for quote before token
+            if start > 0 and s[start - 1] == '"':
+                if i == 0 or not self.tokens[i - 1].value.endswith('"'):
+                    new_start -= 1
+                    new_text = '"' + new_text
+
+            # Check for quote after token
+            if end < len(s) and s[end] == '"':
+                if i == len(self.tokens) - 1 or not self.tokens[i + 1].value.startswith(
+                    '"'
+                ):
+                    new_end += 1
+                    new_text = new_text + '"'
+
+            # Update the token’s value and position
+            token.value = new_text
+            token.position = (new_start, new_end)
+            updated_tokens.append(token)
+
+        self.tokens = updated_tokens
 
     def handle_year_search(
         self, token: Token, children: list, current_operator: str

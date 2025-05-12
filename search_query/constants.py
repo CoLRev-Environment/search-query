@@ -214,6 +214,14 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
+    UNBALANCED_QUOTES = (
+        ["all"],
+        "F1002",
+        "unbalanced-quotes",
+        "Quotes are unbalanced in the query",
+        "",
+    )
+
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],

@@ -21,6 +21,9 @@ if typing.TYPE_CHECKING:
     from search_query.parser_base import Query
 
 
+# pylint: disable=too-many-public-methods
+
+
 # Could indeed be a general Validator class
 class QueryStringLinter:
     """Class for Query String Validation"""
@@ -256,6 +259,53 @@ class QueryStringLinter:
                         )
                     else:
                         i -= 1
+
+    def check_unbalanced_quotes(self) -> None:
+        """Check query for unbalanced quotes."""
+
+        for token in self.parser.tokens:
+            if token.type != TokenTypes.SEARCH_TERM:
+                continue
+
+            value = token.value.strip()
+
+            quote_count = value.count('"')
+            if quote_count == 0:
+                continue
+
+            # Case 1: properly quoted (e.g. "AI")
+            if quote_count == 2 and value.startswith('"') and value.endswith('"'):
+                continue
+
+            # Case 2: starts with quote but doesn't end with it
+            if value.startswith('"') and not value.endswith('"'):
+                self.add_linter_message(
+                    QueryErrorCode.UNBALANCED_QUOTES,
+                    position=(token.position[0], token.position[0] + 1),
+                    details="Unmatched opening quote",
+                )
+
+            # Case 3: ends with quote but doesn't start with it
+            elif value.endswith('"') and not value.startswith('"'):
+                self.add_linter_message(
+                    QueryErrorCode.UNBALANCED_QUOTES,
+                    position=(token.position[1] - 1, token.position[1]),
+                    details="Unmatched closing quote",
+                )
+
+            # Case 4: quote inside or ambiguous (e.g. mid string)
+            elif quote_count % 2 != 0:
+                self.add_linter_message(
+                    QueryErrorCode.UNBALANCED_QUOTES,
+                    position=token.position,
+                    details="Unbalanced quotes inside token",
+                )
+            elif quote_count % 2 == 0:
+                self.add_linter_message(
+                    QueryErrorCode.UNBALANCED_QUOTES,
+                    position=token.position,
+                    details="Suspicious or excessive quote usage",
+                )
 
     def check_unknown_token_types(self) -> None:
         """Check for unknown token types."""
