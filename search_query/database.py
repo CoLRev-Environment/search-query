@@ -29,7 +29,8 @@ def load_query(name: str) -> "Query":
     except FileNotFoundError as exc:
         raise KeyError(f"No query file named {name}.json found") from exc
 
-def list_queries() -> list[str]:
+
+def list_queries() -> typing.List[str]:
     """List all available predefined query identifiers (without .json)."""
 
     # TODO : also give details (dictionary?)
@@ -40,6 +41,7 @@ def list_queries() -> list[str]:
         for file in json_dir.iterdir()
         if file.suffix == ".json"
     ]
+
 
 # # TODO : offer an alternative load_search_file() function
 # (which gives users access to more information)

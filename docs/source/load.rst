@@ -60,7 +60,7 @@ Database
 
 
 .. code-block:: python
-   
+
    from search_query.database import FT50, clinical_trials
 
    print(FT50)
