@@ -2,6 +2,7 @@
 """Query class."""
 from __future__ import annotations
 
+import copy
 import re
 import typing
 
@@ -32,6 +33,10 @@ class SearchField:
 
     def __str__(self) -> str:
         return self.value
+
+    def copy(self) -> SearchField:
+        """Return a copy of the SearchField instance."""
+        return SearchField(self.value, position=self.position)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -70,6 +75,10 @@ class Query:
                 self.add_child(child)
 
         self._ensure_children_not_circular()
+
+    def copy(self) -> Query:
+        """Return a copy of the Query instance."""
+        return copy.deepcopy(self)
 
     @property
     def value(self) -> str:
