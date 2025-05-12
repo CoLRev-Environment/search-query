@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """EBSCO query translator."""
-from search_query.constants_ebsco import generic_search_field_set_to_syntax_set
+from search_query.constants_ebsco import generic_search_field_to_syntax_field
 from search_query.constants_ebsco import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 from search_query.translator_base import QueryTranslator
@@ -40,13 +40,10 @@ class EBSCOTranslator(QueryTranslator):
     @classmethod
     def _translate_search_fields(cls, query: Query) -> None:
         if query.search_field:
-            search_fields = generic_search_field_set_to_syntax_set(
-                {query.search_field.value}
+            translated_field = generic_search_field_to_syntax_field(
+                query.search_field.value
             )
-            if len(search_fields) == 1:
-                query.search_field.value = f"{search_fields.pop()} "
-            else:
-                raise NotImplementedError
+            query.search_field.value = f"{translated_field} "
 
         if query.operator:
             for child in query.children:

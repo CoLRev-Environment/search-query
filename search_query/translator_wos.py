@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """WOS query translator."""
-from search_query.constants_wos import generic_search_field_set_to_syntax_set
+from search_query.constants_wos import generic_search_field_to_syntax_field
 from search_query.constants_wos import syntax_str_to_generic_search_field_set
 from search_query.constants_wos import (
     syntax_str_to_generic_search_field_set_general_to_generic,
@@ -86,13 +86,9 @@ class WOSTranslator(QueryTranslator):
     @classmethod
     def _translate_search_fields(cls, query: Query) -> None:
         if query.search_field:
-            generic_fields = generic_search_field_set_to_syntax_set(
-                {query.search_field.value}
+            query.search_field.value = generic_search_field_to_syntax_field(
+                query.search_field.value
             )
-            if len(generic_fields) == 1:
-                query.search_field.value = generic_fields.pop()
-            else:
-                raise NotImplementedError
 
         for child in query.children:
             cls._translate_search_fields(child)

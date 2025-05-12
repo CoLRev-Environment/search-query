@@ -2,7 +2,7 @@
 """Pubmed query translator."""
 from search_query.constants import Fields
 from search_query.constants import Operators
-from search_query.constants_pubmed import generic_search_field_set_to_syntax_set
+from search_query.constants_pubmed import generic_search_field_to_syntax_field
 from search_query.constants_pubmed import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 from search_query.query import SearchField
@@ -56,15 +56,9 @@ class PubmedTranslator(QueryTranslator):
 
         else:
             if query.search_field and query.search_field.value not in ["[tiab]"]:
-                search_field_set = generic_search_field_set_to_syntax_set(
-                    {query.search_field.value}
+                query.search_field.value = generic_search_field_to_syntax_field(
+                    query.search_field.value
                 )
-                if len(search_field_set) == 1:
-                    query.search_field.value = search_field_set.pop()
-                else:
-                    raise NotImplementedError(
-                        f"Multiple search fields not implemented: {search_field_set}"
-                    )
 
     @classmethod
     def _combine_tiab(cls, query: "Query") -> None:
@@ -146,6 +140,8 @@ class PubmedTranslator(QueryTranslator):
     def _expand_combined_fields(cls, query: Query, search_fields: set) -> None:
         """Expand queries with combined search fields into an OR query"""
         query_children = []
+        # Note: PubMed accepts fields only at the level of terms.
+        # otherwise, the following would need to cover additional cases.
         # Note: sorted list for deterministic order of fields
         for search_field in sorted(list(search_fields)):
             query_children.append(

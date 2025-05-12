@@ -116,21 +116,13 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     raise ValueError(f"Field {field_value} not supported by PubMed")
 
 
-def generic_search_field_set_to_syntax_set(generic_search_field_set: set) -> set:
+def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
     """Convert a set of generic search fields to a set of syntax strings."""
 
-    syntax_set = set()
-
-    # for generic_search_field in generic_search_field_set:
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if generic_search_field_set == value:
-            syntax_set.add(key)
-            # will add [tiab] for {ti, ab} but not [ti]
+        if {generic_search_field} == value:
+            return key
 
-    if not syntax_set:
-        raise ValueError(
-            f"Generic search field set {generic_search_field_set} "
-            "not supported by PubMed"
-        )
-
-    return syntax_set
+    raise ValueError(
+        f"Generic search field set {generic_search_field} " "not supported by Pubmed"
+    )

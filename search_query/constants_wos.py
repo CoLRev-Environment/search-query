@@ -119,17 +119,16 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     raise ValueError(f"Field {field_value} not supported by Web of Science")
 
 
-def generic_search_field_set_to_syntax_set(generic_search_field_set: set) -> set:
-    """Convert a set of generic search fields to WOS syntax strings."""
-    syntax_set = set()
+def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
+    """Convert a set of generic search fields to a set of syntax strings."""
+
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if generic_search_field_set == value:
-            syntax_set.add(key)
-    if not syntax_set:
-        raise ValueError(
-            f"Generic search field set {generic_search_field_set} not supported by WOS"
-        )
-    return syntax_set
+        if {generic_search_field} == value:
+            return key
+
+    raise ValueError(
+        f"Generic search field set {generic_search_field} " "not supported by WOS"
+    )
 
 
 SEARCH_FIELD_GENERAL_TO_GENERIC_MAP = {
