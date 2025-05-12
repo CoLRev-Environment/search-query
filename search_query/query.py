@@ -10,10 +10,11 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.serializer_ebsco import to_string_ebsco
-from search_query.serializer_pre_notation import to_string_pre_notation
+from search_query.serializer_generic import to_string_generic
 from search_query.serializer_pubmed import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
 from search_query.serializer_wos import to_string_wos
+
 
 # pylint: disable=too-few-public-methods
 
@@ -67,7 +68,7 @@ class Query:
         self.position = position
         self.marked = False
 
-        # only set for root node
+        # Note: origin_platform is only set for root nodes
         self.origin_platform = ""
 
         if children:
@@ -160,7 +161,7 @@ class Query:
     @search_field.setter
     def search_field(self, sf: typing.Optional[SearchField]) -> None:
         """Set search field property."""
-        self._search_field = sf
+        self._search_field = copy.deepcopy(sf) if sf else None
 
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""
@@ -197,14 +198,7 @@ class Query:
         # Match exact word
         return value.lower() in field_value
 
-    def evaluate(self, records_dict: dict) -> dict:
-        """Evaluate the query against records using colrev_status labels.
-
-        - rev_included: relevant
-        - rev_excluded / rev_prescreen_excluded: irrelevant
-        - others: ignored
-        """
-
+    def _get_confusion_matrix(self, records_dict: dict) -> dict:
         relevant_ids = set()
         irrelevant_ids = set()
         selected_ids = set()
@@ -227,14 +221,34 @@ class Query:
         false_positives = len(selected_eval_ids & irrelevant_ids)
         false_negatives = len(relevant_ids - selected_ids)
 
+        return {
+            "total_evaluated": len(eval_ids),
+            "selected": len(selected_eval_ids),
+            "true_positives": true_positives,
+            "false_positives": false_positives,
+            "false_negatives": false_negatives,
+        }
+
+    def evaluate(self, records_dict: dict) -> dict:
+        """Evaluate the query against records using colrev_status labels.
+
+        - rev_included: relevant
+        - rev_excluded / rev_prescreen_excluded: irrelevant
+        - others: ignored
+        """
+
+        results = self._get_confusion_matrix(records_dict)
+
         precision = (
-            true_positives / (true_positives + false_positives)
-            if (true_positives + false_positives) > 0
+            results["true_positives"]
+            / (results["true_positives"] + results["false_positives"])
+            if (results["true_positives"] + results["false_positives"]) > 0
             else 0
         )
         recall = (
-            true_positives / (true_positives + false_negatives)
-            if (true_positives + false_negatives) > 0
+            results["true_positives"]
+            / (results["true_positives"] + results["false_negatives"])
+            if (results["true_positives"] + results["false_negatives"]) > 0
             else 0
         )
         f1 = (
@@ -243,16 +257,11 @@ class Query:
             else 0
         )
 
-        return {
-            "total_evaluated": len(eval_ids),
-            "selected": len(selected_eval_ids),
-            "true_positives": true_positives,
-            "false_positives": false_positives,
-            "false_negatives": false_negatives,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
-        }
+        results["precision"] = precision
+        results["recall"] = recall
+        results["f1_score"] = f1
+
+        return results
 
     def is_operator(self) -> bool:
         """Check whether the SearchQuery is an operator."""
@@ -303,21 +312,83 @@ class Query:
             f"search field: {self.search_field}"
         )
 
-    def to_string(self, platform: str = "pre_notation") -> str:
-        """prints the query in the selected platform"""
+    def to_structured_string(self) -> str:
+        """Prints the query in generic syntax"""
+        return to_string_structured(self)
 
-        if platform == PLATFORM.PRE_NOTATION.value:
-            return to_string_pre_notation(self)
-        if platform == PLATFORM.STRUCTURED.value:
-            return to_string_structured(self)
-        if platform == PLATFORM.WOS.value:
+    def to_generic_string(self) -> str:
+        """Prints the query in generic syntax"""
+        return to_string_generic(self)
+
+    def to_string(self) -> str:
+        """Prints the query as a string"""
+
+        assert self.origin_platform != ""
+
+        if self.origin_platform == PLATFORM.WOS.value:
             return to_string_wos(self)
-        if platform == PLATFORM.PUBMED.value:
+        if self.origin_platform == PLATFORM.PUBMED.value:
             return to_string_pubmed(self)
-        if platform == PLATFORM.EBSCO.value:
+        if self.origin_platform == PLATFORM.EBSCO.value:
             return to_string_ebsco(self)
 
-        raise ValueError(f"Platform not supported ({platform})")
+        raise ValueError(f"Syntax not supported ({self.origin_platform})")
+
+    def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
+        """Translate the query to the target syntax using the provided translator."""
+        # possible extension: inject custom parser:
+        # parser: QueryStringParser | None = None
+
+        # pylint: disable=import-outside-toplevel
+        from search_query.translator_pubmed import PubmedTranslator
+        from search_query.translator_ebsco import EBSCOTranslator
+        from search_query.translator_wos import WOSTranslator
+
+        # If the target syntax is the same as the origin, no translation is needed
+        if target_syntax == self.origin_platform:
+            return self
+
+        if self.origin_platform == "generic":
+            generic_query = self.copy()
+        else:
+            if self.origin_platform == "pubmed":
+                pubmed_translator = PubmedTranslator()
+                generic_query = pubmed_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            elif self.origin_platform == "ebsco":
+                ebsco_translator = EBSCOTranslator()
+                generic_query = ebsco_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            elif self.origin_platform == "wos":
+                wos_translator = WOSTranslator()
+                generic_query = wos_translator.to_generic_syntax(
+                    self, search_field_general=search_field_general
+                )
+            else:
+                raise NotImplementedError(
+                    f"Translation from {self.origin_platform} "
+                    "to generic is not implemented"
+                )
+
+        if target_syntax == "generic":
+            generic_query.origin_platform = target_syntax
+            return generic_query
+        if target_syntax == "pubmed":
+            target_query = PubmedTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
+        if target_syntax == "ebscohost":
+            target_query = EBSCOTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
+        if target_syntax == "wos":
+            target_query = WOSTranslator.to_specific_syntax(generic_query)
+            target_query.origin_platform = target_syntax
+            return target_query
+
+        raise NotImplementedError(f"Translation to {target_syntax} is not implemented")
 
 
 class Term(Query):

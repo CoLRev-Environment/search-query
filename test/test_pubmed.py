@@ -9,6 +9,7 @@ from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser_pubmed import PubmedListParser
 from search_query.parser_pubmed import PubmedParser
+from search_query.translator_pubmed import PubmedTranslator
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 
@@ -528,6 +529,20 @@ def test_linter(
                 }
             ],
         ),
+        (
+            "eHealth[tldr]",
+            "",
+            [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (7, 13),
+                    "details": "Search field [tldr] at position (7, 13) is not supported.",
+                }
+            ],
+        ),
     ],
 )
 def test_linter_with_general_search_field(
@@ -563,32 +578,32 @@ def test_linter_with_general_search_field(
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
             "All Fields",
-            'OR["health tracking"[all], AND["remote monitoring"[all], "wearable device"[all]]]',
+            'OR["health tracking"[[all]], AND["remote monitoring"[[all]], "wearable device"[[all]]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
             "All Fields",
-            'OR[AND["AI"[all], "robotics"[all]], "ethics"[all]]',
+            'OR[AND["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"AI" OR "robotics" AND "ethics"',
             "All Fields",
-            'OR["AI"[all], AND["robotics"[all], "ethics"[all]]]',
+            'OR["AI"[[all]], AND["robotics"[[all]], "ethics"[[all]]]]',
         ),
         (
             '"AI" NOT "robotics" OR "ethics"',
             "All Fields",
-            'OR[NOT["AI"[all], "robotics"[all]], "ethics"[all]]',
+            'OR[NOT["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
             "All Fields",
-            'OR[AND["digital health"[all], OR["apps"[all], NOT["wearables"[all], "privacy"[all]]]], "ethics"[all]]',
+            'OR[AND["digital health"[[all]], OR["apps"[[all]], NOT["wearables"[[all]], "privacy"[[all]]]]], "ethics"[[all]]]',
         ),
         (
             '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
             "All Fields",
-            'OR["eHealth"[all], AND["digital health"[all], NOT["bias"[all], "equity"[all]]], "policy"[all]]',
+            'OR["eHealth"[[all]], AND["digital health"[[all]], NOT["bias"[[all]], "equity"[[all]]]], "policy"[[all]]]',
         ),
     ],
 )
@@ -602,7 +617,9 @@ def test_parser(
     parser = PubmedParser(query_str, search_field_general=search_field_general)
     query = parser.parse()
 
-    assert expected_parsed == query.to_string(), print(query.to_string())
+    assert expected_parsed == query.to_generic_string(), print(
+        query.to_generic_string()
+    )
 
 
 def test_list_parser_case_1() -> None:
@@ -677,3 +694,33 @@ def test_list_parser_case_3() -> None:
             }
         ]
     }
+
+
+@pytest.mark.parametrize(
+    "query_str, expected_generic",
+    [
+        (
+            "eHealth[ti]",
+            "eHealth[ti]",
+        ),
+        (
+            "eHealth[tiab] OR mHealth[tiab]",
+            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
+        ),
+        (
+            "eHealth[tiab] AND mHealth[tiab]",
+            "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
+        ),
+    ],
+)
+def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
+    parser = PubmedParser(query_str, "")
+    query = parser.parse()
+
+    translator = PubmedTranslator()
+    generic = translator.to_generic_syntax(query, search_field_general="")
+    print(generic.to_generic_string())
+
+    assert expected_generic == generic.to_generic_string(), print(
+        generic.to_generic_string()
+    )

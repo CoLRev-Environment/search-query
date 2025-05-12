@@ -9,9 +9,10 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.constants_wos import VALID_FIELDS_REGEX
+from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
-from search_query.parser_wos_constants import WOSSearchFieldList
 
 if typing.TYPE_CHECKING:
     import search_query.parser_wos
@@ -28,16 +29,6 @@ class WOSQueryStringLinter(QueryStringLinter):
     )
     DOI_VALUE_REGEX = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
 
-    language_list = [
-        "LA=",
-        "Languages",
-        "la=",
-        "language=",
-        "la",
-        "language",
-        "LA",
-        "LANGUAGE",
-    ]
     WILDCARD_CHARS = ["?", "$", "*"]
 
     VALID_TOKEN_SEQUENCES = {
@@ -89,18 +80,17 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
+        self.check_unbalanced_quotes()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
+        self.check_invalid_characters_in_search_term("@%$^~\\<>{}()[]#")
+        # Note : "&" is allowed for journals (e.g., "Information & Management")
+        # When used for search terms, it seems to be translated to "AND"
 
         self.check_search_fields_from_json()
         self.check_implicit_near()
         self.check_year_format()
-        self.check_unsupported_search_fields(
-            valid_fields=list(
-                set().union(*WOSSearchFieldList.search_field_dict.values())
-            )
-        )
+        self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
         self.check_year_without_search_field()
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
@@ -125,7 +115,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         year_search_field_detected = False
         count_search_fields = 0
         for token in self.parser.tokens:
-            if token.value in WOSSearchFieldList.year_published_list:
+            if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
                 year_search_field_detected = True
 
             if token.type == TokenTypes.SEARCH_TERM:
@@ -187,7 +177,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_year_format(self) -> None:
         """Check for the correct format of year."""
         for index, token in enumerate(self.parser.tokens):
-            if token.value in WOSSearchFieldList.year_published_list:
+            if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
                 year_token = self.parser.tokens[index + 1]
 
                 if any(char in year_token.value for char in ["*", "?", "$"]):
@@ -229,7 +219,9 @@ class WOSQueryStringLinter(QueryStringLinter):
                 continue
 
             # Allow known languages after parenthesis (custom rule)
-            if token.value == ")" and next_token.value in self.language_list:
+            if token.value == ")" and YEAR_PUBLISHED_FIELD_REGEX.match(
+                next_token.value
+            ):
                 continue
 
             # Two operators in a row

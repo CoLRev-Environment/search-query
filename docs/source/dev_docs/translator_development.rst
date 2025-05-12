@@ -35,9 +35,8 @@ Search Field Mapping
 
 Field mapping is expected to be defined in a `constants_<source>.py` file and typically includes:
 
-- ``map_search_field()``: maps specific syntax (e.g., `TI`, `AB`) to generic `Fields`.
-- ``generic_search_field_set_to_syntax_set()``: reverses the mapping.
-- Optionally, ``map_search_field_general_to_generic()``: maps user input like `"title"` to internal fields.
+- ``syntax_str_to_generic_search_field_set()``: maps specific syntax string (e.g., `TI`, `AB`) to **set of generic `Fields`**. When the set contains multiple elements, the query must be extended with OR (see PubMed translator: ``_expand_combined_fields()``).
+- ``generic_search_field_to_syntax_field()``: maps generic `Fields` to platform-specific syntax (set of fields). When combined fields are available, the query must be adapted before (see PubMed tranlsator: ``_combine_tiab()``).
 
 Each translator should:
 

@@ -22,6 +22,7 @@ repos:
     -   id: flake8
         additional_dependencies: [flake8-typing-imports==1.12.0]
         args: ['--max-line-length=110', '--extend-ignore=E203,TYP006']
+        exclude: ^docs/source/dev_docs/
 -   repo: https://github.com/asottile/reorder-python-imports
     rev: v3.12.0
     hooks:
@@ -43,6 +44,7 @@ repos:
   hooks:
     - id: ruff # runs faster than pylint
       args: [--fix, --exit-non-zero-on-fix]
+      exclude: ^docs/source/dev_docs/
 - repo: local
   hooks:
   - id: pytest-check

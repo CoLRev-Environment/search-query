@@ -1,13 +1,21 @@
+from search_query.constants import QueryErrorCode
+from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
-from search_query.constants import TokenTypes, QueryErrorCode
+
 
 class XYQueryStringLinter(QueryStringLinter):
     """Linter for XY query strings"""
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [TokenTypes.SEARCH_TERM],
-        TokenTypes.SEARCH_TERM: [TokenTypes.LOGIC_OPERATOR, TokenTypes.PARENTHESIS_CLOSED],
-        TokenTypes.LOGIC_OPERATOR: [TokenTypes.SEARCH_TERM, TokenTypes.PARENTHESIS_OPEN],
+        TokenTypes.SEARCH_TERM: [
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.PARENTHESIS_CLOSED,
+        ],
+        TokenTypes.LOGIC_OPERATOR: [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.PARENTHESIS_OPEN,
+        ],
         # ...
     }
 
@@ -41,4 +49,3 @@ class XYQueryStringLinter(QueryStringLinter):
                     position=self.parser.tokens[i + 1].position,
                     details=f"Unexpected token after {token.type}",
                 )
-

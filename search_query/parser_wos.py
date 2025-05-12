@@ -5,21 +5,19 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import Fields
 from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_wos import WOSQueryListLinter
 from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
-from search_query.parser_wos_constants import WOSSearchFieldList
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
@@ -30,7 +28,6 @@ from search_query.query import Term
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.WOS]
     SEARCH_TERM_REGEX = (
         r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
         r'|"[^"]+"'
@@ -43,11 +40,6 @@ class WOSParser(QueryStringParser):
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
     YEAR_REGEX = r"^\d{4}(-\d{4})?$"
-    ISSN_REGEX = r"^\d{4}-\d{3}[\dX]$"
-    ISBN_REGEX = (
-        r"^(?:\d{1,5}-\d{1,7}-\d{1,7}-[\dX]|\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d{1})$"
-    )
-    DOI_REGEX = r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$"
 
     OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
 
@@ -117,6 +109,7 @@ class WOSParser(QueryStringParser):
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
+        self.add_unbalanced_quotes_to_adjacent_term()
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -185,7 +178,7 @@ class WOSParser(QueryStringParser):
                 # Check if the token is a search field which has constraints
                 # Check if the token is a year
                 if re.findall(self.YEAR_REGEX, token.value) and search_field:
-                    if search_field.value in WOSSearchFieldList.year_published_list:
+                    if YEAR_PUBLISHED_FIELD_REGEX.match(search_field.value):
                         children = self.handle_year_search(
                             token, children, current_operator
                         )
@@ -326,13 +319,45 @@ class WOSParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
+    def add_unbalanced_quotes_to_adjacent_term(self) -> None:
+        """Add unbalanced quotes to adjacent terms."""
+
+        s = self.query_str
+        updated_tokens = []
+
+        for i, token in enumerate(self.tokens):
+            start, end = token.position
+            new_start, new_end = start, end
+            new_text = token.value
+
+            # Check for quote before token
+            if start > 0 and s[start - 1] == '"':
+                if i == 0 or not self.tokens[i - 1].value.endswith('"'):
+                    new_start -= 1
+                    new_text = '"' + new_text
+
+            # Check for quote after token
+            if end < len(s) and s[end] == '"':
+                if i == len(self.tokens) - 1 or not self.tokens[i + 1].value.startswith(
+                    '"'
+                ):
+                    new_end += 1
+                    new_text = new_text + '"'
+
+            # Update the token’s value and position
+            token.value = new_text
+            token.position = (new_start, new_end)
+            updated_tokens.append(token)
+
+        self.tokens = updated_tokens
+
     def handle_year_search(
         self, token: Token, children: list, current_operator: str
     ) -> typing.List[Query]:
         """Handle the year search field."""
 
         search_field = SearchField(
-            value=Fields.YEAR,
+            value="py=",
             position=token.position,
         )
 
@@ -412,27 +437,6 @@ class WOSParser(QueryStringParser):
             children.append(term_node)
 
         return children
-
-    def _map_default_field(self, search_field: str) -> str:
-        """Get the key of the search field."""
-        for key, value_list in WOSSearchFieldList.search_field_dict.items():
-            if search_field in value_list:
-                translated_field = self.FIELD_TRANSLATION_MAP[key]
-                return translated_field
-        return search_field
-
-    def translate_search_fields(self, query: Query) -> None:
-        """Translate search fields."""
-
-        if query.search_field:
-            query.search_field.value = self._map_default_field(query.search_field.value)
-        if query.children:
-            for child in query.children:
-                self.translate_search_fields(child)
-
-        # at this point it may be necessary to split (OR)
-        # queries for combined search fields
-        # see _expand_combined_fields() in pubmed
 
     def parse(self) -> Query:
         """Parse a query string."""

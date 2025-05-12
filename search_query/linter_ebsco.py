@@ -7,6 +7,7 @@ import typing
 
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
+from search_query.constants_ebsco import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:
@@ -71,6 +72,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
         self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
+        self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
 
         self.check_token_ambiguity()
         self.check_search_field_general()
@@ -94,12 +96,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # Note: EBSCO-specific
 
         prev_token = None
-        for token in self.parser.tokens:
+        for i, token in enumerate(self.parser.tokens):
             match = re.match(r"^[A-Z]{2} ", token.value)
             if (
                 token.type == TokenTypes.SEARCH_TERM
                 and match
                 and (prev_token is None or prev_token.type != TokenTypes.FIELD)
+                and not self.parser.tokens[i + 1].startswith('"')
             ):
                 details = (
                     f"The token '{token.value}' (at {token.position}) is ambiguous. "
@@ -176,7 +179,17 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.parser.tokens[i - 1].position[0],
                         token.position[1],
                     )
-
+                elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
+                    r"^[a-z]{2}$", self.parser.tokens[i - 1].value
+                ):
+                    details = "Search field is not supported (must be upper case)"
+                    position = self.parser.tokens[i - 1].position
+                    self.add_linter_message(
+                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                        position=position,
+                        details=details,
+                    )
+                    continue
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):

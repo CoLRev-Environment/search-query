@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 
 def to_string_custom(query: Query) -> str:
-
     # Leaf node (no children)
     if not query.children:
         field = query.search_field.value if query.search_field else ""

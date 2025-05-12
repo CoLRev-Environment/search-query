@@ -109,12 +109,12 @@ def test_tokenization(
             "AI governance OR AB Future",
             [
                 {
-                    "code": "W0008",
-                    "label": "token-ambiguity",
-                    "message": "Token ambiguity",
-                    "is_fatal": False,
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
                     "position": (0, 2),
-                    "details": "The token 'AI governance' (at (0, 13)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add quotes.",
+                    "details": "Search field AI at position (0, 2) is not supported.",
                 }
             ],
         ),
@@ -127,21 +127,26 @@ def test_tokenization(
             'AI "governance" OR AB Future',
             [
                 {
-                    "code": "F0001",
-                    "label": "tokenizing-failed",
-                    "message": "Fatal error during tokenization",
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 15),
-                    "details": "Token 'AI \"governance\"' should be fully quoted",
-                },
-                {
-                    "code": "W0008",
-                    "label": "token-ambiguity",
-                    "message": "Token ambiguity",
-                    "is_fatal": False,
                     "position": (0, 2),
-                    "details": "The token 'AI \"governance\"' (at (0, 15)) is ambiguous. The AI could be a search field or a search term. To avoid confusion, please add quotes.",
-                },
+                    "details": "Search field AI at position (0, 2) is not supported.",
+                }
+            ],
+        ),
+        (
+            "ti (ehealth OR mhealth)",
+            [
+                {
+                    "code": "F2011",
+                    "label": "search-field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": (0, 2),
+                    "details": "Search field is not supported (must be upper case)",
+                }
             ],
         ),
         (
@@ -266,4 +271,6 @@ def test_parser(query_str: str, expected_translation: str) -> None:
     # print("Tokens: \n")
     # parser.print_tokens()
 
-    assert expected_translation == query_tree.to_string(), print(query_tree.to_string())
+    assert expected_translation == query_tree.to_generic_string(), print(
+        query_tree.to_generic_string()
+    )

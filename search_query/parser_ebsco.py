@@ -8,7 +8,6 @@ import typing
 from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -24,13 +23,10 @@ from search_query.query import Term
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
 
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.EBSCO]
-
     PARENTHESIS_REGEX = r"[\(\)]"
     LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
     PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
-    # https://connect.ebsco.com/s/article/Searching-with-Field-Codes
-    SEARCH_FIELD_REGEX = r"\b(TI|AU|TX|AB|SO|SU|IS|IB|DE|LA|KW)\b"
+    SEARCH_FIELD_REGEX = r"\b([A-Z]{2})\b"
     SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
 
     OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
@@ -314,31 +310,6 @@ class EBSCOParser(QueryStringParser):
 
         return root
 
-    def translate_search_fields(self, query: Query) -> None:
-        """
-        Translate search fields to standard names using self.FIELD_TRANSLATION_MAP
-        """
-
-        # Error not included in linting, mainly for programming purposes
-        if not hasattr(self, "FIELD_TRANSLATION_MAP") or not isinstance(
-            self.FIELD_TRANSLATION_MAP, dict
-        ):
-            raise AttributeError(
-                "FIELD_TRANSLATION_MAP is not defined or is not a dictionary."
-            )
-
-        # Filter out search_fields and translate based on FIELD_TRANSLATION_MAP
-        if query.search_field:
-            original_value = query.search_field.value
-            translated_value = self.FIELD_TRANSLATION_MAP.get(
-                original_value, original_value
-            )
-            query.search_field.value = translated_value
-
-        # Iterate through queries
-        for child in query.children:
-            self.translate_search_fields(child)
-
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -395,5 +366,4 @@ class EBSCOListParser(QueryListParser):
 
     def parse(self) -> Query:
         """Parse the query in list format."""
-        # TODO
         raise NotImplementedError("List parsing not implemented yet.")

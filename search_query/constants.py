@@ -109,6 +109,7 @@ class Fields:
     AUTHOR_KEYWORDS = "ak"
     AUTHOR = "au"
     CONFERENCE = "cf"
+    PUBLISHER = "pb"
     CITY = "ci"
     COUNTRY_REGION = "cu"
     DOI = "do"
@@ -155,88 +156,6 @@ class Fields:
             for key, value in vars(cls).items()
             if not key.startswith("_") and not callable(value) and key not in ["all"]
         ]
-
-
-# The PLATFORM_FIELD_MAP contains the current mapping of standard Fields to the
-# syntax of the platform. If a field is not present in the map, it is assumed
-# that the field is not supported by the database.
-# If multiple options exist for valid platform syntax, only the most common
-# option is included in the map. Less common options are replaced in the parser.
-# For instance, pubmed recommends [mh]. However, [mesh] is also valid and is replaced
-# in the parser.
-PLATFORM_FIELD_MAP = {
-    # fields from
-    # https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
-    PLATFORM.WOS: {
-        Fields.ALL: "ALL=",
-        Fields.ABSTRACT: "AB=",
-        Fields.TITLE: "TI=",
-        Fields.TOPIC: "TS=",
-        Fields.LANGUAGE: "LA=",
-        Fields.YEAR: "PY=",
-        Fields.ADDRESS: "AD=",
-        Fields.AUTHOR_IDENTIFIERS: "AI=",
-        Fields.AUTHOR_KEYWORDS: "AK=",
-        Fields.AUTHOR: "AU=",
-        Fields.CONFERENCE: "CF=",
-        Fields.CITY: "CI=",
-        Fields.COUNTRY_REGION: "CU=",
-        Fields.DOI: "DO=",
-        Fields.EDITOR: "ED=",
-        Fields.GRANT_NUMBER: "FG=",
-        Fields.FUNDING_AGENCY: "FO=",
-        Fields.FUNDING_TEXT: "FT=",
-        Fields.GROUP_AUTHOR: "GP=",
-        Fields.ISSN_ISBN: "IS=",
-        Fields.KEYWORDS_PLUS: "KP=",
-        Fields.ORGANIZATION_ENHANCED: "OG=",
-        Fields.ORGANIZATION: "OO=",
-        Fields.PUBMED_ID: "PMID=",
-        Fields.PROVINCE_STATE: "PS=",
-        Fields.STREET_ADDRESS: "SA=",
-        Fields.SUBORGANIZATION: "SG=",
-        Fields.PUBLICATION_NAME: "SO=",
-        Fields.RESEARCH_AREA: "SU=",
-        Fields.ACCESSION_NUMBER: "UT=",
-        Fields.WEB_OF_SCIENCE_CATEGORY: "WC=",
-        Fields.ZIP_POSTAL_CODE: "ZP=",
-    },
-    # fields from https://pubmed.ncbi.nlm.nih.gov/help/
-    PLATFORM.PUBMED: {
-        Fields.ALL: "[all]",
-        Fields.TITLE: "[ti]",
-        Fields.ABSTRACT: "[ab]",
-        Fields.AUTHOR_KEYWORDS: "[au]",
-        Fields.FILTER: "[sb]",
-        Fields.JOURNAL: "[ta]",
-        Fields.MESH_TERM: "[mh]",
-        Fields.PUBLICATION_TYPE: "[pt]",
-        Fields.TEXT_WORD: "[tw]",
-        Fields.AFFILIATION: "[ad]",
-        Fields.LANGUAGE: "[la]",
-        Fields.PUBLICATION_DATE: "[dp]",
-    },
-    # fields from https://connect.ebsco.com/s/article/Searching-with-Field-Codes?language=en_US
-    PLATFORM.EBSCO: {
-        Fields.TITLE: "TI",
-        Fields.ABSTRACT: "AB",
-        Fields.TOPIC: "TP",
-        Fields.ALL: "TX",
-        Fields.AUTHOR_KEYWORDS: "AU",
-        Fields.SUBJECT_TERMS: "SU",
-        Fields.SOURCE: "SO",
-        Fields.ISSN: "IS",
-        Fields.ISBN: "IB",
-        Fields.LANGUAGE: "LA",
-        Fields.KEYWORDS: "KW",
-        Fields.DESCRIPTORS: "DE",
-    },
-}
-
-# For convenience, modules can use the following to translate fields to a DB
-PLATFORM_FIELD_TRANSLATION_MAP = {
-    db: {v: k for k, v in fields.items()} for db, fields in PLATFORM_FIELD_MAP.items()
-}
 
 
 class ExitCodes:
@@ -295,6 +214,14 @@ class QueryErrorCode(Enum):
 
     (a AND b) OR c""",
     )
+    UNBALANCED_QUOTES = (
+        ["all"],
+        "F1002",
+        "unbalanced-quotes",
+        "Quotes are unbalanced in the query",
+        "",
+    )
+
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
     INVALID_TOKEN_SEQUENCE = (
         [PLATFORM.EBSCO],
@@ -608,6 +535,7 @@ class QueryErrorCode(Enum):
     )
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:

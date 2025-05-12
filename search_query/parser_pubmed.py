@@ -2,14 +2,12 @@
 """Pubmed query parser."""
 import re
 
-from search_query.constants import Fields
 from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import PLATFORM_FIELD_TRANSLATION_MAP
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -25,66 +23,6 @@ from search_query.query import Term
 
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
-
-    FIELD_TRANSLATION_MAP = PLATFORM_FIELD_TRANSLATION_MAP[PLATFORM.PUBMED]
-
-    DEFAULT_FIELD_MAP = {
-        "[affiliation]": "[ad]",
-        "[all fields]": "[all]",
-        "[article identifier]": "[aid]",
-        "[author]": "[au]",
-        "[author identifier]": "[auid]",
-        "[completion date]": "[dcom]",
-        "[conflict of interest statement]": "[cois]",
-        "[corporate author]": "[cn]",
-        "[create date]": "[crdt]",
-        "[ec/rn number]": "[rn]",
-        "[editor]": "[ed]",
-        "[entry date]": "[edat]",
-        "[filter]": "[sb]",
-        "[first author name]": "[1au]",
-        "[full author name]": "[fau]",
-        "[full investigator name]": "[fir]",
-        "[grants and funding]": "[gr]",
-        "[investigator]": "[ir]",
-        "[isbn]": "[isbn]",
-        "[issue]": "[ip]",
-        "[journal]": "[ta]",
-        "[language]": "[la]",
-        "[last author name]": "[lastau]",
-        "[location id]": "[lid]",
-        "[mesh date]": "[mhda]",
-        "[mesh]": "[mh]",
-        "[mesh terms]": "[mh]",
-        "[mesh terms:noexp]": "[mh]",
-        "[mh:noexp]": "[mh]",
-        "[mesh:noexp]": "[mh]",
-        "[mesh major topic]": "[mh]",
-        "[majr]": "[mh]",
-        "[mj]": "[mh]",
-        "[mesh subheading]": "[mh]",
-        "[subheading]": "[mh]",
-        "[sh]": "[mh]",
-        "[modification date]": "[lr]",
-        "[nlm unique id]": "[jid]",
-        "[other term]": "[ot]",
-        "[pagination]": "[pg]",
-        "[personal name as subject]": "[ps]",
-        "[pharmacological action]": "[pa]",
-        "[place of publication]": "[pl]",
-        "[publication date]": "[dp]",
-        "[pdate]": "[dp]",
-        "[publication type]": "[pt]",
-        "[publisher]": "[pubn]",
-        "[secondary source id]": "[si]",
-        "[subset]": "[sb]",
-        "[supplementary concept]": "[nm]",
-        "[text word]": "[tw]",
-        "[title]": "[ti]",
-        "[title/abstract]": "[tiab]",
-        "[transliterated title]": "[tt]",
-        "[volume]": "[vi]",
-    }
 
     SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
     OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
@@ -278,7 +216,7 @@ class PubmedParser(QueryStringParser):
             query_end_pos = tokens[1].position[1]
         else:
             # Select default field "all" if no search field is found.
-            search_field = SearchField(value=Fields.ALL)
+            search_field = SearchField(value="[all]", position=(-1, -1))
 
         return Term(
             value=search_term_token.value,
@@ -286,73 +224,30 @@ class PubmedParser(QueryStringParser):
             position=(tokens[0].position[0], query_end_pos),
         )
 
-    def translate_search_fields(self, query: Query) -> None:
-        """Translate search fields"""
+    # def parse_user_provided_fields(self, field_values: str) -> list:
+    #     """Extract and translate user-provided search fields (return as a list)"""
+    #     if not field_values:
+    #         return []
 
-        if query.children:
-            for child in query.children:
-                self.translate_search_fields(child)
-            return
+    #     field_values_list = [
+    #         search_field.strip() for search_field in field_values.split(",")
+    #     ]
 
-        if query.search_field:
-            query.search_field.value = self.map_search_field(query.search_field.value)
+    #     for index, value in enumerate(field_values_list):
+    #         value = "[" + value.lower() + "]"
 
-            # Convert queries in the form 'Term [tiab]' into 'Term [ti] OR Term [ab]'.
-            if query.search_field.value == "[tiab]":
-                self._expand_combined_fields(query, [Fields.TITLE, Fields.ABSTRACT])
+    #         value = self.syntax_str_to_generic_search_field_set(value)
 
-    def parse_user_provided_fields(self, field_values: str) -> list:
-        """Extract and translate user-provided search fields (return as a list)"""
-        if not field_values:
-            return []
+    #         if value in {"[title and abstract]", "[tiab]"}:
+    #             value = Fields.TITLE
+    #             field_values_list.insert(index + 1, Fields.ABSTRACT)
 
-        field_values_list = [
-            search_field.strip() for search_field in field_values.split(",")
-        ]
+    #         if value in {"[subject headings]"}:
+    #             value = Fields.MESH_TERM
 
-        for index, value in enumerate(field_values_list):
-            value = "[" + value.lower() + "]"
+    #         field_values_list[index] = value
 
-            value = self.map_search_field(value)
-
-            if value in {"[title and abstract]", "[tiab]"}:
-                value = Fields.TITLE
-                field_values_list.insert(index + 1, Fields.ABSTRACT)
-
-            if value in {"[subject headings]"}:
-                value = Fields.MESH_TERM
-
-            field_values_list[index] = value
-
-        return field_values_list
-
-    def map_search_field(self, field_value: str) -> str:
-        """Translate a search field"""
-        field_value = field_value.lower()
-        # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
-        if field_value in self.DEFAULT_FIELD_MAP:
-            field_value = self.DEFAULT_FIELD_MAP[field_value]
-        # Convert search fields to default field constants
-        if field_value in self.FIELD_TRANSLATION_MAP:
-            field_value = self.FIELD_TRANSLATION_MAP[field_value]
-        return field_value
-
-    def _expand_combined_fields(self, query: Query, search_fields: list) -> None:
-        """Expand queries with combined search fields into an OR query"""
-        query_children = []
-
-        for search_field in search_fields:
-            query_children.append(
-                Term(
-                    value=query.value,
-                    search_field=SearchField(value=search_field),
-                )
-            )
-
-        query.value = Operators.OR
-        query.operator = True
-        query.search_field = None
-        query.children = query_children  # type: ignore
+    #     return field_values_list
 
     def get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,
@@ -483,6 +378,6 @@ class PubmedListParser(QueryListParser):
 
         query = list(self.query_dict.values())[-1]["query"]
 
-        # TODO : linter.check_status()
+        # linter.check_status() ?
 
         return query
