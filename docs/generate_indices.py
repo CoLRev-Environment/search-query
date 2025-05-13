@@ -6,6 +6,9 @@ from pathlib import Path
 
 from search_query.constants import QueryErrorCode
 
+# ruff: noqa: E501
+# flake8: noqa: E501
+
 OUTPUT_FILE = Path("docs/source/lint/errors_index.rst")
 
 

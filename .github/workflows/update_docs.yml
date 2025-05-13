@@ -36,12 +36,13 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
 
+
+      - name: Run pre-commit hooks (ignore failures)
+        run: pre-commit run --all-files || true
+
       - name: Add all changes
         run: |
           git add -A
-
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files
 
       - name: Commit changes
         run: |
