@@ -1,4 +1,7 @@
 # scripts/generate_errors_index.py
+import json
+import re
+from importlib.resources import files
 from pathlib import Path
 
 from search_query.constants import QueryErrorCode
@@ -75,3 +78,94 @@ for error in QueryErrorCode:
 #         f.write(f"- {platform.value}\n")
 #         # f.write(f" parser/{platform}.rst\n")
 #         f.write("\n")
+
+
+query_dir = files("search_query") / "json_db"
+output_dir = Path("docs/source/query_database")
+rst_dir = output_dir / "queries"
+rst_dir.mkdir(parents=True, exist_ok=True)
+
+overview = []
+
+
+def slugify(name: str) -> str:
+    return re.sub(r"[^\w\-]+", "-", name.lower()).strip("-")
+
+
+for file in query_dir.iterdir():
+    if file.suffix == ".json":
+        with open(file, encoding="utf-8") as f:
+            content = json.load(f)
+
+        identifier = file.stem
+        platform = content.get("platform", "")
+        search_string = content.get("search_string", "")
+        title = content.get("title", identifier)
+        description = content.get("description", "")
+        keywords = content.get("keywords", "")
+        filename = file.name
+        authors = " and ".join(x["name"] for x in content.get("authors", []))
+        license = content.get("license", "")
+
+        slug = slugify(identifier)
+        rst_filename = rst_dir / f"{slug}.rst"
+
+        # Write individual .rst file
+        with open(rst_filename, "w", encoding="utf-8") as rst:
+            rst.write(
+                f"""{title}
+{'=' * len(title)}
+
+**Identifier**: ``{identifier}``
+
+**Platform**: ``{platform}``
+
+**Keywords**: ``{keywords}``
+
+**Authors**: ``{authors}``
+
+**License**: ``{license}``
+
+**License**: {description}
+
+Load
+-----------
+
+.. code-block:: python
+
+    from search_query.database import load_query
+
+    query = load_query("{filename}")
+
+    print(query.to_string())
+    # {search_string[:80] + "..."}
+
+
+Search String
+-------------
+
+.. raw:: html
+
+    <pre style="white-space: pre-wrap; word-break: break-word;">
+    {search_string}
+    </pre>
+
+
+Suggest to `improve this query <https://github.com/CoLRev-Environment/search-query/blob/main/search_query/json_db/{filename}>`_.
+"""
+            )
+
+        overview.append(
+            {
+                "identifier": f"`{identifier} <queries/{slug}.html>`_",
+                "platform": platform,
+                "search_string_snippet": search_string[:80] + "...",
+                "title": title,
+                "description": description,
+                "keywords": keywords,
+            }
+        )
+
+# Write overview.json
+with open(output_dir / "query_overview.json", "w", encoding="utf-8") as f:
+    json.dump(overview, f, indent=2)

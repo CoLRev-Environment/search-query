@@ -1,0 +1,14 @@
+.. _F1002:
+
+F1002 — unbalanced-quotes
+=========================
+
+**Error Code**: F1002
+
+**Message**: ``Quotes are unbalanced in the query``
+
+**Scope**: all
+
+**Description**: Quotes are unbalanced in the query
+
+**Back to**: :ref:`lint`

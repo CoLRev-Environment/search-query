@@ -5,3 +5,9 @@
 td {
   white-space: normal !important;
 }
+
+
+pre {
+    white-space: pre-wrap !important;   /* Wrap long lines */
+    word-wrap: break-word !important;   /* Break long words if needed */
+}

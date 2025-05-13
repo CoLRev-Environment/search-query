@@ -1,0 +1,34 @@
+[
+  {
+    "identifier": "`ais_senior_scholars_basket <queries/ais_senior_scholars_basket.html>`_",
+    "platform": "wos",
+    "search_string_snippet": "SO=(\"European Journal of Information Systems\" OR \"Information Systems Journal\" O...",
+    "title": "Filter: AIS Senior Scholars Basket",
+    "description": "Search filter for the AIS Senior Scholars Basket of Journals (eight)",
+    "keywords": "AIS, journals, information systems"
+  },
+  {
+    "identifier": "`ais_senior_scholars_list_of_premier_journals <queries/ais_senior_scholars_list_of_premier_journals.html>`_",
+    "platform": "wos",
+    "search_string_snippet": "SO=(\"European Journal of Information Systems\" OR \"Information Systems Journal\" O...",
+    "title": "Filter: AIS Senior Scholars List of Premier Journals",
+    "description": "Search filter for the AIS Senior Scholars List of Premier Journals (eleven), see https://aisnet.org/page/SeniorScholarListofPremierJournals",
+    "keywords": "AIS, journals, information systems"
+  },
+  {
+    "identifier": "`journals_FT50 <queries/journals_ft50.html>`_",
+    "platform": "wos",
+    "search_string_snippet": "SO=(\"Academy of Management Journal\" OR \"Academy of Management Review\" OR \"Accoun...",
+    "title": "Filter: FT50 journals",
+    "description": "Search filter for the FT50 (Financial Times 50) journals. The FT50 list is a list of 50 academic journals in the field of business and management that are considered to be the most prestigious and influential in the world. The list is published annually by the Financial Times and is used as a benchmark for academic research and publishing in the field. More information: https://www.ft.com/content/3405a512-5cbb-11e1-8f1f-00144feabdc0",
+    "keywords": "FT50, journals, business, management"
+  },
+  {
+    "identifier": "`blocks_bmi_343 <queries/blocks_bmi_343.html>`_",
+    "platform": "PubMed",
+    "search_string_snippet": "(treatment*[tiab] AND usual[tiab]) OR (standard[tiab] AND care[tiab]) OR (standa...",
+    "title": "Block: Treatment as usual",
+    "description": "original drafts by Sarah Dawson, Cochrane CCDAN group, 21 Jun 2016. TAU-filters may retrieve other comparative studies than RCTs, the comparison here being 'treatment as usual', in stead of placebo or gold standard therapy. See also 'no treatment'. For CINAHL the 'Treatment as usual'-filter is integrated in the RCT-filter.",
+    "keywords": "EBSCO/CINAHL; EBSCO/PsycInfo (PI); EMbase.com (EM); PubMed (PM); Study types; Therapy"
+  }
+]

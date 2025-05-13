@@ -8,6 +8,8 @@ Fatal Errors
 
    F1001
 
+   F1002
+
    F1004
 
    F1009

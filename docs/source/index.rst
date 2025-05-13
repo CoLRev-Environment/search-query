@@ -170,6 +170,14 @@ Below is a high-level overview of the core functionalities:
 .. toctree::
    :hidden:
    :maxdepth: 3
+   :caption: Query database
+
+   query_database/index
+   query_database/submit
+
+.. toctree::
+   :hidden:
+   :maxdepth: 3
    :caption: Interfaces
 
    cli

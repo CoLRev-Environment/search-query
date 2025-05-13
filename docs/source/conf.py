@@ -16,7 +16,7 @@ release = "0.10.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx_copybutton"]
+extensions = ["sphinx_copybutton", "sphinxcontrib.datatemplates"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -30,4 +30,6 @@ html_static_path = ["_static"]
 
 html_css_files = [
     "css/custom.css",
+    "css/jquery.dataTables.min.css",
 ]
+html_js_files = ["js/jquery-3.5.1.js", "js/jquery.dataTables.min.js", "js/main.js"]

@@ -35,6 +35,7 @@ docs = [
     "Sphinx>=5.2.3",
     "sphinx-rtd-theme>=1.1.1",
     "sphinx-copybutton>=0.5.2",
+    "sphinxcontrib.datatemplates>=0.7"
 ]
 dev = [
     "pylint==3.0.1",

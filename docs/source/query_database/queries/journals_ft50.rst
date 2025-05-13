@@ -1,0 +1,39 @@
+Filter: FT50 journals
+=====================
+
+**Identifier**: ``journals_FT50``
+
+**Platform**: ``wos``
+
+**Keywords**: ``FT50, journals, business, management``
+
+**Authors**: ``Gerit Wagner``
+
+**License**: ``Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.``
+
+**License**: Search filter for the FT50 (Financial Times 50) journals. The FT50 list is a list of 50 academic journals in the field of business and management that are considered to be the most prestigious and influential in the world. The list is published annually by the Financial Times and is used as a benchmark for academic research and publishing in the field. More information: https://www.ft.com/content/3405a512-5cbb-11e1-8f1f-00144feabdc0
+
+Load
+-----------
+
+.. code-block:: python
+
+    from search_query.database import load_query
+
+    query = load_query("journals_FT50.json")
+
+    print(query.to_string())
+    # SO=("Academy of Management Journal" OR "Academy of Management Review" OR "Accoun...
+
+
+Search String
+-------------
+
+.. raw:: html
+
+    <pre style="white-space: pre-wrap; word-break: break-word;">
+    SO=("Academy of Management Journal" OR "Academy of Management Review" OR "Accounting, Organizations and Society" OR "Administrative Science Quarterly" OR "American Economic Review" OR "Contemporary Accounting Research" OR "Econometrica" OR "Entrepreneurship Theory and Practice" OR "Harvard Business Review" OR "Human Relations" OR "Human Resource Management" OR "Information Systems Research" OR "Journal of Accounting and Economics" OR "Journal of Accounting Research" OR "Journal of Applied Psychology" OR "Journal of Business Ethics" OR "Journal of Business Venturing" OR "Journal of Consumer Psychology" OR "Journal of Consumer Research" OR "Journal of Finance" OR "Journal of Financial and Quantitative Analysis" OR "Journal of Financial Economics" OR "Journal of International Business Studies" OR "Journal of Management" OR "Journal of Management Information Systems" OR "Journal of Management Studies" OR "Journal of Marketing" OR "Journal of Marketing Research" OR "Journal of Operations Management" OR "Journal of Political Economy" OR "Journal of the Academy of Marketing Science" OR "Management Science" OR "Manufacturing and Service Operations Management" OR "Marketing Science" OR "MIS Quarterly" OR "Operations Research" OR "Organization Science" OR "Organization Studies" OR "Organizational Behavior and Human Decision Processes" OR "Production and Operations Management" OR "Quarterly Journal of Economics" OR "Research Policy" OR "Review of Accounting Studies" OR "Review of Economic Studies" OR "Review of Finance" OR "Review of Financial Studies" OR "Sloan Management Review" OR "Strategic Entrepreneurship Journal" OR "Strategic Management Journal" OR "The Accounting Review") OR IS=(0001-4273 OR 0363-7425 OR 0361-3682 OR 0001-8392 OR 0002-8282 OR 0823-9150 OR 0012-9682 OR 1042-2587 OR 0017-8012 OR 0018-7267 OR 0090-4848 OR 1047-7047 OR 0165-4101 OR 0021-8456 OR 0021-9010 OR 0167-4544 OR 0883-9026 OR 1057-7408 OR 0093-5301 OR 0022-1082 OR 0022-1090 OR 0304-405X OR 0047-2506 OR 0149-2063 OR 0742-1222 OR 0022-2429 OR 0022-2437 OR 0272-6963 OR 0022-3808 OR 0092-0703 OR 0025-1909 OR 1523-4614 OR 0732-2399 OR 0276-7783 OR 0030-364X OR 1047-7039 OR 0170-8406 OR 0749-5978 OR 1059-1478 OR 0033-5533 OR 0048-7333 OR 1380-6653 OR 0034-6527 OR 1572-3097 OR 0893-9454 OR 0036-8075 OR 1932-4391 OR 0143-2095 OR 0001-4826)
+    </pre>
+
+
+Suggest to `improve this query <https://github.com/CoLRev-Environment/search-query/blob/main/search_query/json_db/journals_FT50.json>`_.

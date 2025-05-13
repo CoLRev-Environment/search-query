@@ -88,9 +88,9 @@ It is also possible to load queries from the database using the `database` modul
 
 .. code-block:: python
 
-   from search-query import database
+   from search_query.database import load_query
 
-   FT50 = database.load_query("journals_FT50")
+   FT50 = load_query("journals_FT50")
 
 Once loaded, the query can be used as a building block for other queries:
 
