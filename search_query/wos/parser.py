@@ -13,14 +13,14 @@ from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
-from search_query.linter_wos import WOSQueryListLinter
-from search_query.linter_wos import WOSQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
+from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
+from search_query.wos.linter import WOSQueryListLinter
+from search_query.wos.linter import WOSQueryStringLinter
 
 # pylint: disable=duplicate-code
 

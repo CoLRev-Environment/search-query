@@ -6,13 +6,13 @@ import typing
 
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
-from search_query.parser_ebsco import EBSCOListParser
-from search_query.parser_ebsco import EBSCOParser
-from search_query.parser_pubmed import PubmedListParser
-from search_query.parser_pubmed import PubmedParser
-from search_query.parser_wos import WOSListParser
-from search_query.parser_wos import WOSParser
+from search_query.ebsco.parser import EBSCOListParser
+from search_query.ebsco.parser import EBSCOParser
+from search_query.pubmed.parser import PubmedListParser
+from search_query.pubmed.parser import PubmedParser
 from search_query.query import Query
+from search_query.wos.parser import WOSListParser
+from search_query.wos.parser import WOSParser
 
 if typing.TYPE_CHECKING:
     from search_query.parser_base import QueryListParser

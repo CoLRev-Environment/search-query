@@ -8,15 +8,15 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
-from search_query.constants_pubmed import map_to_standard
-from search_query.constants_pubmed import PROXIMITY_SEARCH_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
+from search_query.pubmed.constants import map_to_standard
+from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:
     from search_query.parser import PubmedParser
-    from search_query.parser_pubmed import PubmedListParser
+    from search_query.pubmed.parser import PubmedListParser
     from search_query.parser_base import QueryStringParser
 
 

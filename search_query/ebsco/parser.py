@@ -11,8 +11,8 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.linter_base import QueryListLinter
-from search_query.linter_ebsco import EBSCOQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query

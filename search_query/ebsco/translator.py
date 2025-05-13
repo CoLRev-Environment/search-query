@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """EBSCO query translator."""
-from search_query.constants_ebsco import generic_search_field_to_syntax_field
-from search_query.constants_ebsco import syntax_str_to_generic_search_field_set
+from search_query.ebsco.constants import generic_search_field_to_syntax_field
+from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 from search_query.translator_base import QueryTranslator
 

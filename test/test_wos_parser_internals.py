@@ -5,10 +5,10 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import syntax_str_to_generic_search_field_set
-from search_query.parser_wos import WOSParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.wos.constants import syntax_str_to_generic_search_field_set
+from search_query.wos.parser import WOSParser
 
 # ruff: noqa: E501
 # pylint: disable=too-many-lines

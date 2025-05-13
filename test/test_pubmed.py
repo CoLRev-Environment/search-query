@@ -7,9 +7,9 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
-from search_query.parser_pubmed import PubmedListParser
-from search_query.parser_pubmed import PubmedParser
-from search_query.translator_pubmed import PubmedTranslator
+from search_query.pubmed.parser import PubmedListParser
+from search_query.pubmed.parser import PubmedParser
+from search_query.pubmed.translator import PubmedTranslator
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 

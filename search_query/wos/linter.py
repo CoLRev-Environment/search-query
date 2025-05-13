@@ -9,13 +9,13 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.constants_wos import VALID_FIELDS_REGEX
-from search_query.constants_wos import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
+from search_query.wos.constants import VALID_FIELDS_REGEX
+from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
 if typing.TYPE_CHECKING:
-    import search_query.parser_wos
+    import search_query.wos.parser
     from search_query.query import Query
 
 
@@ -64,9 +64,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    parser: "search_query.parser_wos.WOSParser"
+    parser: "search_query.wos.parser.WOSParser"
 
-    def __init__(self, parser: "search_query.parser_wos.WOSParser"):
+    def __init__(self, parser: "search_query.wos.parser.WOSParser"):
         self.search_str = parser.query_str
         self.parser = parser
 
@@ -381,12 +381,12 @@ class WOSQueryStringLinter(QueryStringLinter):
 class WOSQueryListLinter(QueryListLinter):
     """WOSQueryListLinter"""
 
-    parser: "search_query.parser_wos.WOSListParser"
+    parser: "search_query.wos.parser.WOSListParser"
 
     def __init__(
         self,
-        parser: "search_query.parser_wos.WOSListParser",
-        string_parser_class: typing.Type["search_query.parser_wos.WOSParser"],
+        parser: "search_query.wos.parser.WOSListParser",
+        string_parser_class: typing.Type["search_query.wos.parser.WOSParser"],
     ):
         super().__init__(
             parser=parser,

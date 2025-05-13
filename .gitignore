@@ -2,3 +2,6 @@ docs/__pycache__/
 search_query/__pycache__/*
 test/__pycache__/*
 docs/build
+search_query/ebsco/__pycache__/*
+search_query/pubmed/__pycache__/*
+search_query/wos/__pycache__/*

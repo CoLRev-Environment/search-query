@@ -11,8 +11,8 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
-from search_query.parser_wos import WOSListParser
-from search_query.parser_wos import WOSParser
+from search_query.wos.parser import WOSListParser
+from search_query.wos.parser import WOSParser
 
 
 # ruff: noqa: E501

@@ -9,11 +9,11 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.serializer_ebsco import to_string_ebsco
+from search_query.ebsco.serializer import to_string_ebsco
+from search_query.pubmed.serializer import to_string_pubmed
 from search_query.serializer_generic import to_string_generic
-from search_query.serializer_pubmed import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
-from search_query.serializer_wos import to_string_wos
+from search_query.wos.serializer import to_string_wos
 
 
 # pylint: disable=too-few-public-methods
@@ -340,9 +340,9 @@ class Query:
         # parser: QueryStringParser | None = None
 
         # pylint: disable=import-outside-toplevel
-        from search_query.translator_pubmed import PubmedTranslator
-        from search_query.translator_ebsco import EBSCOTranslator
-        from search_query.translator_wos import WOSTranslator
+        from search_query.pubmed.translator import PubmedTranslator
+        from search_query.ebsco.translator import EBSCOTranslator
+        from search_query.wos.translator import WOSTranslator
 
         # If the target syntax is the same as the origin, no translation is needed
         if target_syntax == self.origin_platform:

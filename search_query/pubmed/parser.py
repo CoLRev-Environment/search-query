@@ -12,10 +12,10 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import QuerySyntaxError
-from search_query.linter_pubmed import PubmedQueryListLinter
-from search_query.linter_pubmed import PubmedQueryStringLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
+from search_query.pubmed.linter import PubmedQueryListLinter
+from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term

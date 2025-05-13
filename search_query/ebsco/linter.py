@@ -7,11 +7,11 @@ import typing
 
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
-from search_query.constants_ebsco import VALID_FIELDS_REGEX
+from search_query.ebsco.constants import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:
-    import search_query.parser_ebsco
+    import search_query.parser.constants
     from search_query.query import Query
 
 
@@ -53,9 +53,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    parser: search_query.parser_ebsco.EBSCOParser
+    parser: search_query.parser.constants.EBSCOParser
 
-    def __init__(self, parser: search_query.parser_ebsco.EBSCOParser):
+    def __init__(self, parser: search_query.parser.constants.EBSCOParser):
         self.search_str = parser.query_str
         self.parser = parser
         super().__init__(parser=parser)

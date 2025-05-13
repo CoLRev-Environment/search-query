@@ -9,7 +9,7 @@ from search_query.constants import Colors
 from search_query.constants import LinterMode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.parser_ebsco import EBSCOParser
+from search_query.ebsco.parser import EBSCOParser
 
 # flake8: noqa: E501
 

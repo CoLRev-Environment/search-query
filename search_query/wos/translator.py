@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """WOS query translator."""
-from search_query.constants_wos import generic_search_field_to_syntax_field
-from search_query.constants_wos import syntax_str_to_generic_search_field_set
-from search_query.constants_wos import (
-    syntax_str_to_generic_search_field_set_general_to_generic,
-)
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.translator_base import QueryTranslator
+from search_query.wos.constants import generic_search_field_to_syntax_field
+from search_query.wos.constants import syntax_str_to_generic_search_field_set
+from search_query.wos.constants import (
+    syntax_str_to_generic_search_field_set_general_to_generic,
+)
 
 
 class WOSTranslator(QueryTranslator):
