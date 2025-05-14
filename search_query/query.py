@@ -17,8 +17,6 @@ from search_query.wos.serializer import to_string_wos
 
 
 # pylint: disable=too-few-public-methods
-
-
 class SearchField:
     """SearchField class."""
 
@@ -40,6 +38,7 @@ class SearchField:
         return SearchField(self.value, position=self.position)
 
 
+# pylint: disable=too-many-public-methods
 # pylint: disable=too-many-instance-attributes
 class Query:
     """Query class."""
@@ -71,15 +70,38 @@ class Query:
         # Note: origin_platform is only set for root nodes
         self.origin_platform = ""
 
+        self._parent: typing.Optional[Query] = None
         if children:
             for child in children:
                 self.add_child(child)
-
         self._ensure_children_not_circular()
 
+    def __deepcopy__(self, memo: dict) -> Query:
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        for k, v in self.__dict__.items():
+            if k == "_parent":
+                setattr(
+                    result, k, None
+                )  # parent will be reset manually during tree reconstruction
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
+        return result
+
+    def _reset_parent_links(self) -> None:
+        """Reset parent pointers after deepcopy to restore correct tree structure."""
+        for child in self.children:
+            child._parent = self  # pylint: disable=protected-access
+            child._reset_parent_links()  # pylint: disable=protected-access
+
     def copy(self) -> Query:
-        """Return a copy of the Query instance."""
-        return copy.deepcopy(self)
+        """Return a deep copy of the Query instance without parent references."""
+        copied = copy.deepcopy(self, memo={})
+        copied._reset_parent_links()  # pylint: disable=protected-access
+        return copied
 
     @property
     def value(self) -> str:
@@ -139,19 +161,32 @@ class Query:
 
     @children.setter
     def children(self, children: typing.List[Query]) -> None:
-        """Set children property."""
-        if not isinstance(children, list):
-            raise TypeError("children must be a list of Query objects")
-        self._children = children
+        """Set the children of this query node, updating parent pointers."""
+        # Clear existing children and reset parent links (if necessary)
+        self._children.clear()
+        # Add each new child using add_child (ensures parent is set)
+        for child in children or []:
+            self.add_child(child)
 
-    def add_child(self, child: typing.Union[str, Query]) -> None:
-        """Add child to the query."""
+    def add_child(self, child: typing.Union[str, Query]) -> Query:
+        """Add a child Query node and set its parent pointer."""
         if isinstance(child, str):
-            self._children.append(Term(child, search_field=self.search_field))
-        elif isinstance(child, Query):
-            self._children.append(child)
-        else:
-            raise TypeError("Children must be Query objects or strings")
+            child = Term(child, search_field=self.search_field)
+        child._set_parent(self)  # pylint: disable=protected-access
+        self._children.append(child)
+        return child
+
+    def _set_parent(self, parent: typing.Optional[Query]) -> None:
+        """Internal method to update the parent of this node."""
+        self._parent = parent
+
+    def get_parent(self) -> typing.Optional[Query]:
+        """Return the parent Query node, or None if this node is the root."""
+        return self._parent
+
+    def get_root(self) -> Query:
+        """Return the root of the query tree by climbing up parent pointers."""
+        return self if self._parent is None else self._parent.get_root()
 
     @property
     def search_field(self) -> typing.Optional[SearchField]:

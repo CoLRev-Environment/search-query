@@ -28,20 +28,19 @@ class PubmedTranslator(QueryTranslator):
             return False
 
         if next(iter(search_fields)) in {"[title and abstract]", "[tiab]"}:
-            additional_children = []
-            for child in query.children:
+            existing_children = list(query.children)
+            for child in existing_children:
                 if not child.search_field:
                     continue
                 child.search_field.value = Fields.TITLE
-                additional_children.append(
-                    Query(
-                        value=child.value,
-                        operator=False,
-                        search_field=SearchField(value=Fields.ABSTRACT),
-                        children=None,
-                    )
+                new_child = Query(
+                    value=child.value,
+                    operator=False,
+                    search_field=SearchField(value=Fields.ABSTRACT),
+                    children=None,
                 )
-            query.children += additional_children
+                query.add_child(new_child)
+
             return True
 
         # elif ... other cases?
