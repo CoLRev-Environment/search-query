@@ -114,7 +114,7 @@ class Query:
     # TODO : maybe as a setter?
     def set_origin_platform(self, platform: str) -> None:
         """Set the platform for this query node."""
-        if platform not in PLATFORM:
+        if platform not in [p.value for p in PLATFORM]:
             raise ValueError(f"Invalid platform: {platform}")
         self._set_origin_platform_recursively(platform)
         self._validate_platform_constraints()

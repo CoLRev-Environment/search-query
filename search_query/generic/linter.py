@@ -3,19 +3,12 @@
 import re
 import typing
 
-from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
-from search_query.constants import QueryErrorCode
-from search_query.constants import Token, Fields
-from search_query.constants import TokenTypes, PLATFORM
-from search_query.linter_base import QueryListLinter
+from search_query.constants import Fields
+from search_query.constants import PLATFORM
+from search_query.constants import Token
 from search_query.linter_base import QueryStringLinter
-from search_query.wos.constants import VALID_FIELDS_REGEX
-from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
 if typing.TYPE_CHECKING:
-    import search_query.wos.parser
     from search_query.query import Query
 
 
@@ -33,14 +26,12 @@ class GenericLinter(QueryStringLinter):
 
     # Extract unique string values
     field_codes = {
-        v for k, v in vars(Fields).items()
+        v
+        for k, v in vars(Fields).items()
         if not k.startswith("__") and isinstance(v, str)
     }
 
-
-    VALID_FIELDS_REGEX = re.compile(
-    r'\b(?:' + '|'.join(sorted(field_codes)) + r')\b'
-)
+    VALID_FIELDS_REGEX = re.compile(r"\b(?:" + "|".join(sorted(field_codes)) + r")\b")
 
     # VALID_TOKEN_SEQUENCES = {
     #     TokenTypes.FIELD: [
@@ -98,5 +89,3 @@ class GenericLinter(QueryStringLinter):
         """
 
         self.check_unsupported_search_fields_in_query(query)
-
-
