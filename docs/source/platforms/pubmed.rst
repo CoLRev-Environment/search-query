@@ -1,33 +1,46 @@
+
 .. _pubmed:
 
 PubMed
-====================
+======
 
-Run a query
---------------
+PubMed is a free resource supporting the search and retrieval of biomedical and life sciences literature.
 
-Queries can be executed in the [basic search box](https://pubmed.ncbi.nlm.nih.gov/) or the advanced [Query box](https://pubmed.ncbi.nlm.nih.gov/advanced/).
+Run a Query
+-----------
 
-Report a query
------------------
+Queries can be entered using either:
 
-It is recommended to store the queries entered in the basic or advanced box as the *search_string* and leave the *general_search_field* empty.
+- the `basic search box <https://pubmed.ncbi.nlm.nih.gov/>`_, or
+- the `advanced Query builder <https://pubmed.ncbi.nlm.nih.gov/advanced/>`_.
 
-TODO : interface illustration?
+These interfaces are functionally equivalent for the purposes of `search-query`. We recommend users always **copy and store the full query string** from either interface.
 
-The advanced search page also offers the option to "Add terms to the query box" (by selecting specific fields in the drop-down).
-This box offers a convenient way to add queries and apply the same search field (from the drop-down menu) to the whole query.
-Here, it is important to
-- use search fields only in the *general_search_field*
-- when running the same query with different serach fields, as in this `example <https://www.cabidigitallibrary.org/doi/10.1079/SEARCHRXIV.2023.00236>`_, *search-query* will assume that the queries are added with an "OR" operator.
+.. note::
 
-TODO : interface illustration (highlight "OR"  button)
+   For parsing PubMed queries, we recommend using the queries entered in the basic or advanced box as the *search_string* and leave the *general_search_field* empty.
 
-TODO : add a linter warning (convention) when multiple general_search_fields are given? (operator unclear)
+   When running the same query with different serach fields, as in this `example <https://www.cabidigitallibrary.org/doi/10.1079/SEARCHRXIV.2023.00236>`_, *search-query* will assume that the queries are added with an "OR" operator.
+
+Store a Query
+-------------
+
+When storing a PubMed query in a `.json` file or as a string:
+
+- Use the content of the **Query box** or **Search details** section as the `search_string`.
+- Leave the `general_search_field` empty.
 
 
-Note: We assume that the [basic search box](https://pubmed.ncbi.nlm.nih.gov/) and the advanced [Query box](https://pubmed.ncbi.nlm.nih.gov/advanced/) handle queries equivalently.
+Best Practices and Recommendations
+----------------------------------
 
-Resources:
+The advanced PubMed interface offers a dropdown for search fields such as `[Title/Abstract]`, `[Author]`, etc. When using this feature:
+
+- If you apply the **same field** to the entire query, it is safe to store this value in the `general_search_field`.
+- If the query contains **multiple search fields**, `search-query` will treat each term individually, and **leaving `general_search_field` empty is preferred**.
+
+Resources
+---------
 
 - `PubMed User Guide <https://pubmed.ncbi.nlm.nih.gov/help/>`_
+- `Search Builder Help <https://pubmed.ncbi.nlm.nih.gov/advanced/>`_
