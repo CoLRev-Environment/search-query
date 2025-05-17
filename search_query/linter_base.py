@@ -10,6 +10,7 @@ from collections import defaultdict
 
 import search_query.parser_base
 from search_query.constants import Colors
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -18,7 +19,7 @@ from search_query.exception import QuerySyntaxError
 from search_query.utils import format_query_string_positions
 
 if typing.TYPE_CHECKING:
-    from search_query.parser_base import Query
+    from search_query.query import Query
 
 
 # pylint: disable=too-many-public-methods
@@ -30,14 +31,16 @@ class QueryStringLinter:
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
+    # Higher number=higher precedence
+    OPERATOR_PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
+    PLATFORM: PLATFORM = PLATFORM.GENERIC
 
-    def __init__(
-        self,
-        parser: search_query.parser_base.QueryStringParser,
-    ):
-        self.query_str = parser.query_str
-        self.search_field_general = parser.search_field_general
-        self.parser = parser
+    def __init__(self) -> None:
+        self.tokens: typing.List[Token] = []
+
+        self.query_str = ""
+        self.search_field_general = ""
+        self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
         self.last_read_index = 0
 
@@ -104,7 +107,7 @@ class QueryStringLinter:
                 print(item)
             positions = list(message["position"] for message in group)
             query_info = format_query_string_positions(
-                self.parser.query_str,
+                self.query_str,
                 positions,
                 color=color,
             )
@@ -131,7 +134,13 @@ class QueryStringLinter:
         return any(m["is_fatal"] for m in self.messages)
 
     @abstractmethod
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Validate tokens"""
 
     @abstractmethod
@@ -143,10 +152,10 @@ class QueryStringLinter:
         covered_ranges = []
         current_index = 0
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             token_value = token.value
             try:
-                start = self.parser.query_str.index(token_value, current_index)
+                start = self.query_str.index(token_value, current_index)
                 end = start + len(token_value)
                 covered_ranges.append((start, end))
                 current_index = end
@@ -165,7 +174,7 @@ class QueryStringLinter:
         last_end = 0
         for start, end in merged:
             if last_end < start:
-                segment = self.parser.query_str[last_end:start]
+                segment = self.query_str[last_end:start]
                 if segment.strip():  # non-whitespace segment
                     self.add_linter_message(
                         QueryErrorCode.TOKENIZING_FAILED,
@@ -175,12 +184,12 @@ class QueryStringLinter:
             last_end = end
 
         # Handle trailing unparsed text
-        if last_end < len(self.parser.query_str):
-            segment = self.parser.query_str[last_end:]
+        if last_end < len(self.query_str):
+            segment = self.query_str[last_end:]
             if segment.strip():
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED,
-                    position=(last_end, len(self.parser.query_str)),
+                    position=(last_end, len(self.query_str)),
                     details=f"Unparsed segment: '{segment.strip()}'",
                 )
 
@@ -192,7 +201,7 @@ class QueryStringLinter:
         Note: compile valid_field_regex with/out flags=re.IGNORECASE
         """
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
             if not re.match(valid_fields_regex, token.value):
@@ -203,9 +212,34 @@ class QueryStringLinter:
                     f"{token.position} is not supported.",
                 )
 
+    def check_unsupported_search_fields_in_query(self, query: Query) -> None:
+        """Check for the correct format of fields.
+
+        Note: compile valid_field_regex with/out flags=re.IGNORECASE
+        """
+
+        if query.search_field:
+            # pylint: disable=no-member
+            if not self.VALID_FIELDS_REGEX.match(query.search_field.value):  # type: ignore
+                pos_info = ""
+                if query.search_field.position:
+                    pos_info = f" at position {query.search_field.position}"
+                details = (
+                    f"Search field {query.search_field}{pos_info} is not supported."
+                )
+                details += f" Supported fields for {self.PLATFORM}: {self.VALID_FIELDS_REGEX.pattern}"
+                self.add_linter_message(
+                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                    position=query.search_field.position or (-1, -1),
+                    details=details,
+                )
+
+        for child in query.children:
+            self.check_unsupported_search_fields_in_query(child)
+
     def check_quoted_search_terms(self) -> None:
         """Check quoted search terms."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
             if '"' not in token.value:
@@ -220,7 +254,7 @@ class QueryStringLinter:
 
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value != token.value.upper():
                     self.add_linter_message(
@@ -232,7 +266,7 @@ class QueryStringLinter:
     def check_unbalanced_parentheses(self) -> None:
         """Check query for unbalanced parentheses."""
         i = 0
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i += 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
@@ -247,7 +281,7 @@ class QueryStringLinter:
         if i > 0:
             # Query contains unbalanced opening parentheses
             i = 0
-            for token in reversed(self.parser.tokens):
+            for token in reversed(self.tokens):
                 if token.type == TokenTypes.PARENTHESIS_CLOSED:
                     i += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
@@ -263,7 +297,7 @@ class QueryStringLinter:
     def check_unbalanced_quotes(self) -> None:
         """Check query for unbalanced quotes."""
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
 
@@ -309,7 +343,7 @@ class QueryStringLinter:
 
     def check_unknown_token_types(self) -> None:
         """Check for unknown token types."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type == TokenTypes.UNKNOWN:
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED, position=token.position
@@ -318,7 +352,7 @@ class QueryStringLinter:
     def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
         """Check a search term for invalid characters"""
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
             value = token.value
@@ -338,7 +372,7 @@ class QueryStringLinter:
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.PROXIMITY_OPERATOR:
                 continue
             near_distance = re.findall(r"\d{1,2}", token.value)
@@ -352,7 +386,7 @@ class QueryStringLinter:
         self, *, faulty_operators: str = "|&"
     ) -> None:
         """Check for readability of boolean operators."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value in faulty_operators:
                     self.add_linter_message(
@@ -362,19 +396,16 @@ class QueryStringLinter:
                     )
                     # Replace?
 
-    def handle_fully_quoted_query_str(self) -> None:
+    def handle_fully_quoted_query_str(self, query_str: str) -> str:
         """Handle fully quoted query string."""
-        if (
-            '"' == self.parser.query_str[0]
-            and '"' == self.parser.query_str[-1]
-            and "(" in self.parser.query_str
-        ):
+        if '"' == query_str[0] and '"' == query_str[-1] and "(" in query_str:
             self.add_linter_message(
                 QueryErrorCode.QUERY_IN_QUOTES,
                 position=(-1, -1),
             )
             # remove quotes before tokenization
-            self.parser.query_str = self.parser.query_str[1:-1]
+            query_str = query_str[1:-1]
+        return query_str
 
     def add_higher_value(
         self,
@@ -485,7 +516,14 @@ class QueryStringLinter:
                 break
             tokens = output
 
-        self.parser.tokens = output
+        self.tokens = output
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        if token in self.OPERATOR_PRECEDENCE:
+            return self.OPERATOR_PRECEDENCE[token]
+        return -1  # Not an operator
 
     # pylint: disable=too-many-branches
     def add_artificial_parentheses_for_operator_precedence(
@@ -506,19 +544,19 @@ class QueryStringLinter:
         # Added artificial parentheses
         art_par = 0
 
-        while index < len(self.parser.tokens):
+        while index < len(self.tokens):
             # Forward iteration through tokens
 
-            if self.parser.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
-                output.append(self.parser.tokens[index])
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
+                output.append(self.tokens[index])
                 index += 1
                 index, output = self.add_artificial_parentheses_for_operator_precedence(
                     index, output
                 )
                 continue
 
-            if self.parser.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
-                output.append(self.parser.tokens[index])
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
+                output.append(self.tokens[index])
                 index += 1
                 # Add closed parenthesis in case there are still open ones
                 while art_par > 0:
@@ -532,15 +570,15 @@ class QueryStringLinter:
                     art_par -= 1
                 return index, output
 
-            if self.parser.tokens[index].type in [
+            if self.tokens[index].type in [
                 TokenTypes.LOGIC_OPERATOR,
                 TokenTypes.PROXIMITY_OPERATOR,
             ]:
-                value = self.parser.get_precedence(self.parser.tokens[index].value)
+                value = self.get_precedence(self.tokens[index].value)
 
                 if current_value in (value, -1):
                     # Same precedence → just add to output
-                    output.append(self.parser.tokens[index])
+                    output.append(self.tokens[index])
                     current_value = value
 
                 elif value > current_value:
@@ -550,7 +588,7 @@ class QueryStringLinter:
                     )
 
                     output.extend(temp)
-                    output.append(self.parser.tokens[index])
+                    output.append(self.tokens[index])
                     current_value = value
 
                 elif value < current_value:
@@ -558,7 +596,7 @@ class QueryStringLinter:
                     while current_value > value:
                         self.add_linter_message(
                             QueryErrorCode.IMPLICIT_PRECEDENCE,
-                            position=self.parser.tokens[index].position,
+                            position=self.tokens[index].position,
                         )
                         # Lower precedence → close parenthesis
                         output.append(
@@ -570,14 +608,14 @@ class QueryStringLinter:
                         )
                         current_value -= 1
                         art_par -= 1
-                    output.append(self.parser.tokens[index])
+                    output.append(self.tokens[index])
                     current_value = value
 
                 index += 1
                 continue
 
             # Default: search terms, fields, etc.
-            output.append(self.parser.tokens[index])
+            output.append(self.tokens[index])
             index += 1
 
         # Add parenthesis in case there are missing ones
@@ -599,7 +637,7 @@ class QueryStringLinter:
                 )
                 art_par += 1
 
-        if index == len(self.parser.tokens):
+        if index == len(self.tokens):
             self.flatten_redundant_artificial_nesting(output)
 
         return index, output

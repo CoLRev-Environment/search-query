@@ -22,7 +22,7 @@ def test_handle_closing_parenthesis_single_child() -> None:
     This test verifies that the `handle_closing_parenthesis` method correctly returns
     the single child when there is only one child in the list.
     """
-    children = [Query(value="example", operator=False)]
+    children = [Query(value="example", operator=False, origin_platform="wos")]
     parser = WOSParser(query_str="", search_field_general="", mode="")
     result = parser.handle_closing_parenthesis(children, current_operator="")
 
@@ -37,8 +37,8 @@ def test_handle_closing_parenthesis_with_operator() -> None:
     a Query object with the given operator and children when there is an operator.
     """
     children = [
-        Query(value="example1", operator=False),
-        Query(value="example2", operator=False),
+        Query(value="example1", operator=False, origin_platform="wos"),
+        Query(value="example2", operator=False, origin_platform="wos"),
     ]
     current_operator = "AND"
     parser = WOSParser(query_str="", search_field_general="", mode="")
@@ -246,6 +246,7 @@ def test_handle_year_search_valid_year_span() -> None:
                     position=token.position,
                 )
             ],
+            origin_platform="wos",
         )
     ]
 
@@ -284,6 +285,7 @@ def test_handle_year_search_single_year() -> None:
                     position=token.position,
                 )
             ],
+            origin_platform="wos",
         )
     ]
 
@@ -328,6 +330,7 @@ def test_add_term_node_without_current_operator() -> None:
             operator=operator,
             search_field=search_field,
             position=position,
+            origin_platform="wos",
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -372,8 +375,10 @@ def test_add_term_node_with_current_operator() -> None:
                     operator=operator,
                     search_field=search_field,
                     position=position,
+                    origin_platform="wos",
                 )
             ],
+            origin_platform="wos",
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -416,15 +421,18 @@ def test_add_term_node_with_near_operator() -> None:
                     operator=False,
                     search_field=search_field,
                     position=(0, 7),
+                    origin_platform="wos",
                 ),
                 Query(
                     value="example2",
                     operator=False,
                     search_field=search_field,
                     position=(8, 16),
+                    origin_platform="wos",
                 ),
             ],
             distance=5,
+            origin_platform="wos",
         )
     ]
 
@@ -450,29 +458,35 @@ def test_add_term_node_with_near_operator() -> None:
                             operator=False,
                             search_field=search_field,
                             position=(0, 7),
+                            origin_platform="wos",
                         ),
                         Query(
                             value="example2",
                             operator=False,
                             search_field=search_field,
                             position=(8, 16),
+                            origin_platform="wos",
                         ),
                     ],
                     distance=5,
+                    origin_platform="wos",
                 ),
                 Query(
                     value="example2",
                     operator=False,
                     search_field=search_field,
                     position=(8, 16),
+                    origin_platform="wos",
                 ),
                 Query(
                     value="example3",
                     operator=False,
                     search_field=search_field,
                     position=(17, 25),
+                    origin_platform="wos",
                 ),
             ],
+            origin_platform="wos",
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -519,6 +533,7 @@ def test_add_term_node_with_existing_children() -> None:
             operator=False,
             search_field=search_field,
             position=(0, 8),
+            origin_platform="wos",
         )
     ]
 
@@ -536,12 +551,14 @@ def test_add_term_node_with_existing_children() -> None:
             operator=False,
             search_field=search_field,
             position=(0, 8),
+            origin_platform="wos",
         ),
         Query(
             value=value,
             operator=operator,
             search_field=search_field,
             position=position,
+            origin_platform="wos",
         ),
     ]
     assert result[0].value == expected_result[0].value
@@ -592,8 +609,10 @@ def test_add_term_node_with_current_negation() -> None:
                     operator=operator,
                     search_field=search_field,
                     position=position,
+                    origin_platform="wos",
                 )
             ],
+            origin_platform="wos",
         )
     ]
     assert result[0].value == expected_result[0].value

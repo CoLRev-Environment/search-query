@@ -6,6 +6,7 @@ import typing
 from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -30,6 +31,17 @@ class WOSQueryStringLinter(QueryStringLinter):
     DOI_VALUE_REGEX = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
 
     WILDCARD_CHARS = ["?", "$", "*"]
+
+    VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
+
+    PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
+    PLATFORM: PLATFORM = PLATFORM.WOS
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
@@ -64,16 +76,18 @@ class WOSQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    parser: "search_query.wos.parser.WOSParser"
-
-    def __init__(self, parser: "search_query.wos.parser.WOSParser"):
-        self.search_str = parser.query_str
-        self.parser = parser
-
-        super().__init__(parser=parser)
-
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Performs a pre-linting"""
+
+        self.tokens = tokens
+        self.query_str = query_str
+        self.search_field_general = search_field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -83,6 +97,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_quotes()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
+
         self.check_invalid_characters_in_search_term("@%$^~\\<>{}()[]#")
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
@@ -95,12 +110,13 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_near_distance_in_range(max_value=15)
         self.check_wildcards()
         self.check_unsupported_wildcards()
+        return self.tokens
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
 
         # Check for erroneous field syntax
-        match = re.search(r"\[[A-Za-z]*\]", self.parser.query_str)
+        match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
@@ -114,7 +130,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check if the year is used without a search field."""
         year_search_field_detected = False
         count_search_fields = 0
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
                 year_search_field_detected = True
 
@@ -126,8 +142,8 @@ class WOSQueryStringLinter(QueryStringLinter):
             self.add_linter_message(
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_FIELD,
                 position=(
-                    self.parser.tokens[0].position[0],
-                    self.parser.tokens[-1].position[1],
+                    self.tokens[0].position[0],
+                    self.tokens[-1].position[1],
                 ),
             )
 
@@ -136,9 +152,9 @@ class WOSQueryStringLinter(QueryStringLinter):
     ) -> None:
         """Check if the search field is in the list of search fields from JSON."""
 
-        for index, token in enumerate(self.parser.tokens):
+        for index, token in enumerate(self.tokens):
             if token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
-                if self.parser.search_field_general == "":
+                if self.search_field_general == "":
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_MISSING,
                         position=(-1, -1),
@@ -146,8 +162,8 @@ class WOSQueryStringLinter(QueryStringLinter):
                 break
 
             if token.type == TokenTypes.FIELD:
-                if index == 0 and self.parser.search_field_general != "":
-                    if token.value != self.parser.search_field_general:
+                if index == 0 and self.search_field_general != "":
+                    if token.value != self.search_field_general:
                         self.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
                             position=token.position,
@@ -166,7 +182,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     def check_implicit_near(self) -> None:
         """Check for implicit NEAR operator."""
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.value == "NEAR":
                 self.add_linter_message(
                     QueryErrorCode.IMPLICIT_NEAR_VALUE,
@@ -176,9 +192,9 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     def check_year_format(self) -> None:
         """Check for the correct format of year."""
-        for index, token in enumerate(self.parser.tokens):
+        for index, token in enumerate(self.tokens):
             if YEAR_PUBLISHED_FIELD_REGEX.match(token.value):
-                year_token = self.parser.tokens[index + 1]
+                year_token = self.tokens[index + 1]
 
                 if any(char in year_token.value for char in ["*", "?", "$"]):
                     self.add_linter_message(
@@ -204,7 +220,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_invalid_token_sequences(self) -> None:
         """Check for the correct order of tokens in the query."""
 
-        tokens = self.parser.tokens
+        tokens = self.tokens
         for index in range(len(tokens) - 1):
             token = tokens[index]
             next_token = tokens[index + 1]
@@ -253,7 +269,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for unsupported characters in the search string."""
 
         # Web of Science does not support "!"
-        for match in re.finditer(r"\!+", self.search_str):
+        for match in re.finditer(r"\!+", self.query_str):
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_UNSUPPORTED,
                 position=(match.start(), match.end()),
@@ -262,7 +278,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_wildcards(self) -> None:
         """Check for the usage of wildcards in the search string."""
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             token_value = token.value.replace('"', "")
 
             # Implement constrains from Web of Science for Wildcards
@@ -371,6 +387,8 @@ class WOSQueryStringLinter(QueryStringLinter):
         Validate the query tree.
         This method is called after the query tree has been built.
         """
+
+        self.check_unsupported_search_fields_in_query(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
 

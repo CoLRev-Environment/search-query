@@ -55,14 +55,6 @@ class WOSParser(QueryStringParser):
         ]
     )
 
-    OPERATOR_PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
-
     def __init__(
         self,
         query_str: str,
@@ -76,7 +68,7 @@ class WOSParser(QueryStringParser):
             search_field_general=search_field_general,
             mode=mode,
         )
-        self.linter = WOSQueryStringLinter(parser=self)
+        self.linter = WOSQueryStringLinter()
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -216,6 +208,7 @@ class WOSParser(QueryStringParser):
                     value=current_operator,
                     children=list(children),
                     search_field=search_field,
+                    origin_platform="deactivated",
                 ),
                 index,
             )
@@ -240,6 +233,7 @@ class WOSParser(QueryStringParser):
                 value=current_operator,
                 children=children,
                 search_field=search_field,
+                origin_platform="deactivated",
             )
 
         # Multiple children without operator are not allowed
@@ -387,7 +381,12 @@ class WOSParser(QueryStringParser):
         if not children:
             children = []
         # Create a new term node
-        term_node = Term(value=value, search_field=search_field, position=position)
+        term_node = Term(
+            value=value,
+            search_field=search_field,
+            position=position,
+            origin_platform="deactivated",
+        )
 
         # Append the term node to the list of children
         if current_operator:
@@ -407,10 +406,12 @@ class WOSParser(QueryStringParser):
                                     Term(
                                         value=self.tokens[index - 1].value,
                                         search_field=search_field,
+                                        origin_platform="deactivated",
                                     ),
                                     term_node,
                                 ],
                                 distance=int(distance),
+                                origin_platform="deactivated",
                             )
                             break
                         index -= 1
@@ -421,6 +422,7 @@ class WOSParser(QueryStringParser):
                             operator=True,
                             children=[*children, near_operator],
                             search_field=search_field,
+                            origin_platform="deactivated",
                         )
                     ]
                 else:
@@ -429,6 +431,7 @@ class WOSParser(QueryStringParser):
                             value=current_operator,
                             children=[*children, term_node],
                             search_field=search_field,
+                            origin_platform="deactivated",
                         )
                     ]
             else:
@@ -441,17 +444,23 @@ class WOSParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.linter.handle_fully_quoted_query_str()
+        self.linter.query_str = self.query_str
+
+        self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
 
         self.tokenize()
-        self.linter.validate_tokens()
+        self.tokens = self.linter.validate_tokens(
+            tokens=self.tokens,
+            query_str=self.query_str,
+            search_field_general=self.search_field_general,
+        )
         self.linter.check_status()
 
         query, _ = self.parse_query_tree()
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.origin_platform = PLATFORM.WOS.value
+        query.set_origin_platform(PLATFORM.WOS.value)
 
         return query
 
@@ -499,6 +508,7 @@ class WOSListParser(QueryListParser):
         operator_query = Query(
             value=operator,
             children=children,
+            origin_platform="deactivated",
         )
         return operator_query
 

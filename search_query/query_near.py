@@ -20,6 +20,7 @@ class NEARQuery(Query):
         search_field: typing.Union[SearchField, str],
         position: typing.Optional[tuple] = None,
         distance: typing.Optional[int] = None,
+        origin_platform: str = "generic",
     ) -> None:
         """init method
         search terms: strings which you want to include in the search query
@@ -36,4 +37,5 @@ class NEARQuery(Query):
             else SearchField(search_field),
             position=position,
             distance=distance,
+            origin_platform=origin_platform,
         )

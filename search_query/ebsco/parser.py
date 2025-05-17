@@ -41,14 +41,6 @@ class EBSCOParser(QueryStringParser):
         ]
     )
 
-    OPERATOR_PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
-
     def __init__(
         self,
         query_str: str,
@@ -60,7 +52,7 @@ class EBSCOParser(QueryStringParser):
         super().__init__(
             query_str, search_field_general=search_field_general, mode=mode
         )
-        self.linter = EBSCOQueryStringLinter(self)
+        self.linter = EBSCOQueryStringLinter()
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
@@ -138,17 +130,6 @@ class EBSCOParser(QueryStringParser):
 
         distance = int(distance_string)
         return operator, distance
-
-    def get_precedence(self, token: str) -> int:
-        """Returns operator precedence for logical and proximity operators."""
-
-        if token.startswith("N"):
-            return self.OPERATOR_PRECEDENCE["NEAR"]
-        if token.startswith("W"):
-            return self.OPERATOR_PRECEDENCE["WITHIN"]
-        if token in self.OPERATOR_PRECEDENCE:
-            return self.OPERATOR_PRECEDENCE[token]
-        return -1  # Not an operator
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -247,6 +228,7 @@ class EBSCOParser(QueryStringParser):
                     value=token.value,
                     position=token.position,
                     search_field=search_field or search_field_par,
+                    origin_platform="deactivated",
                 )
 
                 # Append search_term to tree
@@ -268,6 +250,7 @@ class EBSCOParser(QueryStringParser):
                     position=token.position,
                     search_field=search_field or search_field_par,
                     distance=distance,
+                    origin_platform="deactivated",
                 )
 
                 # Set proximity_operator as tree node
@@ -279,6 +262,7 @@ class EBSCOParser(QueryStringParser):
                     value=token.value,
                     position=token.position,
                     search_field=search_field or search_field_par,
+                    origin_platform="deactivated",
                 )
 
                 if not current_operator:
@@ -315,14 +299,19 @@ class EBSCOParser(QueryStringParser):
 
         self.tokenize()
 
-        self.linter.validate_tokens()
+        self.tokens = self.linter.validate_tokens(
+            tokens=self.tokens,
+            query_str=self.query_str,
+            search_field_general=self.search_field_general,
+        )
         self.linter.check_status()
 
         query = self.parse_query_tree()
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.origin_platform = PLATFORM.EBSCO.value
+        query.set_origin_platform(PLATFORM.EBSCO.value)
+
         return query
 
 

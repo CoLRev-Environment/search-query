@@ -6,7 +6,9 @@ import typing
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
@@ -15,7 +17,6 @@ from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:
-    from search_query.parser import PubmedParser
     from search_query.pubmed.parser import PubmedListParser
     from search_query.parser_base import QueryStringParser
 
@@ -24,7 +25,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     """Linter for PubMed Query Strings"""
 
     PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
-    parser: "PubmedParser"
+    PLATFORM: PLATFORM = PLATFORM.PUBMED
 
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
@@ -50,8 +51,18 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Validate token list"""
+
+        self.tokens = tokens
+        self.query_str = query_str
+        self.search_field_general = search_field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -71,11 +82,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard()
         self.check_invalid_proximity_operator()
         self.check_boolean_operator_readability()
+        return self.tokens
 
     def check_implicit_operator(self) -> None:
         """Check for implicit operators in the query string"""
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
 
@@ -116,7 +128,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         """Check for invalid syntax in the query string."""
 
         # Check for erroneous field syntax
-        match = re.search(r"\b[A-Z]{2}=", self.parser.query_str)
+        match = re.search(r"\b[A-Z]{2}=", self.query_str)
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
@@ -133,7 +145,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         # pylint: disable=duplicate-code
         invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
             value = token.value
@@ -163,37 +175,35 @@ class PubmedQueryStringLinter(QueryStringLinter):
         """Check token list for invalid token sequences."""
 
         # Check the first token
-        if self.parser.tokens[0].type not in [
+        if self.tokens[0].type not in [
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=self.parser.tokens[0].position,
-                details=f"Cannot start with {self.parser.tokens[0].type}",
+                position=self.tokens[0].position,
+                details=f"Cannot start with {self.tokens[0].type}",
             )
 
         # pylint: disable=duplicate-code
         # Check following token sequences
-        for i, token in enumerate(self.parser.tokens):
+        for i, token in enumerate(self.tokens):
             if i == 0:
                 continue
-            if i == len(self.parser.tokens):
+            if i == len(self.tokens):
                 break
 
             token_type = token.type
-            prev_type = self.parser.tokens[i - 1].type
+            prev_type = self.tokens[i - 1].type
 
             if token_type in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 continue
 
             details = ""
-            position = (
-                token.position if token_type else self.parser.tokens[i - 1].position
-            )
+            position = token.position if token_type else self.tokens[i - 1].position
 
             if token_type == TokenTypes.FIELD:
-                if self.parser.tokens[i - 1].type in [TokenTypes.PARENTHESIS_CLOSED]:
+                if self.tokens[i - 1].type in [TokenTypes.PARENTHESIS_CLOSED]:
                     details = "Nested queries cannot have search fields"
                 else:
                     details = "Invalid search field position"
@@ -209,14 +219,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
             ):
                 details = "Empty parenthesis"
                 position = (
-                    self.parser.tokens[i - 1].position[0],
+                    self.tokens[i - 1].position[0],
                     token.position[1],
                 )
 
             elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
                 details = "Missing operator"
                 position = (
-                    self.parser.tokens[i - 1].position[0],
+                    self.tokens[i - 1].position[0],
                     token.position[1],
                 )
 
@@ -227,14 +237,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
             )
 
         # Check the last token
-        if self.parser.tokens[-1].type in [
+        if self.tokens[-1].type in [
             TokenTypes.PARENTHESIS_OPEN,
             TokenTypes.LOGIC_OPERATOR,
         ]:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=self.parser.tokens[-1].position,
-                details=f"Cannot end with {self.parser.tokens[-1].type}",
+                position=self.tokens[-1].position,
+                details=f"Cannot end with {self.tokens[-1].type}",
             )
 
     def check_invalid_wildcard(self) -> None:
@@ -243,7 +253,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         details = (
             "Wildcards cannot be used for short strings (shorter than 4 characters)."
         )
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.SEARCH_TERM:
                 continue
 
@@ -266,11 +276,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
 
-        for index, token in enumerate(self.parser.tokens):
+        for index, token in enumerate(self.tokens):
             if ":~" not in token.value:
                 continue
-            field_token = self.parser.tokens[index]
-            search_phrase_token = self.parser.tokens[index - 1]
+            field_token = self.tokens[index]
+            search_phrase_token = self.tokens[index - 1]
 
             match = re.match(self.PROXIMITY_REGEX, field_token.value)
             if not match:
@@ -306,7 +316,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=self.parser.tokens[index - 1].position,
+                    position=self.tokens[index - 1].position,
                     details=details,
                 )
 
@@ -325,7 +335,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
             # Update search field token
-            self.parser.tokens[index].value = field_value
+            self.tokens[index].value = field_value
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
@@ -464,7 +474,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def check_unsupported_pubmed_search_fields(self) -> None:
         """Check for the correct format of fields."""
 
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
 
@@ -483,7 +493,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def check_general_search_field_mismatch(self) -> None:
         """Check general search field mismatch"""
 
-        general_sf_parentheses = f"[{self.parser.search_field_general.lower()}]"
+        general_sf_parentheses = f"[{self.search_field_general.lower()}]"
         try:
             general_sf = map_to_standard(general_sf_parentheses)
         except ValueError:
@@ -491,7 +501,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             general_sf = None
 
         standardized_sf_list = []
-        for token in self.parser.tokens:
+        for token in self.tokens:
             if token.type != TokenTypes.FIELD:
                 continue
             try:
@@ -511,7 +521,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 if general_sf != standardized_sf:
                     details = (
                         "The search_field_general "
-                        f"({self.parser.search_field_general}) "
+                        f"({self.search_field_general}) "
                         f"and the search_field {token.value} do not match."
                     )
                     # User-provided fields and fields in the query do not match
@@ -523,7 +533,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 else:
                     details = (
                         "The search_field_general "
-                        f"({self.parser.search_field_general}) "
+                        f"({self.search_field_general}) "
                         f"and the search_field {token.value} are redundant."
                     )
                     # User-provided fields match fields in the query
@@ -542,9 +552,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 "instead of the search_field_general",
             )
 
-        if not general_sf and not any(
-            t.type == TokenTypes.FIELD for t in self.parser.tokens
-        ):
+        if not general_sf and not any(t.type == TokenTypes.FIELD for t in self.tokens):
             # Fields not specified
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_MISSING,

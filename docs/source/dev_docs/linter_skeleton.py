@@ -1,3 +1,5 @@
+import typing
+
 from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
@@ -19,8 +21,19 @@ class XYQueryStringLinter(QueryStringLinter):
         # ...
     }
 
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Main validation routine"""
+
+        self.tokens = tokens
+        self.query_str = query_str
+        self.search_field_general = search_field_general
+
         self.check_unbalanced_parentheses()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
@@ -30,6 +43,8 @@ class XYQueryStringLinter(QueryStringLinter):
         # custom validation
         self.check_unsupported_search_fields()
         self.check_field_positioning()
+
+        return self.tokens
 
     def check_unsupported_search_fields(self) -> None:
         for token in self.parser.tokens:

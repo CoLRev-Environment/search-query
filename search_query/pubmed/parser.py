@@ -51,7 +51,7 @@ class PubmedParser(QueryStringParser):
         super().__init__(
             query_str=query_str, search_field_general=search_field_general, mode=mode
         )
-        self.linter = PubmedQueryStringLinter(self)
+        self.linter = PubmedQueryStringLinter()
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
@@ -196,6 +196,7 @@ class PubmedParser(QueryStringParser):
             search_field=None,
             children=list(children),
             position=(query_start_pos, query_end_pos),
+            origin_platform="deactivated",
         )
 
     def _parse_nested_query(self, tokens: list) -> Query:
@@ -222,6 +223,7 @@ class PubmedParser(QueryStringParser):
             value=search_term_token.value,
             search_field=search_field,
             position=(tokens[0].position[0], query_end_pos),
+            origin_platform="deactivated",
         )
 
     # def parse_user_provided_fields(self, field_values: str) -> list:
@@ -265,7 +267,11 @@ class PubmedParser(QueryStringParser):
         """Parse a query string"""
 
         self.tokenize()
-        self.linter.validate_tokens()
+        self.tokens = self.linter.validate_tokens(
+            tokens=self.tokens,
+            query_str=self.query_str,
+            search_field_general=self.search_field_general,
+        )
         self.linter.check_status()
 
         # Parsing
@@ -275,7 +281,7 @@ class PubmedParser(QueryStringParser):
 
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.origin_platform = PLATFORM.PUBMED.value
+        query.set_origin_platform(PLATFORM.PUBMED.value)
 
         return query
 
@@ -347,6 +353,7 @@ class PubmedListParser(QueryListParser):
             search_field=None,
             children=children,
             position=(1, 1),
+            origin_platform="deactivated",
         )
 
     def parse(self) -> Query:

@@ -11,9 +11,12 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
+from search_query.query import Operators
+from search_query.query import Query
+from search_query.query import SearchField
+from search_query.query_and import AndQuery
 from search_query.wos.parser import WOSListParser
 from search_query.wos.parser import WOSParser
-
 
 # ruff: noqa: E501
 # flake8: noqa: E501
@@ -785,3 +788,73 @@ def test_list_parser_case_4() -> None:
         "position": (7, 9),
         "details": "List reference #5 not found.",
     }
+
+
+def test_wos_valid_query() -> None:
+    """Should pass WOS constraints."""
+    # This should NOT raise
+    Query(
+        value=Operators.OR,
+        operator=True,
+        children=[
+            Query(
+                value="AI",
+                operator=False,
+                search_field=SearchField("TI="),
+                origin_platform="wos",
+            ),
+            Query(
+                value="ethics",
+                operator=False,
+                search_field=SearchField("AB="),
+                origin_platform="wos",
+            ),
+        ],
+        origin_platform="wos",
+    )
+
+
+def test_wos_invalid_nested_with_operator_field() -> None:
+    """Should raise: nested operator with search_field set."""
+    with pytest.raises(Exception):
+        AndQuery(
+            [
+                Query(
+                    value="DE12",
+                    operator=False,
+                    search_field=SearchField("IS="),
+                    origin_platform="wos",
+                ),
+                Query(
+                    value="ethics",
+                    operator=False,
+                    search_field=SearchField("AB"),
+                    origin_platform="wos",
+                ),
+            ],
+            search_field=SearchField("TI"),
+            origin_platform="wos",
+        )
+
+
+def test_wos_invalid_fields() -> None:
+    """Should raise: invalid search fields (e.g., brackets or missing =)"""
+    with pytest.raises(Exception):
+        AndQuery(
+            [
+                Query(
+                    value="DE12",
+                    operator=False,
+                    search_field=SearchField("[ti]"),
+                    origin_platform="wos",
+                ),
+                Query(
+                    value="ethics",
+                    operator=False,
+                    search_field=SearchField("AB="),
+                    origin_platform="wos",
+                ),
+            ],
+            search_field=SearchField("TI="),
+            origin_platform="wos",
+        )

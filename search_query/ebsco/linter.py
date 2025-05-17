@@ -5,13 +5,14 @@ from __future__ import annotations
 import re
 import typing
 
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.constants import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:
-    import search_query.parser.constants
     from search_query.query import Query
 
 
@@ -19,6 +20,15 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     """Linter for EBSCO Query Strings"""
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
+
+    OPERATOR_PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
+    PLATFORM: PLATFORM = PLATFORM.EBSCO
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
@@ -53,15 +63,17 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    parser: search_query.parser.constants.EBSCOParser
-
-    def __init__(self, parser: search_query.parser.constants.EBSCOParser):
-        self.search_str = parser.query_str
-        self.parser = parser
-        super().__init__(parser=parser)
-
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Pre-linting checks."""
+        self.tokens = tokens
+        self.query_str = query_str
+        self.search_field_general = search_field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -76,12 +88,24 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         self.check_token_ambiguity()
         self.check_search_field_general()
+        return self.tokens
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        if token.startswith("N"):
+            return self.OPERATOR_PRECEDENCE["NEAR"]
+        if token.startswith("W"):
+            return self.OPERATOR_PRECEDENCE["WITHIN"]
+        if token in self.OPERATOR_PRECEDENCE:
+            return self.OPERATOR_PRECEDENCE[token]
+        return -1  # Not an operator
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
 
         # Check for erroneous field syntax
-        match = re.search(r"\[[A-Za-z]*\]", self.parser.query_str)
+        match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
@@ -96,13 +120,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # Note: EBSCO-specific
 
         prev_token = None
-        for i, token in enumerate(self.parser.tokens):
+        for i, token in enumerate(self.tokens):
             match = re.match(r"^[A-Z]{2} ", token.value)
             if (
                 token.type == TokenTypes.SEARCH_TERM
                 and match
                 and (prev_token is None or prev_token.type != TokenTypes.FIELD)
-                and not self.parser.tokens[i + 1].startswith('"')
+                and not self.tokens[i + 1].value.startswith('"')
             ):
                 details = (
                     f"The token '{token.value}' (at {token.position}) is ambiguous. "
@@ -129,18 +153,18 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         based on token type and the previous token type.
         """
 
-        for i, token in enumerate(self.parser.tokens):
+        for i, token in enumerate(self.tokens):
             # Check the last token
-            if i == len(self.parser.tokens):
-                if self.parser.tokens[i - 1].type in [
+            if i == len(self.tokens):
+                if self.tokens[i - 1].type in [
                     TokenTypes.PARENTHESIS_OPEN,
                     TokenTypes.LOGIC_OPERATOR,
                     TokenTypes.SEARCH_TERM,
                 ]:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=self.parser.tokens[i - 1].position,
-                        details=f"Cannot end with {self.parser.tokens[i-1].type}",
+                        position=self.tokens[i - 1].position,
+                        details=f"Cannot end with {self.tokens[i-1].type}",
                     )
                 break
 
@@ -159,7 +183,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     )
                 continue
 
-            prev_type = self.parser.tokens[i - 1].type
+            prev_type = self.tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
@@ -176,14 +200,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ):
                     details = "Empty parenthesis"
                     position = (
-                        self.parser.tokens[i - 1].position[0],
+                        self.tokens[i - 1].position[0],
                         token.position[1],
                     )
                 elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
-                    r"^[a-z]{2}$", self.parser.tokens[i - 1].value
+                    r"^[a-z]{2}$", self.tokens[i - 1].value
                 ):
                     details = "Search field is not supported (must be upper case)"
-                    position = self.parser.tokens[i - 1].position
+                    position = self.tokens[i - 1].position
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         position=position,
@@ -195,16 +219,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ):
                     details = "Missing operator"
                     position = (
-                        self.parser.tokens[i - 1].position[0],
+                        self.tokens[i - 1].position[0],
                         token.position[1],
                     )
 
                 else:
                     details = ""
                     position = (
-                        token.position
-                        if token_type
-                        else self.parser.tokens[i - 1].position
+                        token.position if token_type else self.tokens[i - 1].position
                     )
 
                 self.add_linter_message(

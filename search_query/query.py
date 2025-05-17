@@ -53,6 +53,7 @@ class Query:
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,
         distance: typing.Optional[int] = None,
+        origin_platform: str = "generic",
     ) -> None:
         self._value: str = ""
         self._operator = False
@@ -66,15 +67,63 @@ class Query:
         self.search_field = search_field
         self.position = position
         self.marked = False
-
         # Note: origin_platform is only set for root nodes
-        self.origin_platform = ""
+        self.origin_platform = origin_platform
 
         self._parent: typing.Optional[Query] = None
         if children:
             for child in children:
                 self.add_child(child)
+
+        self.set_origin_platform_recursively(origin_platform)
+
         self._ensure_children_not_circular()
+
+        # Note: validating platform constraints is particularly important
+        # when queries are created programmatically
+        self._validate_platform_constraints()
+
+    def _validate_platform_constraints(self) -> None:
+        if self.origin_platform == "deactivated":
+            return
+
+        # pylint: disable=import-outside-toplevel
+        if self.origin_platform == "wos":
+            from search_query.wos.linter import WOSQueryStringLinter
+
+            wos_linter = WOSQueryStringLinter()
+            # TODO: validates fields, use of search_fields for nested queries, etc.
+            wos_linter.validate_query_tree(self)
+            wos_linter.check_status()
+
+        elif self.origin_platform == "generic":
+            from search_query.generic.linter import GenericLinter
+
+            gen_linter = GenericLinter()
+            gen_linter.validate_query_tree(self)
+
+            gen_linter.check_status()
+
+    def _set_origin_platform_recursively(self, platform: str) -> None:
+        """Set the origin platform for this query node and its children."""
+        self.origin_platform = platform
+        for child in self._children:
+            # pylint: disable=protected-access
+            child._set_origin_platform_recursively(platform)
+
+    # TODO : maybe as a setter?
+    def set_origin_platform(self, platform: str) -> None:
+        """Set the platform for this query node."""
+        if platform not in PLATFORM:
+            raise ValueError(f"Invalid platform: {platform}")
+        self._set_origin_platform_recursively(platform)
+        self._validate_platform_constraints()
+
+    def set_origin_platform_recursively(self, platform: str) -> None:
+        """Set the origin platform for this query node and its children."""
+        self.origin_platform = platform
+        for child in self._children:
+            child.set_origin_platform_recursively(platform)
 
     def __deepcopy__(self, memo: dict) -> Query:
         cls = self.__class__
@@ -171,7 +220,11 @@ class Query:
     def add_child(self, child: typing.Union[str, Query]) -> Query:
         """Add a child Query node and set its parent pointer."""
         if isinstance(child, str):
-            child = Term(child, search_field=self.search_field)
+            child = Term(
+                child,
+                search_field=self.search_field,
+                origin_platform=self.origin_platform,
+            )
         child._set_parent(self)  # pylint: disable=protected-access
         self._children.append(child)
         return child
@@ -435,6 +488,7 @@ class Term(Query):
         *,
         search_field: typing.Optional[SearchField],
         position: typing.Optional[tuple] = None,
+        origin_platform: str = "generic",
     ) -> None:
         super().__init__(
             value=value,
@@ -442,4 +496,5 @@ class Term(Query):
             children=None,
             search_field=search_field,
             position=position,
+            origin_platform=origin_platform,
         )
