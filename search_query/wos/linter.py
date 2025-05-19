@@ -114,7 +114,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
-                position=match.span(),
+                positions=[match.span()],
                 details="WOS fields must be before search terms and "
                 "without brackets, e.g. AB=robot or TI=monitor. "
                 f"'{match.group(0)}' is invalid.",
@@ -133,10 +133,12 @@ class WOSQueryStringLinter(QueryStringLinter):
             # Year detected without other search fields
             self.add_linter_message(
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS,
-                position=(
-                    self.tokens[0].position[0],
-                    self.tokens[-1].position[1],
-                ),
+                positions=[
+                    (
+                        self.tokens[0].position[0],
+                        self.tokens[-1].position[1],
+                    )
+                ],
             )
 
     def check_search_fields_from_json(
@@ -149,7 +151,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if self.search_field_general == "":
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_MISSING,
-                        position=(-1, -1),
+                        positions=[(-1, -1)],
                     )
                 break
 
@@ -158,14 +160,14 @@ class WOSQueryStringLinter(QueryStringLinter):
                     if token.value != self.search_field_general:
                         self.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                            position=token.position,
+                            positions=[token.position],
                         )
                     else:
                         # Note : in basic search, when starting the query with a field,
                         # WOS raises a syntax error.
                         self.add_linter_message(
                             QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                            position=token.position,
+                            positions=[token.position],
                         )
 
                 # break: only consider the first FIELD
@@ -178,7 +180,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.value == "NEAR":
                 self.add_linter_message(
                     QueryErrorCode.IMPLICIT_NEAR_VALUE,
-                    position=token.position,
+                    positions=[token.position],
                 )
                 token.value = "NEAR/15"
 
@@ -193,7 +195,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if any(char in query.value for char in ["*", "?", "$"]):
                 self.add_linter_message(
                     QueryErrorCode.WILDCARD_IN_YEAR,
-                    position=query.position or (-1, -1),
+                    positions=[query.position or (-1, -1)],
                 )
 
             # Check if the yearspan is not more than 5 years
@@ -206,7 +208,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
                     self.add_linter_message(
                         QueryErrorCode.YEAR_SPAN_VIOLATION,
-                        position=query.position or (-1, -1),
+                        positions=[query.position or (-1, -1)],
                     )
 
         for child in query.children:
@@ -239,7 +241,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.is_operator() and next_token.is_operator():
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=(token.position[0], next_token.position[1]),
+                    positions=[(token.position[0], next_token.position[1])],
                     details="Two operators in a row are not allowed.",
                 )
                 continue
@@ -248,7 +250,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=next_token.position,
+                    positions=[next_token.position],
                 )
                 continue
 
@@ -257,7 +259,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if next_token.type not in allowed_next_types:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=next_token.position,
+                    positions=[next_token.position],
                 )
 
     def check_unsupported_wildcards(self, query: Query) -> None:
@@ -274,7 +276,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     )
                 self.add_linter_message(
                     QueryErrorCode.WILDCARD_UNSUPPORTED,
-                    position=position,
+                    positions=[position],
                 )
 
         for child in query.children:
@@ -293,7 +295,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     if index == 0 and len(value) == 1:
                         self.add_linter_message(
                             QueryErrorCode.WILDCARD_STANDALONE,
-                            position=query.position or (-1, -1),
+                            positions=[query.position or (-1, -1)],
                         )
 
                     elif len(value) == index + 1:
@@ -319,7 +321,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                         ]:
                             self.add_linter_message(
                                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
-                                position=query.position or (-1, -1),
+                                positions=[query.position or (-1, -1)],
                             )
 
         for child in query.children:
@@ -331,13 +333,13 @@ class WOSQueryStringLinter(QueryStringLinter):
         if query.value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
-                position=query.position or (-1, -1),
+                positions=[query.position or (-1, -1)],
             )
 
         if len(query.value) < 4:
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_RIGHT_SHORT_LENGTH,
-                position=query.position or (-1, -1),
+                positions=[query.position or (-1, -1)],
             )
 
     def check_format_left_hand_wildcards(self, query: Query) -> None:
@@ -346,7 +348,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         if len(query.value) < 4:
             self.add_linter_message(
                 QueryErrorCode.WILDCARD_LEFT_SHORT_LENGTH,
-                position=query.position or (-1, -1),
+                positions=[query.position or (-1, -1)],
             )
 
     def check_issn_isbn_format(self, query: "Query") -> None:
@@ -362,7 +364,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 ) and not self.ISBN_VALUE_REGEX.match(query.value):
                     self.add_linter_message(
                         QueryErrorCode.ISBN_FORMAT_INVALID,
-                        position=query.position or (-1, -1),
+                        positions=[query.position or (-1, -1)],
                     )
 
             return
@@ -382,7 +384,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if not self.DOI_VALUE_REGEX.match(query.value):
                     self.add_linter_message(
                         QueryErrorCode.DOI_FORMAT_INVALID,
-                        position=query.position or (-1, -1),
+                        positions=[query.position or (-1, -1)],
                     )
             return
 
@@ -455,7 +457,7 @@ class WOSQueryListLinter(QueryListLinter):
             self.add_linter_message(
                 QueryErrorCode.MISSING_ROOT_NODE,
                 list_position=GENERAL_ERROR_POSITION,
-                position=(-1, -1),
+                positions=[(-1, -1)],
             )
             missing_root = True
         return missing_root
@@ -474,7 +476,7 @@ class WOSQueryListLinter(QueryListLinter):
             self.add_linter_message(
                 QueryErrorCode.MISSING_OPERATOR_NODES,
                 list_position=GENERAL_ERROR_POSITION,
-                position=(-1, -1),
+                positions=[(-1, -1)],
             )
 
     def _validate_operator_node(self) -> None:
@@ -491,7 +493,7 @@ class WOSQueryListLinter(QueryListLinter):
                     self.add_linter_message(
                         QueryErrorCode.TOKENIZING_FAILED,
                         list_position=GENERAL_ERROR_POSITION,
-                        position=token.position,
+                        positions=[token.position],
                     )
 
             # Note: details should pass "format should be #1 [operator] #2"
@@ -502,7 +504,7 @@ class WOSQueryListLinter(QueryListLinter):
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=GENERAL_ERROR_POSITION,
-                    position=tokens[0].position,
+                    positions=[tokens[0].position],
                     details=details,
                 )
                 return
@@ -514,7 +516,7 @@ class WOSQueryListLinter(QueryListLinter):
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                         list_position=GENERAL_ERROR_POSITION,
-                        position=token.position,
+                        positions=[token.position],
                         details=f"Expected {expected.name} for query item {node_nr} "
                         f"at position {token.position}, but found {token.type.name}.",
                     )
@@ -531,7 +533,7 @@ class WOSQueryListLinter(QueryListLinter):
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=GENERAL_ERROR_POSITION,
-                    position=tokens[-1].position,
+                    positions=[tokens[-1].position],
                     details=f"Last token of query item {node_nr} must be a list item.",
                 )
 
@@ -550,7 +552,7 @@ class WOSQueryListLinter(QueryListLinter):
                         self.add_linter_message(
                             QueryErrorCode.INVALID_LIST_REFERENCE,
                             list_position=ind,
-                            position=position,
+                            positions=[position],
                             details=f"List reference {reference} not found.",
                         )
 
@@ -569,7 +571,7 @@ class WOSQueryListLinter(QueryListLinter):
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     list_position=ind,
-                    position=(-1, -1),
+                    positions=[(-1, -1)],
                 )
             for msg in query_parser.linter.messages:  # type: ignore
                 if ind not in self.messages:

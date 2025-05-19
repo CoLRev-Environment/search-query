@@ -115,7 +115,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             position_of_whitespace = token.position[0] + token.value.index(" ")
             self.add_linter_message(
                 QueryErrorCode.IMPLICIT_OPERATOR,
-                position=token.position,
+                positions=[token.position],
                 details="Implicit operator detected. "
                 f"The space at position {position_of_whitespace} "
                 "will be interpreted as an AND connection. "
@@ -130,7 +130,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
-                position=match.span(),
+                positions=[match.span()],
                 details="PubMed fields must be enclosed in brackets and "
                 "after a search term, e.g. robot[TIAB] or monitor[TI]. "
                 f"'{match.group(0)}' is invalid.",
@@ -156,12 +156,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         "(see PubMed character conversions in "
                         "https://pubmed.ncbi.nlm.nih.gov/help/)"
                     )
-                    position = (-1, -1)
+                    positions = [(-1, -1)]
                     if query.position:
-                        position = (query.position[0] + i, query.position[0] + i + 1)
+                        positions = [(query.position[0] + i, query.position[0] + i + 1)]
                     self.add_linter_message(
                         QueryErrorCode.CHARACTER_REPLACEMENT,
-                        position=position,
+                        positions=positions,
                         details=details,
                     )
                     # TBD: really change?
@@ -183,7 +183,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ]:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=self.tokens[0].position,
+                positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type}",
             )
 
@@ -202,39 +202,43 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 continue
 
             details = ""
-            position = token.position if token_type else self.tokens[i - 1].position
+            positions = [token.position if token_type else self.tokens[i - 1].position]
 
             if token_type == TokenTypes.FIELD:
                 if self.tokens[i - 1].type in [TokenTypes.PARENTHESIS_CLOSED]:
                     details = "Nested queries cannot have search fields"
                 else:
                     details = "Invalid search field position"
-                position = token.position
+                positions = [token.position]
 
             elif token_type == TokenTypes.LOGIC_OPERATOR:
                 details = "Invalid operator position"
-                position = token.position
+                positions = [token.position]
 
             elif (
                 prev_type == TokenTypes.PARENTHESIS_OPEN
                 and token_type == TokenTypes.PARENTHESIS_CLOSED
             ):
                 details = "Empty parenthesis"
-                position = (
-                    self.tokens[i - 1].position[0],
-                    token.position[1],
-                )
+                positions = [
+                    (
+                        self.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
+                ]
 
             elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
                 details = "Missing operator"
-                position = (
-                    self.tokens[i - 1].position[0],
-                    token.position[1],
-                )
+                positions = [
+                    (
+                        self.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
+                ]
 
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=position,
+                positions=positions,
                 details=details,
             )
 
@@ -245,7 +249,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ]:
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                position=self.tokens[-1].position,
+                positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type}",
             )
 
@@ -268,7 +272,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 # when applied to terms with less than 4 characters
                 self.add_linter_message(
                     QueryErrorCode.INVALID_WILDCARD_USE,
-                    position=query.position or (-1, -1),
+                    positions=[query.position or (-1, -1)],
                     details=details,
                 )
 
@@ -289,7 +293,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details = f"Not matching regex {self.PROXIMITY_REGEX}"
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=field_token.position,
+                    positions=[field_token.position],
                     details=details,
                 )
                 continue
@@ -300,7 +304,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details = f"Proximity value '{prox_value}' is not a digit"
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=field_token.position,
+                    positions=[field_token.position],
                     details=details,
                 )
                 continue
@@ -318,7 +322,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=self.tokens[index - 1].position,
+                    positions=[self.tokens[index - 1].position],
                     details=details,
                 )
 
@@ -333,7 +337,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
-                    position=field_token.position,
+                    positions=[field_token.position],
                     details=details,
                 )
             # Update search field token
@@ -364,7 +368,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
-                    position=query.position or (-1, -1),
+                    positions=[query.position or (-1, -1)],
                     details=details,
                 )
             for child in query.children:
@@ -394,7 +398,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             )
             self.add_linter_message(
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
-                position=query.position or (-1, -1),
+                positions=[query.position or (-1, -1)],
                 details=details,
             )
 
@@ -448,28 +452,28 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         # Terms in AND queries follow different redundancy logic
                         # than terms in OR queries
                         if operator == Operators.AND:
-                            # TODO : allow multiple positions for add_linter_message()
-                            # highlighting term_a and term_b
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                position=term_a.position,
+                                positions=[term_a.position, term_b.position],
                                 details=f"Term {term_a.value} is contained in term "
-                                f"{term_b.value} and both are connected with AND.",
+                                f"{term_b.value} and both are connected with AND. "
+                                f"Therefore, term {term_b.value} is redundant.",
                             )
                             redundant_terms.append(term_a)
                         elif operator == Operators.OR:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                position=term_b.position,
+                                positions=[term_a.position, term_b.position],
                                 details=f"Term {term_b.value} is contained in term "
-                                f"{term_a.value} and both are connected with OR.",
+                                f"{term_a.value} and both are connected with OR. "
+                                f"Therefore, term {term_b.value} is redundant.",
                             )
                             redundant_terms.append(term_b)
 
                         elif operator == Operators.NOT:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                position=term_b.position,
+                                positions=[term_a.position, term_b.position],
                             )
                             redundant_terms.append(term_b)
 
@@ -511,7 +515,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             except ValueError:
                 self.add_linter_message(
                     QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                    position=token.position,
+                    positions=[token.position],
                     details=f"Search field {token.value} at position "
                     f"{token.position} is not supported.",
                 )
@@ -553,7 +557,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     # User-provided fields and fields in the query do not match
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                        position=token.position,
+                        positions=[token.position],
                         details=details,
                     )
                 else:
@@ -565,7 +569,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     # User-provided fields match fields in the query
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                        position=token.position,
+                        positions=[token.position],
                         details=details,
                     )
 
@@ -573,7 +577,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             # User-provided fields are missing in the query
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_MISSING,
-                position=(-1, -1),
+                positions=[(-1, -1)],
                 details="Search fields should be specified in the query "
                 "instead of the search_field_general",
             )
@@ -582,7 +586,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             # Fields not specified
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_MISSING,
-                position=(-1, -1),
+                positions=[(-1, -1)],
                 details="Search field is missing (TODO: default?)",
             )
 
@@ -629,7 +633,7 @@ class PubmedQueryListLinter(QueryListLinter):
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=level,
-                    position=operator_node_tokens[0].position,
+                    positions=[operator_node_tokens[0].position],
                     details=details,
                 )
 
@@ -644,7 +648,7 @@ class PubmedQueryListLinter(QueryListLinter):
                         self.add_linter_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
-                            position=(prev_token.position[0], token.position[1]),
+                            positions=[(prev_token.position[0], token.position[1])],
                             details=details,
                         )
                     prev_token = token
@@ -655,7 +659,7 @@ class PubmedQueryListLinter(QueryListLinter):
                         self.add_linter_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
-                            position=token.position,
+                            positions=[token.position],
                             details=details,
                         )
                     prev_token = token
@@ -685,6 +689,6 @@ class PubmedQueryListLinter(QueryListLinter):
                     self.add_linter_message(
                         QueryErrorCode.INVALID_LIST_REFERENCE,
                         list_position=level,
-                        position=operator_node_token.position,
+                        positions=[operator_node_token.position],
                         details=details,
                     )

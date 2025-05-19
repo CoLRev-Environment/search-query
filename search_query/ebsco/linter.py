@@ -107,7 +107,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
-                position=match.span(),
+                positions=[match.span()],
                 details="EBSCOHOst fields must be before search terms "
                 "and without brackets, e.g. AB robot or TI monitor. "
                 f"'{match.group(0)}' is invalid.",
@@ -133,7 +133,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.TOKEN_AMBIGUITY,
-                    position=(token.position[0], token.position[0] + 2),
+                    positions=[(token.position[0], token.position[0] + 2)],
                     details=details,
                 )
 
@@ -143,7 +143,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """Check field 'Search Fields' in content."""
 
         if self.search_field_general != "":
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, position=())
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 
     def check_invalid_token_sequences(self) -> None:
         """
@@ -161,7 +161,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ]:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=self.tokens[i - 1].position,
+                        positions=[self.tokens[i - 1].position],
                         details=f"Cannot end with {self.tokens[i-1].type}",
                     )
                 break
@@ -176,7 +176,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ]:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=token.position,
+                        positions=[token.position],
                         details=f"Cannot start with {token_type}",
                     )
                 continue
@@ -186,29 +186,31 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
                     details = "Invalid search field position"
-                    position = token.position
+                    positions = [token.position]
 
                 elif token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
-                    position = token.position
+                    positions = [token.position]
 
                 elif (
                     prev_type == TokenTypes.PARENTHESIS_OPEN
                     and token_type == TokenTypes.PARENTHESIS_CLOSED
                 ):
                     details = "Empty parenthesis"
-                    position = (
-                        self.tokens[i - 1].position[0],
-                        token.position[1],
-                    )
+                    positions = [
+                        (
+                            self.tokens[i - 1].position[0],
+                            token.position[1],
+                        )
+                    ]
                 elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
                     r"^[a-z]{2}$", self.tokens[i - 1].value
                 ):
                     details = "Search field is not supported (must be upper case)"
-                    position = self.tokens[i - 1].position
+                    positions = [self.tokens[i - 1].position]
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                        position=position,
+                        positions=positions,
                         details=details,
                     )
                     continue
@@ -216,20 +218,22 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
                     details = "Missing operator"
-                    position = (
-                        self.tokens[i - 1].position[0],
-                        token.position[1],
-                    )
+                    positions = [
+                        (
+                            self.tokens[i - 1].position[0],
+                            token.position[1],
+                        )
+                    ]
 
                 else:
                     details = ""
-                    position = (
-                        token.position if token_type else self.tokens[i - 1].position
-                    )
+                    positions = [
+                        (token.position if token_type else self.tokens[i - 1].position)
+                    ]
 
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=position,
+                    positions=positions,
                     details=details,
                 )
 

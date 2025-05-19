@@ -346,7 +346,7 @@ class EBSCOListParser(QueryListParser):
         self.linter.add_linter_message(
             QueryErrorCode.INVALID_LIST_REFERENCE,
             list_position=GENERAL_ERROR_POSITION,
-            position=(-1, -1),
+            positions=[(-1, -1)],
             details="Connecting lines possibly failed. "
             "Please use this format for connection: "
             "S1 OR S2 OR S3 / #1 OR #2 OR #3",

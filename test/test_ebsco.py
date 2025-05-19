@@ -73,7 +73,7 @@ def test_tokenization(
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "position": (0, 1),
+                    "position": [(0, 1)],
                     "details": "Unbalanced opening parenthesis",
                 }
             ],
@@ -86,7 +86,7 @@ def test_tokenization(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (3, 6),
+                    "position": [(3, 6)],
                     "details": "Invalid operator position",
                 }
             ],
@@ -100,7 +100,7 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
+                    "position": [(0, 2)],
                     "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
                 }
             ],
@@ -118,7 +118,7 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
+                    "position": [(0, 2)],
                     "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
                 }
             ],
@@ -131,7 +131,7 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
+                    "position": [(0, 2)],
                     "details": "Search field is not supported (must be upper case)",
                 }
             ],
@@ -166,7 +166,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "label": "search-field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
-                    "position": (),
+                    "position": [],
                     "details": "",
                 }
             ],
@@ -180,7 +180,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "label": "invalid-syntax",
                     "message": "Query contains invalid syntax",
                     "is_fatal": True,
-                    "position": (10, 16),
+                    "position": [(10, 16)],
                     "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
                 }
             ],
@@ -194,7 +194,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "label": "operator-capitalization",
                     "message": "Operators should be capitalized",
                     "is_fatal": False,
-                    "position": (24, 27),
+                    "position": [(24, 27)],
                     "details": "",
                 }
             ],
