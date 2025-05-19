@@ -447,6 +447,9 @@ class WOSParser(QueryStringParser):
         self.linter.query_str = self.query_str
 
         self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
+        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
+            self.query_str
+        )
 
         self.tokenize()
         self.tokens = self.linter.validate_tokens(

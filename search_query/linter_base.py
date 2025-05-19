@@ -432,6 +432,33 @@ class QueryStringLinter:
             query_str = query_str[1:-1]
         return query_str
 
+    # TODO : also include for other platforms
+    # (could the original query string be used??)
+    def handle_nonstandard_quotes_in_query_str(self, query_str: str) -> str:
+        """Handle non-standard quotes in query string."""
+
+        non_standard_quotes = "“”«»„‟"
+        positions = []
+        found_quotes = []
+        for quote in non_standard_quotes:
+            quote_positions = [
+                (i, i + 1) for i, c in enumerate(query_str) if c == quote
+            ]
+            if not quote_positions:
+                continue
+            positions.extend(quote_positions)
+            found_quotes.append(quote)
+            # Replace all occurrences of this quote with standard quote
+            query_str = query_str.replace(quote, '"')
+        if positions:
+            self.add_linter_message(
+                QueryErrorCode.NON_STANDARD_QUOTES,
+                positions=positions,
+                details=f"Non-standard quotes found: {''.join(sorted(found_quotes))}",
+            )
+
+        return query_str
+
     def add_higher_value(
         self,
         output: list[Token],

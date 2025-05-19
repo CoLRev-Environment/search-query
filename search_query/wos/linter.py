@@ -392,6 +392,39 @@ class WOSQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_doi_format(child)
 
+    def get_nr_terms_all(self, query: Query) -> int:
+        """Get the number of terms in the query."""
+
+        if not query.operator:
+            if query.search_field and query.search_field.value == "ALL=":
+                return 1
+
+            return 0
+
+        # Count the number of terms in the query
+        nr_terms = 0
+        for child in query.children:
+            nr_terms += self.get_nr_terms_all(child)
+
+        return nr_terms
+
+    def check_nr_search_terms(self, query: Query) -> None:
+        """Check the number of search terms in the query."""
+        nr_terms = query.get_nr_leaves()
+        if nr_terms > 1600:
+            self.add_linter_message(
+                QueryErrorCode.TOO_MANY_SEARCH_TERMS,
+                positions=[query.position or (-1, -1)],
+                details="The maximum number of search terms is 16,000.",
+            )
+        nr_all_terms = self.get_nr_terms_all(query)
+        if nr_all_terms > 50:
+            self.add_linter_message(
+                QueryErrorCode.TOO_MANY_SEARCH_TERMS,
+                positions=[query.position or (-1, -1)],
+                details="The maximum number of search terms (for ALL Fields) is 50.",
+            )
+
     def validate_query_tree(self, query: "Query") -> None:
         """
         Validate the query tree.
@@ -409,6 +442,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         term_field_query = self.get_query_with_fields_at_terms(query)
 
+        self.check_nr_search_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
         self.check_doi_format(term_field_query)
 

@@ -247,6 +247,20 @@ class QueryErrorCode(Enum):
         "Query contains invalid syntax",
         "",
     )
+    TOO_MANY_OPERATORS = (
+        [PLATFORM.WOS],
+        "F1011",
+        "too-many-operators",
+        "Too many operators in the query",
+        "",
+    )
+    TOO_MANY_SEARCH_TERMS = (
+        [PLATFORM.WOS],
+        "F1012",
+        "too-many-search-terms",
+        "Too many search terms in the query",
+        "",
+    )
 
     WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
@@ -532,6 +546,13 @@ class QueryErrorCode(Enum):
         "W0012",
         "implicit-operator",
         "Implicit operator",
+        "",
+    )
+    NON_STANDARD_QUOTES = (
+        ["all"],
+        "W0013",
+        "non-standard-quotes",
+        "Non-standard quotes",
         "",
     )
 
