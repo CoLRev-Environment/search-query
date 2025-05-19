@@ -460,7 +460,7 @@ class WOSParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_origin_platform(PLATFORM.WOS.value)
+        query.set_origin_platform(PLATFORM.WOS.value, skip_validation=True)
 
         return query
 

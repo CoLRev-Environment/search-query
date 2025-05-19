@@ -96,6 +96,14 @@ class Query:
             wos_linter.validate_query_tree(self)
             wos_linter.check_status()
 
+        if self.origin_platform == "pubmed":
+            from search_query.pubmed.linter import PubmedQueryStringLinter
+
+            pubmed_linter = PubmedQueryStringLinter()
+            # TODO: validates fields, use of search_fields for nested queries, etc.
+            pubmed_linter.validate_query_tree(self)
+            pubmed_linter.check_status()
+
         elif self.origin_platform == "generic":
             from search_query.generic.linter import GenericLinter
 
@@ -112,12 +120,13 @@ class Query:
             child._set_origin_platform_recursively(platform)
 
     # TODO : maybe as a setter?
-    def set_origin_platform(self, platform: str) -> None:
+    def set_origin_platform(self, platform: str, skip_validation: bool = False) -> None:
         """Set the platform for this query node."""
         if platform not in [p.value for p in PLATFORM]:
             raise ValueError(f"Invalid platform: {platform}")
         self._set_origin_platform_recursively(platform)
-        self._validate_platform_constraints()
+        if not skip_validation:
+            self._validate_platform_constraints()
 
     def set_origin_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
@@ -486,7 +495,7 @@ class Term(Query):
         self,
         value: str,
         *,
-        search_field: typing.Optional[SearchField],
+        search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
         origin_platform: str = "generic",
     ) -> None:

@@ -29,6 +29,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         "OR": 0,
     }
     PLATFORM: PLATFORM = PLATFORM.EBSCO
+    VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
@@ -77,14 +78,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
-        self.check_quoted_search_terms()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
-        self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
 
         self.check_token_ambiguity()
         self.check_search_field_general()
@@ -240,3 +238,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         Validate the query tree.
         This method is called after the query tree has been built.
         """
+
+        self.check_quoted_search_terms_query(query)
+        self.check_operator_capitalization_query(query)
+        self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
+        self.check_unsupported_search_fields_in_query(query)

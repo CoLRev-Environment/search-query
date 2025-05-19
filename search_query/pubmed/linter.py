@@ -66,22 +66,20 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
-        self.check_quoted_search_terms()
+
         # No tokens marked as unknown token-type
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_character_replacement_in_search_term()
+
         # temporarily disabled (until the logic is clear)
         # self.check_implicit_operator()
 
         self.check_unsupported_pubmed_search_fields()
         self.check_general_search_field_mismatch()
 
-        self.check_invalid_wildcard()
         self.check_invalid_proximity_operator()
-        self.check_boolean_operator_readability()
         return self.tokens
 
     def check_implicit_operator(self) -> None:
@@ -138,21 +136,19 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 f"'{match.group(0)}' is invalid.",
             )
 
-    def check_character_replacement_in_search_term(self) -> None:
+    def check_character_replacement_in_search_term(self, query: Query) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
-
         # pylint: disable=duplicate-code
         invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
-        for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
-            value = token.value
+
+        if not query.operator:
+            value = query.value
 
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
-            for i, char in enumerate(token.value):
+            for i, char in enumerate(query.value):
                 if char in invalid_characters:
                     details = (
                         f"Character '{char}' in search term "
@@ -160,16 +156,22 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         "(see PubMed character conversions in "
                         "https://pubmed.ncbi.nlm.nih.gov/help/)"
                     )
+                    position = (-1, -1)
+                    if query.position:
+                        position = (query.position[0] + i, query.position[0] + i + 1)
                     self.add_linter_message(
                         QueryErrorCode.CHARACTER_REPLACEMENT,
-                        position=(token.position[0] + i, token.position[0] + i + 1),
+                        position=position,
                         details=details,
                     )
                     # TBD: really change?
                     # value = value[:i] + " " + value[i + 1 :]
-            # Update token
-            if value != token.value:
-                token.value = value
+            # Update query
+            if value != query.value:
+                query.value = value
+
+        for child in query.children:
+            self.check_character_replacement_in_search_term(child)
 
     def check_invalid_token_sequences(self) -> None:
         """Check token list for invalid token sequences."""
@@ -247,31 +249,31 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details=f"Cannot end with {self.tokens[-1].type}",
             )
 
-    def check_invalid_wildcard(self) -> None:
+    def check_invalid_wildcard(self, query: Query) -> None:
         """Check search term for invalid wildcard *"""
 
         details = (
             "Wildcards cannot be used for short strings (shorter than 4 characters)."
         )
-        for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
+        if not query.operator:
+            if "*" not in query.value:
+                return
 
-            if "*" not in token.value:
-                continue
-
-            if token.value == '"':
+            if query.value == '"':
                 k = 5
             else:
                 k = 4
-            if "*" in token.value[:k]:
+            if "*" in query.value[:k]:
                 # Wildcard * is invalid
                 # when applied to terms with less than 4 characters
                 self.add_linter_message(
                     QueryErrorCode.INVALID_WILDCARD_USE,
-                    position=token.position,
+                    position=query.position or (-1, -1),
                     details=details,
                 )
+
+        for child in query.children:
+            self.check_invalid_wildcard(child)
 
     def check_invalid_proximity_operator(self) -> None:
         """Check search field for invalid proximity operator"""
@@ -341,6 +343,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
         """Validate the query tree"""
         # Note: search fields are not yet translated.
 
+        self.check_invalid_wildcard(query)
+        self.check_boolean_operator_readability_query(query)
+
+        self.check_operators_with_fields(query)
+
+        self.check_quoted_search_terms_query(query)
+        self.check_character_replacement_in_search_term(query)
         self._check_redundant_terms(query)
         self._check_date_filters_in_subquery(query)
         self._check_nested_query_with_search_field(query)
@@ -389,6 +398,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details=details,
             )
 
+    # pylint: disable=too-many-branches
     def _check_redundant_terms(self, query: Query) -> None:
         """Check query for redundant search terms"""
         subqueries: dict = {}
@@ -411,12 +421,17 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
             redundant_terms = []
             for term_a in terms:
+                if not term_a.search_field:
+                    continue
                 for term_b in terms:
                     if (
                         term_a == term_b
                         or term_a in redundant_terms
                         or term_b in redundant_terms
                     ):
+                        continue
+
+                    if not term_b.search_field:
                         continue
 
                     field_a = map_to_standard(term_a.search_field.value)
@@ -433,6 +448,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         # Terms in AND queries follow different redundancy logic
                         # than terms in OR queries
                         if operator == Operators.AND:
+                            # TODO : allow multiple positions for add_linter_message()
+                            # highlighting term_a and term_b
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 position=term_a.position,
@@ -440,7 +457,16 @@ class PubmedQueryStringLinter(QueryStringLinter):
                                 f"{term_b.value} and both are connected with AND.",
                             )
                             redundant_terms.append(term_a)
-                        elif operator in {Operators.OR, Operators.NOT}:
+                        elif operator == Operators.OR:
+                            self.add_linter_message(
+                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                position=term_b.position,
+                                details=f"Term {term_b.value} is contained in term "
+                                f"{term_a.value} and both are connected with OR.",
+                            )
+                            redundant_terms.append(term_b)
+
+                        elif operator == Operators.NOT:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 position=term_b.position,

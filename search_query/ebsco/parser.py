@@ -259,7 +259,7 @@ class EBSCOParser(QueryStringParser):
             elif token.type == TokenTypes.LOGIC_OPERATOR:
                 # Create new operator node
                 new_operator_node = Query(
-                    value=token.value,
+                    value=token.value.upper(),
                     position=token.position,
                     search_field=search_field or search_field_par,
                     origin_platform="deactivated",
@@ -310,7 +310,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_origin_platform(PLATFORM.EBSCO.value)
+        query.set_origin_platform(PLATFORM.EBSCO.value, skip_validation=True)
 
         return query
 

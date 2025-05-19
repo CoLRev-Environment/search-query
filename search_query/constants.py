@@ -349,10 +349,10 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
-    YEAR_WITHOUT_SEARCH_FIELD = (
+    YEAR_WITHOUT_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F2012",
-        "year-without-search-field",
+        "year-without-search-terms",
         "A search for publication years must include at least another search term.",
         "",
     )

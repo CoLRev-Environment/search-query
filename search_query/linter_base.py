@@ -34,6 +34,7 @@ class QueryStringLinter:
     # Higher number=higher precedence
     OPERATOR_PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
     PLATFORM: PLATFORM = PLATFORM.GENERIC
+    VALID_FIELDS_REGEX: re.Pattern
 
     def __init__(self) -> None:
         self.tokens: typing.List[Token] = []
@@ -227,7 +228,8 @@ class QueryStringLinter:
                 details = (
                     f"Search field {query.search_field}{pos_info} is not supported."
                 )
-                details += f" Supported fields for {self.PLATFORM}: {self.VALID_FIELDS_REGEX.pattern}"
+                details += f" Supported fields for {self.PLATFORM}: "
+                details += f"{self.VALID_FIELDS_REGEX.pattern}"
                 self.add_linter_message(
                     QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                     position=query.search_field.position or (-1, -1),
@@ -395,6 +397,25 @@ class QueryStringLinter:
                         details="Please use AND, OR, NOT instead of |&",
                     )
                     # Replace?
+
+    def check_boolean_operator_readability_query(
+        self, query: Query, *, faulty_operators: str = "|&"
+    ) -> None:
+        """Check for readability of boolean operators."""
+
+        if query.operator:
+            if query.value in faulty_operators:
+                self.add_linter_message(
+                    QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
+                    position=query.position or (-1, -1),
+                    details="Please use AND, OR, NOT instead of |&",
+                )
+                # Replace?
+
+        for child in query.children:
+            self.check_boolean_operator_readability_query(
+                child, faulty_operators=faulty_operators
+            )
 
     def handle_fully_quoted_query_str(self, query_str: str) -> str:
         """Handle fully quoted query string."""
@@ -661,6 +682,76 @@ class QueryStringLinter:
             modified_query.children[i] = self.get_query_with_fields_at_terms(child)
 
         return modified_query
+
+    def check_quoted_search_terms_query(self, query: Query) -> None:
+        """Check quoted search terms."""
+
+        if not query.operator:
+            if '"' not in query.value:
+                return
+
+            if query.value[0] != '"' or query.value[-1] != '"':
+                self.add_linter_message(
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    position=query.position or (-1, -1),
+                    details=f"Term '{query.value}' should be fully quoted",
+                )
+            return
+
+        for child in query.children:
+            self.check_quoted_search_terms_query(child)
+
+    def check_operator_capitalization_query(self, query: Query) -> None:
+        """Check if operators are capitalized."""
+
+        if query.operator:
+            if query.value != query.value.upper():
+                self.add_linter_message(
+                    QueryErrorCode.OPERATOR_CAPITALIZATION,
+                    position=query.position or (-1, -1),
+                )
+                query.value = query.value.upper()
+
+        for child in query.children:
+            self.check_operator_capitalization_query(child)
+
+    def check_invalid_characters_in_search_term_query(
+        self, query: Query, invalid_characters: str
+    ) -> None:
+        """Check a search term for invalid characters"""
+
+        if not query.operator:
+            # Iterate over term to identify invalid characters
+            # and replace them with whitespace
+            for char in invalid_characters:
+                if char in query.value:
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_CHARACTER,
+                        position=query.position or (-1, -1),
+                    )
+                    # TBD: really change?
+                    # value = value[:i] + " " + value[i + 1 :]
+            # Update token
+            if query.value != query.value:
+                query.value = query.value
+
+        for child in query.children:
+            self.check_invalid_characters_in_search_term_query(
+                child, invalid_characters
+            )
+
+    def check_operators_with_fields(self, query: Query) -> None:
+        """Check for operators with fields"""
+
+        if query.operator and query.search_field:
+            self.add_linter_message(
+                QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
+                position=query.position or (-1, -1),
+                details="Nested query (operator) with search field is not supported",
+            )
+
+        for child in query.children:
+            self.check_operators_with_fields(child)
 
 
 class QueryListLinter:

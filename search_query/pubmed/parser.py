@@ -207,14 +207,12 @@ class PubmedParser(QueryStringParser):
     def _parse_search_term(self, tokens: list) -> Query:
         """Parse a search term"""
         search_term_token = tokens[0]
-        query_end_pos = tokens[0].position[1]
 
         # Determine the search field of the search term.
         if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
             search_field = SearchField(
                 value=tokens[1].value, position=tokens[1].position
             )
-            query_end_pos = tokens[1].position[1]
         else:
             # Select default field "all" if no search field is found.
             search_field = SearchField(value="[all]", position=(-1, -1))
@@ -222,7 +220,7 @@ class PubmedParser(QueryStringParser):
         return Term(
             value=search_term_token.value,
             search_field=search_field,
-            position=(tokens[0].position[0], query_end_pos),
+            position=tokens[0].position,
             origin_platform="deactivated",
         )
 
@@ -281,7 +279,7 @@ class PubmedParser(QueryStringParser):
 
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.set_origin_platform(PLATFORM.PUBMED.value)
+        query.set_origin_platform(PLATFORM.PUBMED.value, skip_validation=True)
 
         return query
 
