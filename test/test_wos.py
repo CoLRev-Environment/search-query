@@ -7,6 +7,7 @@ import pytest
 from search_query.constants import Colors
 from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
+from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
@@ -882,16 +883,16 @@ def test_wos_valid_query() -> None:
                 value="AI",
                 operator=False,
                 search_field=SearchField("TI="),
-                platform="wos",
+                platform=PLATFORM.WOS.value,
             ),
             Query(
                 value="ethics",
                 operator=False,
                 search_field=SearchField("AB="),
-                platform="wos",
+                platform=PLATFORM.WOS.value,
             ),
         ],
-        platform="wos",
+        platform=PLATFORM.WOS.value,
     )
 
 
@@ -904,17 +905,17 @@ def test_wos_invalid_nested_with_operator_field() -> None:
                     value="DE12",
                     operator=False,
                     search_field=SearchField("IS="),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
                 Query(
                     value="ethics",
                     operator=False,
                     search_field=SearchField("AB"),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
             ],
             search_field=SearchField("TI"),
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
 
 
@@ -927,15 +928,15 @@ def test_wos_invalid_fields() -> None:
                     value="DE12",
                     operator=False,
                     search_field=SearchField("[ti]"),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
                 Query(
                     value="ethics",
                     operator=False,
                     search_field=SearchField("AB="),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
             ],
             search_field=SearchField("TI="),
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )

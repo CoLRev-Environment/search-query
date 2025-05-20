@@ -68,14 +68,14 @@ class Query:
         self.position = position
         self.marked = False
         # Note: platform is only set for root nodes
-        self.platform = platform
+        self._platform = platform
 
         self._parent: typing.Optional[Query] = None
         if children:
             for child in children:
                 self.add_child(child)
 
-        self.set_platform_recursively(platform)
+        self._set_platform_recursively(platform)
 
         self._ensure_children_not_circular()
 
@@ -88,14 +88,14 @@ class Query:
             return
 
         # pylint: disable=import-outside-toplevel
-        if self.platform == "wos":
+        if self.platform == PLATFORM.WOS.value:
             from search_query.wos.linter import WOSQueryStringLinter
 
             wos_linter = WOSQueryStringLinter()
             wos_linter.validate_query_tree(self)
             wos_linter.check_status()
 
-        elif self.platform == "pubmed":
+        elif self.platform == PLATFORM.PUBMED.value:
             from search_query.pubmed.linter import PubmedQueryStringLinter
 
             pubmed_linter = PubmedQueryStringLinter()
@@ -115,25 +115,29 @@ class Query:
 
     def _set_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
-        self.platform = platform
+        self._platform = platform
         for child in self._children:
             # pylint: disable=protected-access
             child._set_platform_recursively(platform)
 
-    # TODO : maybe as a setter?
-    def set_platform(self, platform: str, skip_validation: bool = False) -> None:
-        """Set the platform for this query node."""
-        if platform not in [p.value for p in PLATFORM]:
+    @property
+    def platform(self) -> str:
+        """Platform property."""
+        return self._platform
+
+    @platform.setter
+    def platform(self, platform: str) -> None:
+        """Set the platform property."""
+        if platform not in [p.value for p in PLATFORM] + ["deactivated"]:
             raise ValueError(f"Invalid platform: {platform}")
         self._set_platform_recursively(platform)
-        if not skip_validation:
-            self._validate_platform_constraints()
+        self._validate_platform_constraints()
 
-    def set_platform_recursively(self, platform: str) -> None:
-        """Set the origin platform for this query node and its children."""
-        self.platform = platform
-        for child in self._children:
-            child.set_platform_recursively(platform)
+    def set_platform_unchecked(self, platform: str) -> None:
+        """Set the platform for this query node without validation.
+        This is an optional utility for parsers.
+        """
+        self._set_platform_recursively(platform)
 
     def __deepcopy__(self, memo: dict) -> Query:
         cls = self.__class__
@@ -449,17 +453,17 @@ class Query:
         if self.platform == "generic":
             generic_query = self.copy()
         else:
-            if self.platform == "pubmed":
+            if self.platform == PLATFORM.PUBMED.value:
                 pubmed_translator = PubmedTranslator()
                 generic_query = pubmed_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
-            elif self.platform == "ebsco":
+            elif self.platform == PLATFORM.EBSCO.value:
                 ebsco_translator = EBSCOTranslator()
                 generic_query = ebsco_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
-            elif self.platform == "wos":
+            elif self.platform == PLATFORM.WOS.value:
                 wos_translator = WOSTranslator()
                 generic_query = wos_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
@@ -472,15 +476,15 @@ class Query:
         if target_syntax == "generic":
             generic_query.platform = target_syntax
             return generic_query
-        if target_syntax == "pubmed":
+        if target_syntax == PLATFORM.PUBMED.value:
             target_query = PubmedTranslator.to_specific_syntax(generic_query)
             target_query.platform = target_syntax
             return target_query
-        if target_syntax == "ebscohost":
+        if target_syntax == PLATFORM.EBSCO.value:
             target_query = EBSCOTranslator.to_specific_syntax(generic_query)
             target_query.platform = target_syntax
             return target_query
-        if target_syntax == "wos":
+        if target_syntax == PLATFORM.WOS.value:
             target_query = WOSTranslator.to_specific_syntax(generic_query)
             target_query.platform = target_syntax
             return target_query

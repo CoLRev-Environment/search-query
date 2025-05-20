@@ -314,7 +314,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_platform(PLATFORM.EBSCO.value, skip_validation=True)
+        query.set_platform_unchecked(PLATFORM.EBSCO.value)
 
         return query
 

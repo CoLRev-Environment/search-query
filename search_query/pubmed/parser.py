@@ -283,7 +283,7 @@ class PubmedParser(QueryStringParser):
 
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.set_platform(PLATFORM.PUBMED.value, skip_validation=True)
+        query.set_platform_unchecked(PLATFORM.PUBMED.value)
 
         return query
 

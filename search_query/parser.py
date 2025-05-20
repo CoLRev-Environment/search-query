@@ -36,7 +36,7 @@ def parse(
     query_str: str,
     *,
     search_field_general: str = "",
-    platform: str = "wos",
+    platform: str = PLATFORM.WOS.value,
     mode: str = LinterMode.STRICT,
 ) -> Query:
     """Parse a query string."""
