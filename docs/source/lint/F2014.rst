@@ -1,0 +1,14 @@
+.. _F2014:
+
+F2014 — year-format-invalid
+===========================
+
+**Error Code**: F2014
+
+**Message**: ``Invalid year format.``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Invalid year format.
+
+**Back to**: :ref:`lint`
