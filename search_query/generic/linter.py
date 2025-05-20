@@ -66,6 +66,13 @@ class GenericLinter(QueryStringLinter):
     #     ],
     # }
 
+    def __init__(self, query_str: str = "") -> None:
+        super().__init__(query_str=query_str)
+
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+        """Translate a search field"""
+        return {field_value}
+
     def validate_tokens(
         self,
         *,

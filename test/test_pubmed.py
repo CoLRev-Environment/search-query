@@ -375,7 +375,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Date filter in subquery",
                     "is_fatal": False,
                     "position": [(70, 91)],
-                    "details": "It should be double-checked whether date filters should apply to the entire query.",
+                    "details": "Please double-check whether date filters should apply to the entire query.",
                 }
             ],
         ),
@@ -425,8 +425,22 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Date filter in subquery",
                     "is_fatal": False,
                     "position": [(32, 41)],
-                    "details": "It should be double-checked whether date filters should apply to the entire query.",
-                },
+                    "details": "Please double-check whether date filters should apply to the entire query.",
+                }
+            ],
+        ),
+        (
+            '"activity"[Title/Abstract] AND ("cancer"[Title/Abstract] AND "Lancet"[Journal])',
+            "",
+            [
+                {
+                    "code": "W0014",
+                    "label": "journal-filter-in-subquery",
+                    "message": "Journal (or publication name) filter in subquery",
+                    "is_fatal": False,
+                    "position": [(61, 69)],
+                    "details": "Please double-check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
+                }
             ],
         ),
     ],

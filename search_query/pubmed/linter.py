@@ -5,7 +5,6 @@ import typing
 
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
-from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -14,6 +13,7 @@ from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.pubmed.constants import map_to_standard
 from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
+from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:
@@ -50,6 +50,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.PARENTHESIS_OPEN,
         ],
     }
+
+    def __init__(self, query_str: str = "") -> None:
+        super().__init__(query_str=query_str)
 
     def validate_tokens(
         self,
@@ -350,156 +353,20 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
         self.check_boolean_operator_readability_query(query)
 
-        self.check_operators_with_fields(query)
-
         self.check_quoted_search_terms_query(query)
         self.check_character_replacement_in_search_term(query)
-        self._check_redundant_terms(query)
-        self._check_date_filters_in_subquery(query)
-        self._check_nested_query_with_search_field(query)
-        # term_field_query = self.get_query_with_fields_at_terms(query)
 
-    def _check_nested_query_with_search_field(self, query: Query) -> None:
-        # Walk the query (its children)
-        if query.operator:
-            if query.search_field:
-                details = (
-                    "In PubMed, operators (nested queries) "
-                    "cannot be used with a search field."
-                )
-                self.add_linter_message(
-                    QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
-                    positions=[query.position or (-1, -1)],
-                    details=details,
-                )
-            for child in query.children:
-                self._check_nested_query_with_search_field(child)
+        self.check_operators_with_fields(query)
 
-    def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
-        """Check for date filters in subqueries"""
+        term_field_query = self.get_query_with_fields_at_terms(query)
+        self._check_date_filters_in_subquery(term_field_query)
+        self._check_journal_filters_in_subquery(term_field_query)
+        self._check_redundant_terms(term_field_query)
 
-        # Skip top-level queries
-        if level == 0:
-            for child in query.children:
-                self._check_date_filters_in_subquery(child, level + 1)
-            return
-        if query.operator:
-            for child in query.children:
-                self._check_date_filters_in_subquery(child, level + 1)
-            return
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+        """Translate a search field"""
 
-        if query.search_field and query.search_field.value.lower() in [
-            "[publication date]",
-            "[dp]",
-            "[pdat]",
-        ]:
-            details = (
-                "It should be double-checked whether date filters "
-                "should apply to the entire query."
-            )
-            self.add_linter_message(
-                QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
-                positions=[query.position or (-1, -1)],
-                details=details,
-            )
-
-    # pylint: disable=too-many-branches
-    def _check_redundant_terms(self, query: Query) -> None:
-        """Check query for redundant search terms"""
-        subqueries: dict = {}
-        subquery_types: dict = {}
-        self._extract_subqueries(query, subqueries, subquery_types)
-
-        # Compare search terms in the same subquery for redundancy
-        for query_id, terms in subqueries.items():
-            # Exclude subqueries without search terms
-            if not terms:
-                continue
-
-            if query_id not in subquery_types:
-                continue
-
-            operator = subquery_types[query_id]
-
-            if operator == Operators.NOT:
-                terms.pop(0)  # First term of a NOT query cannot be redundant
-
-            redundant_terms = []
-            for term_a in terms:
-                if not term_a.search_field:
-                    continue
-                for term_b in terms:
-                    if (
-                        term_a == term_b
-                        or term_a in redundant_terms
-                        or term_b in redundant_terms
-                    ):
-                        continue
-
-                    if not term_b.search_field:
-                        continue
-
-                    field_a = map_to_standard(term_a.search_field.value)
-                    field_b = map_to_standard(term_b.search_field.value)
-
-                    if field_a == field_b and (
-                        term_a.value == term_b.value
-                        or (
-                            field_a != "[mh]"
-                            and term_a.value.strip('"').lower()
-                            in term_b.value.strip('"').lower().split()
-                        )
-                    ):
-                        # Terms in AND queries follow different redundancy logic
-                        # than terms in OR queries
-                        if operator == Operators.AND:
-                            self.add_linter_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                positions=[term_a.position, term_b.position],
-                                details=f"Term {term_a.value} is contained in term "
-                                f"{term_b.value} and both are connected with AND. "
-                                f"Therefore, term {term_b.value} is redundant.",
-                            )
-                            redundant_terms.append(term_a)
-                        elif operator == Operators.OR:
-                            self.add_linter_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                positions=[term_a.position, term_b.position],
-                                details=f"Term {term_b.value} is contained in term "
-                                f"{term_a.value} and both are connected with OR. "
-                                f"Therefore, term {term_b.value} is redundant.",
-                            )
-                            redundant_terms.append(term_b)
-
-                        elif operator == Operators.NOT:
-                            self.add_linter_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                positions=[term_a.position, term_b.position],
-                            )
-                            redundant_terms.append(term_b)
-
-    def _extract_subqueries(
-        self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
-    ) -> None:
-        """Extract subqueries from query tree"""
-        if subquery_id not in subqueries:
-            subqueries[subquery_id] = []
-            if query.operator:
-                subquery_types[subquery_id] = query.value
-
-        for child in query.children:
-            if not child.children:
-                subqueries[subquery_id].append(child)
-            elif child.value == query.value:
-                self._extract_subqueries(child, subqueries, subquery_types, subquery_id)
-            else:
-                new_subquery_id = max(subqueries.keys()) + 1
-                self._extract_subqueries(
-                    child, subqueries, subquery_types, new_subquery_id
-                )
-
-        if not query.children:
-            subqueries[subquery_id].append(query)
+        return syntax_str_to_generic_search_field_set(field_value)
 
     # pylint: disable=duplicate-code
     def check_unsupported_pubmed_search_fields(self) -> None:

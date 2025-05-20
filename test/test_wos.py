@@ -637,6 +637,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 }
             ],
         ),
+        (
+            "TS=(activity) AND (TS=(cancer) AND SO=(Lancet))",
+            [
+                {
+                    "code": "W0014",
+                    "label": "journal-filter-in-subquery",
+                    "message": "Journal (or publication name) filter in subquery",
+                    "is_fatal": False,
+                    "position": [(39, 45)],
+                    "details": "Please double-check whether journal/publication-name filters (SO=) should apply to the entire query.",
+                }
+            ],
+        ),
     ],
 )
 def test_linter(

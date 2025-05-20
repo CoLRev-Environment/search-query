@@ -9,6 +9,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
 from search_query.ebsco.constants import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
@@ -64,6 +65,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
+    def __init__(self, query_str: str = "") -> None:
+        super().__init__(query_str=query_str)
+
     def validate_tokens(
         self,
         *,
@@ -98,6 +102,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         if token in self.OPERATOR_PRECEDENCE:
             return self.OPERATOR_PRECEDENCE[token]
         return -1  # Not an operator
+
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+        return syntax_str_to_generic_search_field_set(field_value)
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -247,4 +254,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization_query(query)
         self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
         self.check_unsupported_search_fields_in_query(query)
-        # term_field_query = self.get_query_with_fields_at_terms(query)
+
+        term_field_query = self.get_query_with_fields_at_terms(query)
+        self._check_date_filters_in_subquery(term_field_query)
+        self._check_journal_filters_in_subquery(term_field_query)
+        self._check_redundant_terms(term_field_query)

@@ -562,6 +562,13 @@ class QueryErrorCode(Enum):
         "Non-standard quotes",
         "",
     )
+    JOURNAL_FILTER_IN_SUBQUERY = (
+        [PLATFORM.PUBMED],
+        "W0014",
+        "journal-filter-in-subquery",
+        "Journal (or publication name) filter in subquery",
+        "",
+    )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments

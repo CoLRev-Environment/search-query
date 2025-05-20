@@ -56,7 +56,7 @@ class EBSCOParser(QueryStringParser):
         super().__init__(
             query_str, search_field_general=search_field_general, mode=mode
         )
-        self.linter = EBSCOQueryStringLinter()
+        self.linter = EBSCOQueryStringLinter(query_str=query_str)
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""

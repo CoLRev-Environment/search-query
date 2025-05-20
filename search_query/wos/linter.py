@@ -13,6 +13,7 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
+from search_query.wos.constants import syntax_str_to_generic_search_field_set
 from search_query.wos.constants import VALID_FIELDS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
@@ -77,6 +78,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         ],
     }
 
+    def __init__(self, query_str: str = "") -> None:
+        super().__init__(query_str=query_str)
+
     def validate_tokens(
         self,
         *,
@@ -120,6 +124,9 @@ class WOSQueryStringLinter(QueryStringLinter):
                 "without brackets, e.g. AB=robot or TI=monitor. "
                 f"'{match.group(0)}' is invalid.",
             )
+
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+        return syntax_str_to_generic_search_field_set(field_value)
 
     def check_year_without_search_terms(self, query: Query) -> None:
         """Check if the year is used without a search terms."""
@@ -447,15 +454,16 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         self.check_wildcards(query)
         self.check_unsupported_wildcards(query)
-
         self.check_unsupported_search_fields_in_query(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self.check_year_format(term_field_query)
-
         self.check_nr_search_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
         self.check_doi_format(term_field_query)
+        self._check_date_filters_in_subquery(term_field_query)
+        self._check_journal_filters_in_subquery(term_field_query)
+        self._check_redundant_terms(term_field_query)
 
 
 class WOSQueryListLinter(QueryListLinter):

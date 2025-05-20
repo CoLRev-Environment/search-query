@@ -69,7 +69,7 @@ class WOSParser(QueryStringParser):
             search_field_general=search_field_general,
             mode=mode,
         )
-        self.linter = WOSQueryStringLinter()
+        self.linter = WOSQueryStringLinter(query_str=query_str)
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -415,7 +415,7 @@ class WOSParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.linter.query_str = self.query_str
+        # self.linter.query_str = self.query_str
 
         self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
         self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(

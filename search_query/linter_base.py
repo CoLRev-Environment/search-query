@@ -10,6 +10,8 @@ from collections import defaultdict
 
 import search_query.parser_base
 from search_query.constants import Colors
+from search_query.constants import Fields
+from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -23,6 +25,7 @@ if typing.TYPE_CHECKING:
 
 
 # pylint: disable=too-many-public-methods
+# pylint: disable=too-many-lines
 
 
 # Could indeed be a general Validator class
@@ -36,10 +39,12 @@ class QueryStringLinter:
     PLATFORM: PLATFORM = PLATFORM.GENERIC
     VALID_FIELDS_REGEX: re.Pattern
 
-    def __init__(self) -> None:
+    def __init__(self, query_str: str) -> None:
         self.tokens: typing.List[Token] = []
 
-        self.query_str = ""
+        self.query_str = query_str
+        # Note: original, unchanged query string
+        self._original_query_str = query_str
         self.search_field_general = ""
         self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
@@ -112,7 +117,7 @@ class QueryStringLinter:
                 print(item)
             positions = [pos for message in group for pos in message["position"]]
             query_info = format_query_string_positions(
-                self.query_str,
+                self._original_query_str,
                 positions,
                 color=color,
             )
@@ -781,6 +786,191 @@ class QueryStringLinter:
 
         for child in query.children:
             self.check_operators_with_fields(child)
+
+    @abstractmethod
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set[Fields]:
+        """Translate a search field"""
+
+    def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
+        """Check for date filters in subqueries"""
+
+        # Skip top-level queries
+        if level == 0:
+            for child in query.children:
+                try:
+                    self._check_date_filters_in_subquery(child, level + 1)
+                except ValueError:
+                    pass
+            return
+        if query.operator:
+            for child in query.children:
+                try:
+                    self._check_date_filters_in_subquery(child, level + 1)
+                except ValueError:
+                    pass
+            return
+
+        if not query.search_field:
+            return
+
+        generic_fields = self.syntax_str_to_generic_search_field_set(
+            query.search_field.value
+        )
+        if generic_fields & {Fields.PUBLICATION_DATE}:
+            details = (
+                "Please double-check whether date filters "
+                "should apply to the entire query."
+            )
+            self.add_linter_message(
+                QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
+                positions=[query.position or (-1, -1)],
+                details=details,
+            )
+
+    def _check_journal_filters_in_subquery(self, query: Query, level: int = 0) -> None:
+        """Check for journal filters in subqueries"""
+
+        # Skip top-level queries
+        if level == 0:
+            for child in query.children:
+                try:
+                    self._check_journal_filters_in_subquery(child, level + 1)
+                except ValueError:
+                    pass
+            return
+        if query.operator:
+            for child in query.children:
+                try:
+                    self._check_journal_filters_in_subquery(child, level + 1)
+                except ValueError:
+                    pass
+            return
+
+        if not query.search_field:
+            return
+
+        generic_fields = self.syntax_str_to_generic_search_field_set(
+            query.search_field.value
+        )
+        if generic_fields & {Fields.JOURNAL, Fields.PUBLICATION_NAME}:
+            details = (
+                "Please double-check whether journal/publication-name filters "
+                f"({query.search_field.value}) should apply to the entire query."
+            )
+            self.add_linter_message(
+                QueryErrorCode.JOURNAL_FILTER_IN_SUBQUERY,
+                positions=[query.position or (-1, -1)],
+                details=details,
+            )
+
+    def _extract_subqueries(
+        self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
+    ) -> None:
+        """Extract subqueries from query tree"""
+        if subquery_id not in subqueries:
+            subqueries[subquery_id] = []
+            if query.operator:
+                subquery_types[subquery_id] = query.value
+
+        for child in query.children:
+            if not child.children:
+                subqueries[subquery_id].append(child)
+            elif child.value == query.value:
+                self._extract_subqueries(child, subqueries, subquery_types, subquery_id)
+            else:
+                new_subquery_id = max(subqueries.keys()) + 1
+                self._extract_subqueries(
+                    child, subqueries, subquery_types, new_subquery_id
+                )
+
+        if not query.children:
+            subqueries[subquery_id].append(query)
+
+    # pylint: disable=too-many-branches
+    def _check_redundant_terms(self, query: Query) -> None:
+        """Check query for redundant search terms"""
+        subqueries: dict = {}
+        subquery_types: dict = {}
+        self._extract_subqueries(query, subqueries, subquery_types)
+
+        # Compare search terms in the same subquery for redundancy
+        for query_id, terms in subqueries.items():
+            # Exclude subqueries without search terms
+            if not terms:
+                continue
+
+            if query_id not in subquery_types:
+                continue
+
+            operator = subquery_types[query_id]
+
+            if operator == Operators.NOT:
+                terms.pop(0)  # First term of a NOT query cannot be redundant
+
+            redundant_terms = []
+            for term_a in terms:
+                if not term_a.search_field:
+                    continue
+                for term_b in terms:
+                    if (
+                        term_a == term_b
+                        or term_a in redundant_terms
+                        or term_b in redundant_terms
+                    ):
+                        continue
+
+                    if not term_b.search_field:
+                        continue
+
+                    try:
+                        field_a = self.syntax_str_to_generic_search_field_set(
+                            term_a.search_field.value
+                        )
+                        field_b = self.syntax_str_to_generic_search_field_set(
+                            term_b.search_field.value
+                        )
+                    except ValueError:
+                        # Skip if the field is not supported
+                        continue
+
+                    if field_a != field_b:
+                        continue
+
+                    if field_a == "[mh]":
+                        # excact matches required for mh
+                        continue
+
+                    if term_a.value == term_b.value or (
+                        term_a.value.strip('"').lower()
+                        in term_b.value.strip('"').lower().split()
+                    ):
+                        # Terms in AND queries follow different redundancy logic
+                        # than terms in OR queries
+                        if operator == Operators.AND:
+                            self.add_linter_message(
+                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                positions=[term_a.position, term_b.position],
+                                details=f"Term {term_a.value} is contained in term "
+                                f"{term_b.value} and both are connected with AND. "
+                                f"Therefore, term {term_b.value} is redundant.",
+                            )
+                            redundant_terms.append(term_a)
+                        elif operator == Operators.OR:
+                            self.add_linter_message(
+                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                positions=[term_a.position, term_b.position],
+                                details=f"Term {term_b.value} is contained in term "
+                                f"{term_a.value} and both are connected with OR. "
+                                f"Therefore, term {term_b.value} is redundant.",
+                            )
+                            redundant_terms.append(term_b)
+
+                        elif operator == Operators.NOT:
+                            self.add_linter_message(
+                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                positions=[term_a.position, term_b.position],
+                            )
+                            redundant_terms.append(term_b)
 
 
 class QueryListLinter:

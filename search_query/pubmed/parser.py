@@ -54,7 +54,7 @@ class PubmedParser(QueryStringParser):
         super().__init__(
             query_str=query_str, search_field_general=search_field_general, mode=mode
         )
-        self.linter = PubmedQueryStringLinter()
+        self.linter = PubmedQueryStringLinter(query_str=query_str)
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
