@@ -108,6 +108,14 @@ class Query:
             gen_linter = GenericLinter()
             gen_linter.validate_query_tree(self)
             gen_linter.check_status()
+
+        elif self.platform == PLATFORM.EBSCO.value:
+            from search_query.ebsco.linter import EBSCOQueryStringLinter
+
+            ebsco_linter = EBSCOQueryStringLinter()
+            ebsco_linter.validate_query_tree(self)
+            ebsco_linter.check_status()
+
         else:
             raise NotImplementedError(
                 f"Validation for {self.platform} is not implemented"
