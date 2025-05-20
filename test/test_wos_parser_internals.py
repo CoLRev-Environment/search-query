@@ -2,7 +2,7 @@
 """Web-of-Science unit tests for internals of query parser."""
 import typing
 
-from search_query.constants import Fields
+from search_query.constants import PLATFORM, Fields
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
@@ -22,7 +22,7 @@ def test_handle_closing_parenthesis_single_child() -> None:
     This test verifies that the `handle_closing_parenthesis` method correctly returns
     the single child when there is only one child in the list.
     """
-    children = [Query(value="example", operator=False, platform="wos")]
+    children = [Query(value="example", operator=False, platform=PLATFORM.WOS.value)]
     parser = WOSParser(query_str="", search_field_general="", mode="")
     result = parser.handle_closing_parenthesis(children, current_operator="")
 
@@ -37,8 +37,8 @@ def test_handle_closing_parenthesis_with_operator() -> None:
     a Query object with the given operator and children when there is an operator.
     """
     children = [
-        Query(value="example1", operator=False, platform="wos"),
-        Query(value="example2", operator=False, platform="wos"),
+        Query(value="example1", operator=False, platform=PLATFORM.WOS.value),
+        Query(value="example2", operator=False, platform=PLATFORM.WOS.value),
     ]
     current_operator = "AND"
     parser = WOSParser(query_str="", search_field_general="", mode="")
@@ -330,7 +330,7 @@ def test_add_term_node_without_current_operator() -> None:
             operator=operator,
             search_field=search_field,
             position=position,
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -375,10 +375,10 @@ def test_add_term_node_with_current_operator() -> None:
                     operator=operator,
                     search_field=search_field,
                     position=position,
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 )
             ],
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -421,18 +421,18 @@ def test_add_term_node_with_near_operator() -> None:
                     operator=False,
                     search_field=search_field,
                     position=(0, 7),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
                 Query(
                     value="example2",
                     operator=False,
                     search_field=search_field,
                     position=(8, 16),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
             ],
             distance=5,
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
 
@@ -458,35 +458,35 @@ def test_add_term_node_with_near_operator() -> None:
                             operator=False,
                             search_field=search_field,
                             position=(0, 7),
-                            platform="wos",
+                            platform=PLATFORM.WOS.value,
                         ),
                         Query(
                             value="example2",
                             operator=False,
                             search_field=search_field,
                             position=(8, 16),
-                            platform="wos",
+                            platform=PLATFORM.WOS.value,
                         ),
                     ],
                     distance=5,
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
                 Query(
                     value="example2",
                     operator=False,
                     search_field=search_field,
                     position=(8, 16),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
                 Query(
                     value="example3",
                     operator=False,
                     search_field=search_field,
                     position=(17, 25),
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 ),
             ],
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
     assert result[0].value == expected_result[0].value
@@ -533,7 +533,7 @@ def test_add_term_node_with_existing_children() -> None:
             operator=False,
             search_field=search_field,
             position=(0, 8),
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
 
@@ -551,14 +551,14 @@ def test_add_term_node_with_existing_children() -> None:
             operator=False,
             search_field=search_field,
             position=(0, 8),
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         ),
         Query(
             value=value,
             operator=operator,
             search_field=search_field,
             position=position,
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         ),
     ]
     assert result[0].value == expected_result[0].value
@@ -609,10 +609,10 @@ def test_add_term_node_with_current_negation() -> None:
                     operator=operator,
                     search_field=search_field,
                     position=position,
-                    platform="wos",
+                    platform=PLATFORM.WOS.value,
                 )
             ],
-            platform="wos",
+            platform=PLATFORM.WOS.value,
         )
     ]
     assert result[0].value == expected_result[0].value
