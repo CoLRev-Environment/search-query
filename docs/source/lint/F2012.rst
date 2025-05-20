@@ -1,6 +1,6 @@
 .. _F2012:
 
-F2012 — year-without-search-field
+F2012 — year-without-search-terms
 =================================
 
 **Error Code**: F2012

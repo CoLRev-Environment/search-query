@@ -1,0 +1,14 @@
+.. _F1011:
+
+F1011 — too-many-operators
+==========================
+
+**Error Code**: F1011
+
+**Message**: ``Too many operators in the query``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Too many operators in the query
+
+**Back to**: :ref:`lint`

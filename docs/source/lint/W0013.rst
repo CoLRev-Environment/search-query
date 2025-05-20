@@ -1,0 +1,14 @@
+.. _W0013:
+
+W0013 — non-standard-quotes
+===========================
+
+**Error Code**: W0013
+
+**Message**: ``Non-standard quotes``
+
+**Scope**: all
+
+**Description**: Non-standard quotes
+
+**Back to**: :ref:`lint`
