@@ -37,11 +37,11 @@ def query_setup() -> dict:
         [query_ai, query_health, query_ethics],
         search_field=SearchField(Fields.TITLE),
     )
-    query_complete.origin_platform = "generic"
-    query_health.origin_platform = "generic"
-    query_ai.origin_platform = "generic"
-    query_robot.origin_platform = "generic"
-    query_ethics.origin_platform = "generic"
+    query_complete.platform = "generic"
+    query_health.platform = "generic"
+    query_ai.platform = "generic"
+    query_robot.platform = "generic"
+    query_ethics.platform = "generic"
 
     return copy.deepcopy(
         {

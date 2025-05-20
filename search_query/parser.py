@@ -63,7 +63,7 @@ def parse(
     query = parser_class(
         query_str, search_field_general=search_field_general, mode=mode
     ).parse()  # type: ignore
-    query.origin_platform = platform
+    query.platform = platform
     return query
 
 

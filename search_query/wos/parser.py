@@ -208,7 +208,7 @@ class WOSParser(QueryStringParser):
                     value=current_operator,
                     children=list(children),
                     search_field=search_field,
-                    origin_platform="deactivated",
+                    platform="deactivated",
                 ),
                 index,
             )
@@ -233,7 +233,7 @@ class WOSParser(QueryStringParser):
                 value=current_operator,
                 children=children,
                 search_field=search_field,
-                origin_platform="deactivated",
+                platform="deactivated",
             )
 
         # Multiple children without operator are not allowed
@@ -385,7 +385,7 @@ class WOSParser(QueryStringParser):
             value=value,
             search_field=search_field,
             position=position,
-            origin_platform="deactivated",
+            platform="deactivated",
         )
 
         # Append the term node to the list of children
@@ -406,12 +406,12 @@ class WOSParser(QueryStringParser):
                                     Term(
                                         value=self.tokens[index - 1].value,
                                         search_field=search_field,
-                                        origin_platform="deactivated",
+                                        platform="deactivated",
                                     ),
                                     term_node,
                                 ],
                                 distance=int(distance),
-                                origin_platform="deactivated",
+                                platform="deactivated",
                             )
                             break
                         index -= 1
@@ -422,7 +422,7 @@ class WOSParser(QueryStringParser):
                             operator=True,
                             children=[*children, near_operator],
                             search_field=search_field,
-                            origin_platform="deactivated",
+                            platform="deactivated",
                         )
                     ]
                 else:
@@ -431,7 +431,7 @@ class WOSParser(QueryStringParser):
                             value=current_operator,
                             children=[*children, term_node],
                             search_field=search_field,
-                            origin_platform="deactivated",
+                            platform="deactivated",
                         )
                     ]
             else:
@@ -463,7 +463,7 @@ class WOSParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_origin_platform(PLATFORM.WOS.value, skip_validation=True)
+        query.set_platform(PLATFORM.WOS.value, skip_validation=True)
 
         return query
 
@@ -511,7 +511,7 @@ class WOSListParser(QueryListParser):
         operator_query = Query(
             value=operator,
             children=children,
-            origin_platform="deactivated",
+            platform="deactivated",
         )
         return operator_query
 

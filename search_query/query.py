@@ -53,7 +53,7 @@ class Query:
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[tuple] = None,
         distance: typing.Optional[int] = None,
-        origin_platform: str = "generic",
+        platform: str = "generic",
     ) -> None:
         self._value: str = ""
         self._operator = False
@@ -67,15 +67,15 @@ class Query:
         self.search_field = search_field
         self.position = position
         self.marked = False
-        # Note: origin_platform is only set for root nodes
-        self.origin_platform = origin_platform
+        # Note: platform is only set for root nodes
+        self.platform = platform
 
         self._parent: typing.Optional[Query] = None
         if children:
             for child in children:
                 self.add_child(child)
 
-        self.set_origin_platform_recursively(origin_platform)
+        self.set_platform_recursively(platform)
 
         self._ensure_children_not_circular()
 
@@ -84,25 +84,25 @@ class Query:
         self._validate_platform_constraints()
 
     def _validate_platform_constraints(self) -> None:
-        if self.origin_platform == "deactivated":
+        if self.platform == "deactivated":
             return
 
         # pylint: disable=import-outside-toplevel
-        if self.origin_platform == "wos":
+        if self.platform == "wos":
             from search_query.wos.linter import WOSQueryStringLinter
 
             wos_linter = WOSQueryStringLinter()
             wos_linter.validate_query_tree(self)
             wos_linter.check_status()
 
-        elif self.origin_platform == "pubmed":
+        elif self.platform == "pubmed":
             from search_query.pubmed.linter import PubmedQueryStringLinter
 
             pubmed_linter = PubmedQueryStringLinter()
             pubmed_linter.validate_query_tree(self)
             pubmed_linter.check_status()
 
-        elif self.origin_platform == "generic":
+        elif self.platform == "generic":
             from search_query.generic.linter import GenericLinter
 
             gen_linter = GenericLinter()
@@ -110,30 +110,30 @@ class Query:
             gen_linter.check_status()
         else:
             raise NotImplementedError(
-                f"Validation for {self.origin_platform} is not implemented"
+                f"Validation for {self.platform} is not implemented"
             )
 
-    def _set_origin_platform_recursively(self, platform: str) -> None:
+    def _set_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
-        self.origin_platform = platform
+        self.platform = platform
         for child in self._children:
             # pylint: disable=protected-access
-            child._set_origin_platform_recursively(platform)
+            child._set_platform_recursively(platform)
 
     # TODO : maybe as a setter?
-    def set_origin_platform(self, platform: str, skip_validation: bool = False) -> None:
+    def set_platform(self, platform: str, skip_validation: bool = False) -> None:
         """Set the platform for this query node."""
         if platform not in [p.value for p in PLATFORM]:
             raise ValueError(f"Invalid platform: {platform}")
-        self._set_origin_platform_recursively(platform)
+        self._set_platform_recursively(platform)
         if not skip_validation:
             self._validate_platform_constraints()
 
-    def set_origin_platform_recursively(self, platform: str) -> None:
+    def set_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
-        self.origin_platform = platform
+        self.platform = platform
         for child in self._children:
-            child.set_origin_platform_recursively(platform)
+            child.set_platform_recursively(platform)
 
     def __deepcopy__(self, memo: dict) -> Query:
         cls = self.__class__
@@ -233,7 +233,7 @@ class Query:
             child = Term(
                 child,
                 search_field=self.search_field,
-                origin_platform=self.origin_platform,
+                platform=self.platform,
             )
         child._set_parent(self)  # pylint: disable=protected-access
         self._children.append(child)
@@ -421,16 +421,16 @@ class Query:
     def to_string(self) -> str:
         """Prints the query as a string"""
 
-        assert self.origin_platform != ""
+        assert self.platform != ""
 
-        if self.origin_platform == PLATFORM.WOS.value:
+        if self.platform == PLATFORM.WOS.value:
             return to_string_wos(self)
-        if self.origin_platform == PLATFORM.PUBMED.value:
+        if self.platform == PLATFORM.PUBMED.value:
             return to_string_pubmed(self)
-        if self.origin_platform == PLATFORM.EBSCO.value:
+        if self.platform == PLATFORM.EBSCO.value:
             return to_string_ebsco(self)
 
-        raise ValueError(f"Syntax not supported ({self.origin_platform})")
+        raise ValueError(f"Syntax not supported ({self.platform})")
 
     def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
         """Translate the query to the target syntax using the provided translator."""
@@ -443,47 +443,46 @@ class Query:
         from search_query.wos.translator import WOSTranslator
 
         # If the target syntax is the same as the origin, no translation is needed
-        if target_syntax == self.origin_platform:
+        if target_syntax == self.platform:
             return self
 
-        if self.origin_platform == "generic":
+        if self.platform == "generic":
             generic_query = self.copy()
         else:
-            if self.origin_platform == "pubmed":
+            if self.platform == "pubmed":
                 pubmed_translator = PubmedTranslator()
                 generic_query = pubmed_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
-            elif self.origin_platform == "ebsco":
+            elif self.platform == "ebsco":
                 ebsco_translator = EBSCOTranslator()
                 generic_query = ebsco_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
-            elif self.origin_platform == "wos":
+            elif self.platform == "wos":
                 wos_translator = WOSTranslator()
                 generic_query = wos_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
             else:
                 raise NotImplementedError(
-                    f"Translation from {self.origin_platform} "
-                    "to generic is not implemented"
+                    f"Translation from {self.platform} " "to generic is not implemented"
                 )
 
         if target_syntax == "generic":
-            generic_query.origin_platform = target_syntax
+            generic_query.platform = target_syntax
             return generic_query
         if target_syntax == "pubmed":
             target_query = PubmedTranslator.to_specific_syntax(generic_query)
-            target_query.origin_platform = target_syntax
+            target_query.platform = target_syntax
             return target_query
         if target_syntax == "ebscohost":
             target_query = EBSCOTranslator.to_specific_syntax(generic_query)
-            target_query.origin_platform = target_syntax
+            target_query.platform = target_syntax
             return target_query
         if target_syntax == "wos":
             target_query = WOSTranslator.to_specific_syntax(generic_query)
-            target_query.origin_platform = target_syntax
+            target_query.platform = target_syntax
             return target_query
 
         raise NotImplementedError(f"Translation to {target_syntax} is not implemented")
@@ -498,7 +497,7 @@ class Term(Query):
         *,
         search_field: typing.Optional[SearchField] = None,
         position: typing.Optional[tuple] = None,
-        origin_platform: str = "generic",
+        platform: str = "generic",
     ) -> None:
         super().__init__(
             value=value,
@@ -506,5 +505,5 @@ class Term(Query):
             children=None,
             search_field=search_field,
             position=position,
-            origin_platform=origin_platform,
+            platform=platform,
         )

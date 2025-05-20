@@ -727,7 +727,7 @@ def test_nested_query_with_field() -> None:
                 Term("remote monitoring"),
             ],
             search_field="[tiab]",
-            origin_platform="pubmed",
+            platform="pubmed",
         )
     except QuerySyntaxError as exc:
         assert exc.linter.messages == [

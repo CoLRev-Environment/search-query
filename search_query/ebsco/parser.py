@@ -228,7 +228,7 @@ class EBSCOParser(QueryStringParser):
                     value=token.value,
                     position=token.position,
                     search_field=search_field or search_field_par,
-                    origin_platform="deactivated",
+                    platform="deactivated",
                 )
 
                 # Append search_term to tree
@@ -250,7 +250,7 @@ class EBSCOParser(QueryStringParser):
                     position=token.position,
                     search_field=search_field or search_field_par,
                     distance=distance,
-                    origin_platform="deactivated",
+                    platform="deactivated",
                 )
 
                 # Set proximity_operator as tree node
@@ -262,7 +262,7 @@ class EBSCOParser(QueryStringParser):
                     value=token.value.upper(),
                     position=token.position,
                     search_field=search_field or search_field_par,
-                    origin_platform="deactivated",
+                    platform="deactivated",
                 )
 
                 if not current_operator:
@@ -314,7 +314,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_origin_platform(PLATFORM.EBSCO.value, skip_validation=True)
+        query.set_platform(PLATFORM.EBSCO.value, skip_validation=True)
 
         return query
 

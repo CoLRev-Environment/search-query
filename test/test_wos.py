@@ -882,16 +882,16 @@ def test_wos_valid_query() -> None:
                 value="AI",
                 operator=False,
                 search_field=SearchField("TI="),
-                origin_platform="wos",
+                platform="wos",
             ),
             Query(
                 value="ethics",
                 operator=False,
                 search_field=SearchField("AB="),
-                origin_platform="wos",
+                platform="wos",
             ),
         ],
-        origin_platform="wos",
+        platform="wos",
     )
 
 
@@ -904,17 +904,17 @@ def test_wos_invalid_nested_with_operator_field() -> None:
                     value="DE12",
                     operator=False,
                     search_field=SearchField("IS="),
-                    origin_platform="wos",
+                    platform="wos",
                 ),
                 Query(
                     value="ethics",
                     operator=False,
                     search_field=SearchField("AB"),
-                    origin_platform="wos",
+                    platform="wos",
                 ),
             ],
             search_field=SearchField("TI"),
-            origin_platform="wos",
+            platform="wos",
         )
 
 
@@ -927,15 +927,15 @@ def test_wos_invalid_fields() -> None:
                     value="DE12",
                     operator=False,
                     search_field=SearchField("[ti]"),
-                    origin_platform="wos",
+                    platform="wos",
                 ),
                 Query(
                     value="ethics",
                     operator=False,
                     search_field=SearchField("AB="),
-                    origin_platform="wos",
+                    platform="wos",
                 ),
             ],
             search_field=SearchField("TI="),
-            origin_platform="wos",
+            platform="wos",
         )
