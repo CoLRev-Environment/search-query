@@ -2,7 +2,8 @@
 """Web-of-Science unit tests for internals of query parser."""
 import typing
 
-from search_query.constants import PLATFORM, Fields
+from search_query.constants import Fields
+from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
@@ -218,84 +219,6 @@ def test_combine_subsequent_terms_with_mixed_case() -> None:
     ]
 
     assert parser.tokens == expected_tokens
-
-
-def test_handle_year_search_valid_year_span() -> None:
-    """
-    Test the `handle_year_search` method with a valid year span.
-
-    This test verifies that the `handle_year_search` method correctly handles
-    a valid year span and adds the year search field to the list of children.
-    """
-    token = Token(value="2015-2019", type=TokenTypes.SEARCH_TERM, position=(0, 9))
-    children: typing.List[Query] = []
-    current_operator = "AND"
-
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser.handle_year_search(token, children, current_operator)
-
-    expected_result = [
-        Query(
-            value="AND",
-            operator=True,
-            children=[
-                Query(
-                    value=token.value,
-                    operator=False,
-                    search_field=SearchField(value="py=", position=token.position),
-                    position=token.position,
-                )
-            ],
-            platform="wos",
-        )
-    ]
-
-    assert result[0].value == expected_result[0].value
-    assert result[0].operator == expected_result[0].operator
-    assert (
-        result[0].children[0].search_field.value  # type: ignore
-        == expected_result[0].children[0].search_field.value  # type: ignore
-    )
-    assert result[0].children[0].position == expected_result[0].children[0].position
-
-
-def test_handle_year_search_single_year() -> None:
-    """
-    Test the `handle_year_search` method with a single year.
-
-    This test verifies that the `handle_year_search` method correctly handles
-    a single year and adds the year search field to the list of children.
-    """
-    token = Token(value="2015", type=TokenTypes.SEARCH_TERM, position=(0, 4))
-    children: typing.List[Query] = []
-    current_operator = "AND"
-
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser.handle_year_search(token, children, current_operator)
-
-    expected_result = [
-        Query(
-            value="AND",
-            operator=True,
-            children=[
-                Query(
-                    value=token.value,
-                    operator=False,
-                    search_field=SearchField(value="py=", position=token.position),
-                    position=token.position,
-                )
-            ],
-            platform="wos",
-        )
-    ]
-
-    assert result[0].children[0].value == expected_result[0].children[0].value
-    assert result[0].children[0].operator == expected_result[0].children[0].operator
-    assert (
-        result[0].children[0].search_field.value  # type: ignore
-        == expected_result[0].children[0].search_field.value  # type: ignore
-    )
-    assert result[0].children[0].position == expected_result[0].children[0].position
 
 
 def test_add_term_node_without_current_operator() -> None:

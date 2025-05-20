@@ -377,6 +377,13 @@ class QueryErrorCode(Enum):
         "A Nested query cannot have a search field.",
         "",
     )
+    YEAR_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F2014",
+        "year-format-invalid",
+        "Invalid year format.",
+        "",
+    )
 
     MISSING_ROOT_NODE = (
         [PLATFORM.WOS],

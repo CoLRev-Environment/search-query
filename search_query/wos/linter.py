@@ -29,6 +29,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         re.IGNORECASE,
     )
     DOI_VALUE_REGEX = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
+    YEAR_VALUE_REGEX = re.compile(r"^\d{4}(-\d{4})?$")
 
     WILDCARD_CHARS = ["?", "$", "*"]
 
@@ -130,15 +131,17 @@ class WOSQueryStringLinter(QueryStringLinter):
             if not YEAR_PUBLISHED_FIELD_REGEX.match(query.search_field.value):
                 return
 
-            # Year detected without other search fields
-            self.add_linter_message(
-                QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS,
-                positions=[
+            positions = []
+            if self.tokens:
+                positions = [
                     (
                         self.tokens[0].position[0],
                         self.tokens[-1].position[1],
                     )
-                ],
+                ]
+            # Year detected without other search fields
+            self.add_linter_message(
+                QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS, positions=positions
             )
 
     def check_search_fields_from_json(
@@ -197,6 +200,14 @@ class WOSQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.WILDCARD_IN_YEAR,
                     positions=[query.position or (-1, -1)],
                 )
+                return
+
+            if not self.YEAR_VALUE_REGEX.match(query.value):
+                self.add_linter_message(
+                    QueryErrorCode.YEAR_FORMAT_INVALID,
+                    positions=[query.position or (-1, -1)],
+                )
+                return
 
             # Check if the yearspan is not more than 5 years
             if len(query.value) > 4:
@@ -431,7 +442,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        self.check_year_format(query)
         # self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
         self.check_year_without_search_terms(query)
 
@@ -441,6 +451,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unsupported_search_fields_in_query(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
+        self.check_year_format(term_field_query)
 
         self.check_nr_search_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)

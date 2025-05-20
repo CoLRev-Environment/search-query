@@ -2,7 +2,8 @@
 """Tests for Pubmed search query parser."""
 import pytest
 
-from search_query.constants import PLATFORM, Colors
+from search_query.constants import Colors
+from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError

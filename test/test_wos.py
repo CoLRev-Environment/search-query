@@ -567,19 +567,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "PY=200*",
             [
                 {
-                    "code": "F2002",
-                    "label": "wildcard-in-year",
-                    "message": "Wildcard characters (*, ?, $) not supported in year search.",
-                    "is_fatal": True,
-                    "position": [(3, 7)],
-                    "details": "",
-                },
-                {
                     "code": "F2012",
                     "label": "year-without-search-terms",
                     "message": "A search for publication years must include at least another search term.",
                     "is_fatal": True,
                     "position": [(0, 7)],
+                    "details": "",
+                },
+                {
+                    "code": "F2002",
+                    "label": "wildcard-in-year",
+                    "message": "Wildcard characters (*, ?, $) not supported in year search.",
+                    "is_fatal": True,
+                    "position": [(3, 7)],
                     "details": "",
                 },
             ],

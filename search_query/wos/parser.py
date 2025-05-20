@@ -18,7 +18,6 @@ from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
-from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
 
@@ -39,7 +38,6 @@ class WOSParser(QueryStringParser):
     SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
     PARENTHESIS_REGEX = r"[\(\)]"
     SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
-    YEAR_REGEX = r"^\d{4}(-\d{4})?$"
 
     OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
 
@@ -167,16 +165,6 @@ class WOSParser(QueryStringParser):
 
             # Handle terms
             else:
-                # Check if the token is a search field which has constraints
-                # Check if the token is a year
-                if re.findall(self.YEAR_REGEX, token.value) and search_field:
-                    if YEAR_PUBLISHED_FIELD_REGEX.match(search_field.value):
-                        children = self.handle_year_search(
-                            token, children, current_operator
-                        )
-                        index += 1
-                        continue
-
                 # Add term nodes
                 children = self.add_term_node(
                     index=index,
@@ -344,26 +332,6 @@ class WOSParser(QueryStringParser):
             updated_tokens.append(token)
 
         self.tokens = updated_tokens
-
-    def handle_year_search(
-        self, token: Token, children: list, current_operator: str
-    ) -> typing.List[Query]:
-        """Handle the year search field."""
-
-        search_field = SearchField(
-            value="py=",
-            position=token.position,
-        )
-
-        # Add the year search field to the list of children
-        return self.add_term_node(
-            index=0,
-            value=token.value,
-            search_field=search_field,
-            position=token.position,
-            children=children,
-            current_operator=current_operator,
-        )
 
     # pylint: disable=too-many-arguments
     def add_term_node(
