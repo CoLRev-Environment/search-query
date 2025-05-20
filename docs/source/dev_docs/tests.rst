@@ -124,5 +124,5 @@ Test Types
 
 .. note::
 
-   - Use helper functions like `print_debug_tokens()` to ease debugging.
+   - Use helper functions like `parser.print_tokens()` to ease debugging.
    - Use `assert ... == ...` with fallbacks for `print(...)` for inspection.
