@@ -92,15 +92,13 @@ class Query:
             from search_query.wos.linter import WOSQueryStringLinter
 
             wos_linter = WOSQueryStringLinter()
-            # TODO: validates fields, use of search_fields for nested queries, etc.
             wos_linter.validate_query_tree(self)
             wos_linter.check_status()
 
-        if self.origin_platform == "pubmed":
+        elif self.origin_platform == "pubmed":
             from search_query.pubmed.linter import PubmedQueryStringLinter
 
             pubmed_linter = PubmedQueryStringLinter()
-            # TODO: validates fields, use of search_fields for nested queries, etc.
             pubmed_linter.validate_query_tree(self)
             pubmed_linter.check_status()
 
@@ -109,8 +107,11 @@ class Query:
 
             gen_linter = GenericLinter()
             gen_linter.validate_query_tree(self)
-
             gen_linter.check_status()
+        else:
+            raise NotImplementedError(
+                f"Validation for {self.origin_platform} is not implemented"
+            )
 
     def _set_origin_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""

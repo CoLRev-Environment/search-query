@@ -432,8 +432,6 @@ class QueryStringLinter:
             query_str = query_str[1:-1]
         return query_str
 
-    # TODO : also include for other platforms
-    # (could the original query string be used??)
     def handle_nonstandard_quotes_in_query_str(self, query_str: str) -> str:
         """Handle non-standard quotes in query string."""
 
