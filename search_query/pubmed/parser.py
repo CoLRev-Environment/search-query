@@ -24,21 +24,24 @@ from search_query.query import Term
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
-    OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
-    PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_PHRASE_REGEX = r"\".*?\""
-    SEARCH_TERM_REGEX = r"[^\s\[\]()\|&]+"
-    PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
+    SEARCH_FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
+    OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])")
+    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
+    SEARCH_TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
+    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
 
-    pattern = "|".join(
-        [
-            SEARCH_FIELD_REGEX,
-            OPERATOR_REGEX,
-            PARENTHESIS_REGEX,
-            SEARCH_PHRASE_REGEX,
-            SEARCH_TERM_REGEX,
-        ]
+    pattern = re.compile(
+        "|".join(
+            [
+                SEARCH_FIELD_REGEX.pattern,
+                OPERATOR_REGEX.pattern,
+                PARENTHESIS_REGEX.pattern,
+                SEARCH_PHRASE_REGEX.pattern,
+                SEARCH_TERM_REGEX.pattern,
+            ]
+        ),
+        flags=re.IGNORECASE,
     )
 
     def __init__(
@@ -60,7 +63,7 @@ class PubmedParser(QueryStringParser):
 
         # Parse tokens and positions based on regex patterns.
         prev_end = 0
-        for match in re.finditer(self.pattern, self.query_str, re.IGNORECASE):
+        for match in self.pattern.finditer(self.query_str):
             value = match.group(0)
             start, end = match.span()
 
@@ -291,9 +294,9 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    LIST_ITEM_REF = r"#\d+"
-    OPERATOR_NODE_REGEX = r"#\d|AND|OR|NOT"
+    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_ITEM_REF = re.compile(r"#\d+")
+    OPERATOR_NODE_REGEX = re.compile(r"#\d|AND|OR|NOT")
 
     def __init__(
         self,
@@ -317,12 +320,12 @@ class PubmedListParser(QueryListParser):
         """Get operator node tokens"""
         node_content = self.query_dict[token_nr]["node_content"]
         operator_node_tokens = []
-        for match in re.finditer(self.OPERATOR_NODE_REGEX, node_content):
+        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
             value = match.group(0)
             start, end = match.span()
             if value.upper() in {"AND", "OR", "NOT"}:
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            elif re.match(self.LIST_ITEM_REF, value):
+            elif self.LIST_ITEM_REF.match(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
             else:
                 token_type = OperatorNodeTokenTypes.UNKNOWN

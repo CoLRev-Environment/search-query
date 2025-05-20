@@ -27,30 +27,33 @@ from search_query.wos.linter import WOSQueryStringLinter
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    SEARCH_TERM_REGEX = (
-        r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
-        r'|"[^"]+"'
-        r'|\u201c[^"^\u201d]+\u201d'
-        r'|\u2018[^"]+\u2019'
+    SEARCH_TERM_REGEX = re.compile(
+        r'\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*|"[^"]+"'
     )
-    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
-    PROXIMITY_OPERATOR_REGEX = r"\b(NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
-    SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
-    PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
+    LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
+    PROXIMITY_OPERATOR_REGEX = re.compile(
+        r"\b(NEAR/\d{1,2}|NEAR)\b", flags=re.IGNORECASE
+    )
+    SEARCH_FIELD_REGEX = re.compile(r"\b\w{2}=|\b\w{3}=")
+    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    SEARCH_FIELDS_REGEX = re.compile(r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*")
 
-    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
+    OPERATOR_REGEX = re.compile(
+        "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
+    )
 
     # Combine all regex patterns into a single pattern
-    pattern = "|".join(
-        [
-            SEARCH_FIELD_REGEX,
-            LOGIC_OPERATOR_REGEX,
-            PROXIMITY_OPERATOR_REGEX,
-            SEARCH_TERM_REGEX,
-            PARENTHESIS_REGEX,
-            # self.SEARCH_FIELDS_REGEX,
-        ]
+    pattern = re.compile(
+        r"|".join(
+            [
+                SEARCH_FIELD_REGEX.pattern,
+                LOGIC_OPERATOR_REGEX.pattern,
+                PROXIMITY_OPERATOR_REGEX.pattern,
+                SEARCH_TERM_REGEX.pattern,
+                PARENTHESIS_REGEX.pattern,
+                # self.SEARCH_FIELDS_REGEX.pattern,
+            ]
+        )
     )
 
     def __init__(
@@ -75,23 +78,23 @@ class WOSParser(QueryStringParser):
             raise ValueError("No string provided to parse.")
 
         # Parse tokens and positions based on regex pattern
-        for match in re.finditer(self.pattern, self.query_str):
+        for match in self.pattern.finditer(self.query_str):
             value = match.group()
             position = match.span()
 
             # Determine token type
-            if re.fullmatch(self.PARENTHESIS_REGEX, value):
+            if self.PARENTHESIS_REGEX.fullmatch(value):
                 if value == "(":
                     token_type = TokenTypes.PARENTHESIS_OPEN
                 else:
                     token_type = TokenTypes.PARENTHESIS_CLOSED
-            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, value):
+            elif self.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.LOGIC_OPERATOR
-            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, value):
+            elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif re.fullmatch(self.SEARCH_FIELD_REGEX, value):
+            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
+            elif self.SEARCH_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
                 token_type = TokenTypes.UNKNOWN
@@ -439,9 +442,9 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    LIST_ITEM_REFERENCE = r"#\d+"
-    OPERATOR_NODE_REGEX = r"#\d+|AND|OR"
+    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_ITEM_REFERENCE = re.compile(r"#\d+")
+    OPERATOR_NODE_REGEX = re.compile(r"#\d+|AND|OR")
     query_dict: dict
 
     def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
@@ -518,12 +521,12 @@ class WOSListParser(QueryListParser):
         """Tokenize the query_list."""
 
         tokens = []
-        for match in re.finditer(self.OPERATOR_NODE_REGEX, query_str):
+        for match in self.OPERATOR_NODE_REGEX.finditer(query_str):
             value = match.group()
             position = match.span()
-            if re.fullmatch(self.LIST_ITEM_REFERENCE, value):
+            if self.LIST_ITEM_REFERENCE.fullmatch(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            elif re.fullmatch(WOSParser.LOGIC_OPERATOR_REGEX, value):
+            elif WOSParser.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
             else:
                 token_type = OperatorNodeTokenTypes.UNKNOWN

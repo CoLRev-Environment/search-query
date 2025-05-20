@@ -23,22 +23,26 @@ from search_query.query import Term
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
 
-    PARENTHESIS_REGEX = r"[\(\)]"
-    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
-    PROXIMITY_OPERATOR_REGEX = r"(N|W)\d+"
-    SEARCH_FIELD_REGEX = r"\b([A-Z]{2})\b"
-    SEARCH_TERM_REGEX = r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?"
+    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
+    PROXIMITY_OPERATOR_REGEX = re.compile(r"(N|W)\d+")
+    SEARCH_FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
+    SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?")
 
-    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
+    OPERATOR_REGEX = re.compile(
+        "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
+    )
 
-    pattern = "|".join(
-        [
-            PARENTHESIS_REGEX,
-            LOGIC_OPERATOR_REGEX,
-            PROXIMITY_OPERATOR_REGEX,
-            SEARCH_FIELD_REGEX,
-            SEARCH_TERM_REGEX,
-        ]
+    pattern = re.compile(
+        "|".join(
+            [
+                PARENTHESIS_REGEX.pattern,
+                LOGIC_OPERATOR_REGEX.pattern,
+                PROXIMITY_OPERATOR_REGEX.pattern,
+                SEARCH_FIELD_REGEX.pattern,
+                SEARCH_TERM_REGEX.pattern,
+            ]
+        )
     )
 
     def __init__(
@@ -139,24 +143,24 @@ class EBSCOParser(QueryStringParser):
 
         self.tokens = []
         token_type = TokenTypes.UNKNOWN
-        for match in re.finditer(self.pattern, self.query_str):
+        for match in self.pattern.finditer(self.query_str):
             value = match.group()
             value = value.strip()
             start, end = match.span()
 
             # Determine token type
-            if re.fullmatch(self.PARENTHESIS_REGEX, value):
+            if self.PARENTHESIS_REGEX.fullmatch(value):
                 if value == "(":
                     token_type = TokenTypes.PARENTHESIS_OPEN
                 else:
                     token_type = TokenTypes.PARENTHESIS_CLOSED
-            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, value):
+            elif self.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.LOGIC_OPERATOR
-            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, value):
+            elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif re.fullmatch(self.SEARCH_FIELD_REGEX, value):
+            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
+            elif self.SEARCH_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
                 token_type = TokenTypes.UNKNOWN

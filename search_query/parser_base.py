@@ -21,7 +21,7 @@ class QueryStringParser(ABC):
     """Abstract base class for query string parsers"""
 
     # Note: override the following:
-    OPERATOR_REGEX = r"^(AND|and|OR|or|NOT|not)$"
+    OPERATOR_REGEX: re.Pattern = re.compile(r"^(AND|OR|NOT)$", flags=re.IGNORECASE)
 
     linter: QueryStringLinter
 
@@ -80,7 +80,7 @@ class QueryStringParser(ABC):
 class QueryListParser:
     """QueryListParser"""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    LIST_ITEM_REGEX: re.Pattern = re.compile(r"^(\d+).\s+(.*)$")
 
     def __init__(
         self,
@@ -104,7 +104,7 @@ class QueryListParser:
             if line.strip() == "":
                 continue
 
-            match = re.match(self.LIST_ITEM_REGEX, line)
+            match = self.LIST_ITEM_REGEX.match(line)
             if not match:
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()
