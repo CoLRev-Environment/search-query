@@ -15,25 +15,29 @@ if typing.TYPE_CHECKING:
 
 # mypy: disable-error-code=attr-defined
 
+# Note: the query data will be included in the package for now.
+# - File sizes are small (less than 100kB)
+# - Recommending filters requires queries (filters) to be available
+# This decision may change in the future if the number of queries increases.
+
 
 def load_query(name: str) -> "Query":
     """Load a query object from JSON by name."""
     try:
         name = name.replace(".json", "")
         json_path = files("search_query") / f"json_db/{name}.json"  # mypy: ignore
-        # print(json_path)
+
         search = load_search_file(json_path)
         query = parse(search.search_string, platform=search.platform)
-        # print(query.to_structured_string())
+
         return query
+
     except FileNotFoundError as exc:
         raise KeyError(f"No query file named {name}.json found") from exc
 
 
 def list_queries() -> typing.List[str]:
     """List all available predefined query identifiers (without .json)."""
-
-    # TODO : also give details (dictionary?)
 
     json_dir = files("search_query") / "json_db"
     return [
@@ -43,5 +47,18 @@ def list_queries() -> typing.List[str]:
     ]
 
 
-# # TODO : offer an alternative load_search_file() function
-# (which gives users access to more information)
+def list_queries_with_details() -> dict:
+    """List all available queries."""
+
+    json_dir = files("search_query") / "json_db"
+
+    details = {}
+    for file in json_dir.iterdir():
+        if file.suffix == ".json":
+            search = load_search_file(file)
+            details[file.name.replace(".json", "")] = {
+                "description": search.description,  # pylint: disable=no-member
+                "platform": search.platform,
+                "search_string": search.search_string,
+            }
+    return details
