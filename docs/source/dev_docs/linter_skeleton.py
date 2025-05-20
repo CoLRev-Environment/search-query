@@ -4,6 +4,9 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
 
+if typing.TYPE_CHECKING:
+    from search_query.query import Query
+
 
 class XYQueryStringLinter(QueryStringLinter):
     """Linter for XY query strings"""
@@ -38,22 +41,10 @@ class XYQueryStringLinter(QueryStringLinter):
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
 
         # custom validation
-        self.check_unsupported_search_fields()
-        self.check_field_positioning()
 
         return self.tokens
-
-    def check_unsupported_search_fields(self) -> None:
-        for token in self.parser.tokens:
-            if token.type == TokenTypes.FIELD and token.value not in VALID_FIELDS:
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                    position=token.position,
-                    details=f"Field {token.value} is not supported",
-                )
 
     def check_invalid_token_sequences(self) -> None:
         for i, token in enumerate(self.parser.tokens[:-1]):
@@ -64,3 +55,15 @@ class XYQueryStringLinter(QueryStringLinter):
                     position=self.parser.tokens[i + 1].position,
                     details=f"Unexpected token after {token.type}",
                 )
+
+    def validate_query_tree(self, query: Query) -> None:
+        """
+        Validate the query tree.
+        This method is called after the query tree has been built.
+        """
+
+        self.check_quoted_search_terms_query(query)
+        self.check_operator_capitalization_query(query)
+        self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
+        self.check_unsupported_search_fields_in_query(query)
+        # term_field_query = self.get_query_with_fields_at_terms(query)

@@ -357,6 +357,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self._check_redundant_terms(query)
         self._check_date_filters_in_subquery(query)
         self._check_nested_query_with_search_field(query)
+        # term_field_query = self.get_query_with_fields_at_terms(query)
 
     def _check_nested_query_with_search_field(self, query: Query) -> None:
         # Walk the query (its children)

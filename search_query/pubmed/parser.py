@@ -264,6 +264,10 @@ class PubmedParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string"""
 
+        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
+            self.query_str
+        )
+
         self.tokenize()
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,

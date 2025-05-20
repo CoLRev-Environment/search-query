@@ -247,3 +247,4 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization_query(query)
         self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
         self.check_unsupported_search_fields_in_query(query)
+        # term_field_query = self.get_query_with_fields_at_terms(query)
