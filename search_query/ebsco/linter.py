@@ -5,13 +5,15 @@ from __future__ import annotations
 import re
 import typing
 
+from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
+from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
 from search_query.ebsco.constants import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:
-    import search_query.parser.constants
     from search_query.query import Query
 
 
@@ -19,6 +21,16 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     """Linter for EBSCO Query Strings"""
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
+
+    OPERATOR_PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
+    PLATFORM: PLATFORM = PLATFORM.EBSCO
+    VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
@@ -53,39 +65,56 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    parser: search_query.parser.constants.EBSCOParser
+    def __init__(self, query_str: str = "") -> None:
+        super().__init__(query_str=query_str)
 
-    def __init__(self, parser: search_query.parser.constants.EBSCOParser):
-        self.search_str = parser.query_str
-        self.parser = parser
-        super().__init__(parser=parser)
-
-    def validate_tokens(self) -> None:
+    def validate_tokens(
+        self,
+        *,
+        tokens: typing.List[Token],
+        query_str: str,
+        search_field_general: str = "",
+    ) -> typing.List[Token]:
         """Pre-linting checks."""
+        self.tokens = tokens
+        self.query_str = query_str
+        self.search_field_general = search_field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
-        self.check_quoted_search_terms()
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
-        self.check_invalid_characters_in_search_term("@&%$^~\\<>{}()[]#")
-        self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
 
         self.check_token_ambiguity()
         self.check_search_field_general()
+        return self.tokens
+
+    def get_precedence(self, token: str) -> int:
+        """Returns operator precedence for logical and proximity operators."""
+
+        if token.startswith("N"):
+            return self.OPERATOR_PRECEDENCE["NEAR"]
+        if token.startswith("W"):
+            return self.OPERATOR_PRECEDENCE["WITHIN"]
+        if token in self.OPERATOR_PRECEDENCE:
+            return self.OPERATOR_PRECEDENCE[token]
+        return -1  # Not an operator
+
+    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+        return syntax_str_to_generic_search_field_set(field_value)
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
 
         # Check for erroneous field syntax
-        match = re.search(r"\[[A-Za-z]*\]", self.parser.query_str)
+        match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
             self.add_linter_message(
                 QueryErrorCode.INVALID_SYNTAX,
-                position=match.span(),
+                positions=[match.span()],
                 details="EBSCOHOst fields must be before search terms "
                 "and without brackets, e.g. AB robot or TI monitor. "
                 f"'{match.group(0)}' is invalid.",
@@ -96,13 +125,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # Note: EBSCO-specific
 
         prev_token = None
-        for i, token in enumerate(self.parser.tokens):
+        for i, token in enumerate(self.tokens):
             match = re.match(r"^[A-Z]{2} ", token.value)
             if (
                 token.type == TokenTypes.SEARCH_TERM
                 and match
                 and (prev_token is None or prev_token.type != TokenTypes.FIELD)
-                and not self.parser.tokens[i + 1].startswith('"')
+                and not self.tokens[i + 1].value.startswith('"')
             ):
                 details = (
                     f"The token '{token.value}' (at {token.position}) is ambiguous. "
@@ -111,7 +140,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 )
                 self.add_linter_message(
                     QueryErrorCode.TOKEN_AMBIGUITY,
-                    position=(token.position[0], token.position[0] + 2),
+                    positions=[(token.position[0], token.position[0] + 2)],
                     details=details,
                 )
 
@@ -121,7 +150,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """Check field 'Search Fields' in content."""
 
         if self.search_field_general != "":
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, position=())
+            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 
     def check_invalid_token_sequences(self) -> None:
         """
@@ -129,18 +158,18 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         based on token type and the previous token type.
         """
 
-        for i, token in enumerate(self.parser.tokens):
+        for i, token in enumerate(self.tokens):
             # Check the last token
-            if i == len(self.parser.tokens):
-                if self.parser.tokens[i - 1].type in [
+            if i == len(self.tokens):
+                if self.tokens[i - 1].type in [
                     TokenTypes.PARENTHESIS_OPEN,
                     TokenTypes.LOGIC_OPERATOR,
                     TokenTypes.SEARCH_TERM,
                 ]:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=self.parser.tokens[i - 1].position,
-                        details=f"Cannot end with {self.parser.tokens[i-1].type}",
+                        positions=[self.tokens[i - 1].position],
+                        details=f"Cannot end with {self.tokens[i-1].type}",
                     )
                 break
 
@@ -154,39 +183,41 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ]:
                     self.add_linter_message(
                         QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        position=token.position,
+                        positions=[token.position],
                         details=f"Cannot start with {token_type}",
                     )
                 continue
 
-            prev_type = self.parser.tokens[i - 1].type
+            prev_type = self.tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 if token_type == TokenTypes.FIELD:
                     details = "Invalid search field position"
-                    position = token.position
+                    positions = [token.position]
 
                 elif token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
-                    position = token.position
+                    positions = [token.position]
 
                 elif (
                     prev_type == TokenTypes.PARENTHESIS_OPEN
                     and token_type == TokenTypes.PARENTHESIS_CLOSED
                 ):
                     details = "Empty parenthesis"
-                    position = (
-                        self.parser.tokens[i - 1].position[0],
-                        token.position[1],
-                    )
+                    positions = [
+                        (
+                            self.tokens[i - 1].position[0],
+                            token.position[1],
+                        )
+                    ]
                 elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
-                    r"^[a-z]{2}$", self.parser.tokens[i - 1].value
+                    r"^[a-z]{2}$", self.tokens[i - 1].value
                 ):
                     details = "Search field is not supported (must be upper case)"
-                    position = self.parser.tokens[i - 1].position
+                    positions = [self.tokens[i - 1].position]
                     self.add_linter_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                        position=position,
+                        positions=positions,
                         details=details,
                     )
                     continue
@@ -194,22 +225,22 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
                     details = "Missing operator"
-                    position = (
-                        self.parser.tokens[i - 1].position[0],
-                        token.position[1],
-                    )
+                    positions = [
+                        (
+                            self.tokens[i - 1].position[0],
+                            token.position[1],
+                        )
+                    ]
 
                 else:
                     details = ""
-                    position = (
-                        token.position
-                        if token_type
-                        else self.parser.tokens[i - 1].position
-                    )
+                    positions = [
+                        (token.position if token_type else self.tokens[i - 1].position)
+                    ]
 
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    position=position,
+                    positions=positions,
                     details=details,
                 )
 
@@ -218,3 +249,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         Validate the query tree.
         This method is called after the query tree has been built.
         """
+
+        self.check_quoted_search_terms_query(query)
+        self.check_operator_capitalization_query(query)
+        self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
+        self.check_unsupported_search_fields_in_query(query)
+
+        term_field_query = self.get_query_with_fields_at_terms(query)
+        self._check_date_filters_in_subquery(term_field_query)
+        self._check_journal_filters_in_subquery(term_field_query)
+        self._check_redundant_terms(term_field_query)

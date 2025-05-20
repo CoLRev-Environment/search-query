@@ -1,0 +1,14 @@
+.. _F1012:
+
+F1012 — too-many-search-terms
+=============================
+
+**Error Code**: F1012
+
+**Message**: ``Too many search terms in the query``
+
+**Scope**: PLATFORM.WOS
+
+**Description**: Too many search terms in the query
+
+**Back to**: :ref:`lint`

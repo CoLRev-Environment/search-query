@@ -15,7 +15,7 @@ def test_invalid_tree_structure(query_setup: dict) -> None:
     with pytest.raises(ValueError):
         AndQuery(
             ["invalid", query_setup["query_complete"], query_setup["query_ai"]],
-            search_field=SearchField("Author Keywords"),
+            search_field=SearchField("ti"),
         )
 
 
@@ -57,14 +57,14 @@ def test_parent_and_root() -> None:
     # Build a nested query structure
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field=SearchField("Abstract"),
+        search_field=SearchField("ab"),
     )
     ai = OrQuery(
         ["AI", "Artificial Intelligence"],
-        search_field=SearchField("Abstract"),
+        search_field=SearchField("ti"),
     )
 
-    root_query = AndQuery([ethics, ai], search_field=SearchField("Title"))
+    root_query = AndQuery([ethics, ai], search_field=SearchField("ti"))
 
     # Check that each subquery has root_query as its root
     assert ethics.get_parent() is root_query

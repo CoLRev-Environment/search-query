@@ -66,19 +66,6 @@ def test_tokenization(
     "query_string, messages",
     [
         (
-            "Artificial intelligence and Future",
-            [
-                {
-                    "code": "W0005",
-                    "label": "operator-capitalization",
-                    "message": "Operators should be capitalized",
-                    "is_fatal": False,
-                    "position": (24, 27),
-                    "details": "",
-                }
-            ],
-        ),
-        (
             "(Artificial Intelligence AND Future",
             [
                 {
@@ -86,7 +73,7 @@ def test_tokenization(
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "position": (0, 1),
+                    "position": [(0, 1)],
                     "details": "Unbalanced opening parenthesis",
                 }
             ],
@@ -99,7 +86,7 @@ def test_tokenization(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (3, 6),
+                    "position": [(3, 6)],
                     "details": "Invalid operator position",
                 }
             ],
@@ -113,8 +100,8 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
-                    "details": "Search field AI at position (0, 2) is not supported.",
+                    "position": [(0, 2)],
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
                 }
             ],
         ),
@@ -131,8 +118,8 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
-                    "details": "Search field AI at position (0, 2) is not supported.",
+                    "position": [(0, 2)],
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
                 }
             ],
         ),
@@ -144,30 +131,9 @@ def test_tokenization(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (0, 2),
+                    "position": [(0, 2)],
                     "details": "Search field is not supported (must be upper case)",
                 }
-            ],
-        ),
-        (
-            "governance[tiab]",
-            [
-                {
-                    "code": "F1010",
-                    "label": "invalid-syntax",
-                    "message": "Query contains invalid syntax",
-                    "is_fatal": True,
-                    "position": (10, 16),
-                    "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
-                },
-                {
-                    "code": "E0004",
-                    "label": "invalid-character",
-                    "message": "Search term contains invalid character",
-                    "is_fatal": False,
-                    "position": (0, 16),
-                    "details": "",
-                },
             ],
         ),
     ],
@@ -189,31 +155,64 @@ def test_linter(query_string: str, messages: list) -> None:
 
 
 @pytest.mark.parametrize(
-    "query_string, messages",
+    "query_string, search_field_general, messages",
     [
         (
             "TI Artificial Intelligence AND AB Future",
+            "AB",
             [
                 {
                     "code": "W0002",
                     "label": "search-field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
-                    "position": (),
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
+        (
+            "governance[tiab]",
+            "",
+            [
+                {
+                    "code": "F1010",
+                    "label": "invalid-syntax",
+                    "message": "Query contains invalid syntax",
+                    "is_fatal": True,
+                    "position": [(10, 16)],
+                    "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
+                }
+            ],
+        ),
+        (
+            "Artificial intelligence and Future",
+            "",
+            [
+                {
+                    "code": "W0005",
+                    "label": "operator-capitalization",
+                    "message": "Operators should be capitalized",
+                    "is_fatal": False,
+                    "position": [(24, 27)],
                     "details": "",
                 }
             ],
         ),
     ],
 )
-def test_linter_general_search_field(query_string: str, messages: list) -> None:
+def test_linter_general_search_field(
+    query_string: str, search_field_general: str, messages: list
+) -> None:
     parser = EBSCOParser(
-        query_string, search_field_general="AB", mode=LinterMode.STRICT
+        query_string, search_field_general=search_field_general, mode=LinterMode.STRICT
     )
     try:
         parser.parse()
     except Exception:
         pass
+    print(parser.linter.messages)
+    parser.print_tokens()
     assert parser.linter.messages == messages
 
 

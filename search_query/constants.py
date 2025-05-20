@@ -16,6 +16,7 @@ class PLATFORM(Enum):
     WOS = "wos"
     PUBMED = "pubmed"
     EBSCO = "ebscohost"
+    GENERIC = "generic"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
 
@@ -246,6 +247,20 @@ class QueryErrorCode(Enum):
         "Query contains invalid syntax",
         "",
     )
+    TOO_MANY_OPERATORS = (
+        [PLATFORM.WOS],
+        "F1011",
+        "too-many-operators",
+        "Too many operators in the query",
+        "",
+    )
+    TOO_MANY_SEARCH_TERMS = (
+        [PLATFORM.WOS],
+        "F1012",
+        "too-many-search-terms",
+        "Too many search terms in the query",
+        "",
+    )
 
     WILDCARD_UNSUPPORTED = (
         [PLATFORM.WOS],
@@ -348,10 +363,10 @@ class QueryErrorCode(Enum):
         "Search field is not supported for this database",
         "",
     )
-    YEAR_WITHOUT_SEARCH_FIELD = (
+    YEAR_WITHOUT_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F2012",
-        "year-without-search-field",
+        "year-without-search-terms",
         "A search for publication years must include at least another search term.",
         "",
     )
@@ -360,6 +375,13 @@ class QueryErrorCode(Enum):
         "F2013",
         "nested-query-with-search-field",
         "A Nested query cannot have a search field.",
+        "",
+    )
+    YEAR_FORMAT_INVALID = (
+        [PLATFORM.WOS],
+        "F2014",
+        "year-format-invalid",
+        "Invalid year format.",
         "",
     )
 
@@ -531,6 +553,20 @@ class QueryErrorCode(Enum):
         "W0012",
         "implicit-operator",
         "Implicit operator",
+        "",
+    )
+    NON_STANDARD_QUOTES = (
+        ["all"],
+        "W0013",
+        "non-standard-quotes",
+        "Non-standard quotes",
+        "",
+    )
+    JOURNAL_FILTER_IN_SUBQUERY = (
+        [PLATFORM.PUBMED],
+        "W0014",
+        "journal-filter-in-subquery",
+        "Journal (or publication name) filter in subquery",
         "",
     )
 

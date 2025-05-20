@@ -47,9 +47,9 @@ Creating a query programmatically is simple:
     from search_query import OrQuery, AndQuery
 
     # Typical building-blocks approach
-    digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="Abstract")
-    work_synonyms = OrQuery(["work", "labor", "service"], search_field="Abstract")
-    query = AndQuery([digital_synonyms, work_synonyms], search_field="Author Keywords")
+    digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="ab")
+    work_synonyms = OrQuery(["work", "labor", "service"], search_field="ab")
+    query = AndQuery([digital_synonyms, work_synonyms])
 
 ..
     Parameters:

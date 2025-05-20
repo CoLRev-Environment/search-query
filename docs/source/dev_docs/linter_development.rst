@@ -13,7 +13,8 @@ Use the appropriate base class when developing a new linter:
 - `QueryStringLinter`: for single query strings
 - `QueryListLinter`: for list-based query formats
 
-Each linter must override the `validate_tokens()` method and optionally `validate_query_tree()` for deeper semantic checks.
+Each linter must override the `validate_tokens()` method and the `validate_query_tree()`.
+`validate_tokens()` is called when the query is parsed, and `validate_query_tree()` is called when the query tree is built (i.e., at the end of the parsing process **and** when the query is constructed programmatically).
 
 Best Practices
 --------------

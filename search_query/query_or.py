@@ -19,6 +19,7 @@ class OrQuery(Query):
         *,
         search_field: typing.Union[SearchField, str],
         position: typing.Optional[tuple] = None,
+        platform: str = "generic",
     ) -> None:
         """init method
         search terms: strings which you want to include in the search query
@@ -33,4 +34,5 @@ class OrQuery(Query):
             if isinstance(search_field, SearchField)
             else SearchField(search_field),
             position=position,
+            platform=platform,
         )

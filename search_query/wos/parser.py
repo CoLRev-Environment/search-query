@@ -18,7 +18,6 @@ from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
-from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
 
@@ -28,40 +27,34 @@ from search_query.wos.linter import WOSQueryStringLinter
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    SEARCH_TERM_REGEX = (
-        r"\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*"
-        r'|"[^"]+"'
-        r'|\u201c[^"^\u201d]+\u201d'
-        r'|\u2018[^"]+\u2019'
+    SEARCH_TERM_REGEX = re.compile(
+        r'\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*|"[^"]+"'
     )
-    LOGIC_OPERATOR_REGEX = r"\b(AND|and|OR|or|NOT|not)\b"
-    PROXIMITY_OPERATOR_REGEX = r"\b(NEAR/\d{1,2}|near/\d{1,2}|NEAR|near)\b"
-    SEARCH_FIELD_REGEX = r"\b\w{2}=|\b\w{3}="
-    PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_FIELDS_REGEX = r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*"
-    YEAR_REGEX = r"^\d{4}(-\d{4})?$"
+    LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
+    PROXIMITY_OPERATOR_REGEX = re.compile(
+        r"\b(NEAR/\d{1,2}|NEAR)\b", flags=re.IGNORECASE
+    )
+    SEARCH_FIELD_REGEX = re.compile(r"\b\w{2}=|\b\w{3}=")
+    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    SEARCH_FIELDS_REGEX = re.compile(r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*")
 
-    OPERATOR_REGEX = "|".join([LOGIC_OPERATOR_REGEX, PROXIMITY_OPERATOR_REGEX])
+    OPERATOR_REGEX = re.compile(
+        "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
+    )
 
     # Combine all regex patterns into a single pattern
-    pattern = "|".join(
-        [
-            SEARCH_FIELD_REGEX,
-            LOGIC_OPERATOR_REGEX,
-            PROXIMITY_OPERATOR_REGEX,
-            SEARCH_TERM_REGEX,
-            PARENTHESIS_REGEX,
-            # self.SEARCH_FIELDS_REGEX,
-        ]
+    pattern = re.compile(
+        r"|".join(
+            [
+                SEARCH_FIELD_REGEX.pattern,
+                LOGIC_OPERATOR_REGEX.pattern,
+                PROXIMITY_OPERATOR_REGEX.pattern,
+                SEARCH_TERM_REGEX.pattern,
+                PARENTHESIS_REGEX.pattern,
+                # self.SEARCH_FIELDS_REGEX.pattern,
+            ]
+        )
     )
-
-    OPERATOR_PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
 
     def __init__(
         self,
@@ -76,7 +69,7 @@ class WOSParser(QueryStringParser):
             search_field_general=search_field_general,
             mode=mode,
         )
-        self.linter = WOSQueryStringLinter(parser=self)
+        self.linter = WOSQueryStringLinter(query_str=query_str)
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -85,23 +78,23 @@ class WOSParser(QueryStringParser):
             raise ValueError("No string provided to parse.")
 
         # Parse tokens and positions based on regex pattern
-        for match in re.finditer(self.pattern, self.query_str):
+        for match in self.pattern.finditer(self.query_str):
             value = match.group()
             position = match.span()
 
             # Determine token type
-            if re.fullmatch(self.PARENTHESIS_REGEX, value):
+            if self.PARENTHESIS_REGEX.fullmatch(value):
                 if value == "(":
                     token_type = TokenTypes.PARENTHESIS_OPEN
                 else:
                     token_type = TokenTypes.PARENTHESIS_CLOSED
-            elif re.fullmatch(self.LOGIC_OPERATOR_REGEX, value):
+            elif self.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.LOGIC_OPERATOR
-            elif re.fullmatch(self.PROXIMITY_OPERATOR_REGEX, value):
+            elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif re.fullmatch(self.SEARCH_FIELD_REGEX, value):
+            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif re.fullmatch(self.SEARCH_TERM_REGEX, value):
+            elif self.SEARCH_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.SEARCH_TERM
             else:
                 token_type = TokenTypes.UNKNOWN
@@ -175,16 +168,6 @@ class WOSParser(QueryStringParser):
 
             # Handle terms
             else:
-                # Check if the token is a search field which has constraints
-                # Check if the token is a year
-                if re.findall(self.YEAR_REGEX, token.value) and search_field:
-                    if YEAR_PUBLISHED_FIELD_REGEX.match(search_field.value):
-                        children = self.handle_year_search(
-                            token, children, current_operator
-                        )
-                        index += 1
-                        continue
-
                 # Add term nodes
                 children = self.add_term_node(
                     index=index,
@@ -216,6 +199,7 @@ class WOSParser(QueryStringParser):
                     value=current_operator,
                     children=list(children),
                     search_field=search_field,
+                    platform="deactivated",
                 ),
                 index,
             )
@@ -240,6 +224,7 @@ class WOSParser(QueryStringParser):
                 value=current_operator,
                 children=children,
                 search_field=search_field,
+                platform="deactivated",
             )
 
         # Multiple children without operator are not allowed
@@ -351,26 +336,6 @@ class WOSParser(QueryStringParser):
 
         self.tokens = updated_tokens
 
-    def handle_year_search(
-        self, token: Token, children: list, current_operator: str
-    ) -> typing.List[Query]:
-        """Handle the year search field."""
-
-        search_field = SearchField(
-            value="py=",
-            position=token.position,
-        )
-
-        # Add the year search field to the list of children
-        return self.add_term_node(
-            index=0,
-            value=token.value,
-            search_field=search_field,
-            position=token.position,
-            children=children,
-            current_operator=current_operator,
-        )
-
     # pylint: disable=too-many-arguments
     def add_term_node(
         self,
@@ -387,7 +352,12 @@ class WOSParser(QueryStringParser):
         if not children:
             children = []
         # Create a new term node
-        term_node = Term(value=value, search_field=search_field, position=position)
+        term_node = Term(
+            value=value,
+            search_field=search_field,
+            position=position,
+            platform="deactivated",
+        )
 
         # Append the term node to the list of children
         if current_operator:
@@ -407,10 +377,12 @@ class WOSParser(QueryStringParser):
                                     Term(
                                         value=self.tokens[index - 1].value,
                                         search_field=search_field,
+                                        platform="deactivated",
                                     ),
                                     term_node,
                                 ],
                                 distance=int(distance),
+                                platform="deactivated",
                             )
                             break
                         index -= 1
@@ -421,6 +393,7 @@ class WOSParser(QueryStringParser):
                             operator=True,
                             children=[*children, near_operator],
                             search_field=search_field,
+                            platform="deactivated",
                         )
                     ]
                 else:
@@ -429,6 +402,7 @@ class WOSParser(QueryStringParser):
                             value=current_operator,
                             children=[*children, term_node],
                             search_field=search_field,
+                            platform="deactivated",
                         )
                     ]
             else:
@@ -441,17 +415,26 @@ class WOSParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.linter.handle_fully_quoted_query_str()
+        # self.linter.query_str = self.query_str
+
+        self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
+        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
+            self.query_str
+        )
 
         self.tokenize()
-        self.linter.validate_tokens()
+        self.tokens = self.linter.validate_tokens(
+            tokens=self.tokens,
+            query_str=self.query_str,
+            search_field_general=self.search_field_general,
+        )
         self.linter.check_status()
 
         query, _ = self.parse_query_tree()
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.origin_platform = PLATFORM.WOS.value
+        query.set_platform_unchecked(PLATFORM.WOS.value)
 
         return query
 
@@ -459,9 +442,9 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    LIST_ITEM_REFERENCE = r"#\d+"
-    OPERATOR_NODE_REGEX = r"#\d+|AND|OR"
+    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_ITEM_REFERENCE = re.compile(r"#\d+")
+    OPERATOR_NODE_REGEX = re.compile(r"#\d+|AND|OR")
     query_dict: dict
 
     def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
@@ -499,6 +482,7 @@ class WOSListParser(QueryListParser):
         operator_query = Query(
             value=operator,
             children=children,
+            platform="deactivated",
         )
         return operator_query
 
@@ -537,12 +521,12 @@ class WOSListParser(QueryListParser):
         """Tokenize the query_list."""
 
         tokens = []
-        for match in re.finditer(self.OPERATOR_NODE_REGEX, query_str):
+        for match in self.OPERATOR_NODE_REGEX.finditer(query_str):
             value = match.group()
             position = match.span()
-            if re.fullmatch(self.LIST_ITEM_REFERENCE, value):
+            if self.LIST_ITEM_REFERENCE.fullmatch(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            elif re.fullmatch(WOSParser.LOGIC_OPERATOR_REGEX, value):
+            elif WOSParser.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
             else:
                 token_type = OperatorNodeTokenTypes.UNKNOWN

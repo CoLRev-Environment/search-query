@@ -20,10 +20,8 @@ if typing.TYPE_CHECKING:
 class QueryStringParser(ABC):
     """Abstract base class for query string parsers"""
 
-    # Higher number=higher precedence
-    PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
     # Note: override the following:
-    OPERATOR_REGEX = r"^(AND|and|OR|or|NOT|not)$"
+    OPERATOR_REGEX: re.Pattern = re.compile(r"^(AND|OR|NOT)$", flags=re.IGNORECASE)
 
     linter: QueryStringLinter
 
@@ -74,13 +72,6 @@ class QueryStringParser(ABC):
 
         self.tokens = combined_tokens
 
-    def get_precedence(self, token: str) -> int:
-        """Returns operator precedence for logical and proximity operators."""
-
-        if token in self.PRECEDENCE:
-            return self.PRECEDENCE[token]
-        return -1  # Not an operator
-
     @abstractmethod
     def parse(self) -> Query:
         """Parse the query."""
@@ -89,7 +80,7 @@ class QueryStringParser(ABC):
 class QueryListParser:
     """QueryListParser"""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
+    LIST_ITEM_REGEX: re.Pattern = re.compile(r"^(\d+).\s+(.*)$")
 
     def __init__(
         self,
@@ -113,7 +104,7 @@ class QueryListParser:
             if line.strip() == "":
                 continue
 
-            match = re.match(self.LIST_ITEM_REGEX, line)
+            match = self.LIST_ITEM_REGEX.match(line)
             if not match:
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()

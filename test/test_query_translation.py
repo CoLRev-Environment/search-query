@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Tests for search query translation"""
 import search_query.parser
+from search_query.constants import PLATFORM
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501
@@ -47,28 +48,28 @@ def test_nested_queries(query_setup: dict) -> None:
 
 def test_translation_wos_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
-    translated_query = query_health.translate("wos")
+    translated_query = query_health.translate(PLATFORM.WOS.value)
     assert translated_query.to_string() == 'TI=("health care" OR medicine)'
 
 
 def test_translation_wos_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(TI=("AI" OR "Artificial Intelligence" OR "Machine Learning" NOT robot*) AND TI=("health care" OR medicine) AND AB=(ethic* OR moral*))'
-    translated_query = query_complete.translate("wos")
+    translated_query = query_complete.translate(PLATFORM.WOS.value)
     assert translated_query.to_string() == expected
 
 
 def test_translation_pubmed_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
     expected = '("health care"[ti] OR medicine[ti])'
-    translated_query = query_health.translate("pubmed")
+    translated_query = query_health.translate(PLATFORM.PUBMED.value)
     assert translated_query.to_string() == expected
 
 
 def test_translation_pubmed_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     expected = '(("AI"[ti] OR "Artificial Intelligence"[ti] OR "Machine Learning"[ti] NOT robot*[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[tiab] OR moral*[tiab]))'
-    translated_query = query_complete.translate("pubmed")
+    translated_query = query_complete.translate(PLATFORM.PUBMED.value)
     assert translated_query.to_string() == expected
 
 
@@ -77,9 +78,9 @@ def test_translation_wos_ebsco() -> None:
     print(query_str)
     query = search_query.parser.parse(
         query_str,
-        platform="wos",
+        platform=PLATFORM.WOS.value,
     )
-    translated_query = query.translate("ebscohost")
+    translated_query = query.translate(PLATFORM.EBSCO.value)
     converted_query = translated_query.to_string()
     expected = "TP (quantum AND dot AND spin)"
 

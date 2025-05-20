@@ -24,21 +24,24 @@ from search_query.query import Term
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    SEARCH_FIELD_REGEX = r"\[[^\[]*?\]"
-    OPERATOR_REGEX = r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])"
-    PARENTHESIS_REGEX = r"[\(\)]"
-    SEARCH_PHRASE_REGEX = r"\".*?\""
-    SEARCH_TERM_REGEX = r"[^\s\[\]()\|&]+"
-    PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
+    SEARCH_FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
+    OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])")
+    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
+    SEARCH_TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
+    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
 
-    pattern = "|".join(
-        [
-            SEARCH_FIELD_REGEX,
-            OPERATOR_REGEX,
-            PARENTHESIS_REGEX,
-            SEARCH_PHRASE_REGEX,
-            SEARCH_TERM_REGEX,
-        ]
+    pattern = re.compile(
+        "|".join(
+            [
+                SEARCH_FIELD_REGEX.pattern,
+                OPERATOR_REGEX.pattern,
+                PARENTHESIS_REGEX.pattern,
+                SEARCH_PHRASE_REGEX.pattern,
+                SEARCH_TERM_REGEX.pattern,
+            ]
+        ),
+        flags=re.IGNORECASE,
     )
 
     def __init__(
@@ -51,7 +54,7 @@ class PubmedParser(QueryStringParser):
         super().__init__(
             query_str=query_str, search_field_general=search_field_general, mode=mode
         )
-        self.linter = PubmedQueryStringLinter(self)
+        self.linter = PubmedQueryStringLinter(query_str=query_str)
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
@@ -60,13 +63,13 @@ class PubmedParser(QueryStringParser):
 
         # Parse tokens and positions based on regex patterns.
         prev_end = 0
-        for match in re.finditer(self.pattern, self.query_str, re.IGNORECASE):
+        for match in self.pattern.finditer(self.query_str):
             value = match.group(0)
             start, end = match.span()
 
             if start > prev_end and self.query_str[prev_end:start].strip():
                 self.linter.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, position=(prev_end, start)
+                    QueryErrorCode.TOKENIZING_FAILED, positions=[(prev_end, start)]
                 )
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
@@ -88,7 +91,7 @@ class PubmedParser(QueryStringParser):
         if prev_end < len(self.query_str) and self.query_str[:prev_end].strip():
             self.linter.add_linter_message(
                 QueryErrorCode.TOKENIZING_FAILED,
-                position=(prev_end, len(self.query_str)),
+                positions=[(prev_end, len(self.query_str))],
             )
 
         self.combine_subsequent_terms()
@@ -196,6 +199,7 @@ class PubmedParser(QueryStringParser):
             search_field=None,
             children=list(children),
             position=(query_start_pos, query_end_pos),
+            platform="deactivated",
         )
 
     def _parse_nested_query(self, tokens: list) -> Query:
@@ -206,14 +210,12 @@ class PubmedParser(QueryStringParser):
     def _parse_search_term(self, tokens: list) -> Query:
         """Parse a search term"""
         search_term_token = tokens[0]
-        query_end_pos = tokens[0].position[1]
 
         # Determine the search field of the search term.
         if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
             search_field = SearchField(
                 value=tokens[1].value, position=tokens[1].position
             )
-            query_end_pos = tokens[1].position[1]
         else:
             # Select default field "all" if no search field is found.
             search_field = SearchField(value="[all]", position=(-1, -1))
@@ -221,7 +223,8 @@ class PubmedParser(QueryStringParser):
         return Term(
             value=search_term_token.value,
             search_field=search_field,
-            position=(tokens[0].position[0], query_end_pos),
+            position=tokens[0].position,
+            platform="deactivated",
         )
 
     # def parse_user_provided_fields(self, field_values: str) -> list:
@@ -264,8 +267,16 @@ class PubmedParser(QueryStringParser):
     def parse(self) -> Query:
         """Parse a query string"""
 
+        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
+            self.query_str
+        )
+
         self.tokenize()
-        self.linter.validate_tokens()
+        self.tokens = self.linter.validate_tokens(
+            tokens=self.tokens,
+            query_str=self.query_str,
+            search_field_general=self.search_field_general,
+        )
         self.linter.check_status()
 
         # Parsing
@@ -275,7 +286,7 @@ class PubmedParser(QueryStringParser):
 
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.origin_platform = PLATFORM.PUBMED.value
+        query.set_platform_unchecked(PLATFORM.PUBMED.value)
 
         return query
 
@@ -283,9 +294,9 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
-    LIST_ITEM_REGEX = r"^(\d+).\s+(.*)$"
-    LIST_ITEM_REF = r"#\d+"
-    OPERATOR_NODE_REGEX = r"#\d|AND|OR|NOT"
+    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_ITEM_REF = re.compile(r"#\d+")
+    OPERATOR_NODE_REGEX = re.compile(r"#\d|AND|OR|NOT")
 
     def __init__(
         self,
@@ -309,12 +320,12 @@ class PubmedListParser(QueryListParser):
         """Get operator node tokens"""
         node_content = self.query_dict[token_nr]["node_content"]
         operator_node_tokens = []
-        for match in re.finditer(self.OPERATOR_NODE_REGEX, node_content):
+        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
             value = match.group(0)
             start, end = match.span()
             if value.upper() in {"AND", "OR", "NOT"}:
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            elif re.match(self.LIST_ITEM_REF, value):
+            elif self.LIST_ITEM_REF.match(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
             else:
                 token_type = OperatorNodeTokenTypes.UNKNOWN
@@ -347,6 +358,7 @@ class PubmedListParser(QueryListParser):
             search_field=None,
             children=children,
             position=(1, 1),
+            platform="deactivated",
         )
 
     def parse(self) -> Query:

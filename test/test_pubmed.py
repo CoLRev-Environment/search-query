@@ -3,13 +3,17 @@
 import pytest
 
 from search_query.constants import Colors
+from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
+from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.pubmed.translator import PubmedTranslator
+from search_query.query import Term
+from search_query.query_or import OrQuery
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 
@@ -73,7 +77,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "position": (47, 48),
+                    "position": [(47, 48)],
                     "details": "Unbalanced opening parenthesis",
                 },
                 {
@@ -81,7 +85,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
             ],
@@ -95,8 +99,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "tokenizing-failed",
                     "message": "Fatal error during tokenization",
                     "is_fatal": True,
-                    "position": (0, 8),
-                    "details": "Token '\"eHealth' should be fully quoted",
+                    "position": [(0, 8)],
+                    "details": "Term '\"eHealth' should be fully quoted",
                 }
             ],
         ),
@@ -109,7 +113,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
-                    "position": (42, 43),
+                    "position": [(42, 43)],
                     "details": "Unbalanced closing parenthesis",
                 },
                 {
@@ -117,7 +121,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
             ],
@@ -131,7 +135,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "implicit-precedence",
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
-                    "position": (18, 20),
+                    "position": [(18, 20)],
                     "details": "",
                 },
                 {
@@ -139,7 +143,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
             ],
@@ -150,20 +154,20 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "Title",
             [
                 {
-                    "code": "W0010",
-                    "label": "character-replacement",
-                    "message": "Character replacement",
-                    "is_fatal": False,
-                    "position": (28, 29),
-                    "details": "Character '.' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
-                },
-                {
                     "code": "E0001",
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
+                },
+                {
+                    "code": "W0010",
+                    "label": "character-replacement",
+                    "message": "Character replacement",
+                    "is_fatal": False,
+                    "position": [(28, 29)],
+                    "details": "Character '.' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
             ],
         ),
@@ -176,7 +180,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
                 {
@@ -184,7 +188,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-wildcard-use",
                     "message": "Invalid use of the wildcard operator *",
                     "is_fatal": False,
-                    "position": (22, 25),
+                    "position": [(22, 25)],
                     "details": "Wildcards cannot be used for short strings (shorter than 4 characters).",
                 },
             ],
@@ -198,7 +202,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (31, 37),
+                    "position": [(31, 37)],
                     "details": "Nested queries cannot have search fields",
                 }
             ],
@@ -212,7 +216,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (9, 32),
+                    "position": [(9, 32)],
                     "details": "Missing operator",
                 },
                 {
@@ -220,7 +224,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-contradiction",
                     "message": "Contradictory search fields specified",
                     "is_fatal": False,
-                    "position": (9, 15),
+                    "position": [(9, 15)],
                     "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
                 },
                 {
@@ -228,7 +232,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-contradiction",
                     "message": "Contradictory search fields specified",
                     "is_fatal": False,
-                    "position": (32, 38),
+                    "position": [(32, 38)],
                     "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
                 },
             ],
@@ -242,7 +246,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (41, 43),
+                    "position": [(41, 43)],
                     "details": "Missing operator",
                 },
                 {
@@ -250,7 +254,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
             ],
@@ -264,7 +268,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator :~",
                     "is_fatal": False,
-                    "position": (0, 14),
+                    "position": [(0, 14)],
                     "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
                 },
             ],
@@ -278,7 +282,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (16, 27),
+                    "position": [(16, 27)],
                     "details": "Search field [tiab:~0.5] at position (16, 27) is not supported.",
                 },
                 {
@@ -286,7 +290,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator :~",
                     "is_fatal": False,
-                    "position": (16, 27),
+                    "position": [(16, 27)],
                     "details": "Proximity value '0.5' is not a digit",
                 },
             ],
@@ -305,7 +309,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 }
             ],
@@ -319,7 +323,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 },
                 {
@@ -327,31 +331,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
-                    "position": (0, 8),
-                    "details": 'Term "device" is contained in term "wearable device" and both are connected with AND.',
+                    "position": [(0, 8), (14, 31)],
+                    "details": 'Term "device" is contained in term "wearable device" and both are connected with AND. Therefore, term "wearable device" is redundant.',
                 },
             ],
         ),
         (
-            '("device" OR ("mobile application" OR "wearable device")) AND "health tracking"',
-            "Title",
+            '("device"[ti] OR ("mobile application"[ti] OR "wearable device"[ti])) AND "health tracking"[ti]',
+            "",
             [
-                {
-                    "code": "E0001",
-                    "label": "search-field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": (-1, -1),
-                    "details": "Search fields should be specified in the query instead of the search_field_general",
-                },
                 {
                     "code": "W0004",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
-                    "position": (38, 55),
-                    "details": "",
-                },
+                    "position": [(1, 9), (46, 63)],
+                    "details": 'Term "wearable device" is contained in term "device" and both are connected with OR. Therefore, term "wearable device" is redundant.',
+                }
             ],
         ),
         (
@@ -363,7 +359,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (9, 13),
+                    "position": [(9, 13)],
                     "details": "Search field [ab] at position (9, 13) is not supported.",
                 }
             ],
@@ -378,8 +374,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
-                    "position": (70, 109),
-                    "details": "It should be double-checked whether date filters should apply to the entire query.",
+                    "position": [(70, 91)],
+                    "details": "Please double-check whether date filters should apply to the entire query.",
                 }
             ],
         ),
@@ -392,31 +388,15 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-syntax",
                     "message": "Query contains invalid syntax",
                     "is_fatal": True,
-                    "position": (0, 3),
+                    "position": [(0, 3)],
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
-                },
-                {
-                    "code": "F0001",
-                    "label": "tokenizing-failed",
-                    "message": "Fatal error during tokenization",
-                    "is_fatal": True,
-                    "position": (0, 12),
-                    "details": "Token 'TI=\"eHealth\"' should be fully quoted",
-                },
-                {
-                    "code": "W0010",
-                    "label": "character-replacement",
-                    "message": "Character replacement",
-                    "is_fatal": False,
-                    "position": (2, 3),
-                    "details": "Character '=' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
                 {
                     "code": "E0001",
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search field is missing (TODO: default?)",
                 },
             ],
@@ -430,7 +410,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": (20, 26),
+                    "position": [(20, 26)],
                     "details": "Nested queries cannot have search fields",
                 }
             ],
@@ -444,9 +424,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
-                    "position": (32, 45),
-                    "details": "It should be double-checked whether date filters should apply to the entire query.",
-                },
+                    "position": [(32, 41)],
+                    "details": "Please double-check whether date filters should apply to the entire query.",
+                }
+            ],
+        ),
+        (
+            '"activity"[Title/Abstract] AND ("cancer"[Title/Abstract] AND "Lancet"[Journal])',
+            "",
+            [
+                {
+                    "code": "W0014",
+                    "label": "journal-filter-in-subquery",
+                    "message": "Journal (or publication name) filter in subquery",
+                    "is_fatal": False,
+                    "position": [(61, 69)],
+                    "details": "Please double-check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
+                }
             ],
         ),
     ],
@@ -482,7 +476,7 @@ def test_linter(
                     "label": "search-field-contradiction",
                     "message": "Contradictory search fields specified",
                     "is_fatal": False,
-                    "position": (7, 13),
+                    "position": [(7, 13)],
                     "details": "The search_field_general (Title) and the search_field [tiab] do not match.",
                 }
             ],
@@ -496,7 +490,7 @@ def test_linter(
                     "label": "search-field-redundant",
                     "message": "Recommend specifying search field only once in the search string",
                     "is_fatal": False,
-                    "position": (7, 11),
+                    "position": [(7, 11)],
                     "details": "The search_field_general (Title) and the search_field [ti] are redundant.",
                 }
             ],
@@ -510,7 +504,7 @@ def test_linter(
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search fields should be specified in the query instead of the search_field_general",
                 }
             ],
@@ -524,7 +518,7 @@ def test_linter(
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": (-1, -1),
+                    "position": [(-1, -1)],
                     "details": "Search field is missing (TODO: default?)",
                 }
             ],
@@ -538,8 +532,22 @@ def test_linter(
                     "label": "search-field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
-                    "position": (7, 13),
+                    "position": [(7, 13)],
                     "details": "Search field [tldr] at position (7, 13) is not supported.",
+                }
+            ],
+        ),
+        (
+            "(hHealth OR mHealth)[ti]",
+            "",
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(20, 24)],
+                    "details": "Nested queries cannot have search fields",
                 }
             ],
         ),
@@ -659,7 +667,7 @@ def test_list_parser_case_2() -> None:
                 "label": "invalid-list-reference",
                 "message": "Invalid list reference in list query (not found)",
                 "is_fatal": True,
-                "position": (14, 16),
+                "position": [(14, 16)],
                 "details": "List reference '#4' is invalid (a corresponding list element does not exist).",
             }
         ]
@@ -689,7 +697,7 @@ def test_list_parser_case_3() -> None:
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
-                "position": (0, 5),
+                "position": [(0, 5)],
                 "details": "Two list references in a row",
             }
         ]
@@ -724,3 +732,26 @@ def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     assert expected_generic == generic.to_generic_string(), print(
         generic.to_generic_string()
     )
+
+
+def test_nested_query_with_field() -> None:
+    try:
+        OrQuery(
+            [
+                Term("health tracking"),
+                Term("remote monitoring"),
+            ],
+            search_field="[tiab]",
+            platform=PLATFORM.PUBMED.value,
+        )
+    except QuerySyntaxError as exc:
+        assert exc.linter.messages == [
+            {
+                "code": "F2013",
+                "label": "nested-query-with-search-field",
+                "message": "A Nested query cannot have a search field.",
+                "is_fatal": True,
+                "position": [(-1, -1)],
+                "details": "Nested query (operator) with search field is not supported",
+            }
+        ]
