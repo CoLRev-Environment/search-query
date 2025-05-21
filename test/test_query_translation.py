@@ -7,34 +7,36 @@ from search_query.constants import PLATFORM
 # flake8: noqa: E501
 
 
-def test_print_node(query_setup: dict) -> None:
-    assert (
-        query_setup["test_node"].print_node()
-        == "value: testvalue operator: False search field: ti"
-    )
+def test_to_generic_string(query_setup: dict) -> None:
+    assert query_setup["test_node"].to_generic_string() == "testvalue[ti]"
 
 
 def test_append_children(query_setup: dict) -> None:
     health_query = query_setup["query_health"]
-    expected_values = ['"health care"', "medicine"]
 
-    for child, expected in zip(health_query.children, expected_values):
-        assert child.print_node().startswith(f"value: {expected}")
+    assert health_query.children[0].to_generic_string() == '"health care"[ti]'
+    assert health_query.children[1].to_generic_string() == "medicine[ti]"
 
 
 def test_or_query(query_setup: dict) -> None:
     query_ai = query_setup["query_ai"]
-    assert query_ai.print_node().startswith("value: OR")
+    assert (
+        query_ai.to_generic_string()
+        == 'OR[ti]["AI"[ti], "Artificial Intelligence"[ti], "Machine Learning"[ti], NOT[ti][robot*[ti]]]'
+    )
 
 
 def test_and_query(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
-    assert query_complete.print_node().startswith("value: AND")
+    assert (
+        query_complete.to_generic_string()
+        == 'AND[ti][OR[ti]["AI"[ti], "Artificial Intelligence"[ti], "Machine Learning"[ti], NOT[ti][robot*[ti]]], OR[ti]["health care"[ti], medicine[ti]], OR[ab][ethic*[ab], moral*[ab]]]'
+    )
 
 
 def test_not_query(query_setup: dict) -> None:
     query_robot = query_setup["query_robot"]
-    assert query_robot.print_node().startswith("value: NOT")
+    assert query_robot.to_generic_string() == "NOT[ti][robot*[ti]]"
 
 
 def test_nested_queries(query_setup: dict) -> None:

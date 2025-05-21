@@ -396,31 +396,25 @@ class Query:
         """parse the query provided, build nodes&tree structure"""
 
         # Mark nodes to prevent circular references
-        self.mark()
+        self._mark()
         # Remove marks
-        self.remove_marks()
+        self._remove_marks()
 
-    def mark(self) -> None:
+    def _mark(self) -> None:
         """marks the node"""
         if self.marked:
             raise ValueError("Building Query Tree failed")
         self.marked = True
         for child in self.children:
-            child.mark()
+            # pylint: disable=protected-access
+            child._mark()
 
-    def remove_marks(self) -> None:
+    def _remove_marks(self) -> None:
         """removes the mark from the node"""
         self.marked = False
         for child in self.children:
-            child.remove_marks()
-
-    def print_node(self) -> str:
-        """returns a string with all information to the node"""
-        return (
-            f"value: {self.value} "
-            f"operator: {str(self.operator)} "
-            f"search field: {self.search_field}"
-        )
+            # pylint: disable=protected-access
+            child._remove_marks()
 
     def to_structured_string(self) -> str:
         """Prints the query in generic syntax"""

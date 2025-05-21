@@ -198,7 +198,7 @@ class EBSCOParser(QueryStringParser):
             operator_node.children.append(root)
         return operator_node, operator_node
 
-    def check_for_none(self, root: typing.Optional[Query]) -> Query:
+    def _check_for_none(self, root: typing.Optional[Query]) -> Query:
         """Check if root is none"""
         if root is None:
             raise ValueError("Failed to construct a valid query tree.")
@@ -291,10 +291,10 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 # Return subtree
-                root = self.check_for_none(root)
+                root = self._check_for_none(root)
                 return root
 
-        root = self.check_for_none(root)
+        root = self._check_for_none(root)
 
         return root
 
