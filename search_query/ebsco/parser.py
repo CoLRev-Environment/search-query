@@ -12,6 +12,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.ebsco.query import EBSCOQuery
 from search_query.linter_base import QueryListLinter
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
@@ -298,6 +299,32 @@ class EBSCOParser(QueryStringParser):
 
         return root
 
+    def convert_to_ebsco_query(self, query: Query) -> EBSCOQuery:
+        """Convert a query to EBSCOQuery."""
+        if query.is_operator():
+            # Note: must create object first (without children)
+            # and then add_children() afterwards.
+            pubmed_query = EBSCOQuery(
+                value=query.value,
+                operator=True,
+                search_field=query.search_field,
+                children=[],
+                position=query.position,
+                distance=query.distance,
+                validate_on_init=False,
+            )
+
+            for child in query.children:
+                pubmed_query.add_child(child)
+            return pubmed_query
+
+        return Term(
+            value=query.value,
+            search_field=query.search_field,
+            position=query.position,
+            platform=PLATFORM.EBSCO.value,
+        )
+
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -318,9 +345,10 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_platform_unchecked(PLATFORM.EBSCO.value)
+        # query.set_platform_unchecked(PLATFORM.EBSCO.value)
+        ebsco_query = self.convert_to_ebsco_query(query)
 
-        return query
+        return ebsco_query
 
 
 class EBSCOListParser(QueryListParser):

@@ -20,6 +20,7 @@ from search_query.query import SearchField
 from search_query.query import Term
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
+from search_query.wos.query import WOSQuery
 
 # pylint: disable=duplicate-code
 
@@ -412,6 +413,32 @@ class WOSParser(QueryStringParser):
 
         return children
 
+    def convert_to_wos_query(self, query: Query) -> WOSQuery:
+        """Convert a query to WOSQuery."""
+        if query.is_operator():
+            # Note: must create object first (without children)
+            # and then add_children() afterwards.
+            wos_query = WOSQuery(
+                value=query.value,
+                operator=True,
+                search_field=query.search_field,
+                children=[],
+                position=query.position,
+                distance=query.distance,
+                validate_on_init=False,
+            )
+
+            for child in query.children:
+                wos_query.add_child(child)
+            return wos_query
+
+        return Term(
+            value=query.value,
+            search_field=query.search_field,
+            position=query.position,
+            platform=PLATFORM.WOS.value,
+        )
+
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -431,12 +458,14 @@ class WOSParser(QueryStringParser):
         self.linter.check_status()
 
         query, _ = self.parse_query_tree()
+        # TODO : move this to query constructor?!?!
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_platform_unchecked(PLATFORM.WOS.value)
+        # query.set_platform_unchecked(PLATFORM.WOS.value)
+        wos_query = self.convert_to_wos_query(query)
 
-        return query
+        return wos_query
 
 
 class WOSListParser(QueryListParser):
@@ -479,6 +508,7 @@ class WOSListParser(QueryListParser):
 
         assert operator, "[ERROR] No operator found in combining query."
 
+        print(f"build query from operator node: {operator}")
         operator_query = Query(
             value=operator,
             children=children,

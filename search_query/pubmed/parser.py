@@ -16,6 +16,7 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.pubmed.linter import PubmedQueryListLinter
 from search_query.pubmed.linter import PubmedQueryStringLinter
+from search_query.pubmed.query import PUBMEDQuery
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
@@ -264,6 +265,33 @@ class PubmedParser(QueryStringParser):
             leaves += self.get_query_leaves(child)
         return leaves
 
+    def convert_to_pubmed_query(self, query: Query) -> PUBMEDQuery:
+        """Convert a query to PUBMEDQuery."""
+        print(query.is_operator())
+        if query.is_operator():
+            # Note: must create object first (without children)
+            # and then add_children() afterwards.
+            pubmed_query = PUBMEDQuery(
+                value=query.value,
+                operator=True,
+                search_field=query.search_field,
+                children=[],
+                position=query.position,
+                distance=query.distance,
+                validate_on_init=False,
+            )
+
+            for child in query.children:
+                pubmed_query.add_child(child)
+            return pubmed_query
+
+        return Term(
+            value=query.value,
+            search_field=query.search_field,
+            position=query.position,
+            platform=PLATFORM.PUBMED.value,
+        )
+
     def parse(self) -> Query:
         """Parse a query string"""
 
@@ -283,12 +311,13 @@ class PubmedParser(QueryStringParser):
         query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
         self.linter.check_status()
-
+        print(query.to_structured_string())
         # self.linter.validate_search_fields(query)
         # self.linter.check_status()
-        query.set_platform_unchecked(PLATFORM.PUBMED.value)
-
-        return query
+        # query.set_platform_unchecked(PLATFORM.PUBMED.value)
+        pubmed_query = self.convert_to_pubmed_query(query)
+        print(pubmed_query.to_structured_string())
+        return pubmed_query
 
 
 class PubmedListParser(QueryListParser):

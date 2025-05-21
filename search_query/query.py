@@ -43,6 +43,25 @@ class SearchField:
 class Query:
     """Query class."""
 
+    def __new__(cls, *args, **kwargs) -> Query:  # type: ignore
+        platform = kwargs.get("platform", "generic")
+        # pylint: disable=import-outside-toplevel
+        if platform == PLATFORM.WOS.value:
+            from search_query.wos.query import WOSQuery
+
+            return super().__new__(WOSQuery)
+        if platform == PLATFORM.PUBMED.value:
+            from search_query.pubmed.query import PUBMEDQuery
+
+            return super().__new__(PUBMEDQuery)
+
+        if platform == PLATFORM.EBSCO.value:
+            from search_query.ebsco.query import EBSCOQuery
+
+            return super().__new__(EBSCOQuery)
+
+        return super().__new__(cls)
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -57,7 +76,7 @@ class Query:
     ) -> None:
         self._value: str = ""
         self._operator = False
-        self._distance = -1
+        self._distance = distance
         self._children: typing.List[Query] = []
         self._search_field = None
 
@@ -71,9 +90,22 @@ class Query:
         self._platform = platform
 
         self._parent: typing.Optional[Query] = None
+        # print(hasattr(self, "children"))
         if children:
             for child in children:
+                # print(f"Adding child: {child}")
+                # print(child.to_structured_string())
+                # print(dir(child))
+                # print(child.value)
                 self.add_child(child)
+
+        # print("---------------")
+        # print(f"Create query with value: {self._value}")
+        # print(self.children)
+        # for child in self._children:
+        #     print(
+        #         f"- child: {child._value} (hasattr marked: {hasattr(child, 'marked')})"
+        #     )
 
         self._set_platform_recursively(platform)
 
@@ -81,48 +113,54 @@ class Query:
 
         # Note: validating platform constraints is particularly important
         # when queries are created programmatically
-        self._validate_platform_constraints()
 
-    def _validate_platform_constraints(self) -> None:
-        if self.platform == "deactivated":
-            return
+    #     self._validate_platform_constraints()
 
-        # pylint: disable=import-outside-toplevel
-        if self.platform == PLATFORM.WOS.value:
-            from search_query.wos.linter import WOSQueryStringLinter
+    # def _validate_platform_constraints(self) -> None:
+    #     if self.platform == "deactivated":
+    #         return
 
-            wos_linter = WOSQueryStringLinter()
-            wos_linter.validate_query_tree(self)
-            wos_linter.check_status()
+    #     # pylint: disable=import-outside-toplevel
+    #     if self.platform == PLATFORM.WOS.value:
+    #         # from search_query.wos.linter import WOSQueryStringLinter
 
-        elif self.platform == PLATFORM.PUBMED.value:
-            from search_query.pubmed.linter import PubmedQueryStringLinter
+    #         # wos_linter = WOSQueryStringLinter()
+    #         # wos_linter.validate_query_tree(self)
+    #         # wos_linter.check_status()
+    #         pass
 
-            pubmed_linter = PubmedQueryStringLinter()
-            pubmed_linter.validate_query_tree(self)
-            pubmed_linter.check_status()
+    #     elif self.platform == PLATFORM.PUBMED.value:
+    #         # from search_query.pubmed.linter import PubmedQueryStringLinter
 
-        elif self.platform == "generic":
-            from search_query.generic.linter import GenericLinter
+    #         # pubmed_linter = PubmedQueryStringLinter()
+    #         # pubmed_linter.validate_query_tree(self)
+    #         # pubmed_linter.check_status()
+    #         pass
 
-            gen_linter = GenericLinter()
-            gen_linter.validate_query_tree(self)
-            gen_linter.check_status()
+    #     elif self.platform == "generic":
+    #         from search_query.generic.linter import GenericLinter
 
-        elif self.platform == PLATFORM.EBSCO.value:
-            from search_query.ebsco.linter import EBSCOQueryStringLinter
+    #         gen_linter = GenericLinter()
+    #         gen_linter.validate_query_tree(self)
+    #         gen_linter.check_status()
 
-            ebsco_linter = EBSCOQueryStringLinter()
-            ebsco_linter.validate_query_tree(self)
-            ebsco_linter.check_status()
+    #     elif self.platform == PLATFORM.EBSCO.value:
+    #         # from search_query.ebsco.linter import EBSCOQueryStringLinter
 
-        else:
-            raise NotImplementedError(
-                f"Validation for {self.platform} is not implemented"
-            )
+    #         # ebsco_linter = EBSCOQueryStringLinter()
+    #         # ebsco_linter.validate_query_tree(self)
+    #         # ebsco_linter.check_status()
+    #         pass
+
+    #     else:
+    #         raise NotImplementedError(
+    #             f"Validation for {self.platform} is not implemented"
+    #         )
 
     def _set_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
+        if not hasattr(self, "_children"):
+            return
         self._platform = platform
         for child in self._children:
             # pylint: disable=protected-access
@@ -139,13 +177,13 @@ class Query:
         if platform not in [p.value for p in PLATFORM] + ["deactivated"]:
             raise ValueError(f"Invalid platform: {platform}")
         self._set_platform_recursively(platform)
-        self._validate_platform_constraints()
+        # self._validate_platform_constraints()
 
-    def set_platform_unchecked(self, platform: str) -> None:
-        """Set the platform for this query node without validation.
-        This is an optional utility for parsers.
-        """
-        self._set_platform_recursively(platform)
+    # def set_platform_unchecked(self, platform: str) -> None:
+    #     """Set the platform for this query node without validation.
+    #     This is an optional utility for parsers.
+    #     """
+    #     self._set_platform_recursively(platform)
 
     def __deepcopy__(self, memo: dict) -> Query:
         cls = self.__class__
@@ -215,6 +253,7 @@ class Query:
     @distance.setter
     def distance(self, dist: typing.Optional[int]) -> None:
         """Set distance property."""
+        print(dist)
         if not dist:
             return
         if self.operator and self.value in {Operators.NEAR, Operators.WITHIN}:
@@ -394,6 +433,7 @@ class Query:
         self,
     ) -> None:
         """parse the query provided, build nodes&tree structure"""
+        print(hasattr(self, "marked"))
 
         # Mark nodes to prevent circular references
         self.mark()
@@ -402,6 +442,7 @@ class Query:
 
     def mark(self) -> None:
         """marks the node"""
+
         if self.marked:
             raise ValueError("Building Query Tree failed")
         self.marked = True

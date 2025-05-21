@@ -686,3 +686,41 @@ def test_query_parsing_2() -> None:
     assert query.children[1].value == "OR"
     assert query.children[1].children[1].value == "John Wayne"
     assert query.children[1].children[1].search_field.value == "AU="  # type: ignore
+
+
+def test_convert_to_wos_query() -> None:
+    query = Query(
+        value="AND",
+        operator=True,
+        children=[
+            Query(
+                value="example",
+                operator=False,
+                search_field=SearchField(value="TI=", position=(0, 3)),
+                position=(0, 7),
+                platform=PLATFORM.WOS.value,
+            ),
+            Query(
+                value="John Doe",
+                operator=False,
+                search_field=SearchField(value="AU=", position=(8, 11)),
+                position=(12, 20),
+                platform=PLATFORM.WOS.value,
+            ),
+        ],
+        platform=PLATFORM.WOS.value,
+    )
+    print(query.to_string())
+    print(query.to_structured_string())
+
+    parser = WOSParser(
+        query_str="",
+        search_field_general="",
+        mode="",
+    )
+    print()
+    print("-------STARTING CONVERTING TO WOS QUERY-------")
+    print()
+    wos_query = parser.convert_to_wos_query(query)
+    print(wos_query)
+    # raise Exception

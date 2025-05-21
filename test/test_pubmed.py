@@ -722,12 +722,14 @@ def test_list_parser_case_3() -> None:
     ],
 )
 def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
+    print(query_str)
     parser = PubmedParser(query_str, "")
     query = parser.parse()
 
+    print("--------------------")
+
     translator = PubmedTranslator()
     generic = translator.to_generic_syntax(query, search_field_general="")
-    print(generic.to_generic_string())
 
     assert expected_generic == generic.to_generic_string(), print(
         generic.to_generic_string()
