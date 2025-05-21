@@ -64,7 +64,10 @@ class Query:
         self.operator = operator
         self.value = value
         self.distance = distance
-        self.search_field = search_field
+        if isinstance(search_field, str):
+            self.search_field = SearchField(search_field)
+        else:
+            self.search_field = search_field
         self.position = position
         self.marked = False
         # Note: platform is only set for root nodes
