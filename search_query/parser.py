@@ -14,7 +14,7 @@ from search_query.query import Query
 from search_query.wos.parser import WOSListParser
 from search_query.wos.parser import WOSParser
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.parser_base import QueryListParser
     from search_query.parser_base import QueryStringParser
 

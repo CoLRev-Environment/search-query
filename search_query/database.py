@@ -4,13 +4,13 @@ import typing
 
 try:
     from importlib.resources import files  # Python 3.9+
-except ImportError:
+except ImportError:  # pragma: no cover
     from importlib_resources import files  # pip install importlib_resources
 
 from search_query.parser import parse
 from search_query.search_file import load_search_file
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 # mypy: disable-error-code=attr-defined

@@ -13,7 +13,7 @@ from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
 from search_query.ebsco.constants import VALID_FIELDS_REGEX
 from search_query.linter_base import QueryStringLinter
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

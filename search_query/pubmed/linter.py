@@ -16,7 +16,7 @@ from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
 from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.pubmed.parser import PubmedListParser
     from search_query.parser_base import QueryStringParser
 

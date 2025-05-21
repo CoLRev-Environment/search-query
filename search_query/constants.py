@@ -59,18 +59,6 @@ class Token:
     type: TokenTypes
     position: Tuple[int, int]
 
-    def is_parenthesis(self) -> bool:
-        """Check if token is a parenthesis"""
-        return self.type in (TokenTypes.PARENTHESIS_OPEN, TokenTypes.PARENTHESIS_CLOSED)
-
-    def is_search_term(self) -> bool:
-        """Check if token is a search term"""
-        return self.type == TokenTypes.SEARCH_TERM
-
-    def is_field(self) -> bool:
-        """Check if token is a field"""
-        return self.type == TokenTypes.FIELD
-
     def is_operator(self) -> bool:
         """Check if token is an operator"""
         return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)

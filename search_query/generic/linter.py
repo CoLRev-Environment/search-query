@@ -8,7 +8,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.linter_base import QueryStringLinter
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

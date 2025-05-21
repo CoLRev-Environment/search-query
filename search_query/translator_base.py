@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from abc import abstractmethod
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

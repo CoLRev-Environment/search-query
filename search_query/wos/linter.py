@@ -17,7 +17,7 @@ from search_query.wos.constants import syntax_str_to_generic_search_field_set
 from search_query.wos.constants import VALID_FIELDS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     import search_query.wos.parser
 
 

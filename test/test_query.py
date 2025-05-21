@@ -80,3 +80,13 @@ def test_parent_and_root() -> None:
     assert ai.get_root() is root_query
     assert ethics.get_root() is root_query
     assert ai.children[0].get_root() is root_query
+
+
+def test_to_structured_string(query_setup: dict) -> None:
+    health_query = query_setup["query_health"]
+    actual = health_query.to_structured_string()
+    expected = """OR [ti][
+|---"health care" [ti]
+|---medicine [ti]
+| ]"""
+    assert actual == expected

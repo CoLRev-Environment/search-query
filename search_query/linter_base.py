@@ -20,7 +20,7 @@ from search_query.exception import ListQuerySyntaxError
 from search_query.exception import QuerySyntaxError
 from search_query.utils import format_query_string_positions
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

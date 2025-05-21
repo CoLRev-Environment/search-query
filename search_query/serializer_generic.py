@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:  # pragma: no
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

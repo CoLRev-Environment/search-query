@@ -8,7 +8,7 @@
 ```
 coverage run -m pytest
 coverage html
-rm tests/coverage.svg
+rm test/coverage.svg
 coverage-badge -o test/coverage.svg
 
 # Keep tests short (check the ones that take most of the time)
