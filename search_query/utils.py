@@ -18,10 +18,12 @@ def format_query_string_positions(
     sorted_pos = sorted(positions, key=lambda x: x[0])
     merged: list = []
     for start, end in sorted_pos:
-        if not merged or merged[-1][1] < start:
-            merged.append([start, end])
-        else:
+        if merged and merged[-1][1] >= start:
+            # Merge overlapping intervals
             merged[-1][1] = max(merged[-1][1], end)
+        else:
+            # Append new non-overlapping interval
+            merged.append([start, end])
 
     # Apply formatting
     highlighted = ""

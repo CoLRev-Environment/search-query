@@ -116,7 +116,9 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     for key, value in SYNTAX_GENERIC_MAP.items():
         if field_value.upper() == key:
             return deepcopy(value)
-    raise ValueError(f"Field {field_value} not supported by Web of Science")
+    raise ValueError(
+        f"Field {field_value} not supported by Web of Science"
+    )  # pragma: no cover
 
 
 def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
@@ -126,7 +128,7 @@ def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
         if {generic_search_field} == value:
             return key
 
-    raise ValueError(
+    raise ValueError(  # pragma: no cover
         f"Generic search field set {generic_search_field} " "not supported by WOS"
     )
 
@@ -160,7 +162,7 @@ SEARCH_FIELD_GENERAL_TO_GENERIC_MAP = {
 }
 
 
-def syntax_str_to_generic_search_field_set_general_to_generic(
+def search_field_general_to_generic(
     search_field: str,
 ) -> set:
     """Map a search field to a set of generic fields."""

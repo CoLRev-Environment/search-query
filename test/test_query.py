@@ -2,9 +2,12 @@
 """Tests for search query translation"""
 import pytest
 
+from search_query.constants import Colors
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
+from search_query.query_near import NEARQuery
 from search_query.query_or import OrQuery
+from search_query.utils import format_query_string_positions
 
 
 # pylint: disable=line-too-long
@@ -90,3 +93,20 @@ def test_to_structured_string(query_setup: dict) -> None:
 |---medicine [ti]
 | ]"""
     assert actual == expected
+
+
+def test_near_query() -> None:
+    n_query = NEARQuery("NEAR", distance=12, children=[], search_field="ti")
+
+    assert n_query.to_generic_string() == "NEAR[ti](12)"
+    assert n_query.to_structured_string() == "NEAR/12 [ti]"
+
+
+def test_format_query_string_positions_merges_overlaps() -> None:
+    query_str = "cancer AND treatment OR prevention"
+    positions = [(0, 6), (5, 14)]  # 'cancer' and overlapping 'AND treat'
+
+    expected = "\x1b[93mcancer AND tre\x1b[0matment OR prevention"
+
+    result = format_query_string_positions(query_str, positions, color=Colors.ORANGE)
+    assert result.startswith(expected)

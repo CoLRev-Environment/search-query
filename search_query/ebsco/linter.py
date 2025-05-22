@@ -22,13 +22,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
     UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
 
-    OPERATOR_PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
     PLATFORM: PLATFORM = PLATFORM.EBSCO
     VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
 
@@ -250,7 +243,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        self.check_quoted_search_terms_query(query)
+        self.check_unbalanced_quotes_in_terms(query)
         self.check_operator_capitalization_query(query)
         self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
         self.check_unsupported_search_fields_in_query(query)

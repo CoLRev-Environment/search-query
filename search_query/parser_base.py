@@ -105,7 +105,7 @@ class QueryListParser:
                 continue
 
             match = self.LIST_ITEM_REGEX.match(line)
-            if not match:
+            if not match:  # pragma: no cover
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()
             pos_start, pos_end = match.span(2)
@@ -120,57 +120,9 @@ class QueryListParser:
             }
             previous += len(line) + 1
 
+    @abstractmethod
     def get_token_str(self, token_nr: str) -> str:
         """Get the token string."""
-        raise NotImplementedError(
-            "get_token_str method must be implemented by inheriting classes"
-        )
-
-    # def _replace_token_nr_by_query(
-    #     self, query_list: list, token_nr: str, token_content: dict
-    # ) -> None:
-    #     for i, (content, pos) in enumerate(query_list):
-    #         token_str = self.get_token_str(token_nr)
-    #         if token_str in content:
-    #             query_list.pop(i)
-
-    #             content_before = content[: content.find(token_str)]
-    #             content_before_pos = (pos[0], pos[0] + len(content_before))
-    #             content_after = content[content.find(token_str) + len(token_str) :]
-    #             content_after_pos = (
-    #                 content_before_pos[1] + len(token_str),
-    #                 content_before_pos[1] + len(content_after) + len(token_str),
-    #             )
-
-    #             new_content = token_content["node_content"]
-    #             new_pos = token_content["content_pos"]
-
-    #             if content_after:
-    #                 query_list.insert(i, (content_after, content_after_pos))
-
-    #             # Insert the sub-query from the list with "artificial parentheses"
-    #             # (positions with length 0)
-    #             query_list.insert(i, (")", (-1, -1)))
-    #             query_list.insert(i, (new_content, new_pos))
-    #             query_list.insert(i, ("(", (-1, -1)))
-
-    #             if content_before:
-    #                 query_list.insert(i, (content_before, content_before_pos))
-
-    #             break
-
-    # def dict_to_positioned_list(self) -> list:
-    #     """Convert a node to a positioned list."""
-
-    #     root_node = list(self.query_dict.values())[-1]
-    #     query_list = [(root_node["node_content"], root_node["content_pos"])]
-
-    #     for token_nr, token_content in reversed(self.query_dict.items()):
-    #         # iterate over query_list if token_nr is in the content,
-    #         # split the content and insert the token_content, updating the content_pos
-    #         self._replace_token_nr_by_query(query_list, token_nr, token_content)
-
-    #     return query_list
 
     @abstractmethod
     def parse(self) -> Query:

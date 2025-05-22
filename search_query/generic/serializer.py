@@ -10,7 +10,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 def to_string_generic(query: Query) -> str:
     """Convert the query to a string."""
-    if not hasattr(query, "value"):
+    if not hasattr(query, "value"):  # pragma: no cover
         return " (?) "
 
     result = ""
@@ -18,8 +18,8 @@ def to_string_generic(query: Query) -> str:
     if query.search_field:
         query_content += f"[{query.search_field}]"
 
-    if hasattr(query, "near_param"):
-        query_content += f"({query.near_param})"
+    if hasattr(query, "distance") and query.distance:
+        query_content += f"({query.distance})"
     result = f"{result}{query_content}"
     if query.children == []:
         return result

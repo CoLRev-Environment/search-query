@@ -34,8 +34,15 @@ class QueryStringLinter:
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
+
     # Higher number=higher precedence
-    OPERATOR_PRECEDENCE = {"NOT": 2, "AND": 1, "OR": 0}
+    OPERATOR_PRECEDENCE = {
+        "NEAR": 3,
+        "WITHIN": 3,
+        "NOT": 2,
+        "AND": 1,
+        "OR": 0,
+    }
     PLATFORM: PLATFORM = PLATFORM.GENERIC
     VALID_FIELDS_REGEX: re.Pattern
 
@@ -135,7 +142,7 @@ class QueryStringLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            # OR any (code.startswith("E") for code in messages)
+            # OR any (code.is_error() for code in messages)
             # and self.parser.mode == "strict":
             raise QuerySyntaxError(self)
 
@@ -203,25 +210,6 @@ class QueryStringLinter:
                     details=f"Unparsed segment: '{segment.strip()}'",
                 )
 
-    def check_unsupported_search_fields(
-        self, *, valid_fields_regex: re.Pattern[str]
-    ) -> None:
-        """Check for the correct format of fields.
-
-        Note: compile valid_field_regex with/out flags=re.IGNORECASE
-        """
-
-        for token in self.tokens:
-            if token.type != TokenTypes.FIELD:
-                continue
-            if not re.match(valid_fields_regex, token.value):
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                    positions=[token.position],
-                    details=f"Search field {token.value} at position "
-                    f"{token.position} is not supported.",
-                )
-
     def check_unsupported_search_fields_in_query(self, query: Query) -> None:
         """Check for the correct format of fields.
 
@@ -247,21 +235,6 @@ class QueryStringLinter:
 
         for child in query.children:
             self.check_unsupported_search_fields_in_query(child)
-
-    def check_quoted_search_terms(self) -> None:
-        """Check quoted search terms."""
-        for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
-            if '"' not in token.value:
-                continue
-
-            if token.value[0] != '"' or token.value[-1] != '"':
-                self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    positions=[token.position],
-                    details=f"Token '{token.value}' should be fully quoted",
-                )
 
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
@@ -305,52 +278,54 @@ class QueryStringLinter:
                     else:
                         i -= 1
 
-    def check_unbalanced_quotes(self) -> None:
-        """Check query for unbalanced quotes."""
+    def check_unbalanced_quotes_in_terms(self, query: Query) -> None:
+        """Recursively check for unbalanced quotes in quoted search terms."""
 
-        for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
-
-            value = token.value.strip()
+        if query.is_term():
+            value = query.value.strip()
+            if '"' not in value:
+                return
 
             quote_count = value.count('"')
-            if quote_count == 0:
-                continue
 
-            # Case 1: properly quoted (e.g. "AI")
+            # Case 1: Properly quoted (e.g., "AI")
             if quote_count == 2 and value.startswith('"') and value.endswith('"'):
-                continue
+                return
 
-            # Case 2: starts with quote but doesn't end with it
+            # Case 2: unmatched opening quote
             if value.startswith('"') and not value.endswith('"'):
                 self.add_linter_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[(token.position[0], token.position[0] + 1)],
+                    positions=[query.position or (-1, -1)],
                     details="Unmatched opening quote",
                 )
 
-            # Case 3: ends with quote but doesn't start with it
+            # Case 3: unmatched closing quote
             elif value.endswith('"') and not value.startswith('"'):
                 self.add_linter_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[(token.position[1] - 1, token.position[1])],
+                    positions=[query.position or (-1, -1)],
                     details="Unmatched closing quote",
                 )
 
-            # Case 4: quote inside or ambiguous (e.g. mid string)
+            # Case 4: unbalanced or excessive quotes
             elif quote_count % 2 != 0:
                 self.add_linter_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[token.position],
-                    details="Unbalanced quotes inside token",
+                    positions=[query.position or (-1, -1)],
+                    details="Unbalanced quotes inside term",
                 )
             elif quote_count % 2 == 0:
                 self.add_linter_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[token.position],
+                    positions=[query.position or (-1, -1)],
                     details="Suspicious or excessive quote usage",
                 )
+
+            return
+
+        for child in query.children:
+            self.check_unbalanced_quotes_in_terms(child)
 
     def check_unknown_token_types(self) -> None:
         """Check for unknown token types."""
@@ -392,20 +367,6 @@ class QueryStringLinter:
                     QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
                     positions=[token.position],
                 )
-
-    def check_boolean_operator_readability(
-        self, *, faulty_operators: str = "|&"
-    ) -> None:
-        """Check for readability of boolean operators."""
-        for token in self.tokens:
-            if token.type == TokenTypes.LOGIC_OPERATOR:
-                if token.value in faulty_operators:
-                    self.add_linter_message(
-                        QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
-                        positions=[token.position],
-                        details="Please use AND, OR, NOT instead of |&",
-                    )
-                    # Replace?
 
     def check_boolean_operator_readability_query(
         self, query: Query, *, faulty_operators: str = "|&"
@@ -717,24 +678,6 @@ class QueryStringLinter:
 
         return modified_query
 
-    def check_quoted_search_terms_query(self, query: Query) -> None:
-        """Check quoted search terms."""
-
-        if not query.operator:
-            if '"' not in query.value:
-                return
-
-            if query.value[0] != '"' or query.value[-1] != '"':
-                self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    positions=[query.position or (-1, -1)],
-                    details=f"Term '{query.value}' should be fully quoted",
-                )
-            return
-
-        for child in query.children:
-            self.check_quoted_search_terms_query(child)
-
     def check_operator_capitalization_query(self, query: Query) -> None:
         """Check if operators are capitalized."""
 
@@ -754,7 +697,7 @@ class QueryStringLinter:
     ) -> None:
         """Check a search term for invalid characters"""
 
-        if not query.operator:
+        if query.is_term():
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
             for char in invalid_characters:
@@ -1056,6 +999,6 @@ class QueryListLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            # OR any (code.startswith("E") for code in messages)
+            # OR any (code.is_error() for code in messages)
             # and self.parser.mode == "strict":
             raise ListQuerySyntaxError(self)

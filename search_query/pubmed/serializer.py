@@ -6,7 +6,7 @@ import typing
 
 from search_query.constants import Operators
 
-if typing.TYPE_CHECKING:  # pragma: no
+if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
 

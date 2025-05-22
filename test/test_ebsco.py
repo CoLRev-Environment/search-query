@@ -252,6 +252,14 @@ def test_linter_general_search_field(
             'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
             'OR["Robo*"[TI], AND[Robots[AB], NOT[Ethics[AB], Bias[AB]]], "Technology"[SU]]',
         ),
+        (
+            'TX ("digital transformation" N5 "organizational change")',
+            'NEAR[TX](5)["digital transformation"[TX], "organizational change"[TX]]',
+        ),
+        (
+            'TX ("digital transformation" W5 "organizational change")',
+            'WITHIN[TX](5)["digital transformation"[TX], "organizational change"[TX]]',
+        ),
     ],
 )
 def test_parser(query_str: str, expected_translation: str) -> None:

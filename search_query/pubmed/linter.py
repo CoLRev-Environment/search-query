@@ -85,45 +85,45 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_proximity_operator()
         return self.tokens
 
-    def check_implicit_operator(self) -> None:
-        """Check for implicit operators in the query string"""
+    # def check_implicit_operator(self) -> None:
+    #     """Check for implicit operators in the query string"""
 
-        for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
-                continue
+    #     for token in self.tokens:
+    #         if token.type != TokenTypes.SEARCH_TERM:
+    #             continue
 
-            if token.value[0] == '"' and token.value[-1] == '"':
-                continue
-            if " " not in token.value:
-                continue
+    #         if token.value[0] == '"' and token.value[-1] == '"':
+    #             continue
+    #         if " " not in token.value:
+    #             continue
 
-            # check the following:
+    #         # check the following:
 
-            # TS=eHealth[all]
-            # equivalent to:
-            # TS eHealth[all]
-            # TS[all] AND eHealth[all]
+    #         # TS=eHealth[all]
+    #         # equivalent to:
+    #         # TS eHealth[all]
+    #         # TS[all] AND eHealth[all]
 
-            # BUT
-            # Peer leader*[all]
-            # equivalent to:
-            # "Peer leader*"[all]
-            # NOT
-            # Peer[all] AND leader*[all]
+    #         # BUT
+    #         # Peer leader*[all]
+    #         # equivalent to:
+    #         # "Peer leader*"[all]
+    #         # NOT
+    #         # Peer[all] AND leader*[all]
 
-            # pubmed advanced query details show inconsistencies between
-            # ts eHealth*[ti]
-            # peer leader*[ti]
+    #         # pubmed advanced query details show inconsistencies between
+    #         # ts eHealth*[ti]
+    #         # peer leader*[ti]
 
-            position_of_whitespace = token.position[0] + token.value.index(" ")
-            self.add_linter_message(
-                QueryErrorCode.IMPLICIT_OPERATOR,
-                positions=[token.position],
-                details="Implicit operator detected. "
-                f"The space at position {position_of_whitespace} "
-                "will be interpreted as an AND connection. "
-                "Please add an explicit operator to clarify this.",
-            )
+    #         position_of_whitespace = token.position[0] + token.value.index(" ")
+    #         self.add_linter_message(
+    #             QueryErrorCode.IMPLICIT_OPERATOR,
+    #             positions=[token.position],
+    #             details="Implicit operator detected. "
+    #             f"The space at position {position_of_whitespace} "
+    #             "will be interpreted as an AND connection. "
+    #             "Please add an explicit operator to clarify this.",
+    #         )
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -146,7 +146,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # pylint: disable=duplicate-code
         invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
 
-        if not query.operator:
+        if query.is_term():
             value = query.value
 
             # Iterate over term to identify invalid characters
@@ -262,7 +262,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         details = (
             "Wildcards cannot be used for short strings (shorter than 4 characters)."
         )
-        if not query.operator:
+        if query.is_term():
             if "*" not in query.value:
                 return
 
@@ -353,7 +353,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
         self.check_boolean_operator_readability_query(query)
 
-        self.check_quoted_search_terms_query(query)
+        self.check_unbalanced_quotes_in_terms(query)
         self.check_character_replacement_in_search_term(query)
 
         self.check_operators_with_fields(query)

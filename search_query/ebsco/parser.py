@@ -5,15 +5,11 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
-from search_query.linter_base import QueryListLinter
-from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -60,8 +56,6 @@ class EBSCOParser(QueryStringParser):
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
-        if not self.tokens:
-            return
 
         combined_tokens = []
         i = 0
@@ -106,18 +100,12 @@ class EBSCOParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
-    def convert_proximity_operators(
-        self, token: str, token_type: str
-    ) -> tuple[str, int]:
+    def _extract_proximity_distance(self, token: Token) -> int:
         """Convert proximity operator token into operator and distance components"""
-        if token_type != TokenTypes.PROXIMITY_OPERATOR:
-            raise ValueError(
-                f"Invalid token type: {token_type}. Expected 'PROXIMITY_OPERATOR'."
-            )
 
         # Extract the operator (first character) and distance (rest of the string)
-        operator = token[:1]
-        distance_string = token[1:]
+        operator = token.value[:1]
+        distance_string = token.value[1:]
 
         # Change value of operator to fit construction of operator query
         if operator == "N":
@@ -128,18 +116,16 @@ class EBSCOParser(QueryStringParser):
         # Validate and convert the distance
         if not distance_string.isdigit():
             raise ValueError(
-                f"Invalid proximity operator format: '{token}'. "
+                f"Invalid proximity operator format: '{token.value}'. "
                 "Expected a number after the operator."
             )
 
         distance = int(distance_string)
-        return operator, distance
+        token.value = operator
+        return distance
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
-
-        if self.query_str is None:
-            raise ValueError("No string provided to parse.")
 
         self.tokens = []
         token_type = TokenTypes.UNKNOWN
@@ -200,7 +186,7 @@ class EBSCOParser(QueryStringParser):
 
     def _check_for_none(self, root: typing.Optional[Query]) -> Query:
         """Check if root is none"""
-        if root is None:
+        if root is None:  # pragma: no cover
             raise ValueError("Failed to construct a valid query tree.")
         return root
 
@@ -244,9 +230,7 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.PROXIMITY_OPERATOR:
                 # Split token into NEAR/WITHIN and distance
-                token.value, distance = self.convert_proximity_operators(
-                    token.value, token.type
-                )
+                distance = self._extract_proximity_distance(token)
 
                 # Create new proximity_operator from token (N3, W1, N13, ...)
                 proximity_node = Query(
@@ -323,44 +307,49 @@ class EBSCOParser(QueryStringParser):
         return query
 
 
-class EBSCOListParser(QueryListParser):
-    """Parser for EBSCO (list format) queries."""
+# from search_query.constants import GENERAL_ERROR_POSITION
+# from search_query.constants import QueryErrorCode
+# from search_query.linter_base import QueryListLinter
+# from search_query.parser_base import QueryListParser
 
-    def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
-        """Initialize with a query list and use EBSCOParser for parsing each query."""
-        super().__init__(
-            query_list=query_list,
-            parser_class=EBSCOParser,
-            search_field_general=search_field_general,
-            mode=mode,
-        )
-        self.linter = QueryListLinter(parser=self, string_parser_class=EBSCOParser)
+# class EBSCOListParser(QueryListParser):
+#     """Parser for EBSCO (list format) queries."""
 
-    def get_token_str(self, token_nr: str) -> str:
-        """Format the token string for output or processing."""
+#     def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
+#         """Initialize with a query list and use EBSCOParser for parsing each query."""
+#         super().__init__(
+#             query_list=query_list,
+#             parser_class=EBSCOParser,
+#             search_field_general=search_field_general,
+#             mode=mode,
+#         )
+#         self.linter = QueryListLinter(parser=self, string_parser_class=EBSCOParser)
 
-        # Match string combinators such as S1 AND S2 ... ; #1 AND #2 ; ...
-        pattern = rf"(S|#){token_nr}"
+#     def get_token_str(self, token_nr: str) -> str:
+#         """Format the token string for output or processing."""
 
-        match = re.search(pattern, self.query_list)
+#         # Match string combinators such as S1 AND S2 ... ; #1 AND #2 ; ...
+#         pattern = rf"(S|#){token_nr}"
 
-        if match:
-            # Return the preceding character if found
-            return f"{match.group(1)}{token_nr}"
+#         match = re.search(pattern, self.query_list)
 
-        # Log a linter message and return the token number
-        # 1 AND 2 ... are still possible,
-        # however for standardization purposes it should be S/#
-        self.linter.add_linter_message(
-            QueryErrorCode.INVALID_LIST_REFERENCE,
-            list_position=GENERAL_ERROR_POSITION,
-            positions=[(-1, -1)],
-            details="Connecting lines possibly failed. "
-            "Please use this format for connection: "
-            "S1 OR S2 OR S3 / #1 OR #2 OR #3",
-        )
-        return token_nr
+#         if match:
+#             # Return the preceding character if found
+#             return f"{match.group(1)}{token_nr}"
 
-    def parse(self) -> Query:
-        """Parse the query in list format."""
-        raise NotImplementedError("List parsing not implemented yet.")
+#         # Log a linter message and return the token number
+#         # 1 AND 2 ... are still possible,
+#         # however for standardization purposes it should be S/#
+#         self.linter.add_linter_message(
+#             QueryErrorCode.INVALID_LIST_REFERENCE,
+#             list_position=GENERAL_ERROR_POSITION,
+#             positions=[(-1, -1)],
+#             details="Connecting lines possibly failed. "
+#             "Please use this format for connection: "
+#             "S1 OR S2 OR S3 / #1 OR #2 OR #3",
+#         )
+#         return token_nr
+
+#     def parse(self) -> Query:
+#         """Parse the query in list format."""
+#         raise NotImplementedError("List parsing not implemented yet.")

@@ -64,7 +64,7 @@ class QueryTranslator:
     def move_fields_to_operator(cls, query: Query) -> None:
         """move search fields to operator query"""
 
-        if not query.operator:
+        if query.is_term():
             return
 
         for child in query.children:

@@ -15,13 +15,6 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 class GenericLinter(QueryStringLinter):
     """Linter for Generic Query Strings"""
 
-    PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
     PLATFORM: PLATFORM = PLATFORM.GENERIC
 
     # Extract unique string values
@@ -32,39 +25,6 @@ class GenericLinter(QueryStringLinter):
     }
 
     VALID_FIELDS_REGEX = re.compile(r"\b(?:" + "|".join(sorted(field_codes)) + r")\b")
-
-    # VALID_TOKEN_SEQUENCES = {
-    #     TokenTypes.FIELD: [
-    #         TokenTypes.SEARCH_TERM,
-    #         TokenTypes.PARENTHESIS_OPEN,
-    #     ],
-    #     TokenTypes.SEARCH_TERM: [
-    #         TokenTypes.SEARCH_TERM,
-    #         TokenTypes.LOGIC_OPERATOR,
-    #         TokenTypes.PROXIMITY_OPERATOR,
-    #         TokenTypes.PARENTHESIS_CLOSED,
-    #     ],
-    #     TokenTypes.LOGIC_OPERATOR: [
-    #         TokenTypes.SEARCH_TERM,
-    #         TokenTypes.FIELD,
-    #         TokenTypes.PARENTHESIS_OPEN,
-    #     ],
-    #     TokenTypes.PROXIMITY_OPERATOR: [
-    #         TokenTypes.SEARCH_TERM,
-    #         TokenTypes.PARENTHESIS_OPEN,
-    #         TokenTypes.FIELD,
-    #     ],
-    #     TokenTypes.PARENTHESIS_OPEN: [
-    #         TokenTypes.FIELD,
-    #         TokenTypes.SEARCH_TERM,
-    #         TokenTypes.PARENTHESIS_OPEN,
-    #     ],
-    #     TokenTypes.PARENTHESIS_CLOSED: [
-    #         TokenTypes.PARENTHESIS_CLOSED,
-    #         TokenTypes.LOGIC_OPERATOR,
-    #         TokenTypes.PROXIMITY_OPERATOR,
-    #     ],
-    # }
 
     def __init__(self, query_str: str = "") -> None:
         super().__init__(query_str=query_str)

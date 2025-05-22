@@ -217,31 +217,6 @@ class PubmedParser(QueryStringParser):
             platform="deactivated",
         )
 
-    # def parse_user_provided_fields(self, field_values: str) -> list:
-    #     """Extract and translate user-provided search fields (return as a list)"""
-    #     if not field_values:
-    #         return []
-
-    #     field_values_list = [
-    #         search_field.strip() for search_field in field_values.split(",")
-    #     ]
-
-    #     for index, value in enumerate(field_values_list):
-    #         value = "[" + value.lower() + "]"
-
-    #         value = self.syntax_str_to_generic_search_field_set(value)
-
-    #         if value in {"[title and abstract]", "[tiab]"}:
-    #             value = Fields.TITLE
-    #             field_values_list.insert(index + 1, Fields.ABSTRACT)
-
-    #         if value in {"[subject headings]"}:
-    #             value = Fields.MESH_TERM
-
-    #         field_values_list[index] = value
-
-    #     return field_values_list
-
     def _get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,
         representing search terms and fields,
@@ -274,8 +249,6 @@ class PubmedParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        # self.linter.validate_search_fields(query)
-        # self.linter.check_status()
         query.set_platform_unchecked(PLATFORM.PUBMED.value)
 
         return query

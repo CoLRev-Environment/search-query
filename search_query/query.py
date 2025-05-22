@@ -10,8 +10,8 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.ebsco.serializer import to_string_ebsco
+from search_query.generic.serializer import to_string_generic
 from search_query.pubmed.serializer import to_string_pubmed
-from search_query.serializer_generic import to_string_generic
 from search_query.serializer_structured import to_string_structured
 from search_query.wos.serializer import to_string_wos
 
@@ -57,7 +57,7 @@ class Query:
     ) -> None:
         self._value: str = ""
         self._operator = False
-        self._distance = -1
+        self._distance = None
         self._children: typing.List[Query] = []
         self._search_field = None
 
@@ -119,7 +119,7 @@ class Query:
             ebsco_linter.validate_query_tree(self)
             ebsco_linter.check_status()
 
-        else:
+        else:  # pragma: no cover
             raise NotImplementedError(
                 f"Validation for {self.platform} is not implemented"
             )
@@ -376,13 +376,9 @@ class Query:
 
         return results
 
-    def is_operator(self) -> bool:
-        """Check whether the SearchQuery is an operator."""
-        return self.operator
-
     def is_term(self) -> bool:
         """Check whether the SearchQuery is a term."""
-        return not self.is_operator()
+        return not self.operator
 
     def get_nr_leaves(self) -> int:
         """Returns the number of leaves in the query tree"""
@@ -439,7 +435,7 @@ class Query:
         if self.platform == PLATFORM.EBSCO.value:
             return to_string_ebsco(self)
 
-        raise ValueError(f"Syntax not supported ({self.platform})")
+        raise ValueError(f"Syntax not supported ({self.platform})")  # pragma: no cover
 
     def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
         """Translate the query to the target syntax using the provided translator."""
@@ -473,7 +469,7 @@ class Query:
                 generic_query = wos_translator.to_generic_syntax(
                     self, search_field_general=search_field_general
                 )
-            else:
+            else:  # pragma: no cover
                 raise NotImplementedError(
                     f"Translation from {self.platform} " "to generic is not implemented"
                 )
@@ -494,7 +490,9 @@ class Query:
             target_query.platform = target_syntax
             return target_query
 
-        raise NotImplementedError(f"Translation to {target_syntax} is not implemented")
+        raise NotImplementedError(
+            f"Translation to {target_syntax} is not implemented"
+        )  # pragma: no cover
 
 
 class Term(Query):

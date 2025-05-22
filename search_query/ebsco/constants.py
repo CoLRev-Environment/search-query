@@ -68,7 +68,7 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
         if field_value == key:
             return deepcopy(value)
 
-    raise ValueError(f"Field {field_value} not supported by EBSCO")
+    raise ValueError(f"Field {field_value} not supported by EBSCO")  # pragma: no cover
 
 
 def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
@@ -78,6 +78,6 @@ def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
         if {generic_search_field} == value:
             return key
 
-    raise ValueError(
+    raise ValueError(  # pragma: no cover
         f"Generic search field set {generic_search_field} " "not supported by EBSCO"
     )

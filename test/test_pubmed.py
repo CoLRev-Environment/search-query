@@ -95,12 +95,54 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "",
             [
                 {
-                    "code": "F0001",
-                    "label": "tokenizing-failed",
-                    "message": "Fatal error during tokenization",
+                    "code": "F1002",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
                     "position": [(0, 8)],
-                    "details": "Term '\"eHealth' should be fully quoted",
+                    "details": "Unmatched opening quote",
+                }
+            ],
+        ),
+        (
+            'eHealth"[ti]',
+            "",
+            [
+                {
+                    "code": "F1002",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": [(0, 8)],
+                    "details": "Unmatched closing quote",
+                }
+            ],
+        ),
+        (
+            'eHeal"th[ti]',
+            "",
+            [
+                {
+                    "code": "F1002",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": [(0, 8)],
+                    "details": "Unbalanced quotes inside term",
+                }
+            ],
+        ),
+        (
+            'eHe"a"l"t"h[ti]',
+            "",
+            [
+                {
+                    "code": "F1002",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": [(0, 11)],
+                    "details": "Suspicious or excessive quote usage",
                 }
             ],
         ),

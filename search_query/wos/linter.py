@@ -36,13 +36,6 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
 
-    PRECEDENCE = {
-        "NEAR": 3,
-        "WITHIN": 3,
-        "NOT": 2,
-        "AND": 1,
-        "OR": 0,
-    }
     PLATFORM: PLATFORM = PLATFORM.WOS
 
     VALID_TOKEN_SEQUENCES = {
@@ -99,7 +92,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
-        self.check_unbalanced_quotes()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
@@ -131,7 +123,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_year_without_search_terms(self, query: Query) -> None:
         """Check if the year is used without a search terms."""
 
-        if not query.operator:
+        if query.is_term():
             if not query.search_field:
                 return
 
@@ -197,7 +189,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_year_format(self, query: Query) -> None:
         """Check for the correct format of year."""
 
-        if not query.operator:
+        if query.is_term():
             if not query.search_field:
                 return
             if not YEAR_PUBLISHED_FIELD_REGEX.match(query.search_field.value):
@@ -283,7 +275,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_unsupported_wildcards(self, query: Query) -> None:
         """Check for unsupported characters in the search string."""
 
-        if not query.operator:
+        if query.is_term():
             # Web of Science does not support "!"
             for match in re.finditer(r"\!+", query.value):
                 position = (-1, -1)
@@ -303,7 +295,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_wildcards(self, query: Query) -> None:
         """Check for the usage of wildcards in the search string."""
 
-        if not query.operator:
+        if query.is_term():
             value = query.value.replace('"', "")
 
             # Implement constrains from Web of Science for Wildcards
@@ -372,7 +364,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_issn_isbn_format(self, query: "Query") -> None:
         """Check for the correct format of ISSN and ISBN."""
 
-        if not query.operator:
+        if query.is_term():
             if not query.search_field:
                 return
 
@@ -394,7 +386,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_doi_format(self, query: "Query") -> None:
         """Check for the correct format of DOI."""
 
-        if not query.operator:
+        if query.is_term():
             if not query.search_field:
                 return
 
@@ -413,7 +405,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def get_nr_terms_all(self, query: Query) -> int:
         """Get the number of terms in the query."""
 
-        if not query.operator:
+        if query.is_term():
             if query.search_field and query.search_field.value == "ALL=":
                 return 1
 
@@ -449,12 +441,12 @@ class WOSQueryStringLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        # self.check_unsupported_search_fields(valid_fields_regex=VALID_FIELDS_REGEX)
         self.check_year_without_search_terms(query)
 
         self.check_wildcards(query)
         self.check_unsupported_wildcards(query)
         self.check_unsupported_search_fields_in_query(query)
+        self.check_unbalanced_quotes_in_terms(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self.check_year_format(term_field_query)
