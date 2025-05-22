@@ -25,7 +25,7 @@ def test_handle_closing_parenthesis_single_child() -> None:
     """
     children = [Query(value="example", operator=False, platform=PLATFORM.WOS.value)]
     parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser.handle_closing_parenthesis(children, current_operator="")
+    result = parser._handle_closing_parenthesis(children, current_operator="")
 
     assert result == children[0]
 
@@ -43,7 +43,7 @@ def test_handle_closing_parenthesis_with_operator() -> None:
     ]
     current_operator = "AND"
     parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser.handle_closing_parenthesis(children, current_operator)
+    result = parser._handle_closing_parenthesis(children, current_operator)
 
     expected_result = Query(
         value=current_operator, operator=True, children=list(children)
@@ -52,66 +52,6 @@ def test_handle_closing_parenthesis_with_operator() -> None:
     assert result.value == expected_result.value
     assert result.operator == expected_result.operator
     assert result.children == expected_result.children
-
-
-def test_handle_operator_uppercase() -> None:
-    """
-    Test the `handle_operator` method with an uppercase operator.
-
-    This test verifies that the `handle_operator` method correctly handles
-    an uppercase operator and returns the expected values.
-    """
-    token = Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
-    current_operator = ""
-    current_negation = False
-
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result_operator, result_negation = parser.handle_operator(
-        token, current_operator, current_negation
-    )
-
-    assert result_operator == "AND"
-    assert result_negation is False
-
-
-def test_handle_operator_near_with_distance() -> None:
-    """
-    Test the `handle_operator` method with a NEAR operator with distance.
-
-    This test verifies that the `handle_operator` method correctly handles
-    a NEAR operator with a given distance and returns the expected values.
-    """
-    token = Token(value="NEAR/2", type=TokenTypes.PROXIMITY_OPERATOR, position=(0, 6))
-    current_operator = ""
-    current_negation = False
-
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result_operator, result_negation = parser.handle_operator(
-        token, current_operator, current_negation
-    )
-
-    assert result_operator == "NEAR/2"
-    assert result_negation is False
-
-
-def test_handle_operator_not() -> None:
-    """
-    Test the `handle_operator` method with the NOT operator.
-
-    This test verifies that the `handle_operator` method correctly handles
-    the NOT operator, sets the negation flag, and changes the operator to AND.
-    """
-    token = Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(0, 3))
-    current_operator = ""
-    current_negation = False
-
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result_operator, result_negation = parser.handle_operator(
-        token, current_operator, current_negation
-    )
-
-    assert result_operator == "AND"
-    assert result_negation is True
 
 
 def test_combine_subsequent_terms_single_term() -> None:
@@ -239,7 +179,7 @@ def test_add_term_node_without_current_operator() -> None:
     current_operator = ""
     children: typing.List[Query] = []
 
-    result = parser.add_term_node(
+    result = parser._add_term_node(
         index=index,
         value=value,
         search_field=search_field,
@@ -280,7 +220,7 @@ def test_add_term_node_with_current_operator() -> None:
     current_operator = "AND"
     children: typing.List[Query] = []
 
-    result = parser.add_term_node(
+    result = parser._add_term_node(
         index=index,
         value=value,
         search_field=search_field,
@@ -359,7 +299,7 @@ def test_add_term_node_with_near_operator() -> None:
         )
     ]
 
-    result = parser.add_term_node(
+    result = parser._add_term_node(
         index=index,
         value=value,
         search_field=search_field,
@@ -460,7 +400,7 @@ def test_add_term_node_with_existing_children() -> None:
         )
     ]
 
-    result = parser.add_term_node(
+    result = parser._add_term_node(
         index=index,
         value=value,
         search_field=search_field,
@@ -513,7 +453,7 @@ def test_add_term_node_with_current_negation() -> None:
     children: typing.List[Query] = []
     current_negation = True
 
-    result = parser.add_term_node(
+    result = parser._add_term_node(
         index=index,
         value=value,
         search_field=search_field,

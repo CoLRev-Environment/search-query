@@ -13,5 +13,4 @@ search\_query.utils
 
    .. autosummary::
 
-      format_query_string_pos
       format_query_string_positions

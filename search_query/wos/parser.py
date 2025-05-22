@@ -102,7 +102,7 @@ class WOSParser(QueryStringParser):
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
-        self.add_unbalanced_quotes_to_adjacent_term()
+        self._add_unbalanced_quotes_to_adjacent_term()
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -141,7 +141,7 @@ class WOSParser(QueryStringParser):
             # Handle closing parentheses
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 return (
-                    self.handle_closing_parenthesis(
+                    self._handle_closing_parenthesis(
                         children=children,
                         current_operator=current_operator,
                         search_field=search_field,
@@ -151,16 +151,12 @@ class WOSParser(QueryStringParser):
 
             # Handle operators
             elif token.type == TokenTypes.LOGIC_OPERATOR:
-                # Handle the operator
-                # and update all changes within the handler
-                (
-                    current_operator,
-                    current_negation,
-                ) = self.handle_operator(
-                    token=token,
-                    current_operator=current_operator,
-                    current_negation=current_negation,
-                )
+                current_operator = token.value.upper()
+
+                # Set a flag if the token is NOT and change to AND
+                if current_operator == "NOT":
+                    current_negation = True
+                    current_operator = "AND"
 
             # Handle search fields
             elif token.type == TokenTypes.FIELD:
@@ -169,7 +165,7 @@ class WOSParser(QueryStringParser):
             # Handle terms
             else:
                 # Add term nodes
-                children = self.add_term_node(
+                children = self._add_term_node(
                     index=index,
                     value=token.value,
                     search_field=search_field,
@@ -207,7 +203,7 @@ class WOSParser(QueryStringParser):
         # Raise an error if the code gets here
         raise NotImplementedError("Error in parsing the query tree")
 
-    def handle_closing_parenthesis(
+    def _handle_closing_parenthesis(
         self,
         children: list,
         current_operator: str,
@@ -234,24 +230,6 @@ class WOSParser(QueryStringParser):
             + "\nFound: "
             + str(children)
         )
-
-    def handle_operator(
-        self,
-        token: Token,
-        current_operator: str,
-        current_negation: bool,
-    ) -> typing.Tuple[str, bool]:
-        """Handle operators."""
-
-        # Set the current operator to the token
-        current_operator = token.value.upper()
-
-        # Set a flag if the token is NOT and change to AND
-        if current_operator == "NOT":
-            current_negation = True
-            current_operator = "AND"
-
-        return current_operator, current_negation
 
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
@@ -304,7 +282,7 @@ class WOSParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
-    def add_unbalanced_quotes_to_adjacent_term(self) -> None:
+    def _add_unbalanced_quotes_to_adjacent_term(self) -> None:
         """Add unbalanced quotes to adjacent terms."""
 
         s = self.query_str
@@ -337,7 +315,7 @@ class WOSParser(QueryStringParser):
         self.tokens = updated_tokens
 
     # pylint: disable=too-many-arguments
-    def add_term_node(
+    def _add_term_node(
         self,
         *,
         index: int,

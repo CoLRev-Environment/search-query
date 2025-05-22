@@ -96,26 +96,16 @@ class PubmedParser(QueryStringParser):
 
         self.combine_subsequent_terms()
 
-    def get_operator_type(self, operator: str) -> str:
-        """Get operator type"""
-        if operator.upper() in {"&", "AND"}:
-            return Operators.AND
-        if operator.upper() in {"|", "OR"}:
-            return Operators.OR
-        if operator.upper() == "NOT":
-            return Operators.NOT
-        raise ValueError()
-
     def parse_query_tree(self, tokens: list) -> Query:
         """Parse a query from a list of tokens"""
 
-        if self.is_compound_query(tokens):
+        if self._is_compound_query(tokens):
             query = self._parse_compound_query(tokens)
 
-        elif self.is_nested_query(tokens):
+        elif self._is_nested_query(tokens):
             query = self._parse_nested_query(tokens)
 
-        elif self.is_term_query(tokens):
+        elif self._is_term_query(tokens):
             query = self._parse_search_term(tokens)
 
         else:
@@ -123,15 +113,15 @@ class PubmedParser(QueryStringParser):
 
         return query
 
-    def is_term_query(self, tokens: list) -> bool:
+    def _is_term_query(self, tokens: list) -> bool:
         """Check if the query is a search term"""
         return tokens[0].type == TokenTypes.SEARCH_TERM and len(tokens) <= 2
 
-    def is_compound_query(self, tokens: list) -> bool:
+    def _is_compound_query(self, tokens: list) -> bool:
         """Check if the query is a compound query"""
         return bool(self._get_operator_indices(tokens))
 
-    def is_nested_query(self, tokens: list) -> bool:
+    def _is_nested_query(self, tokens: list) -> bool:
         """Check if the query is nested in parentheses"""
         return (
             tokens[0].type == TokenTypes.PARENTHESIS_OPEN
@@ -157,7 +147,7 @@ class PubmedParser(QueryStringParser):
                 i = i - 1
 
             if i == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
-                operator = self.get_operator_type(token.value)
+                operator = token.get_operator_type()
                 if not first_operator_found:
                     first_operator = operator
                     first_operator_found = True
@@ -189,7 +179,7 @@ class PubmedParser(QueryStringParser):
             query = self.parse_query_tree(token_list)
             children.append(query)
 
-        operator_type = self.get_operator_type(tokens[operator_indices[0]].value)
+        operator_type = tokens[operator_indices[0]].get_operator_type()
 
         query_start_pos = tokens[0].position[0]
         query_end_pos = tokens[-1].position[1]
@@ -252,7 +242,7 @@ class PubmedParser(QueryStringParser):
 
     #     return field_values_list
 
-    def get_query_leaves(self, query: Query) -> list:
+    def _get_query_leaves(self, query: Query) -> list:
         """Retrieve all leaf nodes from a query,
         representing search terms and fields,
         and return them as a list"""
@@ -261,7 +251,7 @@ class PubmedParser(QueryStringParser):
 
         leaves = []
         for child in query.children:
-            leaves += self.get_query_leaves(child)
+            leaves += self._get_query_leaves(child)
         return leaves
 
     def parse(self) -> Query:
@@ -336,7 +326,7 @@ class PubmedListParser(QueryListParser):
             )
         return operator_node_tokens
 
-    def parse_operator_node(self, token_nr: int) -> Query:
+    def _parse_operator_node(self, token_nr: int) -> Query:
         """Parse an operator node."""
 
         operator_node_tokens = self.get_operator_node_tokens(token_nr)
@@ -383,7 +373,7 @@ class PubmedListParser(QueryListParser):
                 self.linter.messages[token_nr] = parser.linter.messages
 
             if query_element["type"] == ListTokenTypes.OPERATOR_NODE:
-                query_element["query"] = self.parse_operator_node(
+                query_element["query"] = self._parse_operator_node(
                     token_nr
                     # query_element["node_content"]
                 )

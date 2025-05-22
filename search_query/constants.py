@@ -63,6 +63,16 @@ class Token:
         """Check if token is an operator"""
         return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)
 
+    def get_operator_type(self) -> str:
+        """Get operator type"""
+        if self.value.upper() in {"&", "AND"}:
+            return Operators.AND
+        if self.value.upper() in {"|", "OR"}:
+            return Operators.OR
+        if self.value.upper() == "NOT":
+            return Operators.NOT
+        raise ValueError()
+
 
 @dataclass
 class ListToken:
