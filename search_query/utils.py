@@ -14,6 +14,8 @@ def format_query_string_positions(
     if not positions:
         return query_str
 
+    positions = [pos for pos in positions if pos is not None]
+
     # Sort and merge overlapping positions
     sorted_pos = sorted(positions, key=lambda x: x[0])
     merged: list = []

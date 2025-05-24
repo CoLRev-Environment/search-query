@@ -865,16 +865,8 @@ class QueryStringLinter:
                     if not term_b.search_field:
                         continue
 
-                    try:
-                        field_a = self.syntax_str_to_generic_search_field_set(
-                            term_a.search_field.value
-                        )
-                        field_b = self.syntax_str_to_generic_search_field_set(
-                            term_b.search_field.value
-                        )
-                    except ValueError:
-                        # Skip if the field is not supported
-                        continue
+                    field_a = term_a.search_field.value
+                    field_b = term_b.search_field.value
 
                     if field_a != field_b:
                         continue

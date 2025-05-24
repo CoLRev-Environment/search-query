@@ -43,19 +43,16 @@ def parse(
     platform = platform.lower()
 
     if "1." in query_str[:10]:
-        if platform not in LIST_PARSERS:
+        if platform not in LIST_PARSERS:  # pragma: no cover
             raise ValueError(f"Invalid platform: {platform}")
 
-        string_parser = PARSERS[platform]
-
-        return LIST_PARSERS[platform](
+        return LIST_PARSERS[platform](  # type: ignore
             query_list=query_str,
-            parser_class=string_parser,
             search_field_general=search_field_general,
             mode=mode,
         ).parse()
 
-    if platform not in PARSERS:
+    if platform not in PARSERS:  # pragma: no cover
         raise ValueError(f"Invalid platform: {platform}")
 
     parser_class = PARSERS[platform]
@@ -76,5 +73,8 @@ def get_platform(platform_str: str) -> str:
 
     if platform_str in ["ebscohost", "ebsco"]:
         return PLATFORM.EBSCO.value
+
+    if platform_str in ["pubmed"]:
+        return PLATFORM.PUBMED.value
 
     raise ValueError(f"Invalid platform: {platform_str}")

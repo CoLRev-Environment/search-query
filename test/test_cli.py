@@ -5,6 +5,9 @@ from pathlib import Path
 
 from search_query import load_search_file
 
+# pylint: disable=line-too-long
+# flake8: noqa: E501
+
 
 def test_translate_cli() -> None:
     test_data_dir = Path(__file__).parent
@@ -30,7 +33,10 @@ def test_translate_cli() -> None:
     assert output_file.exists()
 
     result_file = load_search_file(output_file)
-    assert result_file.search_string == "TP (quantum AND dot AND spin)"
+    assert (
+        result_file.search_string
+        == "((AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin))"
+    )
 
 
 def test_linter_cli() -> None:

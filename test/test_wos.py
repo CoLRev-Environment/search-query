@@ -712,14 +712,16 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
 def test_query_parsing_basic_vs_advanced() -> None:
     # Basic search
     parser = WOSParser(
-        query_str="digital AND online", search_field_general="ALL=", mode=""
+        query_str="digital AND online", search_field_general="All Fields", mode=""
     )
     parser.parse()
     assert len(parser.linter.messages) == 0
 
     # Search field could be nested
     parser = WOSParser(
-        query_str="(TI=digital AND AB=online)", search_field_general="ALL=", mode=""
+        query_str="(TI=digital AND AB=online)",
+        search_field_general="All Fields",
+        mode="",
     )
     parser.parse()
     assert len(parser.linter.messages) == 0
@@ -744,14 +746,14 @@ def test_query_parsing_basic_vs_advanced() -> None:
 
     # ERROR: Advanced search with search_field_general
     parser = WOSParser(
-        query_str="ALL=(digital AND online)", search_field_general="ALL=", mode=""
+        query_str="ALL=(digital AND online)", search_field_general="All Fields", mode=""
     )
     parser.parse()
     assert len(parser.linter.messages) == 1
 
     # ERROR: Advanced search with search_field_general
     parser = WOSParser(
-        query_str="TI=(digital AND online)", search_field_general="ALL=", mode=""
+        query_str="TI=(digital AND online)", search_field_general="All Fields", mode=""
     )
     parser.parse()
     assert len(parser.linter.messages) == 1
@@ -795,7 +797,9 @@ def test_query_in_quotes() -> None:
 
 def test_artificial_parentheses() -> None:
     parser = WOSParser(
-        query_str="remote OR online AND work", search_field_general="ALL=", mode=""
+        query_str="remote OR online AND work",
+        search_field_general="All Fields",
+        mode="",
     )
     query = parser.parse()
 
@@ -953,3 +957,28 @@ def test_wos_invalid_fields() -> None:
             search_field=SearchField("TI="),
             platform=PLATFORM.WOS.value,
         )
+
+
+@pytest.mark.parametrize(
+    "query_str, search_field_general, expected_parsed",
+    [
+        (
+            "eHealth AND Review",
+            "Title",
+            "AND[TI=][eHealth, Review]",
+        ),
+    ],
+)
+def test_parser(
+    query_str: str, search_field_general: str, expected_parsed: str
+) -> None:
+    print(
+        f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
+    )
+
+    parser = WOSParser(query_str, search_field_general=search_field_general)
+    query = parser.parse()
+
+    assert expected_parsed == query.to_generic_string(), print(
+        query.to_generic_string()
+    )

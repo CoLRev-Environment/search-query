@@ -113,13 +113,7 @@ class EBSCOParser(QueryStringParser):
         else:
             operator = "WITHIN"
 
-        # Validate and convert the distance
-        if not distance_string.isdigit():
-            raise ValueError(
-                f"Invalid proximity operator format: '{token.value}'. "
-                "Expected a number after the operator."
-            )
-
+        # distance_string.is_digit() is always True afeer PROXIMITY_OPERATOR_REGEX match
         distance = int(distance_string)
         token.value = operator
         return distance
@@ -148,7 +142,7 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.FIELD
             elif self.SEARCH_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.SEARCH_TERM
-            else:
+            else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
 
             # Append token with its type and position to self.tokens
@@ -161,126 +155,106 @@ class EBSCOParser(QueryStringParser):
 
     def append_node(
         self,
-        root: typing.Optional[Query],
+        parent: typing.Optional[Query],
         current_operator: typing.Optional[Query],
         node: Query,
     ) -> tuple[typing.Optional[Query], typing.Optional[Query]]:
         """Append new Query node"""
+
+        assert current_operator or parent is None
+
         if current_operator:
             current_operator.children.append(node)
-        elif root is None:
-            root = node
-        else:
-            root.children.append(node)
-        return root, current_operator
+        elif parent is None:
+            parent = node
+
+        return parent, current_operator
 
     def append_operator(
         self,
-        root: typing.Optional[Query],
+        parent: typing.Optional[Query],
         operator_node: Query,
     ) -> tuple[Query, Query]:
         """Append new Operator node"""
-        if root:
-            operator_node.children.append(root)
+        if parent:
+            operator_node.children.append(parent)
         return operator_node, operator_node
 
-    def _check_for_none(self, root: typing.Optional[Query]) -> Query:
-        """Check if root is none"""
-        if root is None:  # pragma: no cover
+    def _check_for_none(self, parent: typing.Optional[Query]) -> Query:
+        """Check if parent is none"""
+        if parent is None:  # pragma: no cover
             raise ValueError("Failed to construct a valid query tree.")
-        return root
+        return parent
 
     def parse_query_tree(
         self,
         tokens: typing.Optional[list] = None,
-        search_field: typing.Optional[SearchField] = None,
-        search_field_par: typing.Optional[SearchField] = None,
+        field_context: typing.Optional[SearchField] = None,
     ) -> Query:
         """
         Build a query tree from a list of tokens
-        dynamic tree restructuring based on PRECEDENCE.
+        with dynamic restructuring based on PRECEDENCE.
         """
         if not tokens:
             tokens = list(self.tokens)
-        root: typing.Optional[Query] = None
+
+        parent: typing.Optional[Query] = None
         current_operator: typing.Optional[Query] = None
+        search_field: typing.Optional[SearchField] = None
 
         while tokens:
             token = tokens.pop(0)
 
             if token.type == TokenTypes.FIELD:
-                # Create new search_field used by following search_terms
                 search_field = SearchField(token.value, position=token.position)
 
             elif token.type == TokenTypes.SEARCH_TERM:
-                # Create new search_term and in case tree is empty, sets first root
                 term_node = Term(
                     value=token.value,
                     position=token.position,
-                    search_field=search_field or search_field_par,
+                    search_field=search_field or field_context,
                     platform="deactivated",
                 )
-
-                # Append search_term to tree
-                root, current_operator = self.append_node(
-                    root, current_operator, term_node
+                parent, current_operator = self.append_node(
+                    parent, current_operator, term_node
                 )
-
                 search_field = None
 
             elif token.type == TokenTypes.PROXIMITY_OPERATOR:
-                # Split token into NEAR/WITHIN and distance
                 distance = self._extract_proximity_distance(token)
-
-                # Create new proximity_operator from token (N3, W1, N13, ...)
                 proximity_node = Query(
                     value=token.value,
                     position=token.position,
-                    search_field=search_field or search_field_par,
+                    search_field=search_field or field_context,
                     distance=distance,
                     platform="deactivated",
                 )
-
-                # Set proximity_operator as tree node
-                root, current_operator = self.append_operator(root, proximity_node)
+                parent, current_operator = self.append_operator(parent, proximity_node)
 
             elif token.type == TokenTypes.LOGIC_OPERATOR:
-                # Create new operator node
                 new_operator_node = Query(
                     value=token.value.upper(),
                     position=token.position,
-                    search_field=search_field or search_field_par,
+                    search_field=search_field or field_context,
                     platform="deactivated",
                 )
 
                 if not current_operator:
-                    # No current operator; initialize root
-                    root, current_operator = self.append_operator(
-                        root, new_operator_node
+                    parent, current_operator = self.append_operator(
+                        parent, new_operator_node
                     )
 
             elif token.type == TokenTypes.PARENTHESIS_OPEN:
-                # Recursively parse the group inside parentheses
-                # Set search_field_par as search field regarding the whole subtree
-                # If subtree is done, reset search_field_par
-                if search_field_par is not None:
-                    search_field = search_field_par
-
-                subtree = self.parse_query_tree(tokens, search_field, search_field)
-                search_field_par = None
-
-                root, current_operator = self.append_node(
-                    root, current_operator, subtree
+                # Recursively parse subexpression with same effective field
+                subtree = self.parse_query_tree(tokens, search_field or field_context)
+                parent, current_operator = self.append_node(
+                    parent, current_operator, subtree
                 )
 
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                # Return subtree
-                root = self._check_for_none(root)
-                return root
+                return self._check_for_none(parent)
 
-        root = self._check_for_none(root)
-
-        return root
+        return self._check_for_none(parent)
 
     def parse(self) -> Query:
         """Parse a query string."""

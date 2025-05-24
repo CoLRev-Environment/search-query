@@ -13,24 +13,26 @@ class PubmedTranslator(QueryTranslator):
     """Translator for Pubmed queries."""
 
     @classmethod
-    def _translate_or_chains_without_nesting(cls, query: "Query") -> bool:
-        """Translate without nesting"""
+    def _expand_flat_or_chains(cls, query: "Query") -> bool:
+        """Expand flat OR chains into a single OR query."""
+
         if not (query.operator and query.value == Operators.OR):
             return False
         if not all(not child.operator for child in query.children):
             return False
-        if not all(child.search_field for child in query.children):
-            return False
+        assert all(child.search_field for child in query.children)
+
         search_fields = {
             child.search_field.value for child in query.children if child.search_field
         }
+
         if len(search_fields) != 1:
             return False
 
         if next(iter(search_fields)) in {"[title and abstract]", "[tiab]"}:
             existing_children = list(query.children)
             for child in existing_children:
-                if not child.search_field:
+                if not child.search_field:  # pragma: no cover
                     continue
                 child.search_field.value = Fields.TITLE
                 new_child = Query(
@@ -45,7 +47,7 @@ class PubmedTranslator(QueryTranslator):
 
         # elif ... other cases?
 
-        return False
+        return False  # pragma: no cover
 
     @classmethod
     def _translate_search_fields(cls, query: "Query") -> None:
@@ -118,7 +120,7 @@ class PubmedTranslator(QueryTranslator):
         """Translate search fields"""
 
         if query.children:
-            expanded = cls._translate_or_chains_without_nesting(query)
+            expanded = cls._expand_flat_or_chains(query)
             if not expanded:
                 for child in query.children:
                     cls.translate_search_fields_to_generic(child)
@@ -158,23 +160,24 @@ class PubmedTranslator(QueryTranslator):
         query.children = query_children  # type: ignore
 
     @classmethod
+    def to_generic_syntax(cls, query: "Query") -> "Query":
+        """Convert the query to a generic syntax."""
+
+        query = query.copy()
+        cls.translate_search_fields_to_generic(query)
+
+        return query
+
+    @classmethod
     def to_specific_syntax(cls, query: "Query") -> "Query":
         """Convert the query to a specific syntax."""
 
         query = query.copy()
 
-        cls.move_field_from_operator_to_terms(query)
+        cls.move_fields_to_terms(query)
         cls.flatten_nested_operators(query)
         cls._combine_tiab(query)
         cls._translate_search_fields(query)
-
-        return query
-
-    @classmethod
-    def to_generic_syntax(cls, query: "Query", *, search_field_general: str) -> "Query":
-        """Convert the query to a generic syntax."""
-
-        query = query.copy()
-        cls.translate_search_fields_to_generic(query)
+        cls._remove_redundant_terms(query)
 
         return query

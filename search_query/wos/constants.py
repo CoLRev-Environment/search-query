@@ -13,7 +13,12 @@ SYNTAX_GENERIC_MAP = {
     "ALL=": {Fields.ALL},
     "AB=": {Fields.ABSTRACT},
     "TI=": {Fields.TITLE},
-    "TS=": {Fields.TOPIC},
+    "TS=": {
+        Fields.TITLE,
+        Fields.ABSTRACT,
+        Fields.AUTHOR_KEYWORDS,
+        Fields.KEYWORDS_PLUS,
+    },
     "LA=": {Fields.LANGUAGE},
     "PY=": {Fields.YEAR},
     "AD=": {Fields.ADDRESS},
@@ -133,40 +138,42 @@ def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
     )
 
 
-SEARCH_FIELD_GENERAL_TO_GENERIC_MAP = {
-    "All Fields": {Fields.ALL},
-    "Topic": {Fields.TOPIC},
-    "Title": {Fields.TITLE},
-    "Author": {Fields.AUTHOR},
-    "Publication Titles": {Fields.PUBLICATION_NAME},
-    "Year Published": {Fields.YEAR},
-    "Affiliation": {Fields.AFFILIATION},
-    "Funding Agency": {Fields.FUNDING_AGENCY},
-    "Publisher": {Fields.PUBLISHER},
-    "Publiation Date": {Fields.PUBLICATION_DATE},
-    "Abstract": {Fields.ABSTRACT},
-    "Accession Number": {Fields.ACCESSION_NUMBER},
-    "Address": {Fields.ADDRESS},
-    "Author Identifiers": {Fields.AUTHOR_IDENTIFIERS},
-    "Author Keywords": {Fields.AUTHOR_KEYWORDS},
-    "Conference": {Fields.CONFERENCE},
-    "Document Type": {Fields.PUBLICATION_TYPE},
-    "DOI": {Fields.DOI},
-    "Editor": {Fields.EDITOR},
-    "Grant Number": {Fields.GRANT_NUMBER},
-    "Group Author": {Fields.GROUP_AUTHOR},
-    "Keywords Plus": {Fields.KEYWORDS_PLUS},
-    "Language": {Fields.LANGUAGE},
-    "PubMed ID": {Fields.PUBMED_ID},
-    "Web of Science Categories": {Fields.WEB_OF_SCIENCE_CATEGORY},
+SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP = {
+    "All Fields": "ALL=",
+    "Topic": "TS=",
+    "Title": "TI=",
+    "Author": "AU=",
+    "Publication Titles": "SO=",
+    "Year Published": "PY=",
+    "Affiliation": "AD=",
+    "Funding Agency": "FO=",
+    "Publisher": "PU=",
+    "Publiation Date": "PD=",
+    "Abstract": "AB=",
+    "Accession Number": "UT=",
+    "Address": "AD=",
+    "Author Identifiers": "AI=",
+    "Author Keywords": "AK=",
+    "Conference": "CF=",
+    "Document Type": "DT=",
+    "DOI": "DO=",
+    "Editor": "ED=",
+    "Grant Number": "FG=",
+    "Group Author": "GP=",
+    "Keywords Plus": "KP=",
+    "Language": "LA=",
+    "PubMed ID": "PMID=",
+    "Web of Science Categories": "WC=",
 }
 
 
-def search_field_general_to_generic(
+def search_field_general_to_syntax(
     search_field: str,
-) -> set:
-    """Map a search field to a set of generic fields."""
+) -> str:
+    """Map the general search field to the standard syntax of WOS."""
     search_field = search_field.strip()
-    if search_field in SEARCH_FIELD_GENERAL_TO_GENERIC_MAP:
-        return SEARCH_FIELD_GENERAL_TO_GENERIC_MAP[search_field]
-    raise ValueError(f"Search field {search_field} not supported by WOS")
+    if search_field in SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP:
+        return SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP[search_field]
+    raise ValueError(
+        f"Search field {search_field} not supported by WOS"
+    )  # pragma: no cover

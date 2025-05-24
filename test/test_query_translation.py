@@ -84,6 +84,19 @@ def test_translation_wos_ebsco() -> None:
     )
     translated_query = query.translate(PLATFORM.EBSCO.value)
     converted_query = translated_query.to_string()
-    expected = "TP (quantum AND dot AND spin)"
+    print(translated_query.to_structured_string())
+    expected = "((AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin))"
+
+    assert converted_query == expected
+
+    query_str = "TI=(quantum AND dot AND spin)"
+    print(query_str)
+    query = search_query.parser.parse(
+        query_str,
+        platform=PLATFORM.WOS.value,
+    )
+    translated_query = query.translate(PLATFORM.EBSCO.value)
+    converted_query = translated_query.to_string()
+    expected = "TI (quantum AND dot AND spin)"
 
     assert converted_query == expected

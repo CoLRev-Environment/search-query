@@ -53,6 +53,11 @@ def test_selects(query_setup: dict) -> None:
     assert query_complete.selects(record_dict=record_4)
     assert not query_complete.selects(record_dict=record_3)
 
+    with pytest.raises(ValueError):
+        query_complete.children[0].children[0].search_field.value = "au"
+        print(query_complete.to_structured_string())
+        query_complete.selects(record_dict=record_1)
+
 
 def test_parent_and_root() -> None:
     """Test parent and root."""

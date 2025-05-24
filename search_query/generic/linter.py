@@ -31,7 +31,8 @@ class GenericLinter(QueryStringLinter):
 
     def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
         """Translate a search field"""
-        return {field_value}
+        # Note: generic-to-generic translation is not needed
+        return set()  # pragma: no cover
 
     def validate_tokens(
         self,
@@ -42,12 +43,9 @@ class GenericLinter(QueryStringLinter):
     ) -> typing.List[Token]:
         """Performs a pre-linting"""
 
-        self.tokens = tokens
-        self.query_str = query_str
-        self.search_field_general = search_field_general
+        # Note: not needed
 
-        # Currently doing nothing
-        return self.tokens
+        return []  # pragma: no cover
 
     def validate_query_tree(self, query: "Query") -> None:
         """

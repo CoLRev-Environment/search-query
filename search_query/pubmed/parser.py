@@ -354,5 +354,6 @@ class PubmedListParser(QueryListParser):
         query = list(self.query_dict.values())[-1]["query"]
 
         # linter.check_status() ?
+        query.set_platform_unchecked(PLATFORM.PUBMED.value)
 
         return query

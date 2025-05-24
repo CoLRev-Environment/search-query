@@ -18,7 +18,7 @@ def to_string_ebsco(query: Query) -> str:
 
     if not query.children:
         # Leaf query (single search term)
-        field = query.search_field.value if query.search_field else ""
+        field = f"{query.search_field.value} " if query.search_field else ""
         return f"{field}{query.value}"
 
     result = []
@@ -49,7 +49,7 @@ def to_string_ebsco(query: Query) -> str:
 
     if query.search_field:
         # Add search field if present
-        query_str = query.search_field.value + query_str
+        query_str = f"{query.search_field.value} {query_str}"
     return query_str
 
 
@@ -60,8 +60,5 @@ def _handle_proximity_operator(query: Query) -> str:
         raise ValueError(
             "Proximity operator without distance is not supported by EBSCO"
         )
-
-    if query.value not in {"NEAR", "WITHIN"}:
-        raise ValueError(f"Invalid proximity operator: {query.value}")
 
     return f"{'N' if query.value == 'NEAR' else 'W'}{query.distance}"

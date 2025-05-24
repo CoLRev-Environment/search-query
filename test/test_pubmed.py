@@ -9,6 +9,7 @@ from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
+from search_query.parser import parse
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.pubmed.translator import PubmedTranslator
@@ -683,7 +684,6 @@ def test_list_parser_case_1() -> None:
         query_list=query_list  # , search_field_general="", mode=""
     )
     list_parser.parse()
-    # raise Exception
 
 
 def test_list_parser_case_2() -> None:
@@ -761,15 +761,31 @@ def test_list_parser_case_3() -> None:
             "eHealth[tiab] AND mHealth[tiab]",
             "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
         ),
+        (
+            "eHealth[tiab] AND mHealth[tiab]",
+            "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
+        ),
+        (
+            "(eHealth[tiab] OR mHealth[tiab]) OR (diabetes[tiab] AND digital[tiab])",
+            "OR[OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]], AND[OR[diabetes[ab], diabetes[ti]], OR[digital[ab], digital[ti]]]]",
+        ),
+        (
+            "eHealth[tiab] OR mHealth[ti]",
+            "OR[OR[eHealth[ab], eHealth[ti]], mHealth[ti]]",
+        ),
+        (
+            "eHealth[tiab] OR mHealth[tiab]",
+            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
+        ),
     ],
 )
 def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
+    print(query_str)
     parser = PubmedParser(query_str, "")
     query = parser.parse()
 
     translator = PubmedTranslator()
-    generic = translator.to_generic_syntax(query, search_field_general="")
-    print(generic.to_generic_string())
+    generic = translator.to_generic_syntax(query)
 
     assert expected_generic == generic.to_generic_string(), print(
         generic.to_generic_string()
@@ -797,3 +813,18 @@ def test_nested_query_with_field() -> None:
                 "details": "Nested query (operator) with search field is not supported",
             }
         ]
+
+
+def test_general_list_parser_call() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. #1 AND #2
+"""
+
+    query = parse(query_list, platform=PLATFORM.PUBMED.value)
+
+    assert (
+        query.to_string()
+        == "((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract]))"
+    )

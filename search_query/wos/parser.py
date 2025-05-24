@@ -18,6 +18,7 @@ from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query import Term
+from search_query.wos.constants import search_field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
 
@@ -184,24 +185,19 @@ class WOSParser(QueryStringParser):
         if len(children) == 1:
             return children[0], index
 
-        # Return the operator and children if there is an operator
-        if current_operator:
-            if self.search_field_general:
-                search_field = SearchField(
-                    value=self.search_field_general, position=(-1, -1)
-                )
-            return (
-                Query(
-                    value=current_operator,
-                    children=list(children),
-                    search_field=search_field,
-                    platform="deactivated",
-                ),
-                index,
-            )
+        if not current_operator:
+            raise NotImplementedError("Error in parsing the query tree")
 
-        # Raise an error if the code gets here
-        raise NotImplementedError("Error in parsing the query tree")
+        # Return the operator and children if there is an operator
+        return (
+            Query(
+                value=current_operator,
+                children=list(children),
+                search_field=search_field,
+                platform="deactivated",
+            ),
+            index,
+        )
 
     def _handle_closing_parenthesis(
         self,
@@ -411,6 +407,13 @@ class WOSParser(QueryStringParser):
         query, _ = self.parse_query_tree()
         self.linter.validate_query_tree(query)
         self.linter.check_status()
+
+        if self.search_field_general:
+            search_field_general = SearchField(
+                value=search_field_general_to_syntax(self.search_field_general),
+                position=(-1, -1),
+            )
+            query.search_field = search_field_general
 
         query.set_platform_unchecked(PLATFORM.WOS.value)
 

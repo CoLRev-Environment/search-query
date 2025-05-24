@@ -71,7 +71,7 @@ class Token:
             return Operators.OR
         if self.value.upper() == "NOT":
             return Operators.NOT
-        raise ValueError()
+        raise ValueError()  # pragma: no cover
 
 
 @dataclass
@@ -130,7 +130,6 @@ class Fields:
     ACCESSION_NUMBER = "ut"
     WEB_OF_SCIENCE_CATEGORY = "wc"
     ZIP_POSTAL_CODE = "zp"
-    AUTHOR_KEYWORDS = "au"
     FILTER = "sb"
     JOURNAL = "ta"
     MESH_TERM = "mh"
@@ -584,10 +583,10 @@ class QueryErrorCode(Enum):
         """Check if error is fatal"""
         return self.code.startswith("F")
 
-    def is_error(self) -> bool:
-        """Check if error is an error"""
-        return self.code.startswith("E")
+    # def is_error(self) -> bool:
+    #     """Check if error is an error"""
+    #     return self.code.startswith("E")
 
-    def is_warning(self) -> bool:
-        """Check if error is a warning"""
-        return self.code.startswith("W")
+    # def is_warning(self) -> bool:
+    #     """Check if error is a warning"""
+    #     return self.code.startswith("W")

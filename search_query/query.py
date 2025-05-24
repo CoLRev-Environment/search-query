@@ -278,7 +278,16 @@ class Query:
 
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""
+        # pylint: disable=import-outside-toplevel
+        from search_query.translator_base import QueryTranslator
 
+        query_with_term_fields = self.copy()
+        QueryTranslator.move_fields_to_terms(query_with_term_fields)
+
+        # pylint: disable=protected-access
+        return query_with_term_fields._selects(record_dict=record_dict)
+
+    def _selects(self, record_dict: dict) -> bool:
         if self.value == Operators.NOT:
             return not self.children[0].selects(record_dict=record_dict)
 
@@ -290,15 +299,13 @@ class Query:
 
         assert not self.operator
 
-        if self.search_field is None:
-            raise ValueError("Search field not set")
-
+        assert self.search_field is not None, "Search field must be set for terms"
         if self.search_field.value == Fields.TITLE:
             field_value = record_dict.get("title", "").lower()
         elif self.search_field.value == Fields.ABSTRACT:
             field_value = record_dict.get("abstract", "").lower()
         else:
-            raise ValueError(f"Invalid search field: {self.search_field}")
+            raise ValueError(f"Unsupported search field: {self.search_field}")
 
         value = self.value.lower().lstrip('"').rstrip('"')
 
@@ -437,7 +444,7 @@ class Query:
 
         raise ValueError(f"Syntax not supported ({self.platform})")  # pragma: no cover
 
-    def translate(self, target_syntax: str, *, search_field_general: str = "") -> Query:
+    def translate(self, target_syntax: str) -> Query:
         """Translate the query to the target syntax using the provided translator."""
         # possible extension: inject custom parser:
         # parser: QueryStringParser | None = None
@@ -456,19 +463,13 @@ class Query:
         else:
             if self.platform == PLATFORM.PUBMED.value:
                 pubmed_translator = PubmedTranslator()
-                generic_query = pubmed_translator.to_generic_syntax(
-                    self, search_field_general=search_field_general
-                )
+                generic_query = pubmed_translator.to_generic_syntax(self)
             elif self.platform == PLATFORM.EBSCO.value:
                 ebsco_translator = EBSCOTranslator()
-                generic_query = ebsco_translator.to_generic_syntax(
-                    self, search_field_general=search_field_general
-                )
+                generic_query = ebsco_translator.to_generic_syntax(self)
             elif self.platform == PLATFORM.WOS.value:
                 wos_translator = WOSTranslator()
-                generic_query = wos_translator.to_generic_syntax(
-                    self, search_field_general=search_field_general
-                )
+                generic_query = wos_translator.to_generic_syntax(self)
             else:  # pragma: no cover
                 raise NotImplementedError(
                     f"Translation from {self.platform} " "to generic is not implemented"

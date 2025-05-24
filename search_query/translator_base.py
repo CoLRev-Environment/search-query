@@ -14,7 +14,7 @@ class QueryTranslator:
 
     @classmethod
     @abstractmethod
-    def to_generic_syntax(cls, query: Query, *, search_field_general: str) -> Query:
+    def to_generic_syntax(cls, query: Query) -> Query:
         """Convert the query to a generic syntax."""
 
     @classmethod
@@ -23,7 +23,7 @@ class QueryTranslator:
         """Convert the query to a specific syntax."""
 
     @classmethod
-    def move_field_from_operator_to_terms(cls, query: Query) -> None:
+    def move_fields_to_terms(cls, query: Query) -> None:
         """Move the search field from the operator to the terms."""
         if query.operator and query.search_field:
             # move search field from operator to terms
@@ -34,7 +34,7 @@ class QueryTranslator:
 
         for child in query.children:
             # Recursively call the function on the child querys
-            cls.move_field_from_operator_to_terms(child)
+            cls.move_fields_to_terms(child)
 
     @classmethod
     def flatten_nested_operators(cls, query: Query) -> None:
@@ -73,7 +73,7 @@ class QueryTranslator:
 
         common_term = ""
         for child in query.children:
-            if not child.search_field:
+            if not child.search_field:  # pragma: no cover
                 return
             if common_term == "":
                 common_term = child.search_field.value
@@ -88,3 +88,30 @@ class QueryTranslator:
         # remove search field from children
         for child in query.children:
             child.search_field = None
+
+    @classmethod
+    def _remove_redundant_terms(cls, query: Query) -> None:
+        """Remove redundant terms from the query (same term, same field)."""
+
+        if query.is_term():
+            return
+
+        # Check for redundant terms in children
+        seen_terms = set()
+        for child in query.children:
+            if child.is_term():
+                if not child.search_field:
+                    continue
+                term_key = (child.search_field.value, child.value)
+                if term_key in seen_terms:
+                    query.children.remove(child)
+                    print(
+                        f"Removed redundant term: {child.value}"
+                        f"[{child.search_field.value}]"
+                    )
+                else:
+                    seen_terms.add(term_key)
+
+        # Recursively check children
+        for child in query.children:
+            cls._remove_redundant_terms(child)
