@@ -332,7 +332,9 @@ class QueryStringLinter:
         for token in self.tokens:
             if token.type == TokenTypes.UNKNOWN:
                 self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, positions=[token.position]
+                    QueryErrorCode.TOKENIZING_FAILED,
+                    positions=[token.position],
+                    details=f"Unknown token: '{token.value}'",
                 )
 
     def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
@@ -348,13 +350,10 @@ class QueryStringLinter:
             for char in token.value:
                 if char in invalid_characters:
                     self.add_linter_message(
-                        QueryErrorCode.INVALID_CHARACTER, positions=[token.position]
+                        QueryErrorCode.INVALID_CHARACTER,
+                        positions=[token.position],
+                        details=f"Invalid character '{char}' in search term '{value}'",
                     )
-                    # TBD: really change?
-                    # value = value[:i] + " " + value[i + 1 :]
-            # Update token
-            if value != token.value:
-                token.value = value
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""
@@ -368,24 +367,21 @@ class QueryStringLinter:
                     positions=[token.position],
                 )
 
-    def check_boolean_operator_readability_query(
-        self, query: Query, *, faulty_operators: str = "|&"
+    def check_boolean_operator_readability(
+        self, *, faulty_operators: str = "|&"
     ) -> None:
         """Check for readability of boolean operators."""
 
-        if query.operator:
-            if query.value in faulty_operators:
-                self.add_linter_message(
-                    QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
-                    positions=[query.position or (-1, -1)],
-                    details="Please use AND, OR, NOT instead of |&",
-                )
-                # Replace?
-
-        for child in query.children:
-            self.check_boolean_operator_readability_query(
-                child, faulty_operators=faulty_operators
-            )
+        for token in self.tokens:
+            if token.type == TokenTypes.LOGIC_OPERATOR:
+                if token.value in faulty_operators:
+                    details = f"Please use AND, OR, NOT instead of {faulty_operators}"
+                    self.add_linter_message(
+                        QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
+                        positions=[token.position],
+                        details=details,
+                    )
+                    # Replace?
 
     def handle_fully_quoted_query_str(self, query_str: str) -> str:
         """Handle fully quoted query string."""
@@ -678,20 +674,6 @@ class QueryStringLinter:
 
         return modified_query
 
-    def check_operator_capitalization_query(self, query: Query) -> None:
-        """Check if operators are capitalized."""
-
-        if query.operator:
-            if query.value != query.value.upper():
-                self.add_linter_message(
-                    QueryErrorCode.OPERATOR_CAPITALIZATION,
-                    positions=[query.position or (-1, -1)],
-                )
-                query.value = query.value.upper()
-
-        for child in query.children:
-            self.check_operator_capitalization_query(child)
-
     def check_invalid_characters_in_search_term_query(
         self, query: Query, invalid_characters: str
     ) -> None:
@@ -702,15 +684,14 @@ class QueryStringLinter:
             # and replace them with whitespace
             for char in invalid_characters:
                 if char in query.value:
+                    details = (
+                        f"Invalid character '{char}' in search term '{query.value}'"
+                    )
                     self.add_linter_message(
                         QueryErrorCode.INVALID_CHARACTER,
                         positions=[query.position or (-1, -1)],
+                        details=details,
                     )
-                    # TBD: really change?
-                    # value = value[:i] + " " + value[i + 1 :]
-            # Update token
-            if query.value != query.value:
-                query.value = query.value
 
         for child in query.children:
             self.check_invalid_characters_in_search_term_query(
@@ -749,7 +730,7 @@ class QueryStringLinter:
             for child in query.children:
                 try:
                     self._check_date_filters_in_subquery(child, level + 1)
-                except ValueError:
+                except ValueError:  # pragma: no cover
                     pass
             return
 
@@ -785,7 +766,7 @@ class QueryStringLinter:
             for child in query.children:
                 try:
                     self._check_journal_filters_in_subquery(child, level + 1)
-                except ValueError:
+                except ValueError:  # pragma: no cover
                     pass
             return
 
@@ -871,7 +852,7 @@ class QueryStringLinter:
                     if field_a != field_b:
                         continue
 
-                    if field_a == "[mh]":
+                    if field_a == "[mh]":  # pragma: no cover
                         # excact matches required for mh
                         continue
 
@@ -897,13 +878,6 @@ class QueryStringLinter:
                                 details=f"Term {term_b.value} is contained in term "
                                 f"{term_a.value} and both are connected with OR. "
                                 f"Therefore, term {term_b.value} is redundant.",
-                            )
-                            redundant_terms.append(term_b)
-
-                        elif operator == Operators.NOT:
-                            self.add_linter_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
-                                positions=[term_a.position, term_b.position],
                             )
                             redundant_terms.append(term_b)
 

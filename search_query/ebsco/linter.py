@@ -213,7 +213,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_operator_capitalization_query(query)
         self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
         self.check_unsupported_search_fields_in_query(query)
 

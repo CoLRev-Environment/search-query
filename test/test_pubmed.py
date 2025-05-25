@@ -4,12 +4,14 @@ import pytest
 
 from search_query.constants import Colors
 from search_query.constants import PLATFORM
+from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser import parse
+from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.pubmed.translator import PubmedTranslator
@@ -64,6 +66,109 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
     parser = PubmedParser(query_str, "")
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
+
+
+@pytest.mark.parametrize(
+    "tokens, expected_codes, description",
+    [
+        (
+            [
+                Token("AND", TokenTypes.LOGIC_OPERATOR, (0, 3)),
+                Token("cancer", TokenTypes.SEARCH_TERM, (4, 10)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot start with LOGIC_OPERATOR",
+        ),
+        (
+            [
+                Token("cancer", TokenTypes.SEARCH_TERM, (0, 6)),
+                Token("AND", TokenTypes.LOGIC_OPERATOR, (7, 10)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot end with LOGIC_OPERATOR",
+        ),
+        (
+            [
+                Token("cancer", TokenTypes.SEARCH_TERM, (0, 6)),
+                Token("treatment", TokenTypes.SEARCH_TERM, (7, 16)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Missing operator",
+        ),
+        (
+            [
+                Token("(", TokenTypes.PARENTHESIS_OPEN, (0, 1)),
+                Token(")", TokenTypes.PARENTHESIS_CLOSED, (1, 2)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Empty parenthesis",
+        ),
+        (
+            [
+                Token("(", TokenTypes.PARENTHESIS_OPEN, (0, 1)),
+                Token("[tiab]", TokenTypes.FIELD, (1, 3)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Invalid search field position",
+        ),
+        (
+            [
+                Token(")", TokenTypes.PARENTHESIS_CLOSED, (0, 1)),
+                Token("OR", TokenTypes.LOGIC_OPERATOR, (2, 4)),
+                Token("termb", TokenTypes.SEARCH_TERM, (2, 4)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot start with PARENTHESIS_CLOSED",
+        ),
+        (
+            [
+                Token("[ti]", TokenTypes.FIELD, (0, 2)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot start with FIELD",
+        ),
+        (
+            [
+                Token("(", TokenTypes.PARENTHESIS_OPEN, (0, 1)),
+                Token("AND", TokenTypes.LOGIC_OPERATOR, (1, 4)),
+                Token("diabetes", TokenTypes.SEARCH_TERM, (5, 13)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Invalid operator position",
+        ),
+        (
+            [
+                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 10)),
+            ],
+            [],
+            "",
+        ),
+    ],
+)
+def test_pubmed_invalid_token_sequences(
+    tokens: list, expected_codes: list, description: str
+) -> None:
+    print(tokens)
+    linter = PubmedQueryStringLinter(query_str="")
+    linter.tokens = tokens
+    linter.check_invalid_token_sequences()
+
+    actual_codes = [msg["label"] for msg in linter.messages]
+    print(linter.messages)
+    print(actual_codes)
+    if expected_codes:
+        for message in linter.messages:
+            if message["label"] in expected_codes:
+                assert message.get("details", "") == description, (
+                    f"Expected description '{description}' for code '{message['label']}', "
+                    f"but got '{message.get('details', '')}'"
+                )
+        for code in expected_codes:
+            assert code in actual_codes, f"Expected code '{code}' in {actual_codes}"
+    else:
+        assert (
+            linter.messages == []
+        ), f"Expected no messages, but got: {linter.messages}"
 
 
 @pytest.mark.parametrize(
@@ -321,14 +426,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
-                    "message": "Search field is not supported for this database",
-                    "is_fatal": True,
-                    "position": [(16, 27)],
-                    "details": "Search field [tiab:~0.5] at position (16, 27) is not supported.",
-                },
-                {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator :~",
@@ -342,6 +439,28 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
             "",
             [],
+        ),
+        (
+            '"digital health"[sb:~5] OR "eHealth"[sb:~5]',
+            "",
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator :~",
+                    "is_fatal": False,
+                    "position": [(16, 23)],
+                    "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
+                },
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator :~",
+                    "is_fatal": False,
+                    "position": [(36, 43)],
+                    "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
+                },
+            ],
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
@@ -675,9 +794,9 @@ def test_parser(
 
 def test_list_parser_case_1() -> None:
     query_list = """
-1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR "Distributed leader*"[Title/Abstract])
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-3. #1 AND #2
+3. #1 OR #2
 """
 
     list_parser = PubmedListParser(

@@ -8,7 +8,6 @@ from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import QuerySyntaxError
@@ -60,15 +59,8 @@ class PubmedParser(QueryStringParser):
         """Tokenize the query_str"""
 
         # Parse tokens and positions based on regex patterns.
-        prev_end = 0
         for match in self.pattern.finditer(self.query_str):
             value = match.group(0)
-            start, end = match.span()
-
-            if start > prev_end and self.query_str[prev_end:start].strip():
-                self.linter.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED, positions=[(prev_end, start)]
-                )
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
                 token_type = TokenTypes.LOGIC_OPERATOR
@@ -81,15 +73,8 @@ class PubmedParser(QueryStringParser):
             else:
                 token_type = TokenTypes.SEARCH_TERM
 
-            prev_end = end
             self.tokens.append(
-                Token(value=value, type=token_type, position=(start, end))
-            )
-
-        if prev_end < len(self.query_str) and self.query_str[:prev_end].strip():
-            self.linter.add_linter_message(
-                QueryErrorCode.TOKENIZING_FAILED,
-                positions=[(prev_end, len(self.query_str))],
+                Token(value=value, type=token_type, position=match.span())
             )
 
         self.combine_subsequent_terms()
@@ -151,8 +136,10 @@ class PubmedParser(QueryStringParser):
                     first_operator_found = True
                 if operator == first_operator:
                     operator_indices.append(token_index)
-                else:
-                    break
+                else:  # pragma: no cover
+                    # Note: this should not happen because the linter calls
+                    # add_artificial_parentheses_for_operator_precedence()
+                    raise ValueError
 
         return operator_indices
 
@@ -273,7 +260,7 @@ class PubmedListParser(QueryListParser):
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
             elif self.LIST_ITEM_REF.match(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            else:
+            else:  # pragma: no cover
                 token_type = OperatorNodeTokenTypes.UNKNOWN
             operator_node_tokens.append(
                 ListToken(
@@ -323,7 +310,7 @@ class PubmedListParser(QueryListParser):
                 )
                 try:
                     query_element["query"] = parser.parse()
-                except QuerySyntaxError:
+                except QuerySyntaxError:  # pragma: no cover
                     pass
 
                 self.linter.messages[token_nr] = parser.linter.messages

@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 class PubmedQueryStringLinter(QueryStringLinter):
     """Linter for PubMed Query Strings"""
 
-    PROXIMITY_REGEX = r"^\[(.+):~(.*)\]$"
+    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
     PLATFORM: PLATFORM = PLATFORM.PUBMED
 
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
@@ -78,6 +78,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         self.check_unsupported_pubmed_search_fields()
         self.check_general_search_field_mismatch()
+        self.check_boolean_operator_readability()
 
         self.check_invalid_proximity_operator()
         return self.tokens
@@ -104,8 +105,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
         invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
 
         if query.is_term():
-            value = query.value
-
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
             for i, char in enumerate(query.value):
@@ -124,11 +123,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         positions=positions,
                         details=details,
                     )
-                    # TBD: really change?
-                    # value = value[:i] + " " + value[i + 1 :]
-            # Update query
-            if value != query.value:
-                query.value = value
 
         for child in query.children:
             self.check_character_replacement_in_search_term(child)
@@ -221,7 +215,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if "*" not in query.value:
                 return
 
-            if query.value == '"':
+            if query.value[0] == '"':
                 k = 5
             else:
                 k = 4
@@ -246,16 +240,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
             field_token = self.tokens[index]
             search_phrase_token = self.tokens[index - 1]
 
-            match = re.match(self.PROXIMITY_REGEX, field_token.value)
-            if not match:
-                details = f"Not matching regex {self.PROXIMITY_REGEX}"
-                self.add_linter_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE,
-                    positions=[field_token.position],
-                    details=details,
-                )
-                continue
-
+            match = self.PROXIMITY_REGEX.match(field_token.value)
+            assert match
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
@@ -290,8 +276,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 "[ad]",
             }:
                 details = (
-                    f"Proximity operator '{field_value}' is not supported "
-                    + "for this search field (supported: [tiab], [ti], [ad])"
+                    f"Proximity operator is not supported: '{field_token.value}'"
+                    + " (supported search fields: [tiab], [ti], [ad])"
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -306,7 +292,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # Note: search fields are not yet translated.
 
         self.check_invalid_wildcard(query)
-        self.check_boolean_operator_readability_query(query)
 
         self.check_unbalanced_quotes_in_terms(query)
         self.check_character_replacement_in_search_term(query)
@@ -336,6 +321,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
             try:
                 map_to_standard(token.value)
             except ValueError:
+                if ":~" in token.value:
+                    # Will be handled in check_invalid_proximity_operator
+                    return
                 self.add_linter_message(
                     QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                     positions=[token.position],
@@ -350,7 +338,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         try:
             general_sf = map_to_standard(general_sf_parentheses)
         except ValueError:
-            # If the search field is not supported, we can skip the check
+            # If the general search field is not supported, we skip the check
             general_sf = None
 
         standardized_sf_list = []
@@ -358,16 +346,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if token.type != TokenTypes.FIELD:
                 continue
             try:
-                map_to_standard(token.value)
-            except ValueError:
-                # If the search field is not supported, we can skip the check
-                continue
-
-            try:
                 standardized_sf = map_to_standard(token.value)
             except ValueError:
-                # If the search field is not supported, we can skip the check
-                standardized_sf = token.value.lower()
+                # If the search field is not supported, we skip the check
+                continue
 
             standardized_sf_list.append(standardized_sf)
             if general_sf and standardized_sf:
