@@ -58,8 +58,6 @@ class PubmedParser(QueryStringParser):
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
-        if self.query_str is None:
-            raise ValueError("No string provided to parse.")
 
         # Parse tokens and positions based on regex patterns.
         prev_end = 0
@@ -108,7 +106,7 @@ class PubmedParser(QueryStringParser):
         elif self._is_term_query(tokens):
             query = self._parse_search_term(tokens)
 
-        else:
+        else:  # pragma: no cover
             raise ValueError()
 
         return query
@@ -217,18 +215,6 @@ class PubmedParser(QueryStringParser):
             platform="deactivated",
         )
 
-    def _get_query_leaves(self, query: Query) -> list:
-        """Retrieve all leaf nodes from a query,
-        representing search terms and fields,
-        and return them as a list"""
-        if not query.children:
-            return [query]
-
-        leaves = []
-        for child in query.children:
-            leaves += self._get_query_leaves(child)
-        return leaves
-
     def parse(self) -> Query:
         """Parse a query string"""
 
@@ -275,9 +261,6 @@ class PubmedListParser(QueryListParser):
             mode=mode,
         )
         self.linter = PubmedQueryListLinter(self, PubmedParser)
-
-    def get_token_str(self, token_nr: str) -> str:
-        return f"#{token_nr}"
 
     def get_operator_node_tokens(self, token_nr: int) -> list:
         """Get operator node tokens"""

@@ -77,6 +77,15 @@ Implement ``parse_query_tree()`` to build the query object, creating nested quer
 
     Parsers can be developed as top-down parsers (see PubMed) or bottom-up parsers (see Web of Science).
 
+    For NOT operators, it is recommended to parse them as an AND query with negated children, e.g., ``A NOR B`` should be parsed as:
+
+    .. code-block:: python
+
+        AND[
+            A,
+            NOT[B]
+        ]
+
 Check whether ``SearchFields`` can be created for nested queries (e.g., ``TI=(eHealth OR mHealth)``or only for individual terms, e.g., ``eHealth[ti] OR mHealth[ti]``.)
 
 **Parser Skeleton**

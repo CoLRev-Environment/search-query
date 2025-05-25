@@ -185,14 +185,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(0, 1)],
                     "details": "Unbalanced opening parenthesis",
                 },
-                {
-                    "code": "E0001",
-                    "label": "search-field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(-1, -1)],
-                    "details": "",
-                },
             ],
         ),
         (
@@ -205,6 +197,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "is_fatal": True,
                     "position": [(9, 15)],
                     "details": "Two operators in a row are not allowed.",
+                },
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(13, 15)],
+                    "details": "Cannot end with LOGIC_OPERATOR",
                 },
                 {
                     "code": "W0007",
@@ -253,6 +253,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         (
             ") (query)",
             [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(0, 1)],
+                    "details": "Cannot start with PARENTHESIS_CLOSED",
+                },
                 {
                     "code": "F1004",
                     "label": "invalid-token-sequence",
@@ -502,6 +510,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+            "TI=term1 AND PY=20xy",
+            [
+                {
+                    "code": "F2014",
+                    "label": "year-format-invalid",
+                    "message": "Invalid year format.",
+                    "is_fatal": True,
+                    "position": [(16, 20)],
+                    "details": "",
+                }
+            ],
+        ),
+        (
             "TI=term1 AND IY=digital",
             [
                 {
@@ -555,6 +576,10 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 },
             ],
+        ),
+        (
+            "TI=term1*ending",
+            [],
         ),
         (
             # Note: should raise an exception for invalid truncation according to:
@@ -676,8 +701,8 @@ def test_linter(
             "OR[TI=][term1, AND[term2, term3]]",
         ),
         (
-            "TI=term1 AND term2 OR term3",
-            "OR[AND[term1[TI=], term2], term3]",
+            "TI=term1 AND TI=term2 OR TI=term3",
+            "OR[AND[term1[TI=], term2[TI=]], term3[TI=]]",
         ),
         # TODO : proximity operators not yet handled by wos
         # (
@@ -693,6 +718,7 @@ def test_linter(
     ],
 )
 def test_implicit_precedence(query_str: str, expected_query: str) -> None:
+    print(query_str)
     parser = WOSParser(query_str, mode=LinterMode.NONSTRICT)
     query = parser.parse()
     parser.print_tokens()
@@ -700,6 +726,7 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     print(f"{Colors.GREEN}{query.to_generic_string()}{Colors.END}")
     assert expected_query == query.to_generic_string()
 
+    print(parser.linter.messages)
     assert len(parser.linter.messages) == 1
     msg = parser.linter.messages[0]
 
@@ -750,6 +777,7 @@ def test_query_parsing_basic_vs_advanced() -> None:
     )
     parser.parse()
     assert len(parser.linter.messages) == 1
+    print(parser.linter.messages)
 
     # ERROR: Advanced search with search_field_general
     parser = WOSParser(
@@ -774,9 +802,26 @@ def test_query_parsing_basic_vs_advanced() -> None:
             "TS=(eHealth) AND TS=(Review)",
             "AND[eHealth[TS=], Review[TS=]]",
         ),
+        (
+            'TS=("cancer treatment") NOT TS=("chemotherapy")',
+            'AND["cancer treatment"[TS=], NOT["chemotherapy"[TS=]]]',
+        ),
+        (
+            'TS=("cancer treatment" NOT "chemotherapy")',
+            'AND[TS=]["cancer treatment", NOT["chemotherapy"]]',
+        ),
+        (
+            'TS=("cancer treatment") NOT TS=("chemotherapy" OR "radiation")',
+            'AND["cancer treatment"[TS=], NOT[OR[TS=]["chemotherapy", "radiation"]]]',
+        ),
+        (
+            'TS=("deep learning" NEAR/3 "image analysis") AND TS=("MRI" NEAR "brain")',
+            'AND[NEAR/3[TS=]["deep learning", "image analysis"], NEAR/15[TS=]["MRI", "brain"]]',
+        ),
     ],
 )
 def test_parser_wos(query_str: str, expected_translation: str) -> None:
+    print(query_str)
     wos_parser = WOSParser(query_str)
     query_tree = wos_parser.parse()
     assert expected_translation == query_tree.to_generic_string(), print(

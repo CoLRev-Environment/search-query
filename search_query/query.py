@@ -193,7 +193,6 @@ class Query:
             Operators.NOT,
             Operators.NEAR,
             Operators.WITHIN,
-            "NOT_INITIALIZED",
         ]:
             raise ValueError(f"Invalid operator value: {v}")
         self._value = v
@@ -218,14 +217,14 @@ class Query:
     @distance.setter
     def distance(self, dist: typing.Optional[int]) -> None:
         """Set distance property."""
-        if not dist:
-            return
+
         if self.operator and self.value in {Operators.NEAR, Operators.WITHIN}:
             if dist is None:
                 raise ValueError(f"{self.value} operator requires a distance")
         else:
             if dist is not None:
                 raise ValueError(f"{self.value} operator cannot have a distance")
+
         self._distance = dist
 
     @property

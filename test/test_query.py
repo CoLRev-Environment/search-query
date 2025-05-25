@@ -3,12 +3,12 @@
 import pytest
 
 from search_query.constants import Colors
+from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
 from search_query.query_or import OrQuery
 from search_query.utils import format_query_string_positions
-
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501
@@ -103,8 +103,18 @@ def test_to_structured_string(query_setup: dict) -> None:
 def test_near_query() -> None:
     n_query = NEARQuery("NEAR", distance=12, children=[], search_field="ti")
 
-    assert n_query.to_generic_string() == "NEAR[ti](12)"
+    assert n_query.to_generic_string() == "NEAR/12[ti]"
     assert n_query.to_structured_string() == "NEAR/12 [ti]"
+
+    with pytest.raises(ValueError):
+        n_query = NEARQuery("NEAR", children=[], search_field="ti")
+
+    or_query = OrQuery(
+        ["health", "medicine"],
+        search_field="ti",
+    )
+    with pytest.raises(ValueError):
+        or_query.distance = 12
 
 
 def test_format_query_string_positions_merges_overlaps() -> None:
@@ -115,3 +125,51 @@ def test_format_query_string_positions_merges_overlaps() -> None:
 
     result = format_query_string_positions(query_str, positions, color=Colors.ORANGE)
     assert result.startswith(expected)
+
+
+def test_search_field() -> None:
+    """Test search field."""
+
+    ethics = OrQuery(
+        ["ethics", "morality"],
+        search_field="ab",
+    )
+    assert ethics.search_field.value == "ab"  # type: ignore
+
+
+def test_platform_setter() -> None:
+    """Test platform setter."""
+
+    ethics = OrQuery(
+        ["ethics", "morality"],
+        search_field="ab",
+    )
+    assert ethics.platform == "generic"
+    with pytest.raises(ValueError):
+        ethics.platform = "invalid_platform"
+
+    with pytest.raises(ValueError):
+        ethics.platform = "pubmeds"
+
+
+def test_value_setter() -> None:
+    """Test value setter."""
+
+    ethics = Query(
+        value="OR",
+        operator=True,
+        children=["ethics", "morality"],
+        search_field="ab",  # type: ignore
+    )
+    assert ethics.value == "OR"
+
+    with pytest.raises(TypeError):
+        ethics.value = {"key": "value"}  # type: ignore
+
+    with pytest.raises(ValueError):
+        ethics.value = "non_operators"
+
+    with pytest.raises(TypeError):
+        ethics.operator = "non_operators"  # type: ignore
+
+    ethics.value = "NEAR"

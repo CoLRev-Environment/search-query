@@ -583,10 +583,12 @@ class QueryErrorCode(Enum):
         """Check if error is fatal"""
         return self.code.startswith("F")
 
-    # def is_error(self) -> bool:
-    #     """Check if error is an error"""
-    #     return self.code.startswith("E")
+    # Note: needed for the documentation:
+    def is_error(self) -> bool:  # pragma: no cover
+        """Check if error is an error"""
+        return self.code.startswith("E")
 
-    # def is_warning(self) -> bool:
-    #     """Check if error is a warning"""
-    #     return self.code.startswith("W")
+    # Note: needed for the documentation:
+    def is_warning(self) -> bool:  # pragma: no cover
+        """Check if error is a warning"""
+        return self.code.startswith("W")

@@ -7,9 +7,14 @@ import pytest
 
 from search_query.constants import Colors
 from search_query.constants import LinterMode
+from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.ebsco.parser import EBSCOParser
+from search_query.ebsco.serializer import to_string_ebsco
+from search_query.query import Query
+from search_query.query import SearchField
 
 # flake8: noqa: E501
 
@@ -63,6 +68,92 @@ def test_tokenization(
 
 
 @pytest.mark.parametrize(
+    "tokens, expected_codes, description",
+    [
+        (
+            [
+                Token("AND", TokenTypes.LOGIC_OPERATOR, (0, 3)),
+                Token("diabetes", TokenTypes.SEARCH_TERM, (4, 12)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot start with LOGIC_OPERATOR",
+        ),
+        (
+            [
+                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
+                Token("AND", TokenTypes.LOGIC_OPERATOR, (9, 12)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Cannot end with LOGIC_OPERATOR",
+        ),
+        (
+            [
+                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
+                Token("hypertension", TokenTypes.SEARCH_TERM, (9, 20)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Missing operator between terms",
+        ),
+        (
+            [
+                Token("(", TokenTypes.PARENTHESIS_OPEN, (0, 1)),
+                Token(")", TokenTypes.PARENTHESIS_CLOSED, (1, 2)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Empty parenthesis",
+        ),
+        (
+            [
+                Token("ti", TokenTypes.SEARCH_TERM, (0, 2)),
+                Token("(", TokenTypes.PARENTHESIS_OPEN, (3, 4)),
+            ],
+            [QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.label],
+            "Search field is not supported (must be upper case)",
+        ),
+        (
+            [
+                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
+                Token("TI", TokenTypes.FIELD, (9, 11)),
+                Token("insulin", TokenTypes.SEARCH_TERM, (12, 19)),
+            ],
+            [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
+            "Invalid search field position",
+        ),
+        (
+            [
+                Token("TI", TokenTypes.FIELD, (0, 2)),
+                Token("diabetes", TokenTypes.SEARCH_TERM, (3, 11)),
+            ],
+            [],
+            "Valid field and term",
+        ),
+    ],
+)
+def test_invalid_token_sequences(
+    tokens: list, expected_codes: list, description: str
+) -> None:
+    print(tokens)
+    linter = EBSCOQueryStringLinter(query_str="")
+    linter.tokens = tokens
+    linter.check_invalid_token_sequences()
+
+    actual_codes = [msg["label"] for msg in linter.messages]
+    if expected_codes:
+        for message in linter.messages:
+            if message["label"] in expected_codes:
+                assert message.get("details", "") == description, (
+                    f"Expected description '{description}' for code '{message['label']}', "
+                    f"but got '{message.get('details', '')}'"
+                )
+        for code in expected_codes:
+            assert code in actual_codes, f"Expected code '{code}' in {actual_codes}"
+    else:
+        assert (
+            linter.messages == []
+        ), f"Expected no messages, but got: {linter.messages}"
+
+
+@pytest.mark.parametrize(
     "query_string, messages",
     [
         (
@@ -104,11 +195,6 @@ def test_tokenization(
                     "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
                 }
             ],
-        ),
-        (
-            '"AI governance" OR AB Future',
-            # Resolved ambiguity
-            [],
         ),
         (
             'AI "governance" OR AB Future',
@@ -254,11 +340,11 @@ def test_linter_general_search_field(
         ),
         (
             'TX ("digital transformation" N5 "organizational change")',
-            'NEAR[TX](5)["digital transformation"[TX], "organizational change"[TX]]',
+            'NEAR/5[TX]["digital transformation"[TX], "organizational change"[TX]]',
         ),
         (
             'TX ("digital transformation" W5 "organizational change")',
-            'WITHIN[TX](5)["digital transformation"[TX], "organizational change"[TX]]',
+            'WITHIN/5[TX]["digital transformation"[TX], "organizational change"[TX]]',
         ),
     ],
 )
@@ -281,3 +367,96 @@ def test_parser(query_str: str, expected_translation: str) -> None:
     assert expected_translation == query_tree.to_generic_string(), print(
         query_tree.to_generic_string()
     )
+
+
+def test_leaf_node_with_field() -> None:
+    query = Query(
+        value="diabetes",
+        search_field=SearchField("TI"),
+        operator=False,
+        platform="ebscohost",
+    )
+    assert to_string_ebsco(query) == "TI diabetes"
+
+
+def test_leaf_node_without_field() -> None:
+    query = Query(value="diabetes", operator=False)
+    assert to_string_ebsco(query) == "diabetes"
+
+
+def test_boolean_query_with_two_terms() -> None:
+    query = Query(
+        value="AND",
+        operator=True,
+        children=[
+            Query(
+                value="diabetes",
+                search_field=SearchField("TI"),
+                operator=False,
+                platform="ebscohost",
+            ),
+            Query(
+                value="insulin",
+                search_field=SearchField("TI"),
+                operator=False,
+                platform="ebscohost",
+            ),
+        ],
+        platform="ebscohost",
+    )
+    assert to_string_ebsco(query) == "(TI diabetes AND TI insulin)"
+
+
+def test_nested_boolean_with_field() -> None:
+    inner = Query(
+        value="AND",
+        operator=True,
+        children=[
+            Query(value="diabetes", operator=False),
+            Query(value="insulin", operator=False),
+        ],
+        platform="ebscohost",
+    )
+    outer = Query(
+        value="OR",
+        operator=True,
+        search_field=SearchField("AB"),
+        children=[inner, Query(value="therapy", operator=False)],
+        platform="ebscohost",
+    )
+    # Test search field propagation and parentheses
+    assert to_string_ebsco(outer) == "AB ((diabetes AND insulin) OR therapy)"
+
+
+def test_proximity_near_operator() -> None:
+    query = Query(
+        value="NEAR",
+        operator=True,
+        distance=5,
+        children=[
+            Query(value="diabetes", operator=False, platform="ebscohost"),
+            Query(value="therapy", operator=False, platform="ebscohost"),
+        ],
+        platform="ebscohost",
+    )
+    assert to_string_ebsco(query) == "(diabetes N5 therapy)"
+
+
+def test_proximity_within_operator_with_field() -> None:
+    query = Query(
+        value="WITHIN",
+        operator=True,
+        distance=3,
+        search_field=SearchField("AB"),
+        children=[
+            Query(value="insulin", operator=False, platform="ebscohost"),
+            Query(value="resistance", operator=False, platform="ebscohost"),
+        ],
+        platform="ebscohost",
+    )
+    assert to_string_ebsco(query) == "AB (insulin W3 resistance)"
+
+
+def test_proximity_missing_distance_raises() -> None:
+    with pytest.raises(ValueError, match="NEAR operator requires a distance"):
+        Query(value="NEAR", operator=True, distance=None, platform="ebscohost")

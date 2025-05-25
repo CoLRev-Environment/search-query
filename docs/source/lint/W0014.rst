@@ -1,0 +1,14 @@
+.. _W0014:
+
+W0014 — journal-filter-in-subquery
+==================================
+
+**Error Code**: W0014
+
+**Message**: ``Journal (or publication name) filter in subquery``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Journal (or publication name) filter in subquery
+
+**Back to**: :ref:`lint`

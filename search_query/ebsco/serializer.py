@@ -29,7 +29,9 @@ def to_string_ebsco(query: Query) -> str:
 
         if query.value in {"NEAR", "WITHIN"}:
             # Convert proximity operator to EBSCO format
-            proximity_operator = _handle_proximity_operator(query)
+            proximity_operator = (
+                f"{'N' if query.value == 'NEAR' else 'W'}{query.distance}"
+            )
 
             # Ensure correct order of proximity terms
             if i == 0:
@@ -51,14 +53,3 @@ def to_string_ebsco(query: Query) -> str:
         # Add search field if present
         query_str = f"{query.search_field.value} {query_str}"
     return query_str
-
-
-def _handle_proximity_operator(query: Query) -> str:
-    """Transform proximity operator to EBSCO Syntax."""
-
-    if query.distance is None:
-        raise ValueError(
-            "Proximity operator without distance is not supported by EBSCO"
-        )
-
-    return f"{'N' if query.value == 'NEAR' else 'W'}{query.distance}"

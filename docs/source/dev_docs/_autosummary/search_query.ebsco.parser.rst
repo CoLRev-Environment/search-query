@@ -17,5 +17,4 @@ search\_query.ebsco.parser
 
    .. autosummary::
 
-      EBSCOListParser
       EBSCOParser

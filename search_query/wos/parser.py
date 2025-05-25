@@ -9,7 +9,6 @@ from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
-from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -75,9 +74,6 @@ class WOSParser(QueryStringParser):
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
-        if self.query_str is None:
-            raise ValueError("No string provided to parse.")
-
         # Parse tokens and positions based on regex pattern
         for match in self.pattern.finditer(self.query_str):
             value = match.group()
@@ -97,13 +93,12 @@ class WOSParser(QueryStringParser):
                 token_type = TokenTypes.FIELD
             elif self.SEARCH_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.SEARCH_TERM
-            else:
+            else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
 
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
-        self._add_unbalanced_quotes_to_adjacent_term()
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -111,15 +106,15 @@ class WOSParser(QueryStringParser):
         self,
         index: int = 0,
         search_field: typing.Optional[SearchField] = None,
-        current_negation: bool = False,
     ) -> typing.Tuple[Query, int]:
         """Parse tokens starting at the given index,
         handling parentheses, operators, search fields and terms recursively."""
+
         children: typing.List[Query] = []
         current_operator = ""
+        current_negation = False
+        distance: typing.Optional[int] = None
 
-        if current_negation:
-            current_operator = "NOT"
         search_field = None
         while index < len(self.tokens):
             token = self.tokens[index]
@@ -130,14 +125,24 @@ class WOSParser(QueryStringParser):
                 sub_query, index = self.parse_query_tree(
                     index=index + 1,
                     search_field=search_field,
-                    current_negation=current_negation,
                 )
                 sub_query.search_field = search_field
                 search_field = None
 
-                # Add the parsed expression to the list of children
-                children.append(sub_query)
-                current_negation = False
+                if current_negation:
+                    # If the current operator is NOT, wrap the sub_query in a NOT
+                    not_part = Query(
+                        value="NOT",
+                        operator=True,
+                        children=[sub_query],
+                        search_field=search_field,
+                        platform="deactivated",
+                    )
+                    children.append(not_part)
+                    current_negation = False
+                    current_operator = "AND"
+                else:
+                    children.append(sub_query)
 
             # Handle closing parentheses
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
@@ -146,6 +151,7 @@ class WOSParser(QueryStringParser):
                         children=children,
                         current_operator=current_operator,
                         search_field=search_field,
+                        distance=distance,
                     ),
                     index,
                 )
@@ -159,24 +165,45 @@ class WOSParser(QueryStringParser):
                     current_negation = True
                     current_operator = "AND"
 
+            elif token.type == TokenTypes.PROXIMITY_OPERATOR:
+                current_operator = token.value.upper()
+                if "NEAR" in current_operator:
+                    assert "/" in current_operator  # fixed in linter
+                    current_operator, raw_distance = current_operator.split("/")
+                    distance = int(raw_distance)
+
             # Handle search fields
             elif token.type == TokenTypes.FIELD:
                 search_field = SearchField(value=token.value, position=token.position)
 
             # Handle terms
-            else:
-                # Add term nodes
-                children = self._add_term_node(
-                    index=index,
-                    value=token.value,
-                    search_field=search_field,
-                    position=token.position,
-                    children=children,
-                    current_operator=current_operator,
-                    current_negation=current_negation,
-                )
-                search_field = None
-                current_operator = ""
+            elif token.type == TokenTypes.SEARCH_TERM:
+                if current_negation:
+                    not_part = Query(
+                        value="NOT",
+                        operator=True,
+                        children=[
+                            Term(
+                                value=token.value,
+                                search_field=search_field,
+                                position=token.position,
+                            )
+                        ],
+                        search_field=search_field,
+                        platform="deactivated",
+                    )
+                    children = children + [not_part]
+                    current_negation = False
+                    current_operator = "AND"
+                else:
+                    term_node = Term(
+                        value=token.value,
+                        search_field=search_field,
+                        position=token.position,
+                        platform="deactivated",
+                    )
+                    children.append(term_node)
+                    search_field = None
 
             index += 1
 
@@ -185,7 +212,7 @@ class WOSParser(QueryStringParser):
         if len(children) == 1:
             return children[0], index
 
-        if not current_operator:
+        if not current_operator:  # pragma: no cover
             raise NotImplementedError("Error in parsing the query tree")
 
         # Return the operator and children if there is an operator
@@ -204,6 +231,7 @@ class WOSParser(QueryStringParser):
         children: list,
         current_operator: str,
         search_field: typing.Optional[SearchField] = None,
+        distance: typing.Optional[int] = None,
     ) -> Query:
         """Handle closing parentheses."""
         # Return the children if there is only one child
@@ -217,11 +245,12 @@ class WOSParser(QueryStringParser):
                 children=children,
                 search_field=search_field,
                 platform="deactivated",
+                distance=distance,
             )
 
         # Multiple children without operator are not allowed
         # This should already be caught in the token validation
-        raise ValueError(
+        raise ValueError(  # pragma: no cover
             "[ERROR] Multiple children without operator are not allowed."
             + "\nFound: "
             + str(children)
@@ -278,114 +307,6 @@ class WOSParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
-    def _add_unbalanced_quotes_to_adjacent_term(self) -> None:
-        """Add unbalanced quotes to adjacent terms."""
-
-        s = self.query_str
-        updated_tokens = []
-
-        for i, token in enumerate(self.tokens):
-            start, end = token.position
-            new_start, new_end = start, end
-            new_text = token.value
-
-            # Check for quote before token
-            if start > 0 and s[start - 1] == '"':
-                if i == 0 or not self.tokens[i - 1].value.endswith('"'):
-                    new_start -= 1
-                    new_text = '"' + new_text
-
-            # Check for quote after token
-            if end < len(s) and s[end] == '"':
-                if i == len(self.tokens) - 1 or not self.tokens[i + 1].value.startswith(
-                    '"'
-                ):
-                    new_end += 1
-                    new_text = new_text + '"'
-
-            # Update the token’s value and position
-            token.value = new_text
-            token.position = (new_start, new_end)
-            updated_tokens.append(token)
-
-        self.tokens = updated_tokens
-
-    # pylint: disable=too-many-arguments
-    def _add_term_node(
-        self,
-        *,
-        index: int,
-        value: str,
-        search_field: typing.Optional[SearchField] = None,
-        position: typing.Optional[tuple] = None,
-        current_operator: str = "",
-        children: typing.Optional[typing.List[Query]] = None,
-        current_negation: bool = False,
-    ) -> typing.List[Query]:
-        """Adds the term node to the Query"""
-        if not children:
-            children = []
-        # Create a new term node
-        term_node = Term(
-            value=value,
-            search_field=search_field,
-            position=position,
-            platform="deactivated",
-        )
-
-        # Append the term node to the list of children
-        if current_operator:
-            if (
-                not children
-                or ((children[-1].value != current_operator) and not current_negation)
-                or "NEAR" in current_operator
-            ):
-                if "NEAR" in current_operator and "NEAR" in children[0].value:
-                    current_operator, distance = current_operator.split("/")
-                    # Get previous term to append
-                    while index > 0:
-                        if self.tokens[index - 1].type == TokenTypes.SEARCH_TERM:
-                            near_operator = Query(
-                                value=current_operator,
-                                children=[
-                                    Term(
-                                        value=self.tokens[index - 1].value,
-                                        search_field=search_field,
-                                        platform="deactivated",
-                                    ),
-                                    term_node,
-                                ],
-                                distance=int(distance),
-                                platform="deactivated",
-                            )
-                            break
-                        index -= 1
-
-                    children = [
-                        Query(
-                            value=Operators.AND,
-                            operator=True,
-                            children=[*children, near_operator],
-                            search_field=search_field,
-                            platform="deactivated",
-                        )
-                    ]
-                else:
-                    children = [
-                        Query(
-                            value=current_operator,
-                            children=[*children, term_node],
-                            search_field=search_field,
-                            platform="deactivated",
-                        )
-                    ]
-            else:
-                children[-1].children.append(term_node)
-        else:
-            children.append(term_node)
-
-        return children
-
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -440,9 +361,6 @@ class WOSListParser(QueryListParser):
             string_parser_class=WOSParser,
         )
 
-    def get_token_str(self, token_nr: str) -> str:
-        return f"#{token_nr}"
-
     def _build_query_from_operator_node(self, tokens: list) -> Query:
         operator = ""
         children = []
@@ -453,10 +371,8 @@ class WOSListParser(QueryListParser):
             else:
                 if not operator:
                     operator = token.value
-                elif operator != token.value:
-                    raise ValueError(
-                        "[ERROR] Two different operators used in the same line."
-                    )
+                # checked in token-linter
+                assert operator == token.value
 
         assert operator, "[ERROR] No operator found in combining query."
 
@@ -509,7 +425,7 @@ class WOSListParser(QueryListParser):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
             elif WOSParser.LOGIC_OPERATOR_REGEX.fullmatch(value):
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            else:
+            else:  # pragma: no cover
                 token_type = OperatorNodeTokenTypes.UNKNOWN
             tokens.append(
                 ListToken(

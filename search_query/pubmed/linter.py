@@ -76,54 +76,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
-        # temporarily disabled (until the logic is clear)
-        # self.check_implicit_operator()
-
         self.check_unsupported_pubmed_search_fields()
         self.check_general_search_field_mismatch()
 
         self.check_invalid_proximity_operator()
         return self.tokens
-
-    # def check_implicit_operator(self) -> None:
-    #     """Check for implicit operators in the query string"""
-
-    #     for token in self.tokens:
-    #         if token.type != TokenTypes.SEARCH_TERM:
-    #             continue
-
-    #         if token.value[0] == '"' and token.value[-1] == '"':
-    #             continue
-    #         if " " not in token.value:
-    #             continue
-
-    #         # check the following:
-
-    #         # TS=eHealth[all]
-    #         # equivalent to:
-    #         # TS eHealth[all]
-    #         # TS[all] AND eHealth[all]
-
-    #         # BUT
-    #         # Peer leader*[all]
-    #         # equivalent to:
-    #         # "Peer leader*"[all]
-    #         # NOT
-    #         # Peer[all] AND leader*[all]
-
-    #         # pubmed advanced query details show inconsistencies between
-    #         # ts eHealth*[ti]
-    #         # peer leader*[ti]
-
-    #         position_of_whitespace = token.position[0] + token.value.index(" ")
-    #         self.add_linter_message(
-    #             QueryErrorCode.IMPLICIT_OPERATOR,
-    #             positions=[token.position],
-    #             details="Implicit operator detected. "
-    #             f"The space at position {position_of_whitespace} "
-    #             "will be interpreted as an AND connection. "
-    #             "Please add an explicit operator to clarify this.",
-    #         )
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -187,7 +144,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
-                details=f"Cannot start with {self.tokens[0].type}",
+                details=f"Cannot start with {self.tokens[0].type.value}",
             )
 
         # pylint: disable=duplicate-code
@@ -195,8 +152,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for i, token in enumerate(self.tokens):
             if i == 0:
                 continue
-            if i == len(self.tokens):
-                break
 
             token_type = token.type
             prev_type = self.tokens[i - 1].type
@@ -253,7 +208,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             self.add_linter_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
-                details=f"Cannot end with {self.tokens[-1].type}",
+                details=f"Cannot end with {self.tokens[-1].type.value}",
             )
 
     def check_invalid_wildcard(self, query: Query) -> None:

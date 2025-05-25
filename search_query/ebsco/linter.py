@@ -31,7 +31,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.SEARCH_TERM: [
-            TokenTypes.SEARCH_TERM,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PROXIMITY_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
@@ -81,7 +80,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
-        self.check_token_ambiguity()
         self.check_search_field_general()
         return self.tokens
 
@@ -113,32 +111,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 f"'{match.group(0)}' is invalid.",
             )
 
-    def check_token_ambiguity(self) -> None:
-        """Check for ambiguous tokens in the query."""
-        # Note: EBSCO-specific
-
-        prev_token = None
-        for i, token in enumerate(self.tokens):
-            match = re.match(r"^[A-Z]{2} ", token.value)
-            if (
-                token.type == TokenTypes.SEARCH_TERM
-                and match
-                and (prev_token is None or prev_token.type != TokenTypes.FIELD)
-                and not self.tokens[i + 1].value.startswith('"')
-            ):
-                details = (
-                    f"The token '{token.value}' (at {token.position}) is ambiguous. "
-                    + f"The {match.group()}could be a search field or a search term. "
-                    + "To avoid confusion, please add quotes."
-                )
-                self.add_linter_message(
-                    QueryErrorCode.TOKEN_AMBIGUITY,
-                    positions=[(token.position[0], token.position[0] + 2)],
-                    details=details,
-                )
-
-            prev_token = token
-
     def check_search_field_general(self) -> None:
         """Check field 'Search Fields' in content."""
 
@@ -151,39 +123,30 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         based on token type and the previous token type.
         """
 
-        for i, token in enumerate(self.tokens):
-            # Check the last token
-            if i == len(self.tokens):
-                if self.tokens[i - 1].type in [
-                    TokenTypes.PARENTHESIS_OPEN,
-                    TokenTypes.LOGIC_OPERATOR,
-                    TokenTypes.SEARCH_TERM,
-                ]:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        positions=[self.tokens[i - 1].position],
-                        details=f"Cannot end with {self.tokens[i-1].type}",
-                    )
-                break
+        # Check the first token
+        if self.tokens[0].type not in [
+            TokenTypes.SEARCH_TERM,
+            TokenTypes.FIELD,
+            TokenTypes.PARENTHESIS_OPEN,
+        ]:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                positions=[self.tokens[0].position],
+                details=f"Cannot start with {self.tokens[0].type.value}",
+            )
 
-            token_type = token.type
-            # Check the first token
+        for i, token in enumerate(self.tokens):
             if i == 0:
-                if token_type not in [
-                    TokenTypes.SEARCH_TERM,
-                    TokenTypes.FIELD,
-                    TokenTypes.PARENTHESIS_OPEN,
-                ]:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        positions=[token.position],
-                        details=f"Cannot start with {token_type}",
-                    )
                 continue
 
+            token_type = token.type
             prev_type = self.tokens[i - 1].type
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
+                details = ""
+                positions = [
+                    (token.position if token_type else self.tokens[i - 1].position)
+                ]
                 if token_type == TokenTypes.FIELD:
                     details = "Invalid search field position"
                     positions = [token.position]
@@ -217,7 +180,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
-                    details = "Missing operator"
+                    details = "Missing operator between terms"
                     positions = [
                         (
                             self.tokens[i - 1].position[0],
@@ -225,17 +188,23 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         )
                     ]
 
-                else:
-                    details = ""
-                    positions = [
-                        (token.position if token_type else self.tokens[i - 1].position)
-                    ]
-
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=positions,
                     details=details,
                 )
+
+        # Check the last token
+        if self.tokens[-1].type in [
+            TokenTypes.PARENTHESIS_OPEN,
+            TokenTypes.LOGIC_OPERATOR,
+            TokenTypes.FIELD,
+        ]:
+            self.add_linter_message(
+                QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                positions=[self.tokens[-1].position],
+                details=f"Cannot end with {self.tokens[-1].type.value}",
+            )
 
     def validate_query_tree(self, query: Query) -> None:
         """

@@ -15,5 +15,5 @@ search\_query.wos.constants
 
       generic_search_field_to_syntax_field
       map_to_standard
+      search_field_general_to_syntax
       syntax_str_to_generic_search_field_set
-      syntax_str_to_generic_search_field_set_general_to_generic

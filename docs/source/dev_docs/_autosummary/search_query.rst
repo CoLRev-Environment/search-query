@@ -46,7 +46,6 @@
    search_query.query_or
    search_query.search_file
    search_query.serializer_base
-   search_query.serializer_generic
    search_query.serializer_structured
    search_query.translator_base
    search_query.utils

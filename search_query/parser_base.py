@@ -121,9 +121,5 @@ class QueryListParser:
             previous += len(line) + 1
 
     @abstractmethod
-    def get_token_str(self, token_nr: str) -> str:
-        """Get the token string."""
-
-    @abstractmethod
     def parse(self) -> Query:
         """Parse the query in list format."""

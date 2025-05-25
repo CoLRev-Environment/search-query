@@ -28,3 +28,4 @@ search\_query.generic
    :recursive:
 
    search_query.generic.linter
+   search_query.generic.serializer
