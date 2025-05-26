@@ -45,27 +45,28 @@ class QueryStringParser(ABC):
             print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
     def combine_subsequent_terms(self) -> None:
-        """Combine subsequent terms in the list of tokens."""
-        # Combine subsequent terms (without quotes)
-        # This would be more challenging in the regex
+        """Combine all consecutive SEARCH_TERM tokens into one."""
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
-            if (
-                i + 1 < len(self.tokens)
-                and self.tokens[i].type == TokenTypes.SEARCH_TERM
-                and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
-            ):
+            if self.tokens[i].type == TokenTypes.SEARCH_TERM:
+                start = self.tokens[i].position[0]
+                value_parts = [self.tokens[i].value]
+                end = self.tokens[i].position[1]
+                i += 1
+                while (
+                    i < len(self.tokens)
+                    and self.tokens[i].type == TokenTypes.SEARCH_TERM
+                ):
+                    value_parts.append(self.tokens[i].value)
+                    end = self.tokens[i].position[1]
+                    i += 1
                 combined_token = Token(
-                    value=self.tokens[i].value + " " + self.tokens[i + 1].value,
+                    value=" ".join(value_parts),
                     type=TokenTypes.SEARCH_TERM,
-                    position=(
-                        self.tokens[i].position[0],
-                        self.tokens[i + 1].position[1],
-                    ),
+                    position=(start, end),
                 )
                 combined_tokens.append(combined_token)
-                i += 2
             else:
                 combined_tokens.append(self.tokens[i])
                 i += 1

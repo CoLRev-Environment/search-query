@@ -222,7 +222,7 @@ class PubmedParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_platform_unchecked(PLATFORM.PUBMED.value)
+        query.set_platform_unchecked(PLATFORM.PUBMED.value, silent=True)
 
         return query
 

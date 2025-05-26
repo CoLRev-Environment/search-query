@@ -24,6 +24,9 @@ SYNTAX_GENERIC_MAP = {
     "KW": {Fields.AUTHOR_KEYWORDS, Fields.KEYWORDS},
     "ZW": {Fields.AUTHOR_KEYWORDS, Fields.KEYWORDS},
     "DE": {Fields.DESCRIPTORS, Fields.AUTHOR_KEYWORDS},
+    "MH": {Fields.MESH_TERM},
+    "ZY": {Fields.COUNTRY_REGION},
+    "ZU": {Fields.SUBJECT_TERMS},
 }
 
 _RAW_PREPROCESSING_MAP = {
@@ -39,6 +42,9 @@ _RAW_PREPROCESSING_MAP = {
     "LA": r"LA",
     "KW": r"KW",
     "DE": r"DE",
+    "MH": r"MH",
+    "ZY": r"ZY",
+    "ZU": r"ZU",
 }
 # Note: lower-case fields return different results
 PREPROCESSING_MAP = {k: re.compile(v) for k, v in _RAW_PREPROCESSING_MAP.items()}

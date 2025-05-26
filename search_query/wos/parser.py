@@ -28,7 +28,7 @@ class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
     SEARCH_TERM_REGEX = re.compile(
-        r'\*?[\w\-/\.\!\*]+(?:[\*\$\?][\w\-/\.\!\*]*)*|"[^"]+"'
+        r'\*?[\w\-/\.\!\*,&]+(?:[\*\$\?][\w\-/\.\!\*,&]*)*|"[^"]+"'
     )
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
     PROXIMITY_OPERATOR_REGEX = re.compile(
@@ -336,7 +336,7 @@ class WOSParser(QueryStringParser):
             )
             query.search_field = search_field_general
 
-        query.set_platform_unchecked(PLATFORM.WOS.value)
+        query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 
         return query
 

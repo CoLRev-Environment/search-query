@@ -40,7 +40,7 @@ def parse(
     mode: str = LinterMode.STRICT,
 ) -> Query:
     """Parse a query string."""
-    platform = platform.lower()
+    platform = get_platform(platform)
 
     if "1." in query_str[:10]:
         if platform not in LIST_PARSERS:  # pragma: no cover

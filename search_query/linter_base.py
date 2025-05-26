@@ -586,7 +586,7 @@ class QueryStringLinter:
                 TokenTypes.LOGIC_OPERATOR,
                 TokenTypes.PROXIMITY_OPERATOR,
             ]:
-                value = self.get_precedence(self.tokens[index].value)
+                value = self.get_precedence(self.tokens[index].value.upper())
 
                 if current_value in (value, -1):
                     # Same precedence → just add to output
@@ -852,7 +852,7 @@ class QueryStringLinter:
                     if field_a != field_b:
                         continue
 
-                    if field_a == "[mh]":  # pragma: no cover
+                    if field_a in ["[mh]", "ZY", "DE"]:  # pragma: no cover
                         # excact matches required for mh
                         continue
 

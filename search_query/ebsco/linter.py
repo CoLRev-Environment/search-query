@@ -79,6 +79,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
+        self.check_invalid_near_within_operators()
 
         self.check_search_field_general()
         return self.tokens
@@ -110,6 +111,37 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 "and without brackets, e.g. AB robot or TI monitor. "
                 f"'{match.group(0)}' is invalid.",
             )
+
+    def check_invalid_near_within_operators(self) -> None:
+        """
+        Check for invalid NEAR and WITHIN operators in the query.
+        EBSCO does not support NEAR and WITHIN operators.
+        """
+
+        for token in self.tokens:
+            if token.type == TokenTypes.PROXIMITY_OPERATOR:
+                if token.value.startswith("NEAR"):
+                    details = (
+                        f"Operator {token.value} "
+                        "is not supported by EBSCO. Must be N/x instead."
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_PROXIMITY_USE,
+                        positions=[token.position],
+                        details=details,
+                    )
+                    token.value = token.value.replace("NEAR/", "N")
+                if token.value.startswith("WITHIN"):
+                    details = (
+                        f"Operator {token.value} "
+                        "is not supported by EBSCO. Must be W/x instead."
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_PROXIMITY_USE,
+                        positions=[token.position],
+                        details=details,
+                    )
+                    token.value = token.value.replace("WITHIN/", "W")
 
     def check_search_field_general(self) -> None:
         """Check field 'Search Fields' in content."""
@@ -205,6 +237,37 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
             )
+
+    def check_invalid_near_within_operators_query(self, query: Query) -> None:
+        """
+        Check for invalid NEAR and WITHIN operators in the query.
+        EBSCO does not support NEAR and WITHIN operators.
+        """
+        if query.operator:
+            if query.value.startswith("NEAR"):
+                details = (
+                    f"Operator {query.value} "
+                    "is not supported by EBSCO. Must be N/x instead."
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    positions=[query.position or (-1, -1)],
+                    details=details,
+                )
+
+            if query.value.startswith("WITHIN"):
+                details = (
+                    f"Operator {query.value} "
+                    "is not supported by EBSCO. Must be W/x instead."
+                )
+                self.add_linter_message(
+                    QueryErrorCode.INVALID_PROXIMITY_USE,
+                    positions=[query.position or (-1, -1)],
+                    details=details,
+                )
+
+        for child in query.children:
+            self.check_invalid_near_within_operators_query(child)
 
     def validate_query_tree(self, query: Query) -> None:
         """

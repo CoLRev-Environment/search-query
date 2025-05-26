@@ -21,7 +21,9 @@ class EBSCOParser(QueryStringParser):
 
     PARENTHESIS_REGEX = re.compile(r"[\(\)]")
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
-    PROXIMITY_OPERATOR_REGEX = re.compile(r"(N|W)\d+")
+    PROXIMITY_OPERATOR_REGEX = re.compile(
+        r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
+    )
     SEARCH_FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
     SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?")
 
@@ -276,7 +278,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        query.set_platform_unchecked(PLATFORM.EBSCO.value)
+        query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
 
         return query
 

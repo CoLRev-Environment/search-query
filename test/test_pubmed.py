@@ -55,7 +55,25 @@ from search_query.query_or import OrQuery
                 Token(value="Comment", type=TokenTypes.SEARCH_TERM, position=(77, 84)),
                 Token(value="[pt]", type=TokenTypes.FIELD, position=(84, 88)),
             ],
-        )
+        ),
+        (
+            "home care workers [Title] OR health care workers [Title]",
+            [
+                Token(
+                    value="home care workers",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(0, 17),
+                ),
+                Token(value="[Title]", type=TokenTypes.FIELD, position=(18, 25)),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(26, 28)),
+                Token(
+                    value="health care workers",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(29, 48),
+                ),
+                Token(value="[Title]", type=TokenTypes.FIELD, position=(49, 56)),
+            ],
+        ),
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
@@ -414,7 +432,7 @@ def test_pubmed_invalid_token_sequences(
                 {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
-                    "message": "Invalid use of the proximity operator :~",
+                    "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(0, 14)],
                     "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
@@ -428,7 +446,7 @@ def test_pubmed_invalid_token_sequences(
                 {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
-                    "message": "Invalid use of the proximity operator :~",
+                    "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(16, 27)],
                     "details": "Proximity value '0.5' is not a digit",
@@ -447,7 +465,7 @@ def test_pubmed_invalid_token_sequences(
                 {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
-                    "message": "Invalid use of the proximity operator :~",
+                    "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(16, 23)],
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
@@ -455,7 +473,7 @@ def test_pubmed_invalid_token_sequences(
                 {
                     "code": "E0005",
                     "label": "invalid-proximity-use",
-                    "message": "Invalid use of the proximity operator :~",
+                    "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(36, 43)],
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",

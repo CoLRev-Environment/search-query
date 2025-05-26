@@ -431,10 +431,10 @@ class QueryErrorCode(Enum):
         "",
     )
     INVALID_PROXIMITY_USE = (
-        [PLATFORM.PUBMED],
+        [PLATFORM.PUBMED, PLATFORM.EBSCO],
         "E0005",
         "invalid-proximity-use",
-        "Invalid use of the proximity operator :~",
+        "Invalid use of the proximity operator",
         "",
     )
     INVALID_WILDCARD_USE = (

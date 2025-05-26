@@ -72,6 +72,8 @@ class Query:
         self.marked = False
         # Note: platform is only set for root nodes
         self._platform = platform
+        # helper flag to silence linter after parse() to avoid repeated linter printout
+        self._silence_linter = False
 
         self._parent: typing.Optional[Query] = None
         if children:
@@ -96,28 +98,32 @@ class Query:
 
             wos_linter = WOSQueryStringLinter()
             wos_linter.validate_query_tree(self)
-            wos_linter.check_status()
+            if not self._silence_linter:
+                wos_linter.check_status()
 
         elif self.platform == PLATFORM.PUBMED.value:
             from search_query.pubmed.linter import PubmedQueryStringLinter
 
             pubmed_linter = PubmedQueryStringLinter()
             pubmed_linter.validate_query_tree(self)
-            pubmed_linter.check_status()
+            if not self._silence_linter:
+                pubmed_linter.check_status()
 
         elif self.platform == "generic":
             from search_query.generic.linter import GenericLinter
 
             gen_linter = GenericLinter()
             gen_linter.validate_query_tree(self)
-            gen_linter.check_status()
+            if not self._silence_linter:
+                gen_linter.check_status()
 
         elif self.platform == PLATFORM.EBSCO.value:
             from search_query.ebsco.linter import EBSCOQueryStringLinter
 
             ebsco_linter = EBSCOQueryStringLinter()
             ebsco_linter.validate_query_tree(self)
-            ebsco_linter.check_status()
+            if not self._silence_linter:
+                ebsco_linter.check_status()
 
         else:  # pragma: no cover
             raise NotImplementedError(
@@ -144,10 +150,13 @@ class Query:
         self._set_platform_recursively(platform)
         self._validate_platform_constraints()
 
-    def set_platform_unchecked(self, platform: str) -> None:
+    def set_platform_unchecked(self, platform: str, silent: bool = False) -> None:
         """Set the platform for this query node without validation.
         This is an optional utility for parsers.
         """
+
+        if silent:
+            self._silence_linter = True
         self._set_platform_recursively(platform)
 
     def __deepcopy__(self, memo: dict) -> Query:

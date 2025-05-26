@@ -53,6 +53,57 @@ from search_query.query import SearchField
                 ),
             ],
         ),
+        (
+            # Note: NEAR/2 is invalid, but we match it to give better error messages and handle it gracefully
+            "arrest* NEAR/2 (record* OR history* OR police)",
+            [
+                Token(
+                    value="arrest*",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(0, 7),
+                ),
+                Token(
+                    value="NEAR/2",
+                    type=TokenTypes.PROXIMITY_OPERATOR,
+                    position=(8, 14),
+                ),
+                Token(
+                    value="(",
+                    type=TokenTypes.PARENTHESIS_OPEN,
+                    position=(15, 16),
+                ),
+                Token(
+                    value="record*",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(16, 23),
+                ),
+                Token(
+                    value="OR",
+                    type=TokenTypes.LOGIC_OPERATOR,
+                    position=(24, 26),
+                ),
+                Token(
+                    value="history*",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(27, 35),
+                ),
+                Token(
+                    value="OR",
+                    type=TokenTypes.LOGIC_OPERATOR,
+                    position=(36, 38),
+                ),
+                Token(
+                    value="police",
+                    type=TokenTypes.SEARCH_TERM,
+                    position=(39, 45),
+                ),
+                Token(
+                    value=")",
+                    type=TokenTypes.PARENTHESIS_CLOSED,
+                    position=(45, 46),
+                ),
+            ],
+        ),
     ],
 )
 def test_tokenization(
@@ -192,7 +243,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
                 }
             ],
         ),
@@ -205,7 +256,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
                 }
             ],
         ),
@@ -285,11 +336,27 @@ def test_linter(query_string: str, messages: list) -> None:
                 }
             ],
         ),
+        (
+            "arrest* NEAR/2 (record* OR history* OR police)",
+            "",
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": False,
+                    "position": [(8, 14)],
+                    "details": "Operator NEAR/2 is not supported by EBSCO. Must be N/x instead.",
+                }
+            ],
+        ),
+        ("arrest* N2 (record* OR history* OR police)", "", []),
     ],
 )
 def test_linter_general_search_field(
     query_string: str, search_field_general: str, messages: list
 ) -> None:
+    print(query_string)
     parser = EBSCOParser(
         query_string, search_field_general=search_field_general, mode=LinterMode.STRICT
     )
@@ -300,6 +367,7 @@ def test_linter_general_search_field(
     print(parser.linter.messages)
     parser.print_tokens()
     assert parser.linter.messages == messages
+    print(parser.linter.messages)
 
 
 @pytest.mark.parametrize(
