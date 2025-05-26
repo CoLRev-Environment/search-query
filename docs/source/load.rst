@@ -13,10 +13,10 @@ To load a JSON query file, run the parser:
 
 .. code-block:: python
 
-    from search_query.search_file import SearchFile
+    from search_query.search_file import load_search_file
     from search_query.parser import parse
 
-    search = SearchFile("search-file.json")
+    search = load_search_file("search-file.json")
     query = parse(search.search_string, platform=search.platform)
 
 
