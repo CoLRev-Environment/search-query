@@ -16,7 +16,7 @@ class NotQuery(Query):
         self,
         children: typing.List[typing.Union[str, Query]],
         *,
-        search_field: typing.Union[SearchField, str],
+        search_field: typing.Optional[typing.Union[SearchField, str]] = None,
         position: typing.Optional[tuple] = None,
         platform: str = "generic",
     ) -> None:
@@ -31,7 +31,9 @@ class NotQuery(Query):
             children=children,
             search_field=search_field
             if isinstance(search_field, SearchField)
-            else SearchField(search_field),
+            else SearchField(search_field)
+            if search_field is not None
+            else None,
             position=position,
             platform=platform,
         )
