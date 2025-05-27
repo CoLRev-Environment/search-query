@@ -6,10 +6,10 @@ import pytest
 
 from search_query.constants import Fields
 from search_query.query import SearchField
-from search_query.query import Term
 from search_query.query_and import AndQuery
 from search_query.query_not import NotQuery
 from search_query.query_or import OrQuery
+from search_query.query_term import Term
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501

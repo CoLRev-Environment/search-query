@@ -15,8 +15,8 @@ from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.pubmed.translator import PubmedTranslator
-from search_query.query import Term
 from search_query.query_or import OrQuery
+from search_query.query_term import Term
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 

@@ -17,7 +17,7 @@ from search_query.pubmed.linter import PubmedQueryListLinter
 from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.query import Term
+from search_query.query_term import Term
 
 
 class PubmedParser(QueryStringParser):

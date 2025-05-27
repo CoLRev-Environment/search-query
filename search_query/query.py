@@ -9,33 +9,12 @@ import typing
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
+from search_query.constants import SearchField
 from search_query.ebsco.serializer import to_string_ebsco
 from search_query.generic.serializer import to_string_generic
 from search_query.pubmed.serializer import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
 from search_query.wos.serializer import to_string_wos
-
-
-# pylint: disable=too-few-public-methods
-class SearchField:
-    """SearchField class."""
-
-    def __init__(
-        self,
-        value: str,
-        *,
-        position: typing.Optional[tuple] = None,
-    ) -> None:
-        """init method"""
-        self.value = value
-        self.position = position
-
-    def __str__(self) -> str:
-        return self.value
-
-    def copy(self) -> SearchField:
-        """Return a copy of the SearchField instance."""
-        return SearchField(self.value, position=self.position)
 
 
 # pylint: disable=too-many-public-methods
@@ -253,6 +232,9 @@ class Query:
     def add_child(self, child: typing.Union[str, Query]) -> Query:
         """Add a child Query node and set its parent pointer."""
         if isinstance(child, str):
+            # pylint: disable=import-outside-toplevel
+            from search_query.query_term import Term
+
             child = Term(
                 child,
                 search_field=self.search_field,
@@ -502,24 +484,3 @@ class Query:
         raise NotImplementedError(
             f"Translation to {target_syntax} is not implemented"
         )  # pragma: no cover
-
-
-class Term(Query):
-    """Term"""
-
-    def __init__(
-        self,
-        value: str,
-        *,
-        search_field: typing.Optional[SearchField] = None,
-        position: typing.Optional[tuple] = None,
-        platform: str = "generic",
-    ) -> None:
-        super().__init__(
-            value=value,
-            operator=False,
-            children=None,
-            search_field=search_field,
-            position=position,
-            platform=platform,
-        )

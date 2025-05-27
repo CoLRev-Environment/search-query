@@ -13,7 +13,7 @@ from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.query import Term
+from search_query.query_term import Term
 
 
 class EBSCOParser(QueryStringParser):

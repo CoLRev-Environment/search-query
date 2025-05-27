@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Constants for search-query"""
+import typing
 from dataclasses import dataclass
 from enum import Enum
 from typing import Tuple
@@ -82,6 +83,28 @@ class ListToken:
     type: OperatorNodeTokenTypes
     level: int
     position: Tuple[int, int]
+
+
+# pylint: disable=too-few-public-methods
+class SearchField:
+    """SearchField class."""
+
+    def __init__(
+        self,
+        value: str,
+        *,
+        position: typing.Optional[tuple] = None,
+    ) -> None:
+        """init method"""
+        self.value = value
+        self.position = position
+
+    def __str__(self) -> str:
+        return self.value
+
+    def copy(self) -> "SearchField":
+        """Return a copy of the SearchField instance."""
+        return SearchField(self.value, position=self.position)
 
 
 class Operators:
