@@ -273,9 +273,28 @@ def test_invalid_token_sequences(
                 }
             ],
         ),
+        (
+            'MH "sleep" OR MH "sleep disorders"',
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(3, 10), (17, 34)],
+                    "details": 'Results for term "sleep disorders" are contained in the more general search for "sleep" (both terms are connected with OR). Therefore, the term "sleep disorders" is redundant.',
+                }
+            ],
+        ),
+        (
+            # No message: ZY "sudan" does not match the pattern for ZY "south sudan"
+            '(ZY "sudan" OR ZY "south sudan") AND TI "context of vegetarians"',
+            [],
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
+    print(query_string)
     parser = EBSCOParser(query_string, search_field_general="")
     try:
         parser.parse()
@@ -346,11 +365,26 @@ def test_linter(query_string: str, messages: list) -> None:
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(8, 14)],
-                    "details": "Operator NEAR/2 is not supported by EBSCO. Must be N/x instead.",
+                    "details": "Operator NEAR/2 is not supported by EBSCO. Must be Nx instead.",
                 }
             ],
         ),
         ("arrest* N2 (record* OR history* OR police)", "", []),
+        (
+            "arrest* WITHIN/2 (record* OR history* OR police)",
+            "",
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": False,
+                    "position": [(8, 16)],
+                    "details": "Operator WITHIN/2 is not supported by EBSCO. Must be Wx instead.",
+                }
+            ],
+        ),
+        ("arrest* W2 (record* OR history* OR police)", "", []),
     ],
 )
 def test_linter_general_search_field(

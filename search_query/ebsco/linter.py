@@ -93,7 +93,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             return self.OPERATOR_PRECEDENCE["WITHIN"]
         if token in self.OPERATOR_PRECEDENCE:
             return self.OPERATOR_PRECEDENCE[token]
-        return -1  # Not an operator
+        raise ValueError(  # pragma: no cover
+            f"Invalid operator {token} for EBSCO query string precedence."
+        )
 
     def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
         return syntax_str_to_generic_search_field_set(field_value)
@@ -123,7 +125,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 if token.value.startswith("NEAR"):
                     details = (
                         f"Operator {token.value} "
-                        "is not supported by EBSCO. Must be N/x instead."
+                        "is not supported by EBSCO. Must be Nx instead."
                     )
                     self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -134,7 +136,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 if token.value.startswith("WITHIN"):
                     details = (
                         f"Operator {token.value} "
-                        "is not supported by EBSCO. Must be W/x instead."
+                        "is not supported by EBSCO. Must be Wx instead."
                     )
                     self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -276,10 +278,22 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
+        self.check_invalid_characters_in_search_term_query(query, "@%$^~\\<>{}[]#")
         self.check_unsupported_search_fields_in_query(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
-        self._check_redundant_terms(term_field_query)
+
+        self._check_redundant_terms(
+            term_field_query, exact_fields=re.compile(r"^(ZY)$")
+        )
+        # Exception for ZY:
+        # ZY "south sudan" AND TI "context of vegetarians"
+        # ZY "sudan" AND TI "context of vegetarians"
+
+        # No exception for MH: paper 10.1080/15398285.2024.2420159
+        # has only "sleep hygiene" in MH,
+        # but is also returned when searching for MH "sleep"
+        # MH "sleep hygiene" AND TI "A Brazilian Experience"
+        # MH "sleep" AND TI "A Brazilian Experience"

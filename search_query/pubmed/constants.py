@@ -94,6 +94,10 @@ VALID_FIELDS_REGEX = re.compile(
 
 def map_to_standard(syntax_str: str) -> str:
     """Map a syntax string to a standard syntax string."""
+    syntax_str = syntax_str.lower()
+    syntax_str = syntax_str.strip(" []")
+    syntax_str = f"[{syntax_str}]"
+
     for standard_key, variation_regex in PREPROCESSING_MAP.items():
         if variation_regex.match(syntax_str):
             return standard_key
@@ -104,6 +108,8 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     """Translate a search field"""
 
     field_value = field_value.lower()
+    field_value = field_value.strip(" []")
+    field_value = f"[{field_value}]"
 
     # Convert search fields to their abbreviated forms (e.g. "[title] -> "[ti]")
     field_value = map_to_standard(field_value)

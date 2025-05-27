@@ -811,8 +811,14 @@ class QueryStringLinter:
             subqueries[subquery_id].append(query)
 
     # pylint: disable=too-many-branches
-    def _check_redundant_terms(self, query: Query) -> None:
-        """Check query for redundant search terms"""
+    def _check_redundant_terms(
+        self, query: Query, exact_fields: typing.Optional[re.Pattern] = None
+    ) -> None:
+        """Check query for redundant search terms
+
+        exact_fields is a regex pattern that matches fields
+        that should not be considered for redundancy checks."""
+
         subqueries: dict = {}
         subquery_types: dict = {}
         self._extract_subqueries(query, subqueries, subquery_types)
@@ -852,32 +858,50 @@ class QueryStringLinter:
                     if field_a != field_b:
                         continue
 
-                    if field_a in ["[mh]", "ZY", "DE"]:  # pragma: no cover
-                        # excact matches required for mh
+                    if exact_fields and exact_fields.fullmatch(field_a):
                         continue
 
                     if term_a.value == term_b.value or (
                         term_a.value.strip('"').lower()
                         in term_b.value.strip('"').lower().split()
                     ):
-                        # Terms in AND queries follow different redundancy logic
-                        # than terms in OR queries
-                        if operator == Operators.AND:
+                        if term_a.value == term_b.value:
+                            details = (
+                                f"Term {term_b.value} is contained multiple times"
+                                " i.e., redundantly."
+                            )
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 positions=[term_a.position, term_b.position],
-                                details=f"Term {term_a.value} is contained in term "
-                                f"{term_b.value} and both are connected with AND. "
-                                f"Therefore, term {term_b.value} is redundant.",
+                                details=details,
+                            )
+                            redundant_terms.append(term_a)
+                            continue
+                        # Terms in AND queries follow different redundancy logic
+                        # than terms in OR queries
+                        if operator == Operators.AND:
+                            details = (
+                                f"The term {term_b.value} is more specific than"
+                                f" {term_a.value}—results matching {term_b.value} are "
+                                f"a subset of those matching {term_a.value}. "
+                                f"Since both are connected with AND, including "
+                                f"{term_a.value} does not further restrict the result "
+                                f"set and is therefore redundant."
+                            )
+                            self.add_linter_message(
+                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                positions=[term_a.position, term_b.position],
+                                details=details,
                             )
                             redundant_terms.append(term_a)
                         elif operator == Operators.OR:
                             self.add_linter_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 positions=[term_a.position, term_b.position],
-                                details=f"Term {term_b.value} is contained in term "
-                                f"{term_a.value} and both are connected with OR. "
-                                f"Therefore, term {term_b.value} is redundant.",
+                                details=f"Results for term {term_b.value} are contained"
+                                f" in the more general search for {term_a.value} "
+                                "(both terms are connected with OR). "
+                                f"Therefore, the term {term_b.value} is redundant.",
                             )
                             redundant_terms.append(term_b)
 

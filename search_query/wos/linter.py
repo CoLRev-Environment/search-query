@@ -96,7 +96,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
-        self.check_invalid_characters_in_search_term("@%$^~\\<>{}()[]#")
+        self.check_invalid_characters_in_search_term("@%^~\\<>{}()[]#")
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
         self.check_near_distance_in_range(max_value=15)

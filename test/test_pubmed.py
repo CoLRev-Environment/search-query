@@ -74,6 +74,22 @@ from search_query.query_or import OrQuery
                 Token(value="[Title]", type=TokenTypes.FIELD, position=(49, 56)),
             ],
         ),
+        (
+            'technician*[ Title/Abstract] OR "Personnel"[ MeSH Terms]',
+            [
+                Token(
+                    value="technician*", type=TokenTypes.SEARCH_TERM, position=(0, 11)
+                ),
+                Token(
+                    value="[ Title/Abstract]", type=TokenTypes.FIELD, position=(11, 28)
+                ),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(29, 31)),
+                Token(
+                    value='"Personnel"', type=TokenTypes.SEARCH_TERM, position=(32, 43)
+                ),
+                Token(value="[ MeSH Terms]", type=TokenTypes.FIELD, position=(43, 56)),
+            ],
+        ),
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
@@ -512,7 +528,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(0, 8), (14, 31)],
-                    "details": 'Term "device" is contained in term "wearable device" and both are connected with AND. Therefore, term "wearable device" is redundant.',
+                    "details": 'The term "wearable device" is more specific than "device"—results matching "wearable device" are a subset of those matching "device". Since both are connected with AND, including "device" does not further restrict the result set and is therefore redundant.',
                 },
             ],
         ),
@@ -526,7 +542,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(1, 9), (46, 63)],
-                    "details": 'Term "wearable device" is contained in term "device" and both are connected with OR. Therefore, term "wearable device" is redundant.',
+                    "details": 'Results for term "wearable device" are contained in the more general search for "device" (both terms are connected with OR). Therefore, the term "wearable device" is redundant.',
                 }
             ],
         ),
@@ -620,6 +636,48 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": False,
                     "position": [(61, 69)],
                     "details": "Please double-check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
+                }
+            ],
+        ),
+        (
+            '("Sleep"[mh] OR "Sleep Deprivation"[mh]) AND "vigilant attention"[ti]',
+            "",
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(1, 8), (16, 35)],
+                    "details": 'Results for term "Sleep Deprivation" are contained in the more general search for "Sleep" (both terms are connected with OR). Therefore, the term "Sleep Deprivation" is redundant.',
+                }
+            ],
+        ),
+        (
+            '("Sleep"[mh] AND "Sleep Deprivation"[mh]) AND "vigilant attention"[ti]',
+            "",
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(1, 8), (17, 36)],
+                    "details": 'The term "Sleep Deprivation" is more specific than "Sleep"—results matching "Sleep Deprivation" are a subset of those matching "Sleep". Since both are connected with AND, including "Sleep" does not further restrict the result set and is therefore redundant.',
+                }
+            ],
+        ),
+        (
+            '"Pickwickian Syndrome*"[tiab] OR "Pickwickian Syndrome*"[tiab]',
+            "",
+            [
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(0, 23), (33, 56)],
+                    "details": 'Term "Pickwickian Syndrome*" is contained multiple times i.e., redundantly.',
                 }
             ],
         ),

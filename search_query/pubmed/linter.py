@@ -302,6 +302,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_redundant_terms(term_field_query)
+        # mh is not matched exactly, terms can be redundant:
+        # https://pubmed.ncbi.nlm.nih.gov/31176308/
+        # is found by both searches:
+        # "Sleep"[mh] AND "vigilant attention"[ti]
+        # "Sleep Deprivation"[mh] AND "vigilant attention"[ti]
 
     def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
         """Translate a search field"""
