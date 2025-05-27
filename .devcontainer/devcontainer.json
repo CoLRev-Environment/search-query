@@ -1,0 +1,19 @@
+{
+  "name": "Python 3",
+  "postCreateCommand": "pip install -e .[dev]",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "streetsidesoftware.code-spell-checker",
+        "markdown.showPreview",
+        "mhutchie.git-graph"
+      ],
+      "settings": {
+        "markdown.extension.preview.autoShowPreviewToSide": true,
+        "markdown.extension.print.theme": "dark",
+        "workbench.colorTheme": "Default Dark+",
+        "window.autoDetectColorScheme": true
+      }
+    }
+  }
+}
