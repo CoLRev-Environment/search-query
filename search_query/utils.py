@@ -27,6 +27,21 @@ def format_query_string_positions(
             # Append new non-overlapping interval
             merged.append([start, end])
 
+    if len(positions) == 1 and len(query_str) > 200:
+        # return highlighted query string with surrounding text (20 chars)
+        start, end = merged[0]
+        context_start = max(0, start - 30)
+        context_end = min(len(query_str), end + 30)
+        before = ""
+        if context_start > 0:
+            before += f"{Colors.GREY}[...]{Colors.END} "
+        before = query_str[context_start:start]
+        highlighted = f"{color}{query_str[start:end]}{Colors.END}".replace("\n", "")
+        after = query_str[end:context_end]
+        if context_end < len(query_str):
+            after += f" {Colors.GREY}[...]{Colors.END}"
+        return f"{before}{highlighted}{after}"
+
     # Apply formatting
     highlighted = ""
     last_index = 0

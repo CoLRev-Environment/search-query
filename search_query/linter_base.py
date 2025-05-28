@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
+import textwrap
 import typing
 from abc import abstractmethod
 from collections import defaultdict
@@ -121,14 +122,15 @@ class QueryStringLinter:
                 else:
                     consolidated_messages.append(f"  {message['message']}")
             for item in set(consolidated_messages):
-                print(item)
+                _print_bullet_message(item)
+
             positions = [pos for message in group for pos in message["position"]]
             query_info = format_query_string_positions(
                 self._original_query_str,
                 positions,
                 color=color,
             )
-            print(f"  {query_info}")
+            _print_bullet_message(query_info, bullet=" Query:")
 
         self.last_read_index = len(self.messages)
 
@@ -978,7 +980,7 @@ class QueryListLinter:
                     query_str, message["position"], color=color
                 )
                 print(f"{color}{category}{Colors.END}: " f"{message['label']} ({code})")
-                print(f"  {message['message']}")
+                _print_bullet_message(message["message"])
                 print(f"  {message['details']}")
                 print(f"  {formatted_query}")
                 print("\n")
@@ -992,3 +994,12 @@ class QueryListLinter:
             # OR any (code.is_error() for code in messages)
             # and self.parser.mode == "strict":
             raise ListQuerySyntaxError(self)
+
+
+def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-"):
+    wrapper = textwrap.TextWrapper(
+        initial_indent=" " * indent + bullet + " ",
+        subsequent_indent=" " * (indent + len(bullet) + 3),
+        width=120,
+    )
+    print(wrapper.fill(message))
