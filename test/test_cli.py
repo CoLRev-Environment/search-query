@@ -55,4 +55,7 @@ def test_linter_cli() -> None:
 
     assert "Lint: search_history_file_2_linter.json (wos)" in result.stdout
     assert "Unbalanced closing parenthesis" in result.stdout
-    assert "Operator changed at the same level" in result.stdout
+    assert (
+        "The query uses multiple operators with different precedence levels"
+        in result.stdout
+    )

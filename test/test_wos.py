@@ -211,8 +211,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "implicit-precedence",
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
-                    "position": [(13, 15)],
-                    "details": "",
+                    "position": [(9, 12), (13, 15)],
+                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
                 },
             ],
         ),
@@ -733,7 +733,6 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     assert msg["code"] == "W0007"
     assert msg["label"] == "implicit-precedence"
     assert msg["is_fatal"] is False
-    assert msg["details"] == ""
 
 
 def test_query_parsing_basic_vs_advanced() -> None:
@@ -861,9 +860,9 @@ def test_artificial_parentheses() -> None:
         "code": "W0007",
         "label": "implicit-precedence",
         "message": "Operator changed at the same level (explicit parentheses are recommended)",
-        "position": [(7, 9)],
         "is_fatal": False,
-        "details": "",
+        "position": [(7, 9), (17, 20)],
+        "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
     }
     assert query.to_generic_string() == "OR[ALL=][remote, AND[online, work]]"
 

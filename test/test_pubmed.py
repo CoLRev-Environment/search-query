@@ -317,8 +317,8 @@ def test_pubmed_invalid_token_sequences(
                     "label": "implicit-precedence",
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
-                    "position": [(18, 20)],
-                    "details": "",
+                    "position": [(18, 20), (49, 52)],
+                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
                 },
                 {
                     "code": "E0001",

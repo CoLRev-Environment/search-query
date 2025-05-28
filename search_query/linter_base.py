@@ -424,7 +424,7 @@ class QueryStringLinter:
     def add_higher_value(
         self,
         output: list[Token],
-        current_value: int,
+        previous_value: int,
         value: int,
         art_par: int,
     ) -> tuple[list[Token], int]:
@@ -452,11 +452,7 @@ class QueryStringLinter:
                 # depth_lvl ensures that already existing blocks are ignored
 
                 # Insert open parenthesis after operator
-                while current_value < value:
-                    self.add_linter_message(
-                        QueryErrorCode.IMPLICIT_PRECEDENCE,
-                        positions=[token.position],
-                    )
+                while previous_value < value:
                     # Insert open parenthesis after operator
                     temp.insert(
                         1,
@@ -466,7 +462,7 @@ class QueryStringLinter:
                             position=(-1, -1),
                         ),
                     )
-                    current_value += 1
+                    previous_value += 1
                     art_par += 1
                 break
 
@@ -534,10 +530,81 @@ class QueryStringLinter:
 
     def get_precedence(self, token: str) -> int:
         """Returns operator precedence for logical and proximity operators."""
-
         if token in self.OPERATOR_PRECEDENCE:
             return self.OPERATOR_PRECEDENCE[token]
         return -1  # Not an operator
+
+    def _get_unequal_precedence_operators(
+        self, tokens: list[Token]
+    ) -> typing.List[tuple[int, int]]:
+        """Get positions of unequal precedence operators."""
+        unequal_precedence_operators = []
+        previous_value = -1
+        level = 0
+        prev_token = None
+        for token in tokens:
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                level -= 1
+            elif token.type == TokenTypes.PARENTHESIS_OPEN:
+                level += 1
+            if level < 0:
+                break
+
+            if level != 0:
+                continue
+            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+                value = self.get_precedence(token.value.upper())
+                if value != previous_value and previous_value != -1:
+                    if not unequal_precedence_operators:
+                        unequal_precedence_operators.append(prev_token)
+                    unequal_precedence_operators.append(token)
+                previous_value = value
+                prev_token = token
+        return unequal_precedence_operators
+
+    def _print_unequal_precedence_warning(self, index: int) -> None:
+        unequal_precedence_operators = self._get_unequal_precedence_operators(
+            self.tokens[index:]
+        )
+        if not unequal_precedence_operators:
+            return
+
+        precedence_list = [
+            (item, self.get_precedence(item.upper()))
+            for item in {o.value for o in unequal_precedence_operators}
+        ]
+        precedence_list.sort(key=lambda x: x[1], reverse=True)
+        precedence_lines = []
+        for idx, (op, prec) in enumerate(precedence_list):
+            if idx == 0:
+                precedence_lines.append(
+                    f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first because it has the highest precedence level ({prec})."
+                )
+            elif idx == len(precedence_list) - 1:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last because it has the lowest precedence level ({prec})."
+                )
+            else:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} has precedence level {prec}."
+                )
+
+        precedence_info = "\n".join(precedence_lines)
+
+        details = (
+            "The query uses multiple operators with different precedence levels, "
+            "but without parentheses to make the intended logic explicit. "
+            "This can lead to unexpected interpretations of the query.\n\n"
+            "Specifically:\n"
+            f"{precedence_info}\n\n"
+            "To fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n"
+        )
+
+        self.add_linter_message(
+            QueryErrorCode.IMPLICIT_PRECEDENCE,
+            positions=[o.position for o in unequal_precedence_operators],
+            details=details,
+        )
 
     # pylint: disable=too-many-branches
     def add_artificial_parentheses_for_operator_precedence(
@@ -554,9 +621,11 @@ class QueryStringLinter:
         # Value of operator
         value = 0
         # Value of previous operator
-        current_value = -1
+        previous_value = -1
         # Added artificial parentheses
         art_par = 0
+
+        self._print_unequal_precedence_warning(index)
 
         while index < len(self.tokens):
             # Forward iteration through tokens
@@ -590,28 +659,24 @@ class QueryStringLinter:
             ]:
                 value = self.get_precedence(self.tokens[index].value.upper())
 
-                if current_value in (value, -1):
+                if previous_value in (value, -1):
                     # Same precedence → just add to output
                     output.append(self.tokens[index])
-                    current_value = value
+                    previous_value = value
 
-                elif value > current_value:
+                elif value > previous_value:
                     # Higher precedence → start wrapping with artificial parenthesis
                     temp, art_par = self.add_higher_value(
-                        output, current_value, value, art_par
+                        output, previous_value, value, art_par
                     )
 
                     output.extend(temp)
                     output.append(self.tokens[index])
-                    current_value = value
+                    previous_value = value
 
-                elif value < current_value:
+                elif value < previous_value:
                     # Insert close parenthesis for each point in value difference
-                    while current_value > value:
-                        self.add_linter_message(
-                            QueryErrorCode.IMPLICIT_PRECEDENCE,
-                            positions=[self.tokens[index].position],
-                        )
+                    while previous_value > value:
                         # Lower precedence → close parenthesis
                         output.append(
                             Token(
@@ -620,10 +685,10 @@ class QueryStringLinter:
                                 position=(-1, -1),
                             )
                         )
-                        current_value -= 1
+                        previous_value -= 1
                         art_par -= 1
                     output.append(self.tokens[index])
-                    current_value = value
+                    previous_value = value
 
                 index += 1
                 continue
@@ -996,10 +1061,20 @@ class QueryListLinter:
             raise ListQuerySyntaxError(self)
 
 
-def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-"):
-    wrapper = textwrap.TextWrapper(
-        initial_indent=" " * indent + bullet + " ",
-        subsequent_indent=" " * (indent + len(bullet) + 3),
-        width=120,
-    )
-    print(wrapper.fill(message))
+def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-") -> None:
+    lines = []
+    paragraphs = message.strip().split("\n")
+
+    for idx, paragraph in enumerate(paragraphs):
+        if not paragraph.strip():
+            lines.append("")  # preserve blank lines
+            continue
+
+        wrapper = textwrap.TextWrapper(
+            width=120,
+            initial_indent=" " * indent + (bullet + " " if idx == 0 else "  "),
+            subsequent_indent=" " * (indent + len(bullet) + 1),
+        )
+        lines.append(wrapper.fill(paragraph))
+
+    print("\n".join(lines))

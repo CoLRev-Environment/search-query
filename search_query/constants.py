@@ -193,6 +193,7 @@ class Colors:
     GREEN = "\033[92m"
     ORANGE = "\033[93m"
     BLUE = "\033[94m"
+    GREY = "\033[90m"
     END = "\033[0m"
 
 
