@@ -41,7 +41,10 @@ def to_string_pubmed(query: Query) -> str:
         else:
             # query is operator query
             if child.value == Operators.NOT:
-                result = f"{result}({to_string_pubmed(child)}"
+                if len(child.children) == 1:
+                    result = f"{result}{to_string_pubmed(child)}"
+                else:
+                    result = f"{result}({to_string_pubmed(child)}"
 
             elif (child == query.children[0]) & (child != query.children[-1]):
                 result = f"{result}({to_string_pubmed(child)}"
