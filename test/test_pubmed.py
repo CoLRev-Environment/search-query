@@ -852,7 +852,7 @@ def test_linter_with_general_search_field(
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
             "All Fields",
-            'OR["health tracking"[[all]], AND["remote monitoring"[[all]], "wearable device"[[all]]]]',
+            'AND[OR["health tracking"[[all]], "remote monitoring"[[all]]], "wearable device"[[all]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
@@ -862,7 +862,7 @@ def test_linter_with_general_search_field(
         (
             '"AI" OR "robotics" AND "ethics"',
             "All Fields",
-            'OR["AI"[[all]], AND["robotics"[[all]], "ethics"[[all]]]]',
+            'AND[OR["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"AI" NOT "robotics" OR "ethics"',
@@ -872,12 +872,12 @@ def test_linter_with_general_search_field(
         (
             '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
             "All Fields",
-            'OR[AND["digital health"[[all]], OR["apps"[[all]], NOT["wearables"[[all]], "privacy"[[all]]]]], "ethics"[[all]]]',
+            'OR[AND["digital health"[[all]], NOT[OR["apps"[[all]], "wearables"[[all]]], "privacy"[[all]]]], "ethics"[[all]]]',
         ),
         (
             '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
             "All Fields",
-            'OR["eHealth"[[all]], AND["digital health"[[all]], NOT["bias"[[all]], "equity"[[all]]]], "policy"[[all]]]',
+            'OR[NOT[AND[OR["eHealth"[[all]], "digital health"[[all]]], "bias"[[all]]], "equity"[[all]]], "policy"[[all]]]',
         ),
     ],
 )
