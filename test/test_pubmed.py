@@ -902,7 +902,7 @@ def test_list_parser_case_2() -> None:
             {
                 "code": "F3003",
                 "label": "invalid-list-reference",
-                "message": "Invalid list reference in list query (not found)",
+                "message": "Invalid list reference in list query",
                 "is_fatal": True,
                 "position": [(14, 16)],
                 "details": "List reference '#4' is invalid (a corresponding list element does not exist).",

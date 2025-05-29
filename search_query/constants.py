@@ -425,7 +425,7 @@ class QueryErrorCode(Enum):
         [PLATFORM.WOS, PLATFORM.PUBMED],
         "F3003",
         "invalid-list-reference",
-        "Invalid list reference in list query (not found)",
+        "Invalid list reference in list query",
         "",
     )
 

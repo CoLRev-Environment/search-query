@@ -294,7 +294,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    positions=[next_token.position],
+                    positions=[(token.position[0], next_token.position[1])],
                 )
                 continue
 
@@ -303,7 +303,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             if next_token.type not in allowed_next_types:
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    positions=[next_token.position],
+                    positions=[(token.position[0], next_token.position[1])],
                 )
 
         # Check the last token

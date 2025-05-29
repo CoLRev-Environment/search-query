@@ -179,7 +179,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
                 ]
 
-            elif token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR:
+            elif (
+                token_type
+                and prev_type
+                and prev_type not in [TokenTypes.LOGIC_OPERATOR]
+            ):
                 details = "Missing operator"
                 positions = [
                     (

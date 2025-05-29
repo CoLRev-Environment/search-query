@@ -122,10 +122,15 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         for token in self.tokens:
             if token.type == TokenTypes.PROXIMITY_OPERATOR:
+                digit = "x"
+                m = re.search(r"/(\d+)", token.value)
+                if m:
+                    digit = m.group(1)
+
                 if token.value.startswith("NEAR"):
                     details = (
                         f"Operator {token.value} "
-                        "is not supported by EBSCO. Must be Nx instead."
+                        f"is not supported by EBSCO. Must be N{digit} instead."
                     )
                     self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -136,7 +141,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 if token.value.startswith("WITHIN"):
                     details = (
                         f"Operator {token.value} "
-                        "is not supported by EBSCO. Must be Wx instead."
+                        f"is not supported by EBSCO. Must be W{digit} instead."
                     )
                     self.add_linter_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -187,6 +192,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
                 elif token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
+                    if prev_type == TokenTypes.LOGIC_OPERATOR:
+                        details = "Cannot have two consecutive operators"
                     positions = [token.position]
 
                 elif (
@@ -271,6 +278,62 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_invalid_near_within_operators_query(child)
 
+    def check_unsupported_wildcards(self, query: Query) -> None:
+        """Check for unsupported characters in the search string."""
+
+        if query.is_term():
+            val = query.value
+            # Check for leading wildcard
+            match = re.search(r"^(\*|\?|\#)", val)
+            if match:
+                position = (-1, -1)
+                if query.position:
+                    position = (
+                        query.position[0] + match.start(),
+                        query.position[0] + match.end(),
+                    )
+                self.add_linter_message(
+                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                    positions=[position],
+                    details="Wildcard not allowed at the beginning of a term.",
+                )
+
+            # Count each wildcard
+            char_count = sum(c not in "*?#" for c in val[:4])
+            if re.search(r"^[^\*\?\#](\?|\#)", val) and char_count < 2:
+                # Star in second position followed by more letters (e.g., "f*tal")
+                position = (-1, -1)
+                if query.position:
+                    position = (query.position[0], query.position[0] + len(val))
+                details = (
+                    "Invalid wildcard use: only one leading literal character found. "
+                    "When a wildcard appears within the first four characters, "
+                    "at least two literal (non-wildcard) characters "
+                    "must be present in that span."
+                )
+                self.add_linter_message(
+                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                    positions=[position],
+                    details=details,
+                )
+
+            if re.search(r"^[^\*\?\#](\*)", val):
+                position = (-1, -1)
+                if query.position:
+                    position = (query.position[0], query.position[0] + len(val))
+                details = (
+                    "Do not use * in the second position followed by "
+                    "additional letters. Use ? or # instead (e.g., f?tal)."
+                )
+                self.add_linter_message(
+                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                    positions=[position],
+                    details=details,
+                )
+
+        for child in query.children:
+            self.check_unsupported_wildcards(child)
+
     def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
@@ -278,8 +341,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_invalid_characters_in_search_term_query(query, "@%$^~\\<>{}[]#")
+        self.check_invalid_characters_in_search_term_query(query, "@%$^~\\<>{}[]")
         self.check_unsupported_search_fields_in_query(query)
+        self.check_unsupported_wildcards(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_date_filters_in_subquery(term_field_query)

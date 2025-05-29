@@ -25,7 +25,7 @@ class EBSCOParser(QueryStringParser):
         r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
     )
     SEARCH_FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\b(?!S\d+\b)[^()\s]+[\*\+\?]?")
+    SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -120,6 +120,25 @@ class EBSCOParser(QueryStringParser):
         token.value = operator
         return distance
 
+    def fix_ambiguous_tokens(self) -> None:
+        """Fix ambiguous tokens that could be misinterpreted as a search field."""
+
+        def is_potential_term(token_str: str) -> bool:
+            return bool(re.fullmatch(r"[A-Z]{2,}", token_str))
+
+        # Field token followed by term which is misclassified as a field token
+        for i in range(len(self.tokens) - 1):
+            current = self.tokens[i]
+            next_token = self.tokens[i + 1]
+
+            if (
+                current.type == TokenTypes.FIELD
+                and next_token.type == TokenTypes.FIELD
+                and is_potential_term(next_token.value)
+            ):
+                # Reclassify the second FIELD token as a SEARCH_TERM
+                next_token.type = TokenTypes.SEARCH_TERM
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
@@ -154,6 +173,7 @@ class EBSCOParser(QueryStringParser):
 
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
+        self.fix_ambiguous_tokens()
 
     def append_node(
         self,

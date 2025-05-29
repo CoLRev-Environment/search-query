@@ -44,3 +44,4 @@ Resources
 
 - `EBSCO Search Help <https://connect.ebsco.com/s/article/Searching-EBSCO-Databases?language=en_US>`_
 - `EBSCO Search Fields Guide <https://connect.ebsco.com/s/article/Field-Codes-Searchable-EBSCOhost?language=en_US>`_
+- `EBSCO wildcard restrictions <https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost?language=en_US>`_

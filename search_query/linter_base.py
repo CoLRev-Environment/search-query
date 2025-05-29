@@ -536,9 +536,9 @@ class QueryStringLinter:
 
     def _get_unequal_precedence_operators(
         self, tokens: list[Token]
-    ) -> typing.List[tuple[int, int]]:
+    ) -> typing.List[Token]:
         """Get positions of unequal precedence operators."""
-        unequal_precedence_operators = []
+        unequal_precedence_operators: typing.List[Token] = []
         previous_value = -1
         level = 0
         prev_token = None
@@ -554,8 +554,8 @@ class QueryStringLinter:
                 continue
             if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
                 value = self.get_precedence(token.value.upper())
-                if value != previous_value and previous_value != -1:
-                    if not unequal_precedence_operators:
+                if previous_value not in [value, -1]:
+                    if not unequal_precedence_operators and prev_token:
                         unequal_precedence_operators.append(prev_token)
                     unequal_precedence_operators.append(token)
                 previous_value = value
@@ -578,15 +578,18 @@ class QueryStringLinter:
         for idx, (op, prec) in enumerate(precedence_list):
             if idx == 0:
                 precedence_lines.append(
-                    f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first because it has the highest precedence level ({prec})."
+                    f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first "
+                    f"because it has the highest precedence level ({prec})."
                 )
             elif idx == len(precedence_list) - 1:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last because it has the lowest precedence level ({prec})."
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last "
+                    f"because it has the lowest precedence level ({prec})."
                 )
             else:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} has precedence level {prec}."
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
+                    f"has precedence level {prec}."
                 )
 
         precedence_info = "\n".join(precedence_lines)
@@ -597,7 +600,8 @@ class QueryStringLinter:
             "This can lead to unexpected interpretations of the query.\n\n"
             "Specifically:\n"
             f"{precedence_info}\n\n"
-            "To fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n"
+            "To fix this, search-query adds artificial parentheses around "
+            "operator groups with higher precedence.\n\n"
         )
 
         self.add_linter_message(

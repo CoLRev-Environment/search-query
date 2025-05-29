@@ -224,7 +224,15 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(9, 12)],
+                    "position": [(3, 12)],
+                    "details": "",
+                },
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(9, 16)],
                     "details": "",
                 },
                 {
@@ -233,7 +241,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(13, 16)],
-                    "details": "",
+                    "details": "Cannot end with FIELD",
                 },
             ],
         ),
@@ -245,7 +253,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(9, 10)],
+                    "position": [(3, 10)],
                     "details": "",
                 }
             ],
@@ -266,7 +274,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(2, 3)],
+                    "position": [(0, 3)],
                     "details": "",
                 },
                 {
@@ -295,9 +303,17 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(9, 12)],
+                    "position": [(3, 12)],
                     "details": "",
-                }
+                },
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(9, 12)],
+                    "details": "Cannot end with FIELD",
+                },
             ],
         ),
         (
@@ -414,7 +430,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(9, 12)],
+                    "position": [(3, 12)],
                     "details": "",
                 }
             ],
@@ -927,7 +943,7 @@ def test_list_parser_case_4() -> None:
         "code": "F3003",
         "is_fatal": True,
         "label": "invalid-list-reference",
-        "message": "Invalid list reference in list query (not found)",
+        "message": "Invalid list reference in list query",
         "position": [(7, 9)],
         "details": "List reference #5 not found.",
     }

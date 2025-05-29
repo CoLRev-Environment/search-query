@@ -104,12 +104,28 @@ from search_query.query import SearchField
                 ),
             ],
         ),
+        (
+            "TI RN OR AB RN",
+            [
+                Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
+                Token(value="RN", type=TokenTypes.SEARCH_TERM, position=(3, 5)),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(6, 8)),
+                Token(value="AB", type=TokenTypes.FIELD, position=(9, 11)),
+                Token(value="RN", type=TokenTypes.SEARCH_TERM, position=(12, 14)),
+            ],
+        ),
+        # (
+        #     '(DE "Persuasive Communication) OR (DE "Collaboration")',
+        #     [
+        #     ]
+        # )
     ],
 )
 def test_tokenization(
     query_string: str, expected_tokens: List[Tuple[str, str, Tuple[int, int]]]
 ) -> None:
     """Test EBSCO parser tokenization."""
+    print(query_string)
     parser = EBSCOParser(query_string, search_field_general="")
     parser.tokenize()
 
@@ -291,6 +307,82 @@ def test_invalid_token_sequences(
             '(ZY "sudan" OR ZY "south sudan") AND TI "context of vegetarians"',
             [],
         ),
+        (
+            "bias OR OR politics",
+            [
+                {
+                    "code": "F1004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(8, 10)],
+                    "details": "Cannot have two consecutive operators",
+                }
+            ],
+        ),
+        (
+            "*ology",
+            [
+                {
+                    "code": "F2001",
+                    "label": "wildcard-unsupported",
+                    "message": "Unsupported wildcard in search string.",
+                    "is_fatal": True,
+                    "position": [(0, 1)],
+                    "details": "Wildcard not allowed at the beginning of a term.",
+                }
+            ],
+        ),
+        (
+            "f??*",
+            [
+                {
+                    "code": "F2001",
+                    "label": "wildcard-unsupported",
+                    "message": "Unsupported wildcard in search string.",
+                    "is_fatal": True,
+                    "position": [(0, 4)],
+                    "details": "Invalid wildcard use: only one leading literal character found. When a wildcard appears within the first four characters, at least two literal (non-wildcard) characters must be present in that span.",
+                }
+            ],
+        ),
+        (
+            "f*tal",
+            [
+                {
+                    "code": "F2001",
+                    "label": "wildcard-unsupported",
+                    "message": "Unsupported wildcard in search string.",
+                    "is_fatal": True,
+                    "position": [(0, 5)],
+                    "details": "Do not use * in the second position followed by additional letters. Use ? or # instead (e.g., f?tal).",
+                }
+            ],
+        ),
+        (
+            "colo#r",
+            [],
+        ),
+        (
+            "pediatric*",
+            [],
+        ),
+        (
+            "tumor*",
+            [],
+        ),
+        (
+            "education*",
+            [],
+        ),
+        (
+            "f#tal",
+            [],
+        ),
+        (
+            "f?tal",
+            [],
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
@@ -365,7 +457,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(8, 14)],
-                    "details": "Operator NEAR/2 is not supported by EBSCO. Must be Nx instead.",
+                    "details": "Operator NEAR/2 is not supported by EBSCO. Must be N2 instead.",
                 }
             ],
         ),
@@ -380,7 +472,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(8, 16)],
-                    "details": "Operator WITHIN/2 is not supported by EBSCO. Must be Wx instead.",
+                    "details": "Operator WITHIN/2 is not supported by EBSCO. Must be W2 instead.",
                 }
             ],
         ),
