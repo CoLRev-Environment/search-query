@@ -435,7 +435,7 @@ class QueryStringLinter:
         if quote_count % 2 != 0:
             return query_str  # unbalanced quotes, do not attempt trimming
 
-        suffix_match = re.search(r"\)(?!\s*(AND|OR))[^()\[\]]*$", query_str)
+        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", query_str)
 
         original_query_str = query_str  # preserve for position calculation
 
