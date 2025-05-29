@@ -385,6 +385,81 @@ class QueryStringLinter:
                     )
                     # Replace?
 
+    def handle_prefix_in_query_str(self, query_str: str) -> str:
+        """Handle prefix in query string.
+
+        Removes tokens before a fully quoted query
+        if they are not connected with a valid operator.
+
+        Only applies if quotes are balanced (even number of quotes).
+        """
+
+        quote_count = query_str.count('"')
+        if quote_count % 2 != 0:
+            return query_str  # unbalanced quotes, do not attempt trimming
+
+        prefix_match = re.search(r"^(?!.*\b(?:AND|OR)\s*)[^()]*?(?=\()", query_str)
+
+        original_query_str = query_str  # preserve for position calculation
+
+        # Handle prefix
+        if (
+            prefix_match
+            and prefix_match.group(0) is not None
+            and prefix_match.group(0).strip() != "("
+        ):
+            prefix = prefix_match.group(0)[:-1]
+            if prefix:
+                query_str = query_str[len(prefix) :].lstrip()
+
+                start = original_query_str.find(prefix)
+                end = start + len(prefix)
+                self.add_linter_message(
+                    QueryErrorCode.UNSUPPORTED_PREFIX,
+                    positions=[(start, end)],
+                    details="Removed unsupported text at the beginning of the query.",
+                )
+
+        return query_str
+
+    def handle_suffix_in_query_str(self, query_str: str) -> str:
+        """Handle suffix in query string.
+
+        Removes tokens after a fully quoted query
+        if they are not connected with a valid operator.
+
+        Only applies if quotes are balanced (even number of quotes).
+        """
+
+        quote_count = query_str.count('"')
+        if quote_count % 2 != 0:
+            return query_str  # unbalanced quotes, do not attempt trimming
+
+        suffix_match = re.search(r"\)(?!\s*(AND|OR))[^()\[\]]*$", query_str)
+
+        original_query_str = query_str  # preserve for position calculation
+
+        # Handle suffix
+        if (
+            suffix_match
+            and suffix_match.group(0) is not None
+            and suffix_match.group(0).strip() != ")"
+        ):
+            suffix = suffix_match.group(0)[1:]
+            if suffix:
+                query_str = query_str[: -len(suffix)].rstrip()
+
+                start = original_query_str.rfind(suffix)
+                end = start + len(suffix)
+
+                self.add_linter_message(
+                    QueryErrorCode.UNSUPPORTED_SUFFIX,
+                    positions=[(start, end)],
+                    details="Removed unsupported text at the end of the query.",
+                )
+
+        return query_str
+
     def handle_fully_quoted_query_str(self, query_str: str) -> str:
         """Handle fully quoted query string."""
         if '"' == query_str[0] and '"' == query_str[-1] and "(" in query_str:

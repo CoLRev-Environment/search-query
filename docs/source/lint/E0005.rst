@@ -5,10 +5,10 @@ E0005 — invalid-proximity-use
 
 **Error Code**: E0005
 
-**Message**: ``Invalid use of the proximity operator :~``
+**Message**: ``Invalid use of the proximity operator``
 
-**Scope**: PLATFORM.PUBMED
+**Scope**: PLATFORM.PUBMED, PLATFORM.EBSCO
 
-**Description**: Invalid use of the proximity operator :~
+**Description**: Invalid use of the proximity operator
 
 **Back to**: :ref:`lint`

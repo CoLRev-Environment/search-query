@@ -28,7 +28,7 @@ class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
     SEARCH_TERM_REGEX = re.compile(
-        r'\*?[\w\-/\.\!\*,&]+(?:[\*\$\?][\w\-/\.\!\*,&]*)*|"[^"]+"'
+        r'\*?[\w\-/\.\!\*,&\\]+(?:[\*\$\?][\w\-/\.\!\*,&\\]*)*|"[^"]+"'
     )
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
     PROXIMITY_OPERATOR_REGEX = re.compile(
@@ -99,6 +99,7 @@ class WOSParser(QueryStringParser):
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.combine_subsequent_terms()
+        self.split_operators_with_missing_whitespace()
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -314,6 +315,12 @@ class WOSParser(QueryStringParser):
 
         self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
         self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
+            self.query_str
+        )
+        # self.query_str = self.query_str = self.linter.handle_prefix_in_query_str(
+        #     self.query_str
+        # )
+        self.query_str = self.query_str = self.linter.handle_suffix_in_query_str(
             self.query_str
         )
 

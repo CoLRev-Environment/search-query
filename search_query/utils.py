@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Utilities for SearchQuery."""
+import re
 import typing
 
 from search_query.constants import Colors
 
 
+# pylint: disable=too-many-locals
 def format_query_string_positions(
     query_str: str,
     positions: typing.List[typing.Tuple[int, int]],
@@ -28,18 +30,45 @@ def format_query_string_positions(
             merged.append([start, end])
 
     if len(positions) == 1 and len(query_str) > 200:
-        # return highlighted query string with surrounding text (20 chars)
         start, end = merged[0]
-        context_start = max(0, start - 30)
-        context_end = min(len(query_str), end + 30)
+
+        # Define how much context you want (in words, not characters)
+        word_context = 8
+
+        # Find words before
+        before_words = re.findall(r"\b\w+\b", query_str[:start])
+        before_start = start
+        if before_words:
+            before_start = (
+                query_str[:start].rfind(before_words[-word_context])
+                if len(before_words) >= word_context
+                else 0
+            )
+
+        # Find words after
+        after_words = re.findall(r"\b\w+\b", query_str[end:])
+        after_end = end
+        if after_words:
+            match = re.search(
+                re.escape(after_words[word_context - 1])
+                if len(after_words) >= word_context
+                else r"\w+$",
+                query_str[end:],
+            )
+            if match:
+                after_end = end + match.end()
+
         before = ""
-        if context_start > 0:
+        if before_start > 0:
             before += f"{Colors.GREY}[...]{Colors.END} "
-        before = query_str[context_start:start]
+        before += query_str[before_start:start]
+
         highlighted = f"{color}{query_str[start:end]}{Colors.END}".replace("\n", "")
-        after = query_str[end:context_end]
-        if context_end < len(query_str):
+
+        after = query_str[end:after_end]
+        if after_end < len(query_str):
             after += f" {Colors.GREY}[...]{Colors.END}"
+
         return f"{before}{highlighted}{after}"
 
     # Apply formatting

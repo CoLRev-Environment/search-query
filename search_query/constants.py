@@ -590,6 +590,20 @@ class QueryErrorCode(Enum):
         "Journal (or publication name) filter in subquery",
         "",
     )
+    UNSUPPORTED_PREFIX = (
+        [PLATFORM.PUBMED],
+        "W0015",
+        "unsupported-prefix",
+        "Unsupported prefix in search query",
+        "",
+    )
+    UNSUPPORTED_SUFFIX = (
+        [PLATFORM.PUBMED],
+        "W0016",
+        "unsupported-suffix",
+        "Unsupported suffix in search query",
+        "",
+    )
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments

@@ -24,7 +24,7 @@ class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
     SEARCH_FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
-    OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT)\b)(?!\s?\[[^\[]*?\])")
+    OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?\])")
     PARENTHESIS_REGEX = re.compile(r"[\(\)]")
     SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
     SEARCH_TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
@@ -208,8 +208,15 @@ class PubmedParser(QueryStringParser):
         self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
             self.query_str
         )
+        self.query_str = self.query_str = self.linter.handle_prefix_in_query_str(
+            self.query_str
+        )
+        self.query_str = self.query_str = self.linter.handle_suffix_in_query_str(
+            self.query_str
+        )
 
         self.tokenize()
+
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,

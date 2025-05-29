@@ -73,6 +73,50 @@ class QueryStringParser(ABC):
 
         self.tokens = combined_tokens
 
+    def split_operators_with_missing_whitespace(self) -> None:
+        """Split operators that are not separated by whitespace."""
+        # This is a workaround for the fact that some platforms do not support
+        # operators without whitespace, e.g. "AND" or "OR"
+        # This is not a problem for the parser, but for the linter
+        # which expects whitespace between operators and search terms
+
+        i = 0
+        while i < len(self.tokens) - 1:
+            token = self.tokens[i]
+            next_token = self.tokens[i + 1]
+
+            appended_operator_match = re.search(r"(AND|OR|NOT)$", token.value)
+
+            # if the end of a search term (value) is a capitalized operator
+            # without a whitespace, split the tokens
+            if (
+                token.type == TokenTypes.SEARCH_TERM
+                and next_token.type != TokenTypes.LOGIC_OPERATOR
+                and appended_operator_match
+            ):
+                # Split the operator from the search term
+
+                appended_operator = appended_operator_match.group(0)
+                token.value = token.value[: -len(appended_operator)]
+                token.position = (
+                    token.position[0],
+                    token.position[1] - len(appended_operator),
+                )
+                # insert operator token afterwards
+                operator_token = Token(
+                    value=appended_operator,
+                    type=TokenTypes.LOGIC_OPERATOR,
+                    position=(
+                        token.position[1],
+                        token.position[1] + len(appended_operator),
+                    ),
+                )
+                self.tokens.insert(i + 1, operator_token)
+
+                i += 2  # Skip over the newly inserted operator token
+            else:
+                i += 1
+
     @abstractmethod
     def parse(self) -> Query:
         """Parse the query."""

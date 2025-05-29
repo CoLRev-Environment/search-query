@@ -1,0 +1,14 @@
+.. _W0015:
+
+W0015 — unsupported-prefix
+==========================
+
+**Error Code**: W0015
+
+**Message**: ``Unsupported prefix in search query``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Unsupported prefix in search query
+
+**Back to**: :ref:`lint`

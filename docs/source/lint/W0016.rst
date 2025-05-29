@@ -1,0 +1,14 @@
+.. _W0016:
+
+W0016 — unsupported-suffix
+==========================
+
+**Error Code**: W0016
+
+**Message**: ``Unsupported suffix in search query``
+
+**Scope**: PLATFORM.PUBMED
+
+**Description**: Unsupported suffix in search query
+
+**Back to**: :ref:`lint`

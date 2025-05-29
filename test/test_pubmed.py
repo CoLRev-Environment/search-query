@@ -209,6 +209,34 @@ def test_pubmed_invalid_token_sequences(
     "query_str, search_field_general, messages",
     [
         (
+            "(eHealth[Text Word]) Sort by: Publication Date",
+            "",
+            [
+                {
+                    "code": "W0016",
+                    "label": "unsupported-suffix",
+                    "message": "Unsupported suffix in search query",
+                    "is_fatal": False,
+                    "position": [(20, 46)],
+                    "details": "Removed unsupported text at the end of the query.",
+                }
+            ],
+        ),
+        (
+            "Pubmed with no restrictions: (eHealth[Text Word])",
+            "",
+            [
+                {
+                    "code": "W0015",
+                    "label": "unsupported-prefix",
+                    "message": "Unsupported prefix in search query",
+                    "is_fatal": False,
+                    "position": [(0, 28)],
+                    "details": "Removed unsupported text at the beginning of the query.",
+                }
+            ],
+        ),
+        (
             '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
             "Title",
             [

@@ -39,6 +39,9 @@ The advanced PubMed interface offers a dropdown for search fields such as `[Titl
 - If you apply the **same field** to the entire query, it is safe to store this value in the `general_search_field`.
 - If the query contains **multiple search fields**, `search-query` will treat each term individually, and **leaving `general_search_field` empty is preferred**.
 
+TODO : explain list search: https://library.bath.ac.uk/pubmed/combine-searches
+-> searches an be reused/combined with the "add" button (or with "#1" references)
+
 Resources
 ---------
 

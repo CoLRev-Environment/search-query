@@ -74,6 +74,20 @@ from search_query.wos.parser import WOSParser
                 Token(value="John?Doe", type=TokenTypes.SEARCH_TERM, position=(19, 27)),
             ],
         ),
+        (
+            'direction*OR (route AND test)"',
+            [
+                Token(
+                    value="direction*", type=TokenTypes.SEARCH_TERM, position=(0, 10)
+                ),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(10, 12)),
+                Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(13, 14)),
+                Token(value="route", type=TokenTypes.SEARCH_TERM, position=(14, 19)),
+                Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(20, 23)),
+                Token(value="test", type=TokenTypes.SEARCH_TERM, position=(24, 28)),
+                Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(28, 29)),
+            ],
+        ),
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
@@ -109,6 +123,27 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(-1, -1)],
                     "details": "",
                 }
+            ],
+        ),
+        (
+            r"collaborat\* OR assistance",
+            [
+                {
+                    "code": "E0004",
+                    "label": "invalid-character",
+                    "message": "Search term contains invalid character",
+                    "is_fatal": False,
+                    "position": [(0, 12)],
+                    "details": "Invalid character '\\' in search term 'collaborat\\*'",
+                },
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(-1, -1)],
+                    "details": "",
+                },
             ],
         ),
         (
