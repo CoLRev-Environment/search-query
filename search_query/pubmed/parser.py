@@ -64,6 +64,8 @@ class PubmedParser(QueryStringParser):
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
                 token_type = TokenTypes.LOGIC_OPERATOR
+            elif value == ":":
+                token_type = TokenTypes.RANGE_OPERATOR
             elif value == "(":
                 token_type = TokenTypes.PARENTHESIS_OPEN
             elif value == ")":
@@ -129,7 +131,10 @@ class PubmedParser(QueryStringParser):
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i = i - 1
 
-            if i == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+            if i == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.RANGE_OPERATOR,
+            ]:
                 operator = token.get_operator_type()
                 if not first_operator_found:
                     first_operator = operator

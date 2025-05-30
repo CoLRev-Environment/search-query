@@ -31,6 +31,7 @@ class TokenTypes(Enum):
     SEARCH_TERM = "SEARCH_TERM"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
+    RANGE_OPERATOR = "RANGE_OPERATOR"
     UNKNOWN = "UNKNOWN"
 
 
@@ -72,6 +73,8 @@ class Token:
             return Operators.OR
         if self.value.upper() == "NOT":
             return Operators.NOT
+        if self.value == ":":
+            return Operators.RANGE
         raise ValueError()  # pragma: no cover
 
 
@@ -115,6 +118,7 @@ class Operators:
     NOT = "NOT"
     NEAR = "NEAR"
     WITHIN = "WITHIN"
+    RANGE = "RANGE"
 
 
 class Fields:
