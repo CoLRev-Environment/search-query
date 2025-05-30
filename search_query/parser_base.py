@@ -8,7 +8,6 @@ from abc import ABC
 from abc import abstractmethod
 
 from search_query.constants import LinterMode
-from search_query.constants import ListTokenTypes
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
@@ -141,29 +140,9 @@ class QueryListParser:
         self.mode = mode
         self.query_dict: dict = {}
 
+    @abstractmethod
     def tokenize_list(self) -> None:
         """Tokenize the query_list."""
-        query_list = self.query_list
-        previous = 0
-        for line in query_list.split("\n"):
-            if line.strip() == "":
-                continue
-
-            match = self.LIST_ITEM_REGEX.match(line)
-            if not match:  # pragma: no cover
-                raise ValueError(f"line not matching format: {line}")
-            node_nr, node_content = match.groups()
-            pos_start, pos_end = match.span(2)
-            pos_start += previous
-            pos_end += previous
-            self.query_dict[str(node_nr)] = {
-                "node_content": node_content,
-                "content_pos": (pos_start, pos_end),
-                "type": ListTokenTypes.OPERATOR_NODE
-                if "#" in node_content
-                else ListTokenTypes.QUERY_NODE,
-            }
-            previous += len(line) + 1
 
     @abstractmethod
     def parse(self) -> Query:
