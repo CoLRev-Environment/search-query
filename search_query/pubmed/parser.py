@@ -64,6 +64,8 @@ class PubmedParser(QueryStringParser):
 
             if value.upper() in {"AND", "OR", "NOT", "|", "&"}:
                 token_type = TokenTypes.LOGIC_OPERATOR
+            elif value == ":":
+                token_type = TokenTypes.RANGE_OPERATOR
             elif value == "(":
                 token_type = TokenTypes.PARENTHESIS_OPEN
             elif value == ")":
@@ -111,6 +113,18 @@ class PubmedParser(QueryStringParser):
             and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
         )
 
+    def _get_operator_type(self, token: Token) -> str:
+        """Get operator type"""
+        if token.value.upper() in {"&", "AND"}:
+            return Operators.AND
+        if token.value.upper() in {"|", "OR"}:
+            return Operators.OR
+        if token.value.upper() == "NOT":
+            return Operators.NOT
+        if token.value == ":":
+            return Operators.RANGE
+        raise ValueError()  # pragma: no cover
+
     def _get_operator_indices(self, tokens: list) -> list:
         """Get indices of top-level operators in the token list"""
         operator_indices = []
@@ -129,8 +143,11 @@ class PubmedParser(QueryStringParser):
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 i = i - 1
 
-            if i == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
-                operator = token.get_operator_type()
+            if i == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.RANGE_OPERATOR,
+            ]:
+                operator = self._get_operator_type(token)
                 if not first_operator_found:
                     first_operator = operator
                     first_operator_found = True
@@ -164,7 +181,7 @@ class PubmedParser(QueryStringParser):
             query = self.parse_query_tree(token_list)
             children.append(query)
 
-        operator_type = tokens[operator_indices[0]].get_operator_type()
+        operator_type = self._get_operator_type(tokens[operator_indices[0]])
 
         query_start_pos = tokens[0].position[0]
         query_end_pos = tokens[-1].position[1]

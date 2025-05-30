@@ -879,6 +879,16 @@ def test_linter_with_general_search_field(
             "All Fields",
             'OR[NOT[AND[OR["eHealth"[[all]], "digital health"[[all]]], "bias"[[all]]], "equity"[[all]]], "policy"[[all]]]',
         ),
+        (
+            'eHealth[ti] AND ("2006/01/01"[Date - Create] : "2023/08/18"[Date - Create])',
+            "",
+            'AND[eHealth[[ti]], RANGE["2006/01/01"[[Date - Create]], "2023/08/18"[[Date - Create]]]]',
+        ),
+        (
+            '("1995/01/01"[pdat] : "3000"[pdat])',
+            "",
+            'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
+        ),
     ],
 )
 def test_parser(

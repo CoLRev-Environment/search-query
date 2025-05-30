@@ -181,6 +181,7 @@ class Query:
             Operators.NOT,
             Operators.NEAR,
             Operators.WITHIN,
+            Operators.RANGE,
         ]:
             raise ValueError(f"Invalid operator value: {v}")
         self._value = v

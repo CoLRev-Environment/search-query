@@ -45,10 +45,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
         TokenTypes.FIELD: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
+            TokenTypes.RANGE_OPERATOR,
         ],
         TokenTypes.LOGIC_OPERATOR: [
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
+        ],
+        TokenTypes.RANGE_OPERATOR: [
+            TokenTypes.SEARCH_TERM,
         ],
     }
 

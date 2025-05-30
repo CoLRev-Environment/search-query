@@ -31,6 +31,7 @@ class TokenTypes(Enum):
     SEARCH_TERM = "SEARCH_TERM"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
+    RANGE_OPERATOR = "RANGE_OPERATOR"
     UNKNOWN = "UNKNOWN"
 
 
@@ -63,16 +64,6 @@ class Token:
     def is_operator(self) -> bool:
         """Check if token is an operator"""
         return self.type in (TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR)
-
-    def get_operator_type(self) -> str:
-        """Get operator type"""
-        if self.value.upper() in {"&", "AND"}:
-            return Operators.AND
-        if self.value.upper() in {"|", "OR"}:
-            return Operators.OR
-        if self.value.upper() == "NOT":
-            return Operators.NOT
-        raise ValueError()  # pragma: no cover
 
 
 @dataclass
@@ -115,6 +106,7 @@ class Operators:
     NOT = "NOT"
     NEAR = "NEAR"
     WITHIN = "WITHIN"
+    RANGE = "RANGE"
 
 
 class Fields:
