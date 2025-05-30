@@ -425,10 +425,66 @@ class PubmedQueryListLinter(QueryListLinter):
         """Validate token list"""
 
         # self.parser.query_dict.items()
-
+        self.check_missing_tokens()
         self.check_invalid_list_reference()
         # self.check_unknown_tokens()
         self.check_operator_node_token_sequence()
+
+    def check_missing_tokens(self) -> None:
+        """Check missing tokens"""
+
+        for level, query in self.parser.query_dict.items():
+            if query["type"] != ListTokenTypes.OPERATOR_NODE:
+                continue
+            query_str = query["node_content"]
+
+            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+
+            covered_ranges = []
+            current_index = 0
+
+            for token in operator_node_tokens:
+                token_value = token.value
+                try:
+                    start = query_str.index(token_value, current_index)
+                    end = start + len(token_value)
+                    covered_ranges.append((start, end))
+                    current_index = end
+                except ValueError:
+                    continue  # Token not found
+
+            # Merge overlapping/adjacent ranges
+            merged: list = []
+            for start, end in sorted(covered_ranges):
+                if not merged or merged[-1][1] < start:
+                    merged.append((start, end))
+                else:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+
+            # Identify gaps and add linter messages
+            last_end = 0
+            for start, end in merged:
+                if last_end < start:
+                    segment = query_str[last_end:start]
+                    if segment.strip():  # non-whitespace segment
+                        self.add_linter_message(
+                            QueryErrorCode.TOKENIZING_FAILED,
+                            list_position=level,
+                            positions=[(last_end, start)],
+                            details=f"Unparsed segment: '{segment.strip()}'",
+                        )
+                last_end = end
+
+            # Handle trailing unparsed text
+            if last_end < len(query_str):
+                segment = query_str[last_end:]
+                if segment.strip():
+                    self.add_linter_message(
+                        QueryErrorCode.TOKENIZING_FAILED,
+                        list_position=level,
+                        positions=[(last_end, len(query_str))],
+                        details=f"Unparsed segment: '{segment.strip()}'",
+                    )
 
     def check_operator_node_token_sequence(self) -> None:
         """Check operator nodes"""
@@ -446,7 +502,7 @@ class PubmedQueryListLinter(QueryListLinter):
             ):
                 details = (
                     "Operator node must start with a list reference "
-                    f"but starts with {operator_node_tokens[0].type}"
+                    "(format: #1, #2, etc.)."
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -497,6 +553,18 @@ class PubmedQueryListLinter(QueryListLinter):
                     != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
                 ):
                     continue
+                if not operator_node_token.value.startswith("#"):
+                    details = (
+                        "List reference must start with '#', "
+                        f"but found '{operator_node_token.value}'."
+                    )
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_LIST_REFERENCE,
+                        list_position=level,
+                        positions=[operator_node_token.position],
+                        details=details,
+                    )
+
                 list_reference = operator_node_token.value.replace("#", "")
 
                 if list_reference not in self.parser.query_dict:
