@@ -104,22 +104,22 @@ Test Types
 
 3. **Translation Tests**
     - Purpose: Confirm that parsing + serialization results in the expected generic or structured query string.
-    - Example:
 
-      **TODO:**
+Example:
 
-      ::
+.. code-block:: python
 
-        @pytest.mark.parametrize(
-            "query_string, expected_translation",
-            [
-                ("TS=(eHealth) AND TS=(Review)", "AND[eHealth[TS=], Review[TS=]]"),
-            ],
-        )
-        def test_parser_translation(query_string, expected_translation):
-            parser = XYParser(query_string)
-            query_tree = parser.parse()
-            assert query_tree.to_generic_string() == expected_translation
+   @pytest.mark.parametrize(
+      "query_string, expected_translation",
+      [
+            ("TS=(eHealth) AND TS=(Review)",
+            "AND[eHealth[TS=], Review[TS=]]"),
+      ],
+   )
+   def test_parser_translation(query_string, expected_translation):
+      parser = XYParser(query_string)
+      query_tree = parser.parse()
+      assert query_tree.to_generic_string() == expected_translation
 
 
 .. note::

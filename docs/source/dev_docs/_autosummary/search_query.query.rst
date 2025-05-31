@@ -18,5 +18,3 @@ search\_query.query
    .. autosummary::
 
       Query
-      SearchField
-      Term

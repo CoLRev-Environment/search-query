@@ -44,8 +44,8 @@ Query objects can also be created programmatically.
    from search_query import OrQuery, AndQuery
 
    # Typical building-blocks approach
-   digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="ab")
-   work_synonyms = OrQuery(["work", "labor", "service"], search_field="ab")
+   digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="abstract")
+   work_synonyms = OrQuery(["work", "labor", "service"], search_field="abstract")
    query = AndQuery([digital_synonyms, work_synonyms])
 
 Database

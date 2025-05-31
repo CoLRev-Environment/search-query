@@ -27,5 +27,6 @@ search\_query.constants
       Operators
       PLATFORM
       QueryErrorCode
+      SearchField
       Token
       TokenTypes

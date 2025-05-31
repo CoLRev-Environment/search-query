@@ -10,23 +10,23 @@ To translate a search query on the command line, run
 
 .. code-block:: bash
 
-    search-query-translate --from colrev_web_of_science \
+    search-query-translate --from wos \
                             --input input_query.txt \
-                            --to colrev_pubmed \
+                            --to pubmed \
                             --output output_query.txt
 
 **Arguments**
 
 - ``--from`` (required):
   The source query format.
-  Example: ``colrev_web_of_science``
+  Example: ``wos``
 
 - ``--input`` (required):
   Path to the input file containing the original query.
 
 - ``--to`` (required):
   The target query format.
-  Example: ``colrev_pubmed``
+  Example: ``pubmed``
 
 - ``--output`` (required):
   Path to the file where the converted query will be written.
@@ -38,9 +38,9 @@ Suppose you have a Web of Science search query saved in ``input_query.txt`` and 
 
 .. code-block:: bash
 
-    search-query-translate --from colrev_web_of_science \
+    search-query-translate --from wos \
                             --input input_query.txt \
-                            --to colrev_pubmed \
+                            --to pubmed \
                             --output output_query.txt
 
 The converted query will be saved in ``output_query.txt``.
