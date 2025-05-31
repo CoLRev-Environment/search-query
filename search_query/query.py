@@ -223,28 +223,14 @@ class Query:
 
     @children.setter
     def children(self, children: typing.List[Query]) -> None:
-        """Set the children of this query node, updating parent pointers."""
+        """Set the children of the query, updating parent pointers."""
         # Clear existing children and reset parent links (if necessary)
         self._children.clear()
         if not isinstance(children, list):
             raise TypeError("children must be a list of Query instances or strings")
-        if len(children) < 2:
-            raise ValueError("A query must have at least two children")
-        if (
-            self.operator
-            and self.value
-            in [
-                Operators.NOT,
-                Operators.NEAR,
-                Operators.WITHIN,
-                Operators.RANGE,
-            ]
-            and len(children) != 2
-        ):
-            raise ValueError(
-                f"{self.value} operator requires exactly two children, "
-                f"got {len(children)}"
-            )
+
+        # Note: OrQuery, AndQuery, NearQuery, NotQuery, RANGEQuery offeride the setter
+        # with specific validation.
 
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
