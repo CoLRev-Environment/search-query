@@ -346,7 +346,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(18, 20), (49, 52)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+                    "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
                 },
                 {
                     "code": "E0001",
@@ -852,7 +852,7 @@ def test_linter_with_general_search_field(
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
             "All Fields",
-            'OR["health tracking"[[all]], AND["remote monitoring"[[all]], "wearable device"[[all]]]]',
+            'AND[OR["health tracking"[[all]], "remote monitoring"[[all]]], "wearable device"[[all]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
@@ -862,7 +862,7 @@ def test_linter_with_general_search_field(
         (
             '"AI" OR "robotics" AND "ethics"',
             "All Fields",
-            'OR["AI"[[all]], AND["robotics"[[all]], "ethics"[[all]]]]',
+            'AND[OR["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"AI" NOT "robotics" OR "ethics"',
@@ -872,12 +872,12 @@ def test_linter_with_general_search_field(
         (
             '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
             "All Fields",
-            'OR[AND["digital health"[[all]], OR["apps"[[all]], NOT["wearables"[[all]], "privacy"[[all]]]]], "ethics"[[all]]]',
+            'OR[AND["digital health"[[all]], NOT[OR["apps"[[all]], "wearables"[[all]]], "privacy"[[all]]]], "ethics"[[all]]]',
         ),
         (
             '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
             "All Fields",
-            'OR["eHealth"[[all]], AND["digital health"[[all]], NOT["bias"[[all]], "equity"[[all]]]], "policy"[[all]]]',
+            'OR[NOT[AND[OR["eHealth"[[all]], "digital health"[[all]]], "bias"[[all]]], "equity"[[all]]], "policy"[[all]]]',
         ),
         (
             'eHealth[ti] AND ("2006/01/01"[Date - Create] : "2023/08/18"[Date - Create])',
