@@ -3,6 +3,7 @@
 import pytest
 
 import search_query.parser
+from search_query.constants import Fields
 from search_query.constants import PLATFORM
 from search_query.pubmed.translator import PubmedTranslator
 from search_query.query import Query
@@ -13,21 +14,21 @@ from search_query.query import SearchField
 
 
 def test_to_generic_string(query_setup: dict) -> None:
-    assert query_setup["test_node"].to_generic_string() == "testvalue[ti]"
+    assert query_setup["test_node"].to_generic_string() == "testvalue[title]"
 
 
 def test_append_children(query_setup: dict) -> None:
     health_query = query_setup["query_health"]
 
-    assert health_query.children[0].to_generic_string() == '"health care"[ti]'
-    assert health_query.children[1].to_generic_string() == "medicine[ti]"
+    assert health_query.children[0].to_generic_string() == '"health care"[title]'
+    assert health_query.children[1].to_generic_string() == "medicine[title]"
 
 
 def test_or_query(query_setup: dict) -> None:
     query_ai = query_setup["query_ai"]
     assert (
         query_ai.to_generic_string()
-        == 'OR[ti]["AI"[ti], "Artificial Intelligence"[ti], "Machine Learning"[ti], NOT[ti][robot*[ti]]]'
+        == 'OR[title]["AI"[title], "Artificial Intelligence"[title], "Machine Learning"[title], NOT[title][robot*[title]]]'
     )
 
 
@@ -35,13 +36,13 @@ def test_and_query(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
     assert (
         query_complete.to_generic_string()
-        == 'AND[ti][OR[ti]["AI"[ti], "Artificial Intelligence"[ti], "Machine Learning"[ti], NOT[ti][robot*[ti]]], OR[ti]["health care"[ti], medicine[ti]], OR[ab][ethic*[ab], moral*[ab]]]'
+        == 'AND[title][OR[title]["AI"[title], "Artificial Intelligence"[title], "Machine Learning"[title], NOT[title][robot*[title]]], OR[title]["health care"[title], medicine[title]], OR[abstract][ethic*[abstract], moral*[abstract]]]'
     )
 
 
 def test_not_query(query_setup: dict) -> None:
     query_robot = query_setup["query_robot"]
-    assert query_robot.to_generic_string() == "NOT[ti][robot*[ti]]"
+    assert query_robot.to_generic_string() == "NOT[title][robot*[title]]"
 
 
 def test_nested_queries(query_setup: dict) -> None:
@@ -137,7 +138,9 @@ def test_translation_ebsco_wos() -> None:
                 search_field=None,
                 children=[
                     Query(
-                        value="eHealth", operator=False, search_field=SearchField("ti")
+                        value="eHealth",
+                        operator=False,
+                        search_field=SearchField(Fields.TITLE),
                     ),
                     Query(
                         value="OR",
@@ -146,18 +149,18 @@ def test_translation_ebsco_wos() -> None:
                             Query(
                                 value="mHealth",
                                 operator=False,
-                                search_field=SearchField("ti"),
+                                search_field=SearchField(Fields.TITLE),
                             ),
                             Query(
                                 value="telemedicine",
                                 operator=False,
-                                search_field=SearchField("ti"),
+                                search_field=SearchField(Fields.TITLE),
                             ),
                         ],
                     ),
                 ],
             ),
-            "OR[eHealth[ti], mHealth[ti], telemedicine[ti]]",
+            "OR[eHealth[title], mHealth[title], telemedicine[title]]",
         ),
         (
             # Nested AND structure
@@ -166,7 +169,9 @@ def test_translation_ebsco_wos() -> None:
                 operator=True,
                 children=[
                     Query(
-                        value="cancer", operator=False, search_field=SearchField("ti")
+                        value="cancer",
+                        operator=False,
+                        search_field=SearchField(Fields.TITLE),
                     ),
                     Query(
                         value="AND",
@@ -175,18 +180,18 @@ def test_translation_ebsco_wos() -> None:
                             Query(
                                 value="therapy",
                                 operator=False,
-                                search_field=SearchField("ti"),
+                                search_field=SearchField(Fields.TITLE),
                             ),
                             Query(
                                 value="survivorship",
                                 operator=False,
-                                search_field=SearchField("ti"),
+                                search_field=SearchField(Fields.TITLE),
                             ),
                         ],
                     ),
                 ],
             ),
-            "AND[cancer[ti], therapy[ti], survivorship[ti]]",
+            "AND[cancer[title], therapy[title], survivorship[title]]",
         ),
     ],
 )
@@ -196,7 +201,7 @@ def test_flatten_nested_operators(query: Query, expected_flattened: str) -> None
 
 
 def test_translation_pubmed_to_generic() -> None:
-    query_str = "quantum[ti] AND dot[ti] AND spin[ti]"
+    query_str = "quantum[title] AND dot[title] AND spin[title]"
     print(query_str)
     query = search_query.parser.parse(
         query_str,
@@ -204,6 +209,6 @@ def test_translation_pubmed_to_generic() -> None:
     )
     translated_query = query.translate(PLATFORM.GENERIC.value)
     converted_query = translated_query.to_generic_string()
-    expected = "AND[quantum[ti], dot[ti], spin[ti]]"
+    expected = "AND[quantum[title], dot[title], spin[title]]"
 
     assert converted_query == expected

@@ -3,6 +3,7 @@
 import pytest
 
 from search_query.constants import Colors
+from search_query.constants import Fields
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
@@ -18,7 +19,7 @@ def test_invalid_tree_structure(query_setup: dict) -> None:
     with pytest.raises(ValueError):
         AndQuery(
             ["invalid", query_setup["query_complete"], query_setup["query_ai"]],
-            search_field=SearchField("ti"),
+            search_field=SearchField(Fields.TITLE),
         )
 
 
@@ -65,14 +66,14 @@ def test_parent_and_root() -> None:
     # Build a nested query structure
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field=SearchField("ab"),
+        search_field=SearchField(Fields.ABSTRACT),
     )
     ai = OrQuery(
         ["AI", "Artificial Intelligence"],
-        search_field=SearchField("ti"),
+        search_field=SearchField(Fields.TITLE),
     )
 
-    root_query = AndQuery([ethics, ai], search_field=SearchField("ti"))
+    root_query = AndQuery([ethics, ai], search_field=SearchField(Fields.TITLE))
 
     # Check that each subquery has root_query as its root
     assert ethics.get_parent() is root_query
@@ -93,25 +94,25 @@ def test_parent_and_root() -> None:
 def test_to_structured_string(query_setup: dict) -> None:
     health_query = query_setup["query_health"]
     actual = health_query.to_structured_string()
-    expected = """OR [ti][
-|---"health care" [ti]
-|---medicine [ti]
+    expected = """OR [title][
+|---"health care" [title]
+|---medicine [title]
 | ]"""
     assert actual == expected
 
 
 def test_near_query() -> None:
-    n_query = NEARQuery("NEAR", distance=12, children=[], search_field="ti")
+    n_query = NEARQuery("NEAR", distance=12, children=[], search_field=Fields.TITLE)
 
-    assert n_query.to_generic_string() == "NEAR/12[ti]"
-    assert n_query.to_structured_string() == "NEAR/12 [ti]"
+    assert n_query.to_generic_string() == "NEAR/12[title]"
+    assert n_query.to_structured_string() == "NEAR/12 [title]"
 
     with pytest.raises(ValueError):
-        n_query = NEARQuery("NEAR", children=[], search_field="ti")
+        n_query = NEARQuery("NEAR", children=[], search_field=Fields.TITLE)
 
     or_query = OrQuery(
         ["health", "medicine"],
-        search_field="ti",
+        search_field=Fields.TITLE,
     )
     with pytest.raises(ValueError):
         or_query.distance = 12
@@ -132,9 +133,9 @@ def test_search_field() -> None:
 
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field="ab",
+        search_field=Fields.ABSTRACT,
     )
-    assert ethics.search_field.value == "ab"  # type: ignore
+    assert ethics.search_field.value == Fields.ABSTRACT  # type: ignore
 
 
 def test_platform_setter() -> None:
@@ -142,7 +143,7 @@ def test_platform_setter() -> None:
 
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field="ab",
+        search_field=Fields.ABSTRACT,
     )
     assert ethics.platform == "generic"
     with pytest.raises(ValueError):
@@ -159,7 +160,7 @@ def test_value_setter() -> None:
         value="OR",
         operator=True,
         children=["ethics", "morality"],
-        search_field="ab",  # type: ignore
+        search_field=Fields.ABSTRACT,  # type: ignore
     )
     assert ethics.value == "OR"
 

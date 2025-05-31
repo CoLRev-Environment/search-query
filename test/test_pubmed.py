@@ -598,7 +598,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
-                    "position": [(70, 91)],
+                    "position": [(70, 91), (91, 109)],
                     "details": "Please double-check whether date filters should apply to the entire query.",
                 }
             ],
@@ -648,7 +648,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
-                    "position": [(32, 41)],
+                    "position": [(32, 41), (41, 45)],
                     "details": "Please double-check whether date filters should apply to the entire query.",
                 }
             ],
@@ -984,31 +984,31 @@ def test_list_parser_case_3() -> None:
     [
         (
             "eHealth[ti]",
-            "eHealth[ti]",
+            "eHealth[title]",
         ),
         (
             "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
+            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
         ),
         (
             "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
+            "AND[OR[eHealth[abstract], eHealth[title]], OR[mHealth[abstract], mHealth[title]]]",
         ),
         (
             "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[ab], eHealth[ti]], OR[mHealth[ab], mHealth[ti]]]",
+            "AND[OR[eHealth[abstract], eHealth[title]], OR[mHealth[abstract], mHealth[title]]]",
         ),
         (
             "(eHealth[tiab] OR mHealth[tiab]) OR (diabetes[tiab] AND digital[tiab])",
-            "OR[OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]], AND[OR[diabetes[ab], diabetes[ti]], OR[digital[ab], digital[ti]]]]",
+            "OR[OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]], AND[OR[diabetes[abstract], diabetes[title]], OR[digital[abstract], digital[title]]]]",
         ),
         (
             "eHealth[tiab] OR mHealth[ti]",
-            "OR[OR[eHealth[ab], eHealth[ti]], mHealth[ti]]",
+            "OR[OR[eHealth[abstract], eHealth[title]], mHealth[title]]",
         ),
         (
             "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[ti], mHealth[ti], eHealth[ab], mHealth[ab]]",
+            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
         ),
     ],
 )

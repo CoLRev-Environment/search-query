@@ -30,7 +30,7 @@ class Query:
         operator: bool = True,
         search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         distance: typing.Optional[int] = None,
         platform: str = "generic",
     ) -> None:

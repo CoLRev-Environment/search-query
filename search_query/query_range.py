@@ -17,7 +17,7 @@ class RangeQuery(Query):
         children: typing.List[typing.Union[str, Query]],
         *,
         search_field: typing.Optional[typing.Union[SearchField, str]] = None,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
         """init method

@@ -16,7 +16,7 @@ class Term(Query):
         value: str,
         *,
         search_field: typing.Optional[SearchField] = None,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
         super().__init__(
