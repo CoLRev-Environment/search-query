@@ -7,7 +7,9 @@ from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
+from search_query.query_not import NotQuery
 from search_query.query_or import OrQuery
+from search_query.query_range import RangeQuery
 from search_query.utils import format_query_string_positions
 
 # pylint: disable=line-too-long
@@ -173,3 +175,105 @@ def test_value_setter() -> None:
         ethics.operator = "non_operators"  # type: ignore
 
     ethics.value = "NEAR"
+
+
+def test_children_setter() -> None:
+    """Test children setter."""
+    # Test for OrQuery ---------------------------------------------
+    or_query = OrQuery(
+        ["ethics", "morality"],
+        search_field="ab",
+    )
+    assert or_query.children[0].value == "ethics"
+    assert or_query.children[1].value == "morality"
+
+    with pytest.raises(TypeError):
+        or_query.children = "not_a_list"  # type: ignore
+
+    with pytest.raises(TypeError):
+        or_query.children = ["valid", 123]  # type: ignore
+
+    with pytest.raises(ValueError):
+        or_query.children = ["new_child"]  # type: ignore
+
+    or_query.children = ["new_child", "another_child", "third_child"]  # type: ignore
+
+    # Test for AndQuery ---------------------------------------------
+    and_query = AndQuery(
+        ["ethics", "morality"],
+        search_field="ab",
+    )
+    assert and_query.children[0].value == "ethics"
+    assert and_query.children[1].value == "morality"
+
+    with pytest.raises(TypeError):
+        and_query.children = "not_a_list"  # type: ignore
+
+    with pytest.raises(TypeError):
+        and_query.children = ["valid", 123]  # type: ignore
+
+    with pytest.raises(ValueError):
+        and_query.children = ["new_child"]  # type: ignore
+
+    and_query.children = ["new_child", "another_child", "third_child"]  # type: ignore
+
+    # Test for NotQuery ---------------------------------------------
+    not_query = NotQuery(
+        ["ethics"],
+        search_field="ab",
+    )
+    assert not_query.children[0].value == "ethics"
+
+    with pytest.raises(TypeError):
+        not_query.children = "not_a_list"  # type: ignore
+
+    with pytest.raises(TypeError):
+        not_query.children = ["valid", 123]  # type: ignore
+
+    with pytest.raises(ValueError):
+        not_query.children = ["new_child", "another_child", "third_child"]  # type: ignore
+
+    with pytest.raises(ValueError):
+        not_query.children = ["new_child"]  # type: ignore
+
+    # Test for NEARQuery ---------------------------------------------
+    near_query = NEARQuery(
+        "NEAR",
+        distance=5,
+        children=["ethics", "morality"],
+        search_field="ab",
+    )
+    assert near_query.children[0].value == "ethics"
+    assert near_query.children[1].value == "morality"
+
+    with pytest.raises(TypeError):
+        near_query.children = "not_a_list"  # type: ignore
+
+    with pytest.raises(TypeError):
+        near_query.children = ["valid", 123]  # type: ignore
+
+    with pytest.raises(ValueError):
+        near_query.children = ["new_child"]  # type: ignore
+
+    with pytest.raises(ValueError):
+        near_query.children = ["new_child", "another_child", "third_child"]  # type: ignore
+
+    # Test for RangeQuery ---------------------------------------------
+    range_query = RangeQuery(
+        children=["2010", "2020"],
+        search_field="dp",
+    )
+    assert range_query.children[0].value == "2010"
+    assert range_query.children[1].value == "2020"
+
+    with pytest.raises(TypeError):
+        range_query.children = "not_a_list"  # type: ignore
+
+    with pytest.raises(TypeError):
+        range_query.children = ["valid", 123]  # type: ignore
+
+    with pytest.raises(ValueError):
+        range_query.children = ["new_child"]  # type: ignore
+
+    with pytest.raises(ValueError):
+        range_query.children = ["new_child", "another_child", "third_child"]  # type: ignore

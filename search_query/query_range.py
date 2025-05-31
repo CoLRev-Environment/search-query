@@ -25,7 +25,7 @@ class RangeQuery(Query):
         nested queries: queries whose roots are appended to the query
         search field: search field to which the query should be applied
         """
-        assert len(children) == 2, "RangeQuery must have exactly two children"
+
         super().__init__(
             value=Operators.RANGE,
             children=children,

@@ -226,6 +226,26 @@ class Query:
         """Set the children of this query node, updating parent pointers."""
         # Clear existing children and reset parent links (if necessary)
         self._children.clear()
+        if not isinstance(children, list):
+            raise TypeError("children must be a list of Query instances or strings")
+        if len(children) < 2:
+            raise ValueError("A query must have at least two children")
+        if (
+            self.operator
+            and self.value
+            in [
+                Operators.NOT,
+                Operators.NEAR,
+                Operators.WITHIN,
+                Operators.RANGE,
+            ]
+            and len(children) != 2
+        ):
+            raise ValueError(
+                f"{self.value} operator requires exactly two children, "
+                f"got {len(children)}"
+            )
+
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
             self.add_child(child)
@@ -241,6 +261,8 @@ class Query:
                 search_field=self.search_field,
                 platform=self.platform,
             )
+        if not isinstance(child, Query):
+            raise TypeError("Child must be a Query instance or a string")
         child._set_parent(self)  # pylint: disable=protected-access
         self._children.append(child)
         return child
