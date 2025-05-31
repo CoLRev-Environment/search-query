@@ -25,7 +25,7 @@ class RangeQuery(Query):
         nested queries: queries whose roots are appended to the query
         search field: search field to which the query should be applied
         """
-        assert len(children) == 2, "RangeQuery must have exactly two children"
+
         super().__init__(
             value=Operators.RANGE,
             children=children,
@@ -37,3 +37,23 @@ class RangeQuery(Query):
             position=position,
             platform=platform,
         )
+
+    @property
+    def children(self) -> typing.List[Query]:
+        """Children property."""
+        return self._children
+
+    @children.setter
+    def children(self, children: typing.List[Query]) -> None:
+        """Set the children of RANGE query, updating parent pointers."""
+        # Clear existing children and reset parent links (if necessary)
+        self._children.clear()
+        if not isinstance(children, list):
+            raise TypeError("children must be a list of Query instances or strings")
+
+        if len(children) != 2:
+            raise ValueError("A RANGE query must have two children")
+
+        # Add each new child using add_child (ensures parent is set)
+        for child in children or []:
+            self.add_child(child)
