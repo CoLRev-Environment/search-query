@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Pubmed query linter."""
+from __future__ import annotations
+
 import re
 import typing
 
