@@ -212,3 +212,16 @@ def test_translation_pubmed_to_generic() -> None:
     expected = "AND[quantum[title], dot[title], spin[title]]"
 
     assert converted_query == expected
+
+
+def test_translation_pubmed_date_to_wos_year() -> None:
+    query_str = '("quantum"[ti]) AND (2022/05/01[dp])'
+    query = search_query.parser.parse(
+        query_str,
+        platform=PLATFORM.PUBMED.value,
+    )
+    translated_query = query.translate(PLATFORM.WOS.value)
+    converted_query = translated_query.to_string()
+
+    expected = 'TI="quantum" AND PY=2022'
+    assert converted_query == expected
