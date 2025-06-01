@@ -67,7 +67,7 @@ def test_translation_wos_part(query_setup: dict) -> None:
 
 def test_translation_wos_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
-    expected = '(TI=("AI" OR "Artificial Intelligence") AND TI=("health care" OR medicine) AND AB=(ethic* OR moral*))'
+    expected = 'TI=("AI" OR "Artificial Intelligence") AND TI=("health care" OR medicine) AND AB=(ethic* OR moral*)'
     translated_query = query_complete.translate(PLATFORM.WOS.value)
     assert translated_query.to_string() == expected
 
