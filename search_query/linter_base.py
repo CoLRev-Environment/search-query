@@ -875,7 +875,7 @@ class QueryStringLinter:
         """Check for date filters in subqueries"""
 
         # Skip top-level queries
-        if level == 0:
+        if level < 2:
             for child in query.children:
                 try:
                     self._check_date_filters_in_subquery(child, level + 1)
@@ -896,14 +896,23 @@ class QueryStringLinter:
         generic_fields = self.syntax_str_to_generic_search_field_set(
             query.search_field.value
         )
-        if generic_fields & {Fields.PUBLICATION_DATE}:
+        if generic_fields & {Fields.YEAR_PUBLICATION}:
             details = (
                 "Please double-check whether date filters "
                 "should apply to the entire query."
             )
+            positions = [(-1, -1)]
+            if query.position and query.position is not None:
+                positions = [query.position]
+                if (
+                    query.search_field.position
+                    and query.search_field.position is not None
+                ):
+                    positions.append(query.search_field.position)
+
             self.add_linter_message(
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
-                positions=[query.position or (-1, -1)],
+                positions=positions,
                 details=details,
             )
 

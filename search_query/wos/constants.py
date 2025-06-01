@@ -20,7 +20,7 @@ SYNTAX_GENERIC_MAP = {
         Fields.KEYWORDS_PLUS,
     },
     "LA=": {Fields.LANGUAGE},
-    "PY=": {Fields.YEAR},
+    "PY=": {Fields.YEAR_PUBLICATION},
     "AD=": {Fields.ADDRESS},
     "AI=": {Fields.AUTHOR_IDENTIFIERS},
     "AK=": {Fields.AUTHOR_KEYWORDS},
@@ -133,6 +133,10 @@ def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
         if {generic_search_field} == value:
             return key
 
+    for key, value in SYNTAX_GENERIC_MAP.items():
+        if {generic_search_field} & value:
+            return key
+
     raise ValueError(  # pragma: no cover
         f"Generic search field set {generic_search_field} " "not supported by WOS"
     )
@@ -174,6 +178,7 @@ def search_field_general_to_syntax(
     search_field = search_field.strip()
     if search_field in SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP:
         return SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP[search_field]
+
     raise ValueError(
         f"Search field {search_field} not supported by WOS"
     )  # pragma: no cover

@@ -16,6 +16,7 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_near import NEARQuery
 from search_query.query_term import Term
 from search_query.wos.constants import search_field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
@@ -241,12 +242,26 @@ class WOSParser(QueryStringParser):
 
         # Return the operator and children if there is an operator
         if current_operator:
+            if distance:
+                # If there is a distance, it must be a proximity operator
+                if current_operator not in {"NEAR", "WITHIN"}:
+                    raise ValueError(
+                        f"Distance {distance} "
+                        "is only allowed for NEAR or WITHIN operators, "
+                        f"not {current_operator}"
+                    )
+                return NEARQuery(
+                    value=current_operator,
+                    children=children,
+                    search_field=search_field,
+                    platform="deactivated",
+                    distance=distance,
+                )
             return Query(
                 value=current_operator,
                 children=children,
                 search_field=search_field,
                 platform="deactivated",
-                distance=distance,
             )
 
         # Multiple children without operator are not allowed

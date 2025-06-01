@@ -1,5 +1,6 @@
 from search_query import AndQuery
 from search_query import OrQuery
+from search_query.constants import Fields
 
 
 def test_case1() -> None:
@@ -21,10 +22,10 @@ def test_case1() -> None:
 
     query = AndQuery(
         [
-            OrQuery(["microsourcing"], search_field="ti"),
-            OrQuery(["online"], search_field="ti"),
+            OrQuery(["microsourcing"], search_field=Fields.TITLE),
+            OrQuery(["online"], search_field=Fields.TITLE),
         ],
-        search_field="ti",
+        search_field=Fields.TITLE,
     )
 
     result = query.evaluate(records_dict)

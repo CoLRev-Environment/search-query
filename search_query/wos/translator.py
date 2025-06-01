@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """WOS query translator."""
+import re
+
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.query import Query
@@ -117,6 +119,24 @@ class WOSTranslator(QueryTranslator):
             cls._translate_search_fields(child)
 
     @classmethod
+    def _format_year(cls, query: Query) -> None:
+        """Format year search fields to WOS syntax."""
+
+        if query.is_term() and query.search_field and query.search_field.value == "PY=":
+            if re.fullmatch(r"^\d{4}$", query.value):
+                pass
+
+            match = re.search(r"\d{4}", query.value)
+            if match:
+                query.value = match.group(0)
+                return
+
+            raise ValueError(f"Invalid year format: {query.value}")
+
+        for child in query.children:
+            cls._format_year(child)
+
+    @classmethod
     def to_specific_syntax(cls, query: Query) -> Query:
         """Convert the query to a specific syntax."""
 
@@ -126,5 +146,6 @@ class WOSTranslator(QueryTranslator):
         cls.move_fields_to_operator(query)
         cls._remove_contradicting_search_fields(query)
         cls._remove_redundant_terms(query)
+        cls._format_year(query)
 
         return query

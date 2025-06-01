@@ -263,7 +263,7 @@ def test_check_search_fields_year() -> None:
 
     for field in year_fields:
         result = syntax_str_to_generic_search_field_set(field)
-        assert result == {Fields.YEAR}
+        assert result == {Fields.YEAR_PUBLICATION}
 
 
 def test_query_parsing_1() -> None:

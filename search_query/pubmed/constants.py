@@ -21,7 +21,7 @@ SYNTAX_GENERIC_MAP = {
     "[tw]": {Fields.TEXT_WORD},
     "[ad]": {Fields.AFFILIATION},
     "[la]": {Fields.LANGUAGE},
-    "[dp]": {Fields.PUBLICATION_DATE},
+    "[dp]": {Fields.YEAR_PUBLICATION},
 }
 
 _RAW_PREPROCESSING_MAP = {
@@ -127,6 +127,10 @@ def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
 
     for key, value in SYNTAX_GENERIC_MAP.items():
         if {generic_search_field} == value:
+            return key
+
+    for key, value in SYNTAX_GENERIC_MAP.items():
+        if {generic_search_field} & value:
             return key
 
     raise ValueError(  # pragma: no cover

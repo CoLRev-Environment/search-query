@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import copy
-import re
 import typing
 
-from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import SearchField
@@ -30,19 +28,16 @@ class Query:
         operator: bool = True,
         search_field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
-        position: typing.Optional[tuple] = None,
-        distance: typing.Optional[int] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
         self._value: str = ""
         self._operator = False
-        self._distance = None
         self._children: typing.List[Query] = []
         self._search_field = None
 
         self.operator = operator
         self.value = value
-        self.distance = distance
         if isinstance(search_field, str):
             self.search_field = SearchField(search_field)
         else:
@@ -199,33 +194,21 @@ class Query:
         self._operator = is_op
 
     @property
-    def distance(self) -> typing.Optional[int]:
-        """Distance property."""
-        return self._distance
-
-    @distance.setter
-    def distance(self, dist: typing.Optional[int]) -> None:
-        """Set distance property."""
-
-        if self.operator and self.value in {Operators.NEAR, Operators.WITHIN}:
-            if dist is None:
-                raise ValueError(f"{self.value} operator requires a distance")
-        else:
-            if dist is not None:
-                raise ValueError(f"{self.value} operator cannot have a distance")
-
-        self._distance = dist
-
-    @property
     def children(self) -> typing.List[Query]:
         """Children property."""
         return self._children
 
     @children.setter
     def children(self, children: typing.List[Query]) -> None:
-        """Set the children of this query node, updating parent pointers."""
+        """Set the children of the query, updating parent pointers."""
         # Clear existing children and reset parent links (if necessary)
         self._children.clear()
+        if not isinstance(children, list):
+            raise TypeError("children must be a list of Query instances or strings")
+
+        # Note: OrQuery, AndQuery, NearQuery, NotQuery, RANGEQuery offeride the setter
+        # with specific validation.
+
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
             self.add_child(child)
@@ -241,6 +224,8 @@ class Query:
                 search_field=self.search_field,
                 platform=self.platform,
             )
+        if not isinstance(child, Query):
+            raise TypeError("Child must be a Query instance or a string")
         child._set_parent(self)  # pylint: disable=protected-access
         self._children.append(child)
         return child
@@ -276,38 +261,13 @@ class Query:
         QueryTranslator.move_fields_to_terms(query_with_term_fields)
 
         # pylint: disable=protected-access
-        return query_with_term_fields._selects(record_dict=record_dict)
+        return query_with_term_fields.selects_record(record_dict=record_dict)
 
-    def _selects(self, record_dict: dict) -> bool:
-        if self.value == Operators.NOT:
-            return not self.children[0].selects(record_dict=record_dict)
-
-        if self.value == Operators.AND:
-            return all(x.selects(record_dict=record_dict) for x in self.children)
-
-        if self.value == Operators.OR:
-            return any(x.selects(record_dict=record_dict) for x in self.children)
-
-        assert not self.operator
-
-        assert self.search_field is not None, "Search field must be set for terms"
-        if self.search_field.value == Fields.TITLE:
-            field_value = record_dict.get("title", "").lower()
-        elif self.search_field.value == Fields.ABSTRACT:
-            field_value = record_dict.get("abstract", "").lower()
-        else:
-            raise ValueError(f"Unsupported search field: {self.search_field}")
-
-        value = self.value.lower().lstrip('"').rstrip('"')
-
-        # Handle wildcards
-        if "*" in value:
-            pattern = re.compile(value.replace("*", ".*").lower())
-            match = pattern.search(field_value)
-            return match is not None
-
-        # Match exact word
-        return value.lower() in field_value
+    def selects_record(self, record_dict: dict) -> bool:
+        """Abstract method to be implemented by subclasses to select records."""
+        raise NotImplementedError(
+            "This method should be implemented by subclasses of Query"
+        )
 
     def _get_confusion_matrix(self, records_dict: dict) -> dict:
         relevant_ids = set()

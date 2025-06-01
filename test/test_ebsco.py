@@ -15,6 +15,7 @@ from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_near import NEARQuery
 
 # flake8: noqa: E501
 
@@ -623,9 +624,8 @@ def test_nested_boolean_with_field() -> None:
 
 
 def test_proximity_near_operator() -> None:
-    query = Query(
+    query = NEARQuery(
         value="NEAR",
-        operator=True,
         distance=5,
         children=[
             Query(value="diabetes", operator=False, platform="ebscohost"),
@@ -637,9 +637,8 @@ def test_proximity_near_operator() -> None:
 
 
 def test_proximity_within_operator_with_field() -> None:
-    query = Query(
+    query = NEARQuery(
         value="WITHIN",
-        operator=True,
         distance=3,
         search_field=SearchField("AB"),
         children=[
@@ -653,4 +652,4 @@ def test_proximity_within_operator_with_field() -> None:
 
 def test_proximity_missing_distance_raises() -> None:
     with pytest.raises(ValueError, match="NEAR operator requires a distance"):
-        Query(value="NEAR", operator=True, distance=None, platform="ebscohost")
+        NEARQuery(value="NEAR", children=["AI", "health"], distance=None, platform="ebscohost")  # type: ignore
