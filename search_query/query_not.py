@@ -57,3 +57,8 @@ class NotQuery(Query):
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
             self.add_child(child)
+
+    def selects_record(self, record_dict: dict) -> bool:
+        return self.children[0].selects(record_dict=record_dict) and not self.children[
+            1
+        ].selects(record_dict=record_dict)

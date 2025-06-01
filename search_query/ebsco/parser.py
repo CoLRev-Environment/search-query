@@ -13,6 +13,7 @@ from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_near import NEARQuery
 from search_query.query_term import Term
 
 
@@ -244,11 +245,12 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.PROXIMITY_OPERATOR:
                 distance = self._extract_proximity_distance(token)
-                proximity_node = Query(
+                proximity_node = NEARQuery(
                     value=token.value,
+                    distance=distance,
+                    children=[],
                     position=token.position,
                     search_field=search_field or field_context,
-                    distance=distance,
                     platform="deactivated",
                 )
                 parent, current_operator = self.append_operator(parent, proximity_node)

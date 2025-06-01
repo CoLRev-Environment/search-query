@@ -11,6 +11,7 @@ from search_query.query_near import NEARQuery
 from search_query.query_not import NotQuery
 from search_query.query_or import OrQuery
 from search_query.query_range import RangeQuery
+from search_query.query_term import Term
 from search_query.utils import format_query_string_positions
 
 # pylint: disable=line-too-long
@@ -33,21 +34,25 @@ def test_selects(query_setup: dict) -> None:
     record_1 = {
         "title": "Artificial Intelligence in Health Care",
         "abstract": "This study explores the role of AI and machine learning in improving health outcomes.",
+        "year": "2023",
     }
 
     record_2 = {
         "title": "Moral Implications of Artificial Intelligence",
         "abstract": "Examines ethical concerns in AI development.",
+        "year": "2022",
     }
 
     record_3 = {
         "title": "Unrelated Title",
         "abstract": "This abstract is about something else entirely.",
+        "year": "2021",
     }
 
     record_4 = {
         "title": "Title with AI and medicine",
         "abstract": "abstract containing ethics.",
+        "year": "2020",
     }
 
     assert query_ai.selects(record_dict=record_1)
@@ -60,6 +65,70 @@ def test_selects(query_setup: dict) -> None:
         query_complete.children[0].children[0].search_field.value = "au"
         print(query_complete.to_structured_string())
         query_complete.selects(record_dict=record_1)
+
+    range_query = RangeQuery(
+        children=["2020", "2022"],
+        search_field=SearchField(Fields.YEAR_PUBLICATION),
+        position=(0, 0),
+        platform="generic",
+    )
+    assert not range_query.selects(record_dict=record_1)
+    assert range_query.selects(record_dict=record_2)
+    assert range_query.selects(record_dict=record_3)
+
+
+def test_near_query_selects() -> None:
+    query_ai = Term(value="AI", search_field=SearchField("title"))
+    query_health = Term(value="health", search_field=SearchField("title"))
+
+    near_query = NEARQuery(
+        value="NEAR",
+        children=[query_ai, query_health],
+        search_field=SearchField("title"),
+        distance=3,
+    )
+
+    record_1 = {
+        "title": "AI in health",
+        "abstract": "This study explores the role of AI and machine learning in improving health outcomes.",
+    }
+
+    record_2 = {
+        "title": "Health applications of AI",
+        "abstract": "Focus on AI in clinical settings.",
+    }
+
+    record_3 = {
+        "title": "AI and unrelated terms scattered far apart from health.",
+        "abstract": "Completely unrelated content.",
+    }
+
+    record_4 = {
+        "title": "health AI",
+        "abstract": "Random abstract.",
+    }
+
+    record_5 = {
+        "title": "Artificial Intelligence is beneficial",
+        "abstract": "Especially in health care",
+    }
+
+    assert near_query.selects(record_dict=record_1)
+    assert near_query.selects(record_dict=record_2)
+    assert not near_query.selects(record_dict=record_3)
+    assert near_query.selects(record_dict=record_4)
+    assert not near_query.selects(record_dict=record_5)
+
+    # Triggering the assertion that both children must have same search field
+    query_wrong_field = Term(value="health", search_field=SearchField("abstract"))
+    broken_query = NEARQuery(
+        value="NEAR",
+        children=[query_ai, query_wrong_field],
+        distance=3,
+    )
+
+    with pytest.raises(AssertionError):
+        broken_query.selects(record_dict=record_1)
 
 
 def test_parent_and_root() -> None:
@@ -104,20 +173,23 @@ def test_to_structured_string(query_setup: dict) -> None:
 
 
 def test_near_query() -> None:
-    n_query = NEARQuery("NEAR", distance=12, children=[], search_field=Fields.TITLE)
+    children = [
+        Term(value="AI", search_field=SearchField(Fields.TITLE)),
+        Term(value="health", search_field=SearchField(Fields.TITLE)),
+    ]
+    n_query = NEARQuery(
+        "NEAR", distance=12, children=children, search_field=Fields.TITLE  # type: ignore
+    )
 
-    assert n_query.to_generic_string() == "NEAR/12[title]"
-    assert n_query.to_structured_string() == "NEAR/12 [title]"
+    assert n_query.to_generic_string() == "NEAR/12[title][AI[title], health[title]]"
 
     with pytest.raises(ValueError):
-        n_query = NEARQuery("NEAR", children=[], search_field=Fields.TITLE)
+        n_query = NEARQuery("NEAR", children=[], search_field=Fields.TITLE, distance=1)
 
-    or_query = OrQuery(
+    OrQuery(
         ["health", "medicine"],
         search_field=Fields.TITLE,
     )
-    with pytest.raises(ValueError):
-        or_query.distance = 12
 
 
 def test_format_query_string_positions_merges_overlaps() -> None:

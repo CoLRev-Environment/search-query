@@ -13,6 +13,8 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 def to_string_ebsco(query: Query) -> str:
     """Convert the query to a string representation for EBSCO."""
+    # pylint: disable=import-outside-toplevel
+    from search_query.query_near import NEARQuery
 
     query = query.copy()
 
@@ -27,7 +29,7 @@ def to_string_ebsco(query: Query) -> str:
     for i, child in enumerate(query.children):
         child_str = to_string_ebsco(child)
 
-        if query.value in {"NEAR", "WITHIN"}:
+        if isinstance(query, NEARQuery):
             # Convert proximity operator to EBSCO format
             proximity_operator = (
                 f"{'N' if query.value == 'NEAR' else 'W'}{query.distance}"

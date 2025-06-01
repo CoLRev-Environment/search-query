@@ -57,3 +57,6 @@ class AndQuery(Query):
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
             self.add_child(child)
+
+    def selects_record(self, record_dict: dict) -> bool:
+        return all(x.selects(record_dict=record_dict) for x in self.children)
