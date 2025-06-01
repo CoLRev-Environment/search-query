@@ -74,14 +74,14 @@ def test_translation_wos_complete(query_setup: dict) -> None:
 
 def test_translation_pubmed_part(query_setup: dict) -> None:
     query_health = query_setup["query_health"]
-    expected = '("health care"[ti] OR medicine[ti])'
+    expected = '"health care"[ti] OR medicine[ti]'
     translated_query = query_health.translate(PLATFORM.PUBMED.value)
     assert translated_query.to_string() == expected
 
 
 def test_translation_pubmed_complete(query_setup: dict) -> None:
     query_complete = query_setup["query_complete"]
-    expected = '(("AI"[ti] OR "Artificial Intelligence"[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[tiab] OR moral*[tiab]))'
+    expected = '("AI"[ti] OR "Artificial Intelligence"[ti]) AND ("health care"[ti] OR medicine[ti]) AND (ethic*[tiab] OR moral*[tiab])'
     translated_query = query_complete.translate(PLATFORM.PUBMED.value)
     assert translated_query.to_string() == expected
 
