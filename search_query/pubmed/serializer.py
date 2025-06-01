@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typing
 
+from search_query.constants import Operators
+
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
 
@@ -11,26 +13,31 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 def to_string_pubmed(query: Query) -> str:
     """Serialize the Query tree into a PubMed search string."""
     if not query.children:
-        # Serialize a term query
+        # Serialize term query
         return (
             f"{query.value}"
             f"{query.search_field.value if query.search_field else ''}"
         )
-    else:
-        # Serialize a compound query
-        result = ""
-        for i, child in enumerate(query.children):
+    if query.value == Operators.NEAR:
+        # Serialize NEAR query
+        return (
+                f'"{query.children[0].value} {query.children[1].value}"'
+                f'{query.children[0].search_field.value[:-1]}:~{query.distance if hasattr(query, "distance") else "0"}]'
+        )
+    # Serialize compound query
+    result = ""
+    for i, child in enumerate(query.children):
+        if i > 0:
             # Add operator between query children
-            if i > 0:
-                result += f' {query.value} '
+            result += f' {query.value} '
+        if isinstance(child, str):
+            result += child
+        else:
             # Recursively serialize query children
-            if isinstance(child, str):
-                result += child
-            else:
-                result += to_string_pubmed(child)
+            result += to_string_pubmed(child)
 
-        if query.get_parent():
-            # Add parentheses around nested queries
-            result = '(' + result + ')'
+    if query.get_parent():
+        # Add parentheses around nested queries
+        result = '(' + result + ')'
 
-        return result
+    return result
