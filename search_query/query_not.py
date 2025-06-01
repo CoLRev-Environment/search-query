@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 """NOT Query"""
 import typing
+from typing import cast
+from typing import List
+from typing import Union
 
 from search_query.constants import Operators
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_term import Term
 
 # pylint: disable=duplicate-code
 
@@ -26,9 +30,13 @@ class NotQuery(Query):
         search field: search field to which the query should be applied
         """
 
+        query_children = [
+            c if isinstance(c, Query) else Term(value=c) for c in children
+        ]
+
         super().__init__(
             value=Operators.NOT,
-            children=children,
+            children=cast(List[Union[str, Query]], query_children),
             search_field=search_field
             if isinstance(search_field, SearchField)
             else SearchField(search_field)
@@ -37,6 +45,8 @@ class NotQuery(Query):
             position=position,
             platform=platform,
         )
+
+        self.children = query_children
 
     @property
     def children(self) -> typing.List[Query]:
