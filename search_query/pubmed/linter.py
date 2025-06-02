@@ -223,9 +223,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if not unequal_precedence_operators:
             return
 
-        precedence_list = [
-            o.value for o in unequal_precedence_operators
-        ]
+        precedence_list = [o.value for o in unequal_precedence_operators]
         precedence_lines = []
         for idx, op in enumerate(precedence_list):
             if idx == 0:
@@ -262,9 +260,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         )
 
     def add_artificial_parentheses_for_operator_precedence(
-            self,
-            index: int = 0,
-            output: typing.Optional[list] = None,
+        self,
+        index: int = 0,
+        output: typing.Optional[list] = None,
     ) -> tuple[int, list[Token]]:
         """
         Adds artificial parentheses with position (-1, -1)
@@ -303,7 +301,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
                         output.insert(
                             start_index,
                             Token(
-                                value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
+                                value="(",
+                                type=TokenTypes.PARENTHESIS_OPEN,
+                                position=(-1, -1),
                             ),
                         )
                         art_par += 1
@@ -558,10 +558,10 @@ class PubmedQueryListLinter(QueryListLinter):
 
     def __init__(
         self,
-        parser: "PubmedListParser",
-        string_parser_class: typing.Type["QueryStringParser"],
+        parser: PubmedListParser,
+        string_parser_class: typing.Type[QueryStringParser],
     ):
-        self.parser: "PubmedListParser" = parser
+        self.parser: PubmedListParser = parser
         self.string_parser_class = string_parser_class
         super().__init__(parser, string_parser_class)
 

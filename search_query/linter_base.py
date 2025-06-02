@@ -727,7 +727,9 @@ class QueryStringLinter:
                     while art_par > 0:
                         output.append(
                             Token(
-                                value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(-1, -1)
+                                value=")",
+                                type=TokenTypes.PARENTHESIS_CLOSED,
+                                position=(-1, -1),
                             )
                         )
                         art_par -= 1
@@ -736,7 +738,9 @@ class QueryStringLinter:
                         output.insert(
                             start_index,
                             Token(
-                                value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
+                                value="(",
+                                type=TokenTypes.PARENTHESIS_OPEN,
+                                position=(-1, -1),
                             ),
                         )
                         art_par += 1

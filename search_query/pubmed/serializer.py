@@ -15,21 +15,20 @@ def to_string_pubmed(query: Query) -> str:
     if not query.children:
         # Serialize term query
         return (
-            f"{query.value}"
-            f"{query.search_field.value if query.search_field else ''}"
+            f"{query.value}" f"{query.search_field.value if query.search_field else ''}"
         )
     if query.value == Operators.NEAR:
         # Serialize NEAR query
         return (
-                f'"{query.children[0].value} {query.children[1].value}"'
-                f'{query.children[0].search_field.value[:-1]}:~{query.distance if hasattr(query, "distance") else "0"}]'
+            f'"{query.children[0].value} {query.children[1].value}"'
+            f'{query.children[0].search_field.value[:-1]}:~{query.distance if hasattr(query, "distance") else "0"}]'
         )
     # Serialize compound query
     result = ""
     for i, child in enumerate(query.children):
         if i > 0:
             # Add operator between query children
-            result += f' {query.value} '
+            result += f" {query.value} "
         if isinstance(child, str):
             result += child
         else:
@@ -38,6 +37,6 @@ def to_string_pubmed(query: Query) -> str:
 
     if query.get_parent():
         # Add parentheses around nested queries
-        result = '(' + result + ')'
+        result = "(" + result + ")"
 
     return result
