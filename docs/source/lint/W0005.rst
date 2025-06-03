@@ -10,11 +10,18 @@ W0005 — operator-capitalization
 **Scope**: all
 
 **Typical fix**: Capitalize the operator
+
+
 **Problematic query**:
+
 .. code-block:: python
+
     a and b or c
+
 **Correct query**:
+
 .. code-block:: python
+
     a AND b OR c
 
 **Back to**: :ref:`lint`
