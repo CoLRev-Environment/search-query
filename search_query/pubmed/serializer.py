@@ -18,10 +18,17 @@ def to_string_pubmed(query: Query) -> str:
             f"{query.value}" f"{query.search_field.value if query.search_field else ''}"
         )
     if query.value == Operators.NEAR:
-        # Serialize NEAR query
+        # Serialize near query
         return (
-            f'"{query.children[0].value} {query.children[1].value}"'
-            f'{query.children[0].search_field.value[:-1]}:~{query.distance if hasattr(query, "distance") else "0"}]'
+            f"{query.children[0].value}"
+            f"{query.children[0].search_field.value[:-1]}"
+            f":~{query.distance if hasattr(query, "distance") else 0}]"
+        )
+    if query.value == Operators.RANGE:
+        # Serialize range query
+        return (
+            f"{query.children[0].value}:{query.children[1].value}"
+            f"{query.children[0].search_field.value}"
         )
     # Serialize compound query
     result = ""
