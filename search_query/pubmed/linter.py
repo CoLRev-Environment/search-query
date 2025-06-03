@@ -436,8 +436,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     positions=[field_token.position],
                     details=details,
                 )
-            # Update search field token
-            self.tokens[index].value = field_value
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
