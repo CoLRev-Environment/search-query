@@ -709,6 +709,66 @@ def test_pubmed_invalid_token_sequences(
                 }
             ],
         ),
+        (
+            '((AI OR "Artificial Intelligence") AND Aversion) OR ((AI OR "Artificial Intelligence") AND Appreciation)',
+            "",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(-1, -1)],
+                    "details": "Search field is missing (TODO: default?)",
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(39, 47), (91, 103)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                },
+            ],
+        ),
+        (
+            '(Algorithm* Aversion) OR (Algorithm* Appreciation) OR ((AI OR "Artificial Intelligence") AND Aversion) OR ((AI OR "Artificial Intelligence") AND Appreciation) OR ("AI recommendation" OR "Artificial intelligence recommendation" OR "Machine learning recommendation" OR "ML recommendation") OR ("AI decision*" OR "Artificial intelligence decision*" OR "Algorithm* decision" OR "Machine learning decision*" OR "ML decision*") OR ("AI Advice" OR "Artificial intelligence advice" OR "Algorithm* advice" OR "Machine learning advice" OR "ML advice") OR (("AI" OR "Artificial Intelligence" OR "Algorithm*" OR "Machine learning" OR "ML") AND "Decision aid")',
+            "",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(-1, -1)],
+                    "details": "Search field is missing (TODO: default?)",
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(93, 101), (145, 157)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(93, 101), (632, 646)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m("AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all])\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(145, 157), (632, 646)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m("AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all])\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
+                },
+            ],
+        ),
     ],
 )
 def test_linter(

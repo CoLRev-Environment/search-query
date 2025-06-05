@@ -15,6 +15,12 @@ def to_string_pubmed(query: Query) -> str:
 
     # to do combine querys for PLATFORM_COMBINED_FIELDS_MAP
 
+    if not query.children:
+        # query has no children, so it is a leaf node
+        if query.search_field:
+            return f"{query.value}{query.search_field.value}"
+        return query.value
+
     result = ""
     for child in query.children:
         if not child.operator:

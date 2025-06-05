@@ -316,6 +316,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # "Sleep"[mh] AND "vigilant attention"[ti]
         # "Sleep Deprivation"[mh] AND "vigilant attention"[ti]
 
+    def validate_platform_query(self, query: Query) -> None:
+        """Validate the query for the PubMed platform"""
+
+        term_field_query = self.get_query_with_fields_at_terms(query)
+        self._check_for_opportunities_to_combine_subqueries(term_field_query)
+
     def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
         """Translate a search field"""
 

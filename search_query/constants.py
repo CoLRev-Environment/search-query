@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Tuple
 
 # noqa: E501
+# ruff: noqa: E501
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
