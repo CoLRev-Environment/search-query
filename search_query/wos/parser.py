@@ -18,6 +18,7 @@ from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_near import NEARQuery
 from search_query.query_term import Term
+from search_query.query_not import NotQuery
 from search_query.wos.constants import search_field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
@@ -133,9 +134,7 @@ class WOSParser(QueryStringParser):
 
                 if current_negation:
                     # If the current operator is NOT, wrap the sub_query in a NOT
-                    not_part = Query(
-                        value="NOT",
-                        operator=True,
+                    not_part = NotQuery(
                         children=[sub_query],
                         search_field=search_field,
                         platform="deactivated",
@@ -181,9 +180,7 @@ class WOSParser(QueryStringParser):
             # Handle terms
             elif token.type == TokenTypes.SEARCH_TERM:
                 if current_negation:
-                    not_part = Query(
-                        value="NOT",
-                        operator=True,
+                    not_part = NotQuery(
                         children=[
                             Term(
                                 value=token.value,
@@ -219,7 +216,7 @@ class WOSParser(QueryStringParser):
 
         # Return the operator and children if there is an operator
         return (
-            Query(
+            Query.create(
                 value=current_operator,
                 children=list(children),
                 search_field=search_field,
@@ -257,7 +254,7 @@ class WOSParser(QueryStringParser):
                     platform="deactivated",
                     distance=distance,
                 )
-            return Query(
+            return Query.create(
                 value=current_operator,
                 children=children,
                 search_field=search_field,
@@ -398,7 +395,7 @@ class WOSListParser(QueryListParser):
 
         assert operator, "[ERROR] No operator found in combining query."
 
-        operator_query = Query(
+        operator_query = Query.create(
             value=operator,
             children=children,
             platform="deactivated",

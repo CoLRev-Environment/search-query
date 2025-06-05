@@ -6,6 +6,7 @@ from typing import List
 from typing import Union
 
 from search_query.constants import Operators
+from search_query.constants import PLATFORM
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_term import Term
@@ -32,7 +33,7 @@ class NotQuery(Query):
 
         query_children = [
             c if isinstance(c, Query) else Term(value=c) for c in children
-        ]
+        ] if children else None
 
         super().__init__(
             value=Operators.NOT,
@@ -58,10 +59,10 @@ class NotQuery(Query):
         """Set the children of NOT query, updating parent pointers."""
         # Clear existing children and reset parent links (if necessary)
         self._children.clear()
-        if not isinstance(children, list):
+        if self.platform != "deactivated" and not isinstance(children, list):
             raise TypeError("children must be a list of Query instances or strings")
 
-        if len(children) != 2:
+        if self.platform not in {"deactivated", PLATFORM.WOS} and len(children) != 2:
             raise ValueError("A NOT query must have two children")
 
         # Add each new child using add_child (ensures parent is set)

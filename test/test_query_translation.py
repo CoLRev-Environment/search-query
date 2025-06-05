@@ -8,6 +8,9 @@ from search_query.constants import PLATFORM
 from search_query.pubmed.translator import PubmedTranslator
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_and import AndQuery
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 
 # pylint: disable=line-too-long
 # flake8: noqa: E501
@@ -132,28 +135,21 @@ def test_translation_ebsco_wos() -> None:
     [
         (
             # Nested OR structure
-            Query(
-                value="OR",
-                operator=True,
+            OrQuery(
                 search_field=None,
                 children=[
-                    Query(
+                    Term(
                         value="eHealth",
-                        operator=False,
                         search_field=SearchField(Fields.TITLE),
                     ),
-                    Query(
-                        value="OR",
-                        operator=True,
+                    OrQuery(
                         children=[
-                            Query(
+                            Term(
                                 value="mHealth",
-                                operator=False,
                                 search_field=SearchField(Fields.TITLE),
                             ),
-                            Query(
+                            Term(
                                 value="telemedicine",
-                                operator=False,
                                 search_field=SearchField(Fields.TITLE),
                             ),
                         ],
@@ -164,27 +160,20 @@ def test_translation_ebsco_wos() -> None:
         ),
         (
             # Nested AND structure
-            Query(
-                value="AND",
-                operator=True,
+            AndQuery(
                 children=[
-                    Query(
+                    Term(
                         value="cancer",
-                        operator=False,
                         search_field=SearchField(Fields.TITLE),
                     ),
-                    Query(
-                        value="AND",
-                        operator=True,
+                    AndQuery(
                         children=[
-                            Query(
+                            Term(
                                 value="therapy",
-                                operator=False,
                                 search_field=SearchField(Fields.TITLE),
                             ),
-                            Query(
+                            Term(
                                 value="survivorship",
-                                operator=False,
                                 search_field=SearchField(Fields.TITLE),
                             ),
                         ],
