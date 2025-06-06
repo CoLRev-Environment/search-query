@@ -390,37 +390,6 @@ class WOSListParser(QueryListParser):
         )
         return operator_query
 
-    def _parse_list_query(self) -> Query:
-        for node_nr, node_content in self.query_dict.items():
-            if node_content["type"] == ListTokenTypes.QUERY_NODE:
-                query_parser = WOSParser(
-                    query_str=node_content["node_content"],
-                    search_field_general=self.search_field_general,
-                    mode=self.mode,
-                )
-                query = query_parser.parse()
-                node_content["query"] = query
-
-            elif node_content["type"] == ListTokenTypes.OPERATOR_NODE:
-                tokens = self.tokenize_operator_node(
-                    node_content["node_content"], node_nr
-                )
-                query = self._build_query_from_operator_node(tokens)
-                self.query_dict[node_nr]["query"] = query
-
-        return list(self.query_dict.values())[-1]["query"]
-
-    def parse(self) -> Query:
-        """Parse the list of queries."""
-
-        self.tokenize_list()
-        # note: messages printed in linter
-        self.linter.validate_list_tokens()
-        self.linter.check_status()
-
-        query = self._parse_list_query()
-        return query
-
     def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
         """Tokenize the query_list."""
 
@@ -441,3 +410,34 @@ class WOSListParser(QueryListParser):
             )
 
         return tokens
+
+    def parse(self) -> Query:
+        """Parse the list of queries."""
+
+        self.tokenize_list()
+        # note: messages printed in linter
+        self.linter.validate_list_tokens()
+        self.linter.check_status()
+
+        for node_nr, node_content in self.query_dict.items():
+            if node_content["type"] == ListTokenTypes.QUERY_NODE:
+                query_parser = WOSParser(
+                    query_str=node_content["node_content"],
+                    search_field_general=self.search_field_general,
+                    mode=self.mode,
+                )
+                query = query_parser.parse()
+                node_content["query"] = query
+
+            elif node_content["type"] == ListTokenTypes.OPERATOR_NODE:
+                tokens = self.tokenize_operator_node(
+                    node_content["node_content"], node_nr
+                )
+                query = self._build_query_from_operator_node(tokens)
+                self.query_dict[node_nr]["query"] = query
+
+        query = list(self.query_dict.values())[-1]["query"]
+
+        query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
+
+        return query
