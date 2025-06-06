@@ -6,6 +6,7 @@ import typing
 
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
+from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
@@ -26,8 +27,7 @@ PARSERS: typing.Dict[str, type[QueryStringParser]] = {
 LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
     PLATFORM.WOS.value: WOSListParser,
     PLATFORM.PUBMED.value: PubmedListParser,
-    # from search_query.ebsco.parser import EBSCOListParser
-    # PLATFORM.EBSCO.value: EBSCOListParser,
+    PLATFORM.EBSCO.value: EBSCOListParser,
 }
 
 
