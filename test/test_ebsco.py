@@ -260,7 +260,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
@@ -273,7 +273,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
