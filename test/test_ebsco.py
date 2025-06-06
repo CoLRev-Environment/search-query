@@ -11,6 +11,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
 from search_query.query import Query
@@ -654,3 +655,19 @@ def test_proximity_within_operator_with_field() -> None:
 def test_proximity_missing_distance_raises() -> None:
     with pytest.raises(ValueError, match="NEAR operator requires a distance"):
         Query(value="NEAR", operator=True, distance=None, platform="ebscohost")
+
+
+def test_list_parser_case_1() -> None:
+    query_list = """
+1. DE \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndromes\" OR \"irritable colon\" OR \"irritable colons\"
+2. DE \"Clinical Trials\" OR DE \"Randomized Controlled Trials\" OR DE \"Randomized Clinical Trials\" OR DE \"Random Sampling\" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies
+3. S1 AND S2
+"""
+
+    list_parser = EBSCOListParser(query_list=query_list)
+    q = list_parser.parse()
+
+    assert (
+        q.to_string()
+        == '(DE "Irritable Bowel Syndrome" OR "Irritable Bowel Syndrome" OR "Irritable Bowel Syndromes" OR "irritable colon" OR "irritable colons") AND (DE "Clinical Trials" OR DE "Randomized Controlled Trials" OR DE "Randomized Clinical Trials" OR DE "Random Sampling" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies)'
+    )

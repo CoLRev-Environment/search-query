@@ -323,7 +323,7 @@ class EBSCOListParser(QueryListParser):
     def __init__(
         self,
         query_list: str,
-        search_field_general: str,
+        search_field_general: str = "",
         mode: str = LinterMode.NONSTRICT,
     ) -> None:
         super().__init__(
@@ -335,6 +335,7 @@ class EBSCOListParser(QueryListParser):
         self.linter = EBSCOListLinter(parser=self, string_parser_class=EBSCOParser)
 
     def get_token_str(self, token_nr: str) -> str:
+        """Get the string representation of a token."""
         pattern = rf"(S|#){token_nr}"
         match = re.search(pattern, self.query_list)
         if match:
@@ -387,6 +388,8 @@ class EBSCOListParser(QueryListParser):
         )
 
     def parse(self) -> Query:
+        """Parse EBSCO list query."""
+
         self.tokenize_list()
         self.linter.validate_tokens()
         self.linter.check_status()
@@ -401,4 +404,8 @@ class EBSCOListParser(QueryListParser):
             elif query_element["type"] == ListTokenTypes.OPERATOR_NODE:
                 query_element["query"] = self._parse_operator_node(token_nr)
 
-        return list(self.query_dict.values())[-1]["query"]
+        query = list(self.query_dict.values())[-1]["query"]
+
+        query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
+
+        return query
