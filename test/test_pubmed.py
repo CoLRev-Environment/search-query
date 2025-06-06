@@ -727,7 +727,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(39, 47), (91, 103)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))'
                 },
             ],
         ),
@@ -749,7 +749,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(93, 101), (145, 157)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
                 },
                 {
                     "code": "W0004",
@@ -757,7 +757,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(93, 101), (632, 646)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m("AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all])\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
                 },
                 {
                     "code": "W0004",
@@ -765,7 +765,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(145, 157), (632, 646)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m("AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all])\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90m(AI[all] OR "Artificial Intelligence"[all])\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
                 },
             ],
         ),
