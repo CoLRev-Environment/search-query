@@ -419,7 +419,8 @@ class WOSListParser(QueryListParser):
         self.linter.validate_list_tokens()
         self.linter.check_status()
 
-        for node_nr, node_content in self.query_dict.items():
+        for token_nr, node_content in self.query_dict.items():
+            print(f"*** Query list element: #{token_nr} *************************")
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
                 query_parser = WOSParser(
                     query_str=node_content["node_content"],
@@ -431,10 +432,10 @@ class WOSListParser(QueryListParser):
 
             elif node_content["type"] == ListTokenTypes.OPERATOR_NODE:
                 tokens = self.tokenize_operator_node(
-                    node_content["node_content"], node_nr
+                    node_content["node_content"], token_nr
                 )
                 query = self._build_query_from_operator_node(tokens)
-                self.query_dict[node_nr]["query"] = query
+                self.query_dict[token_nr]["query"] = query
 
         query = list(self.query_dict.values())[-1]["query"]
 
