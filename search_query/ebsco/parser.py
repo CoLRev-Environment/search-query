@@ -359,10 +359,16 @@ class EBSCOListParser(QueryListParser):
         for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
             value = match.group()
             start, end = match.span()
+            if not value.strip():
+                continue
             if value.upper() in {"AND", "OR", "NOT"}:
                 token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
             elif self.LIST_ITEM_REF.match(value):
                 token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+            elif value == "(":
+                token_type = OperatorNodeTokenTypes.PARENTHESIS_OPEN
+            elif value == ")":
+                token_type = OperatorNodeTokenTypes.PARENTHESIS_CLOSED
             else:
                 token_type = OperatorNodeTokenTypes.UNKNOWN
             tokens.append(
