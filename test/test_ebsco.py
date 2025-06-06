@@ -598,7 +598,7 @@ def test_boolean_query_with_two_terms() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(TI diabetes AND TI insulin)"
+    assert to_string_ebsco(query) == "TI diabetes AND TI insulin"
 
 
 def test_nested_boolean_with_field() -> None:
@@ -633,7 +633,7 @@ def test_proximity_near_operator() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(diabetes N5 therapy)"
+    assert to_string_ebsco(query) == "diabetes N5 therapy"
 
 
 def test_proximity_within_operator_with_field() -> None:
