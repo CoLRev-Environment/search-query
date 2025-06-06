@@ -269,6 +269,9 @@ class PubmedParser(QueryStringParser):
 
         query.set_platform_unchecked(PLATFORM.PUBMED.value, silent=True)
 
+        self.linter.validate_platform_query(query)  # type: ignore
+        self.linter.check_status()
+
         return query
 
 
@@ -367,6 +370,10 @@ class PubmedListParser(QueryListParser):
                 )
 
         query = list(self.query_dict.values())[-1]["query"]
+
+        linter = PubmedQueryStringLinter(query_str=self.query_list)
+        linter.validate_query_tree(query)
+        linter.check_status()
 
         # linter.check_status() ?
         query.set_platform_unchecked(PLATFORM.PUBMED.value)

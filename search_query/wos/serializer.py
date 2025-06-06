@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 # https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html
 
 
-def to_string_wos(query: Query, wrap: bool = False) -> str:
+def to_string_wos(query: Query) -> str:
     """Serialize the Query tree into a Web of Science (WoS) search string."""
 
     # Leaf node
@@ -28,14 +28,14 @@ def to_string_wos(query: Query, wrap: bool = False) -> str:
         if child.operator and child.value == Operators.NOT:
             # Special handling: inject "NOT ..." directly
             not_child = child.children[0]
-            not_str = to_string_wos(not_child, wrap=True)
+            not_str = to_string_wos(not_child)
             parts.append(f"NOT {not_str}")
         else:
-            parts.append(to_string_wos(child, wrap=True))
+            parts.append(to_string_wos(child))
 
     joined = f" {query.value} ".join(parts)
 
-    if wrap:
+    if query.get_parent():
         field = query.search_field.value if query.search_field else ""
         return f"{field}({joined})"
 

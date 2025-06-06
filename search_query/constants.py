@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Tuple
 
 # noqa: E501
+# ruff: noqa: E501
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
@@ -386,7 +387,19 @@ class QueryErrorCode(Enum):
         "F2012",
         "year-without-search-terms",
         "A search for publication years must include at least another search term.",
-        "",
+        """**Typical fix**: A search for publication years must include at least another search term.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    PY=2000
+
+**Correct query**:
+
+.. code-block:: python
+
+    PY=2000 AND TI=eHealth""",
     )
     NESTED_QUERY_WITH_SEARCH_FIELD = (
         [PLATFORM.PUBMED],
@@ -510,11 +523,18 @@ class QueryErrorCode(Enum):
         "operator-capitalization",
         "Operators should be capitalized",
         """**Typical fix**: Capitalize the operator
+
+
 **Problematic query**:
+
 .. code-block:: python
+
     a and b or c
+
 **Correct query**:
+
 .. code-block:: python
+
     a AND b OR c""",
     )
     IMPLICIT_NEAR_VALUE = (
