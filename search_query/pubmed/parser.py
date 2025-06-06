@@ -321,32 +321,6 @@ class PubmedListParser(QueryListParser):
             platform="deactivated",
         )
 
-    def tokenize_list(self) -> None:
-        """Tokenize the query_list."""
-        query_list = self.query_list
-        previous = 0
-        for line in query_list.split("\n"):
-            if line.strip() == "":
-                continue
-
-            match = self.LIST_ITEM_REGEX.match(line)
-            if not match:  # pragma: no cover
-                raise ValueError(f"line not matching format: {line}")
-            node_nr, node_content = match.groups()
-            pos_start, pos_end = match.span(2)
-            pos_start += previous
-            pos_end += previous
-            query_type = ListTokenTypes.QUERY_NODE
-            if self.OPERATOR_NODE_REGEX.match(node_content):
-                query_type = ListTokenTypes.OPERATOR_NODE
-
-            self.query_dict[str(node_nr)] = {
-                "node_content": node_content,
-                "content_pos": (pos_start, pos_end),
-                "type": query_type,
-            }
-            previous += len(line) + 1
-
     def parse(self) -> Query:
         """Parse the query in list format."""
 

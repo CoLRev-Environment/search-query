@@ -368,30 +368,6 @@ class WOSListParser(QueryListParser):
             string_parser_class=WOSParser,
         )
 
-    def tokenize_list(self) -> None:
-        """Tokenize the query_list."""
-        query_list = self.query_list
-        previous = 0
-        for line in query_list.split("\n"):
-            if line.strip() == "":
-                continue
-
-            match = self.LIST_ITEM_REGEX.match(line)
-            if not match:  # pragma: no cover
-                raise ValueError(f"line not matching format: {line}")
-            node_nr, node_content = match.groups()
-            pos_start, pos_end = match.span(2)
-            pos_start += previous
-            pos_end += previous
-            self.query_dict[str(node_nr)] = {
-                "node_content": node_content,
-                "content_pos": (pos_start, pos_end),
-                "type": ListTokenTypes.OPERATOR_NODE
-                if "#" in node_content
-                else ListTokenTypes.QUERY_NODE,
-            }
-            previous += len(line) + 1
-
     def _build_query_from_operator_node(self, tokens: list) -> Query:
         operator = ""
         children = []
