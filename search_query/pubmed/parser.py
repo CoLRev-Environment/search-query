@@ -187,7 +187,7 @@ class PubmedParser(QueryStringParser):
         query_start_pos = tokens[0].position[0]
         query_end_pos = tokens[-1].position[1]
 
-        return Query(
+        return Query.create(
             value=operator_type,
             search_field=None,
             children=list(children),
@@ -334,7 +334,7 @@ class PubmedListParser(QueryListParser):
         if operator.upper() in {"|", "OR"}:
             operator = Operators.OR
 
-        return Query(
+        return Query.create(
             value=operator,
             search_field=None,
             children=children,

@@ -31,12 +31,16 @@ class Query:
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
+        if type(self) is Query:
+            raise TypeError(
+                "The base Query type cannot be instantiated directly. "
+                "Use Query.create() or the appropriate query subclass."
+            )
         self._value: str = ""
-        self._operator = False
+        self._operator = operator
         self._children: typing.List[Query] = []
         self._search_field = None
 
-        self.operator = operator
         self.value = value
         if isinstance(search_field, str):
             self.search_field = SearchField(search_field)
@@ -61,6 +65,58 @@ class Query:
         # Note: validating platform constraints is particularly important
         # when queries are created programmatically
         self._validate_platform_constraints()
+
+    @classmethod
+    def create(
+            cls,
+            value: str,
+            *,
+            operator: bool = True,
+            search_field: typing.Optional[SearchField] = None,
+            children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
+            position: typing.Optional[typing.Tuple[int, int]] = None,
+            platform: str = "generic",
+            distance: int = 0
+    ) -> Query:
+        """Factory method for query creation."""
+        if not operator:
+            from search_query.query_term import Term
+            return Term(
+                value=value,
+                search_field=search_field,
+                position=position,
+                platform=platform
+            )
+
+        args = {
+            "search_field": search_field,
+            "children": children,
+            "position": position,
+            "platform": platform
+        }
+
+        if value == Operators.AND:
+            from search_query.query_and import AndQuery
+            return AndQuery(**args)
+
+        elif value == Operators.OR:
+            from search_query.query_or import OrQuery
+            return OrQuery(**args)
+
+        elif value == Operators.NOT:
+            from search_query.query_not import NotQuery
+            return NotQuery(**args)
+
+        elif value in {Operators.NEAR, Operators.WITHIN}:
+            from search_query.query_near import NEARQuery
+            return NEARQuery(value=value, distance=distance, **args)
+
+        elif value == Operators.RANGE:
+            from search_query.query_range import RangeQuery
+            return RangeQuery(**args)
+
+        else:
+            raise ValueError(f"Invalid operator value: {value}")
 
     def _validate_platform_constraints(self) -> None:
         if self.platform == "deactivated":
@@ -170,15 +226,18 @@ class Query:
         """Set value property."""
         if not isinstance(v, str):
             raise TypeError("value must be a string")
-        if self.operator and v not in [
-            Operators.AND,
-            Operators.OR,
-            Operators.NOT,
-            Operators.NEAR,
-            Operators.WITHIN,
-            Operators.RANGE,
-        ]:
-            raise ValueError(f"Invalid operator value: {v}")
+        if self.operator:
+            if self._value:
+                raise AttributeError("operator value can only be set once")
+            if v not in [
+                Operators.AND,
+                Operators.OR,
+                Operators.NOT,
+                Operators.NEAR,
+                Operators.WITHIN,
+                Operators.RANGE,
+            ]:
+                raise ValueError(f"Invalid operator value: {v}")
         self._value = v
 
     @property
@@ -191,6 +250,8 @@ class Query:
         """Set operator property."""
         if not isinstance(is_op, bool):
             raise TypeError("operator must be a boolean")
+        if is_op != self._operator:
+            raise AttributeError("operator property can only be set once")
         self._operator = is_op
 
     @property
@@ -251,6 +312,15 @@ class Query:
     def search_field(self, sf: typing.Optional[SearchField]) -> None:
         """Set search field property."""
         self._search_field = copy.deepcopy(sf) if sf else None
+
+    def replace(self, new_query) -> None:
+        if self.get_parent():
+            for index, child in enumerate(self.get_parent().children):
+                if child is self:
+                    self.get_parent().children[index] = new_query
+                    return
+        else:
+            raise RuntimeError("Root node of a query cannot be replaced")
 
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""

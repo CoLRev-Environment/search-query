@@ -6,6 +6,8 @@ from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 from search_query.translator_base import QueryTranslator
 from search_query.wos.constants import generic_search_field_to_syntax_field
 from search_query.wos.constants import syntax_str_to_generic_search_field_set
@@ -44,18 +46,17 @@ class WOSTranslator(QueryTranslator):
         # Note: sorted list for deterministic order of fields
         for search_field in sorted(list(search_fields)):
             query_children.append(
-                Query(
+                Term(
                     value=query.value,
-                    operator=False,
                     search_field=SearchField(value=search_field),
-                    children=None,
                 )
             )
 
-        query.value = Operators.OR
-        query.operator = True
-        query.search_field = None
-        query.children = query_children  # type: ignore
+        query.replace(
+            OrQuery(
+                children=query_children,
+            )
+        )
 
     @classmethod
     def combine_equal_search_fields(cls, query: Query) -> None:

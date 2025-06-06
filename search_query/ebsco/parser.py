@@ -256,7 +256,7 @@ class EBSCOParser(QueryStringParser):
                 parent, current_operator = self.append_operator(parent, proximity_node)
 
             elif token.type == TokenTypes.LOGIC_OPERATOR:
-                new_operator_node = Query(
+                new_operator_node = Query.create(
                     value=token.value.upper(),
                     position=token.position,
                     search_field=search_field or field_context,
