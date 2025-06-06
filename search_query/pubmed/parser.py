@@ -343,10 +343,7 @@ class PubmedListParser(QueryListParser):
                 self.linter.messages[token_nr] = parser.linter.messages
 
             if query_element["type"] == ListTokenTypes.OPERATOR_NODE:
-                query_element["query"] = self._parse_operator_node(
-                    token_nr
-                    # query_element["node_content"]
-                )
+                query_element["query"] = self._parse_operator_node(token_nr)
 
         query = list(self.query_dict.values())[-1]["query"]
 
