@@ -12,49 +12,39 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 def to_string_pubmed(query: Query) -> str:
     """Serialize the Query tree into a PubMed search string."""
-
-    # to do combine querys for PLATFORM_COMBINED_FIELDS_MAP
-
     if not query.children:
-        # query has no children, so it is a leaf node
-        if query.search_field:
-            return f"{query.value}{query.search_field.value}"
-        return query.value
-
+        # Serialize term query
+        return (
+            f"{query.value}" f"{query.search_field.value if query.search_field else ''}"
+        )
+    if query.value == Operators.NEAR:
+        # Serialize near query
+        distance = query.distance if hasattr(query, 'distance') else 0
+        return (
+            f"{query.children[0].value}"
+            f"{query.children[0].search_field.value[:-1]}"
+            f":~{distance}]"
+        )
+    if query.value == Operators.RANGE:
+        # Serialize range query
+        return (
+            f"{query.children[0].value}:{query.children[1].value}"
+            f"{query.children[0].search_field.value}"
+        )
+    # Serialize compound query
     result = ""
-    for child in query.children:
-        if not child.operator:
-            # query is not an operator
-            if (child == query.children[0]) & (child != query.children[-1]):
-                # current element is first but not only child element
-                # -->operator does not need to be appended again
-                result = (
-                    f"{result}({child.value}"
-                    f"{child.search_field.value if child.search_field else ''}"
-                )
-
-            else:
-                # current element is not first child
-                result = (
-                    f"{result} {query.value} {child.value}"
-                    f"{child.search_field.value if child.search_field else ''}"
-                )
-
-            if child == query.children[-1]:
-                # current Element is last Element -> closing parenthesis
-                result = f"{result})"
-
+    for i, child in enumerate(query.children):
+        if i > 0:
+            # Add operator between query children
+            result += f" {query.value} "
+        if isinstance(child, str):
+            result += child
         else:
-            # query is operator query
-            if child.value == Operators.NOT:
-                # current element is NOT Operator -> no parenthesis in PubMed
-                result = f"{result}{to_string_pubmed(child)}"
+            # Recursively serialize query children
+            result += to_string_pubmed(child)
 
-            elif (child == query.children[0]) & (child != query.children[-1]):
-                result = f"{result}({to_string_pubmed(child)}"
-            else:
-                result = f"{result} {query.value} {to_string_pubmed(child)}"
+    if query.get_parent():
+        # Add parentheses around nested queries
+        result = "(" + result + ")"
 
-            if (child == query.children[-1]) & (child.value != Operators.NOT):
-                result = f"{result})"
     return result
