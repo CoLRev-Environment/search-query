@@ -479,7 +479,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(0, 14)],
-                    "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
+                    "details": "Proximity search requires 2 or more search terms enclosed in double quotes.",
                 },
             ],
         ),
@@ -500,10 +500,19 @@ def test_pubmed_invalid_token_sequences(
         (
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
             "",
-            [],
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": False,
+                    "position": [(29, 38)],
+                    "details": "Proximity search requires 2 or more search terms enclosed in double quotes.",
+                },
+            ],
         ),
         (
-            '"digital health"[sb:~5] OR "eHealth"[sb:~5]',
+            '"digital health"[sb:~5] OR "mobile health"[sb:~5]',
             "",
             [
                 {
@@ -519,7 +528,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
-                    "position": [(36, 43)],
+                    "position": [(42, 49)],
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
                 },
             ],

@@ -406,15 +406,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 continue
 
             nr_of_terms = len(search_phrase_token.value.strip('"').split())
-            if nr_of_terms >= 2 and not (
+            if nr_of_terms < 2 or not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
             ):
                 details = (
-                    "When using proximity operators, "
-                    + "search terms consisting of 2 or more words "
-                    + f"(i.e., {search_phrase_token.value}) "
-                    + "must be enclosed in double quotes"
+                    "Proximity search requires 2 or more search terms enclosed in double quotes."
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
