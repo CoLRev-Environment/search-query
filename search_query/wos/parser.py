@@ -17,8 +17,8 @@ from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_near import NEARQuery
-from search_query.query_term import Term
 from search_query.query_not import NotQuery
+from search_query.query_term import Term
 from search_query.wos.constants import search_field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter

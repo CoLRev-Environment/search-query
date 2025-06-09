@@ -3,7 +3,6 @@
 import re
 
 from search_query.constants import Fields
-from search_query.constants import Operators
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_or import OrQuery

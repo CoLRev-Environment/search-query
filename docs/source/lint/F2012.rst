@@ -9,6 +9,18 @@ F2012 — year-without-search-terms
 
 **Scope**: PLATFORM.WOS
 
-**Description**: A search for publication years must include at least another search term.
+**Typical fix**: A search for publication years must include at least another search term.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    PY=2000
+
+**Correct query**:
+
+.. code-block:: python
+
+    PY=2000 AND TI=eHealth
 
 **Back to**: :ref:`lint`

@@ -12,8 +12,6 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
-from search_query.query import Operators
-from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_or import OrQuery

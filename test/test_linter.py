@@ -4,7 +4,6 @@ from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
-from search_query.query import Query
 from search_query.query_and import AndQuery
 from search_query.query_term import Term
 

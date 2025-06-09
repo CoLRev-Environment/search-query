@@ -68,51 +68,57 @@ class Query:
 
     @classmethod
     def create(
-            cls,
-            value: str,
-            *,
-            operator: bool = True,
-            search_field: typing.Optional[SearchField] = None,
-            children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
-            position: typing.Optional[typing.Tuple[int, int]] = None,
-            platform: str = "generic",
-            distance: int = 0
+        cls,
+        value: str,
+        *,
+        operator: bool = True,
+        search_field: typing.Optional[SearchField] = None,
+        children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
+        platform: str = "generic",
+        distance: int = 0,
     ) -> Query:
         """Factory method for query creation."""
         if not operator:
             from search_query.query_term import Term
+
             return Term(
                 value=value,
                 search_field=search_field,
                 position=position,
-                platform=platform
+                platform=platform,
             )
 
         args = {
             "search_field": search_field,
             "children": children,
             "position": position,
-            "platform": platform
+            "platform": platform,
         }
 
         if value == Operators.AND:
             from search_query.query_and import AndQuery
+
             return AndQuery(**args)
 
         elif value == Operators.OR:
             from search_query.query_or import OrQuery
+
             return OrQuery(**args)
 
         elif value == Operators.NOT:
             from search_query.query_not import NotQuery
+
             return NotQuery(**args)
 
         elif value in {Operators.NEAR, Operators.WITHIN}:
             from search_query.query_near import NEARQuery
+
             return NEARQuery(value=value, distance=distance, **args)
 
         elif value == Operators.RANGE:
             from search_query.query_range import RangeQuery
+
             return RangeQuery(**args)
 
         else:

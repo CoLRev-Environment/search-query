@@ -31,9 +31,11 @@ class NotQuery(Query):
         search field: search field to which the query should be applied
         """
 
-        query_children = [
-            c if isinstance(c, Query) else Term(value=c) for c in children
-        ] if children else None
+        query_children = (
+            [c if isinstance(c, Query) else Term(value=c) for c in children]
+            if children
+            else None
+        )
 
         super().__init__(
             value=Operators.NOT,

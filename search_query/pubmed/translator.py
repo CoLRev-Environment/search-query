@@ -2,7 +2,6 @@
 """Pubmed query translator."""
 from search_query.constants import Fields
 from search_query.constants import Operators
-from search_query.constants import PLATFORM
 from search_query.pubmed.constants import generic_search_field_to_syntax_field
 from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
 from search_query.query import Query

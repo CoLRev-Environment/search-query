@@ -241,9 +241,7 @@ def test_value_setter() -> None:
 
     with pytest.raises(ValueError):
         Query.create(
-            value="non_operator",
-            operator=True,
-            children=["ethics", "morality"]
+            value="non_operator", operator=True, children=["ethics", "morality"]
         )
 
     with pytest.raises(TypeError):

@@ -13,7 +13,6 @@ from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
-from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
