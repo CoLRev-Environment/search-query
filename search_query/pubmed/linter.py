@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Pubmed query linter."""
+from __future__ import annotations
+
 import re
 import typing
 
+from search_query.constants import Colors
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
@@ -213,6 +216,147 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 details=f"Cannot end with {self.tokens[-1].type.value}",
             )
 
+    def _print_unequal_precedence_warning(self, index: int) -> None:
+        unequal_precedence_operators = self._get_unequal_precedence_operators(
+            self.tokens[index:]
+        )
+        if not unequal_precedence_operators:
+            return
+
+        precedence_list = [o.value for o in unequal_precedence_operators]
+        precedence_lines = []
+        for idx, op in enumerate(precedence_list):
+            if idx == 0:
+                precedence_lines.append(
+                    f"Operator {Colors.GREEN}{op}{Colors.END} at position {idx + 1} is evaluated first "
+                    f"because it is the leftmost operator."
+                )
+            elif idx == len(precedence_list) - 1:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} at position {idx + 1} is evaluated last "
+                    f"because it is the rightmost operator."
+                )
+            else:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} at position {idx + 1} is evaluated next."
+                )
+
+        precedence_info = "\n".join(precedence_lines)
+
+        details = (
+            "The query uses multiple operators, but without parentheses to make the intended logic explicit. "
+            "PubMed evaluates queries strictly from left to right without applying traditional operator precedence. "
+            "This can lead to unexpected interpretations of the query.\n\n"
+            "Specifically:\n"
+            f"{precedence_info}\n\n"
+            "To fix this, search-query adds artificial parentheses around operators "
+            "based on their left-to-right position in the query.\n\n"
+        )
+
+        self.add_linter_message(
+            QueryErrorCode.IMPLICIT_PRECEDENCE,
+            positions=[o.position for o in unequal_precedence_operators],
+            details=details,
+        )
+
+    def add_artificial_parentheses_for_operator_precedence(
+        self,
+        index: int = 0,
+        output: typing.Optional[list] = None,
+    ) -> tuple[int, list[Token]]:
+        """
+        Adds artificial parentheses with position (-1, -1)
+        to enforce PubMed operator precedence.
+        """
+        if output is None:
+            output = []
+        # Value of operator
+        value = 0
+        # Value of previous operator
+        previous_value = -1
+        # Added artificial parentheses
+        art_par = 0
+        # Start index
+        start_index = index
+
+        self._print_unequal_precedence_warning(index)
+
+        while index < len(self.tokens):
+            # Forward iteration through tokens
+
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
+                output.append(self.tokens[index])
+                index += 1
+                index, output = self.add_artificial_parentheses_for_operator_precedence(
+                    index, output
+                )
+                continue
+
+            if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
+                output.append(self.tokens[index])
+                index += 1
+                # Add opening parentheses in case there are missing ones
+                if art_par < 0:
+                    while art_par < 0:
+                        output.insert(
+                            start_index,
+                            Token(
+                                value="(",
+                                type=TokenTypes.PARENTHESIS_OPEN,
+                                position=(-1, -1),
+                            ),
+                        )
+                        art_par += 1
+                return index, output
+
+            if self.tokens[index].type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
+                value = self.get_precedence(self.tokens[index].value.upper())
+
+                if previous_value in (value, -1):
+                    # Same precedence → just add to output
+                    output.append(self.tokens[index])
+                    previous_value = value
+
+                elif value != previous_value:
+                    # Different precedence → close parenthesis
+                    output.append(
+                        Token(
+                            value=")",
+                            type=TokenTypes.PARENTHESIS_CLOSED,
+                            position=(-1, -1),
+                        )
+                    )
+                    previous_value -= 1
+                    art_par -= 1
+                    output.append(self.tokens[index])
+                    previous_value = value
+
+                index += 1
+                continue
+
+            # Default: search terms, fields, etc.
+            output.append(self.tokens[index])
+            index += 1
+
+        # Add opening parentheses in case there are missing ones
+        if art_par < 0:
+            while art_par < 0:
+                output.insert(
+                    0,
+                    Token(
+                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
+                    ),
+                )
+                art_par += 1
+
+        if index == len(self.tokens):
+            self.flatten_redundant_artificial_nesting(output)
+
+        return index, output
+
     def check_invalid_wildcard(self, query: Query) -> None:
         """Check search term for invalid wildcard *"""
 
@@ -262,15 +406,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 continue
 
             nr_of_terms = len(search_phrase_token.value.strip('"').split())
-            if nr_of_terms >= 2 and not (
+            if nr_of_terms < 2 or not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
             ):
                 details = (
-                    "When using proximity operators, "
-                    + "search terms consisting of 2 or more words "
-                    + f"(i.e., {search_phrase_token.value}) "
-                    + "must be enclosed in double quotes"
+                    "Proximity search requires 2 or more search terms enclosed in double quotes."
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
@@ -292,8 +433,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     positions=[field_token.position],
                     details=details,
                 )
-            # Update search field token
-            self.tokens[index].value = field_value
 
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
@@ -420,10 +559,10 @@ class PubmedQueryListLinter(QueryListLinter):
 
     def __init__(
         self,
-        parser: "PubmedListParser",
-        string_parser_class: typing.Type["QueryStringParser"],
+        parser: PubmedListParser,
+        string_parser_class: typing.Type[QueryStringParser],
     ):
-        self.parser: "PubmedListParser" = parser
+        self.parser: PubmedListParser = parser
         self.string_parser_class = string_parser_class
         super().__init__(parser, string_parser_class)
 

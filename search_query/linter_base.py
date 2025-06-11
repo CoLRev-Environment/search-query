@@ -436,7 +436,7 @@ class QueryStringLinter:
         if quote_count % 2 != 0:
             return query_str  # unbalanced quotes, do not attempt trimming
 
-        suffix_match = re.search(r"\)(?!\s*(AND|OR))[^()\[\]]*$", query_str)
+        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", query_str)
 
         original_query_str = query_str  # preserve for position calculation
 
@@ -704,6 +704,8 @@ class QueryStringLinter:
         previous_value = -1
         # Added artificial parentheses
         art_par = 0
+        # Start index
+        start_index = index
 
         self._print_unequal_precedence_warning(index)
 
@@ -721,16 +723,28 @@ class QueryStringLinter:
             if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
                 output.append(self.tokens[index])
                 index += 1
-                # Add closed parenthesis in case there are still open ones
-                while art_par > 0:
-                    output.append(
-                        Token(
-                            value=")",
-                            type=TokenTypes.PARENTHESIS_CLOSED,
-                            position=(-1, -1),
+                # Add parentheses in case there are missing ones
+                if art_par > 0:
+                    while art_par > 0:
+                        output.append(
+                            Token(
+                                value=")",
+                                type=TokenTypes.PARENTHESIS_CLOSED,
+                                position=(-1, -1),
+                            )
                         )
-                    )
-                    art_par -= 1
+                        art_par -= 1
+                if art_par < 0:
+                    while art_par < 0:
+                        output.insert(
+                            start_index,
+                            Token(
+                                value="(",
+                                type=TokenTypes.PARENTHESIS_OPEN,
+                                position=(-1, -1),
+                            ),
+                        )
+                        art_par += 1
                 return index, output
 
             if self.tokens[index].type in [
