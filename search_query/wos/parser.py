@@ -56,12 +56,16 @@ class WOSParser(QueryStringParser):
         )
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         query_str: str,
         *,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
+        offset: typing.Optional[dict] = None,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
@@ -69,12 +73,16 @@ class WOSParser(QueryStringParser):
             search_field_general=search_field_general,
             mode=mode,
         )
-        self.linter = WOSQueryStringLinter(query_str=query_str)
+        self.linter = WOSQueryStringLinter(
+            query_str=query_str, original_str=original_str, silent=silent
+        )
+        self.offset = offset or {}
+        self.original_str = original_str or query_str
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
-        # Parse tokens and positions based on regex pattern
+        self.tokens = []
         for match in self.pattern.finditer(self.query_str):
             value = match.group()
             position = match.span()
@@ -98,8 +106,41 @@ class WOSParser(QueryStringParser):
 
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
+        self.adjust_token_positions()
         self.combine_subsequent_terms()
         self.split_operators_with_missing_whitespace()
+
+    def adjust_token_positions(self) -> None:
+        """Adjust virtual positions of tokens using offset mapping."""
+        if not hasattr(self, "offset") or not isinstance(self.offset, dict):
+            return  # No offsets to apply
+
+        next_offset_keys = sorted(self.offset.keys())
+        current_offset = 0
+        next_offset_index = 0
+        virtual_position = self.offset[next_offset_keys[0]] if next_offset_keys else 0
+        last_end = 0
+
+        for token in self.tokens:
+            start, end = token.position
+
+            # Apply offset shifts if we passed new offset positions
+            while (
+                next_offset_index < len(next_offset_keys)
+                and start >= next_offset_keys[next_offset_index]
+            ):
+                current_offset = self.offset[next_offset_keys[next_offset_index]]
+                virtual_position = current_offset
+                next_offset_index += 1
+
+            gap_length = start - last_end
+            if start > current_offset and gap_length > 0:
+                virtual_position += gap_length
+
+            token_length = end - start
+            token.position = (virtual_position, virtual_position + token_length)
+            virtual_position += token_length
+            last_end = end
 
     # Parse a query tree from tokens recursively
     # pylint: disable=too-many-branches
@@ -366,6 +407,7 @@ class WOSListParser(QueryListParser):
         self.linter = WOSQueryListLinter(
             parser=self,
             string_parser_class=WOSParser,
+            original_query_str=query_list,
         )
 
     def _build_query_from_operator_node(self, tokens: list) -> Query:
@@ -411,6 +453,50 @@ class WOSListParser(QueryListParser):
 
         return tokens
 
+    def _build_query_str(self) -> typing.Tuple[str, dict]:
+        query_str = ""
+        pos_dict = {}
+
+        # Build map: token_nr -> (query_text, original_start_pos)
+        query_map = {
+            str(token_nr): (
+                node_content["node_content"],
+                node_content["content_pos"][0],
+            )
+            for token_nr, node_content in self.query_dict.items()
+            if node_content["type"] == ListTokenTypes.QUERY_NODE
+        }
+
+        # Process OPERATOR_NODEs
+        for token_nr, node_content in self.query_dict.items():
+            if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
+                tokens = self.tokenize_operator_node(
+                    node_content["node_content"], token_nr
+                )
+                operator_base_offset = node_content["content_pos"][0]
+
+                parts = []
+                current_pos = 0
+
+                for token in tokens:
+                    if token.type.name == "LIST_ITEM_REFERENCE":
+                        ref_nr = token.value.lstrip("#")
+                        ref_query, original_pos = query_map.get(ref_nr, ("", -1))
+                        parts.append(ref_query)
+                        pos_dict[current_pos] = original_pos
+                        current_pos += len(ref_query)
+                    else:
+                        parts.append(token.value)
+                        pos_dict[current_pos] = operator_base_offset + token.position[0]
+                        current_pos += len(token.value)
+
+                    # Add space after each token
+                    parts.append(" ")
+                    current_pos += 1
+
+                query_str = "".join(parts).strip()
+        return query_str, pos_dict
+
     def parse(self) -> Query:
         """Parse the list of queries."""
 
@@ -419,26 +505,16 @@ class WOSListParser(QueryListParser):
         self.linter.validate_list_tokens()
         self.linter.check_status()
 
-        for token_nr, node_content in self.query_dict.items():
-            print(f"*** Query list element: #{token_nr} *************************")
-            if node_content["type"] == ListTokenTypes.QUERY_NODE:
-                query_parser = WOSParser(
-                    query_str=node_content["node_content"],
-                    search_field_general=self.search_field_general,
-                    mode=self.mode,
-                )
-                query = query_parser.parse()
-                node_content["query"] = query
+        query_str, pos_dict = self._build_query_str()
 
-            elif node_content["type"] == ListTokenTypes.OPERATOR_NODE:
-                tokens = self.tokenize_operator_node(
-                    node_content["node_content"], token_nr
-                )
-                query = self._build_query_from_operator_node(tokens)
-                self.query_dict[token_nr]["query"] = query
-
-        query = list(self.query_dict.values())[-1]["query"]
-
+        query_parser = WOSParser(
+            query_str=query_str,
+            original_str=self.query_list,
+            search_field_general=self.search_field_general,
+            mode=self.mode,
+            offset=pos_dict,
+        )
+        query = query_parser.parse()
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 
         return query

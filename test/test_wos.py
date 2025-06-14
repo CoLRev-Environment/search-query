@@ -947,40 +947,84 @@ def test_list_parser_case_2() -> None:
 
 # Test case 3
 def test_list_parser_case_3() -> None:
-    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND not_a_ref_to_term_node\n'
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #4\n'
 
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
-    assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
-        "code": "F1004",
-        "is_fatal": True,
-        "label": "invalid-token-sequence",
-        "message": "The sequence of tokens is invalid.",
-        "position": [(3, 6)],
-        "details": "Last token of query item 3 must be a list item.",
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    assert list_parser.linter.messages == {
+        2: [
+            {
+                "code": "F3003",
+                "label": "invalid-list-reference",
+                "message": "Invalid list reference in list query",
+                "is_fatal": True,
+                "position": [(101, 103)],
+                "details": "List reference #4 not found.",
+            }
+        ]
     }
 
 
 # Test case 4
 def test_list_parser_case_4() -> None:
-    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #5\n'
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
 
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
-    try:
-        list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
-
-    assert list_parser.linter.messages[2][0] == {
-        "code": "F3003",
-        "is_fatal": True,
-        "label": "invalid-list-reference",
-        "message": "Invalid list reference in list query",
-        "position": [(7, 9)],
-        "details": "List reference #5 not found.",
+    query = list_parser.parse()
+    print(query.to_string())
+    assert (
+        query.to_string()
+        == '(TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats"))'
+    )
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        0: [
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(4, 18), (42, 56)],
+                "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(22, 38), (60, 76)],
+                "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
+            },
+        ],
+        1: [
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(4, 16), (47, 59)],
+                "details": 'Term "acrobatics" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(20, 29), (63, 72)],
+                "details": 'Term "acrobat" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(33, 43), (76, 86)],
+                "details": 'Term "acrobats" is contained multiple times i.e., redundantly.',
+            },
+        ],
     }
 
 

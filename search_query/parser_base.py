@@ -31,12 +31,14 @@ class QueryStringParser(ABC):
         *,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
+        silent: bool = False,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode
         # The external search_fields (in the JSON file: "search_field")
         self.search_field_general = search_field_general
+        self.silent = silent
 
     def print_tokens(self) -> None:
         """Print the tokens in a formatted table."""
@@ -144,6 +146,7 @@ class QueryListParser:
 
     def tokenize_list(self) -> None:
         """Tokenize the query_list."""
+        # pylint: disable=too-many-locals
         query_list = self.query_list
         previous = 0
         for line in query_list.split("\n"):

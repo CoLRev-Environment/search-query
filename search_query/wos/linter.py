@@ -10,6 +10,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.exception import QuerySyntaxError
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
@@ -72,8 +73,14 @@ class WOSQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
@@ -497,10 +504,12 @@ class WOSQueryListLinter(QueryListLinter):
         self,
         parser: "search_query.wos.parser.WOSListParser",
         string_parser_class: typing.Type["search_query.wos.parser.WOSParser"],
+        original_query_str: str = "",
     ):
         super().__init__(
             parser=parser,
             string_parser_class=string_parser_class,
+            original_query_str=original_query_str,
         )
         self.messages: dict = {}
 
@@ -623,6 +632,8 @@ class WOSQueryListLinter(QueryListLinter):
                 ):
                     reference = match.group()
                     position = match.span()
+                    offset = query_node["content_pos"][0]
+                    position = (position[0] + offset, position[1] + offset)
                     if reference.replace("#", "") not in self.parser.query_dict:
                         self.add_linter_message(
                             QueryErrorCode.INVALID_LIST_REFERENCE,
@@ -639,10 +650,11 @@ class WOSQueryListLinter(QueryListLinter):
                 query_str=query_node["node_content"],
                 search_field_general=self.parser.search_field_general,
                 mode=self.parser.mode,
+                silent=True,
             )
             try:
                 query_parser.parse()
-            except ValueError:
+            except (ValueError, QuerySyntaxError):
                 self.add_linter_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     list_position=ind,
