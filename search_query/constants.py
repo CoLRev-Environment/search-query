@@ -404,7 +404,8 @@ class QueryErrorCode(Enum):
         [PLATFORM.WOS],
         "F3001",
         "missing-root-node",
-        "List format query without root node (containing list references and operators)",
+        "List format query without root node "
+        "(containing list references and operators)",
         # The last item of the list must be a "combining string"
         "",
     )
