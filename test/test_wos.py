@@ -939,7 +939,7 @@ def test_list_parser_case_2() -> None:
         "code": "F3001",
         "is_fatal": True,
         "label": "missing-root-node",
-        "message": "List format query without root node (typically containing operators)",
+        "message": "List format query without root node (containing list references and operators)",
         "position": [(-1, -1)],
         "details": "",
     }
