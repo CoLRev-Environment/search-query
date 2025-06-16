@@ -981,13 +981,13 @@ def test_list_parser_case_4() -> None:
     )
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        0: [
+        -1: [
             {
                 "code": "W0004",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
-                "position": [(4, 18), (42, 56)],
+                "position": [(7, 21), (45, 59)],
                 "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
             },
             {
@@ -995,17 +995,15 @@ def test_list_parser_case_4() -> None:
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
-                "position": [(22, 38), (60, 76)],
+                "position": [(25, 41), (63, 79)],
                 "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
             },
-        ],
-        1: [
             {
                 "code": "W0004",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
-                "position": [(4, 16), (47, 59)],
+                "position": [(88, 100), (131, 143)],
                 "details": 'Term "acrobatics" is contained multiple times i.e., redundantly.',
             },
             {
@@ -1013,7 +1011,7 @@ def test_list_parser_case_4() -> None:
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
-                "position": [(20, 29), (63, 72)],
+                "position": [(104, 113), (147, 156)],
                 "details": 'Term "acrobat" is contained multiple times i.e., redundantly.',
             },
             {
@@ -1021,10 +1019,34 @@ def test_list_parser_case_4() -> None:
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
-                "position": [(33, 43), (76, 86)],
+                "position": [(117, 127), (160, 170)],
                 "details": 'Term "acrobats" is contained multiple times i.e., redundantly.',
             },
-        ],
+        ]
+    }
+
+
+# Test case 5
+def test_list_parser_case_5() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2 AND\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [
+            {
+                "code": "F1004",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "is_fatal": True,
+                "position": [(104, 107)],
+                "details": "Last token of query item 3 must be a list item.",
+            }
+        ]
     }
 
 

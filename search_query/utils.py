@@ -15,6 +15,7 @@ def _is_single_short_line_error(positions: list, query_str: str) -> bool:
     short_line = end - start < 100  # Arbitrary threshold for "short" line
     return single_line and short_line
 
+
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
 def format_query_string_positions(

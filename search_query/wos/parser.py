@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import typing
 
+from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
@@ -12,6 +13,7 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.exception import QuerySyntaxError
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -514,7 +516,17 @@ class WOSListParser(QueryListParser):
             mode=self.mode,
             offset=pos_dict,
         )
-        query = query_parser.parse()
+        try:
+            query = query_parser.parse()
+        except QuerySyntaxError as exc:
+            raise exc
+        finally:
+            if GENERAL_ERROR_POSITION not in self.linter.messages:
+                self.linter.messages[GENERAL_ERROR_POSITION] = []
+            self.linter.messages[GENERAL_ERROR_POSITION].extend(
+                query_parser.linter.messages
+            )
+
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 
         return query
