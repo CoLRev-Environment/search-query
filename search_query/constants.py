@@ -617,7 +617,7 @@ class QueryErrorCode(Enum):
         ["all"],
         "E0001",
         "search-field-missing",
-        "Expected search field is missing",
+        "Expected search field is missing", 
         "",
     )
     SEARCH_FIELD_CONTRADICTION = (
@@ -625,8 +625,27 @@ class QueryErrorCode(Enum):
         "E0002",
         "search-field-contradiction",
         "Contradictory search fields specified",
-        "",
+        """**Typical fix**: Ensure that the search fields used in the query and the general search field parameter are consistent.
+
+**Problematic query**:
+
+.. code-block:: python 
+# PLATFORM.WOS:
+    TI=(digital AND online)
+# PLATFORM.PUBMED:
+    "eHealth"[tiab] "digital health"[tiab]
+    search_field_general = Title
+
+**Correct query**:
+
+.. code-block:: python
+# PLATFORM.WOS:
+    digital AND online
+# PLATFORM.PUBMED:
+    "eHealth"[Title] "digital health"[Title]
+    search_field_general = Title""",
     )
+
     INVALID_CHARACTER = (
         [PLATFORM.PUBMED],
         "E0004",
@@ -646,7 +665,19 @@ class QueryErrorCode(Enum):
         "E0006",
         "invalid-wildcard-use",
         "Invalid use of the wildcard operator *",
-        "",
+        """**Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
+
+**Problematic query**:
+
+.. code-block:: python 
+
+    "health tracking" AND AI*
+
+**Correct query**:
+
+.. code-block:: python
+
+    "health tracking" AND AID*""",
     )
     QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
         [PLATFORM.WOS],
