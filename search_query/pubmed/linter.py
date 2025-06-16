@@ -410,9 +410,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
             ):
-                details = (
-                    "Proximity search requires 2 or more search terms enclosed in double quotes."
-                )
+                details = "Proximity search requires 2 or more search terms enclosed in double quotes."
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[self.tokens[index - 1].position],

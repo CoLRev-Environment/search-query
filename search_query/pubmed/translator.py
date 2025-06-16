@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pubmed query translator."""
-from itertools import permutations
 from collections import defaultdict
+from itertools import permutations
 
 from search_query.constants import Fields
 from search_query.constants import Operators
@@ -126,7 +126,9 @@ class PubmedTranslator(QueryTranslator):
             return query
 
         if query.value == Operators.NEAR:
-            query.children[0].value = f'"{query.children[0].value} {query.children[1].value}"'
+            query.children[
+                0
+            ].value = f'"{query.children[0].value} {query.children[1].value}"'
             query.children.pop()
             return query
 
@@ -135,7 +137,9 @@ class PubmedTranslator(QueryTranslator):
             near_queries = []
             other_queries = []
             for child in query.children:
-                (near_queries if type(child) is NEARQuery else other_queries).append(child)
+                (near_queries if type(child) is NEARQuery else other_queries).append(
+                    child
+                )
 
             for other_query in other_queries:
                 cls._collapse_near_queries(other_query)
@@ -143,7 +147,7 @@ class PubmedTranslator(QueryTranslator):
             # Group NEAR queries by their proximity distance
             grouped_queries = defaultdict(list)
             for near_query in near_queries:
-                key = near_query.distance if hasattr(near_query, 'distance') else 0
+                key = near_query.distance if hasattr(near_query, "distance") else 0
                 grouped_queries[key].append(near_query)
 
             combined_near_queries = []
@@ -153,7 +157,9 @@ class PubmedTranslator(QueryTranslator):
                 for q in queries:
                     term_a = q.children[0].value
                     term_b = q.children[1].value
-                    term_field_map[(min(term_a, term_b), max(term_a, term_b))].add(q.children[0].search_field.value)
+                    term_field_map[(min(term_a, term_b), max(term_a, term_b))].add(
+                        q.children[0].search_field.value
+                    )
 
                 for (term_a, term_b), fields in term_field_map.items():
                     if Fields.TITLE in fields and Fields.ABSTRACT in fields:
@@ -170,11 +176,11 @@ class PubmedTranslator(QueryTranslator):
                                     Term(
                                         value=f'"{term_a} {term_b}"',
                                         search_field=field,
-                                        platform="deactivated"
+                                        platform="deactivated",
                                     )
                                 ],
                                 distance=distance,
-                                platform="deactivated"
+                                platform="deactivated",
                             )
                         )
 
@@ -258,7 +264,7 @@ class PubmedTranslator(QueryTranslator):
         if type(query) is not NEARQuery:
             return query
 
-        distance = query.distance if hasattr(query, 'distance') else 0
+        distance = query.distance if hasattr(query, "distance") else 0
         query_children = []
         search_terms = query.children[0].value.strip('"').split()
         # Handle [tiab] by generating NEAR queries for both 'title' and 'abstract'
@@ -271,8 +277,14 @@ class PubmedTranslator(QueryTranslator):
                     NEARQuery(
                         value=Operators.NEAR,
                         children=[
-                            Term(value=pair[0], search_field=SearchField(value=search_field)),
-                            Term(value=pair[1], search_field=SearchField(value=search_field)),
+                            Term(
+                                value=pair[0],
+                                search_field=SearchField(value=search_field),
+                            ),
+                            Term(
+                                value=pair[1],
+                                search_field=SearchField(value=search_field),
+                            ),
                         ],
                         distance=distance,
                     )

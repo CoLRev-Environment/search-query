@@ -19,7 +19,7 @@ def to_string_pubmed(query: Query) -> str:
         )
     if query.value == Operators.NEAR:
         # Serialize near query
-        distance = query.distance if hasattr(query, 'distance') else 0
+        distance = query.distance if hasattr(query, "distance") else 0
         return (
             f"{query.children[0].value}"
             f"{query.children[0].search_field.value[:-1]}"

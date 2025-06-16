@@ -17,8 +17,8 @@ from search_query.pubmed.linter import PubmedQueryListLinter
 from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.query_term import Term
 from search_query.query_near import NEARQuery
+from search_query.query_term import Term
 
 
 class PubmedParser(QueryStringParser):
@@ -208,7 +208,9 @@ class PubmedParser(QueryStringParser):
         if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
             if ":~" in tokens[1].value:
                 # Parse NEAR query
-                field_value, prox_value = self.PROXIMITY_REGEX.match(tokens[1].value).groups()
+                field_value, prox_value = self.PROXIMITY_REGEX.match(
+                    tokens[1].value
+                ).groups()
                 field_value = "[" + field_value + "]"
                 return NEARQuery(
                     value=Operators.NEAR,
@@ -216,14 +218,16 @@ class PubmedParser(QueryStringParser):
                     children=[
                         Term(
                             value=search_term_token.value,
-                            search_field=SearchField(value=field_value, position=tokens[1].position),
+                            search_field=SearchField(
+                                value=field_value, position=tokens[1].position
+                            ),
                             position=tokens[0].position,
-                            platform="deactivated"
+                            platform="deactivated",
                         )
                     ],
                     position=(tokens[0].position[0], tokens[1].position[1]),
                     distance=prox_value,
-                    platform="deactivated"
+                    platform="deactivated",
                 )
 
             search_field = SearchField(

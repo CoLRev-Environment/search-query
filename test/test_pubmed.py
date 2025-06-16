@@ -736,7 +736,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(39, 47), (91, 103)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))'
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
                 },
             ],
         ),
@@ -958,11 +958,7 @@ def test_linter_with_general_search_field(
             "",
             'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
         ),
-        (
-            '"wearable device"[ti:~2]',
-            "",
-            'NEAR/2["wearable device"[[ti]]]'
-        )
+        ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
     ],
 )
 def test_parser(
@@ -1086,19 +1082,19 @@ def test_list_parser_case_3() -> None:
         ),
         (
             '"digital health"[ti:~2]',
-            'OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]',
+            "OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
         ),
         (
             'eHealth[ti] AND "digital health"[ti:~2]',
-            'AND[eHealth[title], OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]]',
+            "AND[eHealth[title], OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]]",
         ),
         (
             '"digital health"[tiab:~2]',
-            'OR[NEAR/2[digital[abstract], health[abstract]], NEAR/2[health[abstract], digital[abstract]], NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]',
+            "OR[NEAR/2[digital[abstract], health[abstract]], NEAR/2[health[abstract], digital[abstract]], NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
         ),
         (
             '"digital health platforms"[tiab:~0]',
-            'OR[NEAR/0[digital[abstract], health[abstract]], NEAR/0[digital[abstract], platforms[abstract]], NEAR/0[health[abstract], digital[abstract]], NEAR/0[health[abstract], platforms[abstract]], NEAR/0[platforms[abstract], digital[abstract]], NEAR/0[platforms[abstract], health[abstract]], NEAR/0[digital[title], health[title]], NEAR/0[digital[title], platforms[title]], NEAR/0[health[title], digital[title]], NEAR/0[health[title], platforms[title]], NEAR/0[platforms[title], digital[title]], NEAR/0[platforms[title], health[title]]]'
+            "OR[NEAR/0[digital[abstract], health[abstract]], NEAR/0[digital[abstract], platforms[abstract]], NEAR/0[health[abstract], digital[abstract]], NEAR/0[health[abstract], platforms[abstract]], NEAR/0[platforms[abstract], digital[abstract]], NEAR/0[platforms[abstract], health[abstract]], NEAR/0[digital[title], health[title]], NEAR/0[digital[title], platforms[title]], NEAR/0[health[title], digital[title]], NEAR/0[health[title], platforms[title]], NEAR/0[platforms[title], digital[title]], NEAR/0[platforms[title], health[title]]]",
         ),
     ],
 )
