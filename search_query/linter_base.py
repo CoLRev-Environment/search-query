@@ -1136,14 +1136,15 @@ class QueryListLinter:
                 elif code.startswith("W"):
                     category = "💡 Warning"
 
-                query_info = format_query_string_positions(
-                    self.original_query_str, message["position"], color=color
-                )
                 print(f"{color}{category}{Colors.END}: {message['label']} ({code})")
                 _print_bullet_message(message["message"])
                 if message["details"]:
                     print(f"  {message['details']}")
-                _print_bullet_message(query_info, bullet=" ")
+                if message["position"] != [(-1, -1)]:
+                    query_info = format_query_string_positions(
+                        self.original_query_str, message["position"], color=color
+                    )
+                    _print_bullet_message(query_info, bullet=" ")
 
             self.last_read_index[list_position] += len(messages)
 
