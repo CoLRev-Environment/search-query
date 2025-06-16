@@ -351,35 +351,95 @@ class QueryErrorCode(Enum):
         "F2005",
         "wildcard-after-special-char",
         "Wildcard cannot be preceded by special characters.",
-        "",
+        """**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=(term1 term2!*)
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=(term1 term2*)""",
     )
     WILDCARD_STANDALONE = (
         [PLATFORM.WOS],
         "F2006",
         "wildcard-standalone",
         "Wildcard cannot be standalone.",
-        "",
+         """**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=term1 AND "?"
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term1""",
     )
     NEAR_DISTANCE_TOO_LARGE = (
         [PLATFORM.WOS],
         "F2007",
         "near-distance-too-large",
         "NEAR distance is too large (max: 15).",
-        "",
+        """**Typical fix**: Reduce the NEAR distance to 15 or less.
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=term1 NEAR/20 term2
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term1 NEAR/15 term2""",
     )
     ISBN_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2008",
         "isbn-format-invalid",
         "Invalid ISBN format.",
-        "",
+        """**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    IS=978-3-16-148410-0
+
+**Correct query**:
+
+.. code-block:: python
+
+    IS=978-3-16-148410-0""",
     )
     DOI_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2009",
         "doi-format-invalid",
         "Invalid DOI format.",
-        "",
+        """**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    DO=12.1000/xyz
+
+**Correct query**:
+
+.. code-block:: python
+
+    DO=10.1000/xyz""",
     )
     YEAR_SPAN_VIOLATION = (
         [PLATFORM.WOS],
@@ -405,28 +465,88 @@ class QueryErrorCode(Enum):
         "F2011",
         "search-field-unsupported",
         "Search field is not supported for this database",
-        "",
+        """**Typical fix**: Replace the unsupported field with a supported one for the selected database.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=term1 AND IY=digital
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term1 AND PY=digital""",
     )
     YEAR_WITHOUT_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F2012",
         "year-without-search-terms",
         "A search for publication years must include at least another search term.",
-        "",
+        """**Typical fix**: Combine the year filter with at least one other search term.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    PY=200*
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term AND PY=200*""",
     )
     NESTED_QUERY_WITH_SEARCH_FIELD = (
         [PLATFORM.PUBMED],
         "F2013",
         "nested-query-with-search-field",
         "A Nested query cannot have a search field.",
-        "",
+        """**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
+**Problematic query**:
+
+.. code-block:: python
+
+    OrQuery(
+    [
+        Term("health tracking"),
+        Term("remote monitoring"),
+    ],
+    search_field="[tiab]",
+    platform=PLATFORM.PUBMED.value,
+)
+
+**Correct query**:
+
+.. code-block:: python
+
+    OrQuery(
+    [
+        Term("health tracking"),
+        Term("remote monitoring"),
+    ],
+    platform=PLATFORM.PUBMED.value,
+)""",
     )
     YEAR_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2014",
         "year-format-invalid",
         "Invalid year format.",
-        "",
+        """**Typical fix**: Use a valid numeric year format (e.g., 4-digit year).
+
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=term1 AND PY=20xy
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term1 AND PY=2020""",
     )
 
     MISSING_ROOT_NODE = (
@@ -435,7 +555,20 @@ class QueryErrorCode(Enum):
         "missing-root-node",
         "List format query without root node (typically containing operators)",
         # The last item of the list must be a "combining string"
-        "",
+        """**Typical fix**: Add a root-level operator to combine the list items into a single query.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+
+**Correct query**:
+
+.. code-block:: python
+
+    TS=("Peer leader*" OR "Shared leader*") OR TS=("acrobatics" OR "acrobat" OR "acrobats")""",
     )
     MISSING_OPERATOR_NODES = (
         [PLATFORM.WOS],
@@ -449,7 +582,31 @@ class QueryErrorCode(Enum):
         "F3003",
         "invalid-list-reference",
         "Invalid list reference in list query",
-        "",
+        """**Typical fix**: Reference only existing list items in your query.
+
+**Problematic query**:
+
+.. code-block:: python 
+# PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    3. #1 AND #5
+# PLATFORM.PUBMED:
+    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+    3. #1 AND #2 AND #4
+**Correct query**:
+
+.. code-block:: python
+# PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    3. #1 AND #2
+# PLATFORM.PUBMED:
+    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+    3. #1 AND #2
+    """,
     )
 
     # -------------------------------------------------------
