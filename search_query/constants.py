@@ -311,14 +311,40 @@ class QueryErrorCode(Enum):
         "F2003",
         "wildcard-right-short-length",
         "Right-hand wildcard must preceded by at least three characters.",
-        "",
+        """**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=te*
+    TS=ca*
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=tech*
+    TS=cat*""",
     )
     WILDCARD_LEFT_SHORT_LENGTH = (
         [PLATFORM.WOS],
         "F2004",
         "wildcard-left-short-length",
         "Left-hand wildcard must be preceded by at least three characters.",
-        "",
+        """**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
+        
+**Problematic query**:
+
+.. code-block:: python
+
+    TI=*te
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=abc*te""",
     )
     WILDCARD_AFTER_SPECIAL_CHAR = (
         [PLATFORM.WOS],
