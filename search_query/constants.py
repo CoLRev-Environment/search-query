@@ -702,14 +702,38 @@ class QueryErrorCode(Enum):
         "W0001",
         "search-field-redundant",
         "Recommend specifying search field only once in the search string",
-        "",
+        """**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
+
+**Problematic query**:
+
+.. code-block:: python 
+
+    eHealth[ti]
+
+**Correct query**:
+
+.. code-block:: python
+
+    eHealth""",
     )
     SEARCH_FIELD_EXTRACTED = (
         ["all"],
         "W0002",
         "search-field-extracted",
         "Recommend explicitly specifying the search field in the string",
-        "",
+        """**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
+
+**Problematic query**:
+
+.. code-block:: python 
+
+    TI Artificial Intelligence AND AB Future
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI Artificial Intelligence AND AB Future""",
     )
     QUERY_STRUCTURE_COMPLEX = (
         ["all"],
@@ -756,7 +780,23 @@ class QueryErrorCode(Enum):
         "W0007",
         "implicit-precedence",
         "Operator changed at the same level (explicit parentheses are recommended)",
-        "",
+        """**Typical fix**: Use explicit parentheses to clarify operator precedence and avoid ambiguity in mixed AND/OR queries.
+
+**Problematic query**:
+
+.. code-block:: python
+# PLATFORM.PUBMED
+   "health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")
+# PLATFORM.WOS
+    TI=term1 AND OR
+**Correct query**:
+
+.. code-block:: python
+# PLATFORM.PUBMED
+    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")
+# PLATFORM.WOS
+    TI=term1 AND ( ... ) OR ( ... )
+    """,
     )
     TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
     BOOLEAN_OPERATOR_READABILITY = (
@@ -771,14 +811,40 @@ class QueryErrorCode(Enum):
         "W0010",
         "character-replacement",
         "Character replacement",
-        "",
+        """**Typical fix**: Be aware that certain characters like . in search terms will be replaced with whitespace due to platform-specific conversions. Specify search fields explicitly within the query instead of relying on general settings.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    "healthcare" AND "Industry 4.0"
+
+**Correct query**:
+
+.. code-block:: python
+
+    "healthcare" AND "Industry 4 0" """,
     )
     DATE_FILTER_IN_SUBQUERY = (
         [PLATFORM.PUBMED],
         "W0011",
         "date-filter-in-subquery",
         "Date filter in subquery",
-        "",
+        """**Typical fix**: Apply date filters at the top-level of the query instead of inside subqueries to ensure the date restriction applies as intended.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])
+    device[ti] OR (wearable[ti] AND 2000:2010[dp])
+
+**Correct query**:
+
+.. code-block:: python
+
+    (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) OR ("ehealth"[Title/Abstract])) AND 2019/01/01:2019/12/01[publication date]
+    (device[ti] OR wearable[ti]) AND 2000:2010[dp]""",
     )
     IMPLICIT_OPERATOR = (
         [PLATFORM.PUBMED],
@@ -792,28 +858,76 @@ class QueryErrorCode(Enum):
         "W0013",
         "non-standard-quotes",
         "Non-standard quotes",
-        "",
+        """**Typical fix**: Replace non-standard quotes (e.g., “ ”) with standard ASCII quotes (").
+
+**Problematic query**:
+
+.. code-block:: python
+
+    TS=“carbon”
+
+**Correct query**:
+
+.. code-block:: python
+
+    TS="carbon" """,
     )
     JOURNAL_FILTER_IN_SUBQUERY = (
         [PLATFORM.PUBMED],
         "W0014",
         "journal-filter-in-subquery",
         "Journal (or publication name) filter in subquery",
-        "",
+        """**Typical fix**: Apply journal (publication name) filters at the top level of the query instead of inside subqueries to ensure the filter applies to the entire result set.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    "activity"[Title/Abstract] AND ("cancer"[Title/Abstract] AND "Lancet"[Journal])
+
+**Correct query**:
+
+.. code-block:: python
+
+    ("activity"[Title/Abstract] AND "cancer"[Title/Abstract]) AND "Lancet"[Journal] """,
     )
     UNSUPPORTED_PREFIX = (
         [PLATFORM.PUBMED],
         "W0015",
         "unsupported-prefix",
         "Unsupported prefix in search query",
-        "",
+        """**Typical fix**: Remove unsupported prefixes or introductory text from the search query to ensure it runs correctly.
+
+**Problematic query**:
+
+.. code-block:: python
+
+   Pubmed with no restrictions: (eHealth[Text Word])
+
+**Correct query**:
+
+.. code-block:: python
+
+    eHealth[Text Word] """,
     )
     UNSUPPORTED_SUFFIX = (
         [PLATFORM.PUBMED],
         "W0016",
         "unsupported-suffix",
         "Unsupported suffix in search query",
-        "",
+        """**Typical fix**: Remove unsupported suffixes or trailing text from the search query to avoid errors.
+
+**Problematic query**:
+
+.. code-block:: python
+
+   (eHealth[Text Word]) Sort by: Publication Date
+
+**Correct query**:
+
+.. code-block:: python
+
+    (eHealth[Text Word]) """,
     )
 
     # pylint: disable=too-many-arguments
