@@ -30,6 +30,10 @@ When storing a PubMed query in a `.json` file or as a string:
 - Use the content of the **Query box** or **Search details** section as the `search_string`.
 - Leave the `general_search_field` empty.
 
+List Query Format
+--------------------
+
+PubMed allows users to **combine previous searches** using the search history panel. These list-based queries can reference earlier searches using numbered identifiers (e.g., `#1 OR #2`). In the advanced search interface, such combinations can also be created via the **“Add”** button. List queries are supported by `search-query` parsers.
 
 Best Practices and Recommendations
 ----------------------------------
@@ -39,8 +43,9 @@ The advanced PubMed interface offers a dropdown for search fields such as `[Titl
 - If you apply the **same field** to the entire query, it is safe to store this value in the `general_search_field`.
 - If the query contains **multiple search fields**, `search-query` will treat each term individually, and **leaving `general_search_field` empty is preferred**.
 
-TODO : explain list search: https://library.bath.ac.uk/pubmed/combine-searches
--> searches an be reused/combined with the "add" button (or with "#1" references)
+.. note::
+
+   PubMed performs **automatic term mapping** when queries are entered in the basic or advanced search boxes. For instance, a search for *eHealth* will also match related terms such as *telemedicine* and *electronic health*. This behavior should be kept in mind when reviewing search results or translating queries to other platforms, as the expanded concepts may not always be explicit in the query string.
 
 Resources
 ---------
