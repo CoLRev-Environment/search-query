@@ -5,6 +5,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
+from search_query.query_term import Term
 from search_query.wos.constants import syntax_str_to_generic_search_field_set
 from search_query.wos.parser import WOSParser
 
@@ -20,7 +21,7 @@ def test_handle_closing_parenthesis_single_child() -> None:
     This test verifies that the `handle_closing_parenthesis` method correctly returns
     the single child when there is only one child in the list.
     """
-    children = [Query(value="example", operator=False, platform=PLATFORM.WOS.value)]
+    children = [Term(value="example", platform=PLATFORM.WOS.value)]
     parser = WOSParser(query_str="", search_field_general="", mode="")
     result = parser._handle_closing_parenthesis(children, current_operator="")
 
@@ -35,14 +36,14 @@ def test_handle_closing_parenthesis_with_operator() -> None:
     a Query object with the given operator and children when there is an operator.
     """
     children = [
-        Query(value="example1", operator=False, platform=PLATFORM.WOS.value),
-        Query(value="example2", operator=False, platform=PLATFORM.WOS.value),
+        Term(value="example1", platform=PLATFORM.WOS.value),
+        Term(value="example2", platform=PLATFORM.WOS.value),
     ]
     current_operator = "AND"
     parser = WOSParser(query_str="", search_field_general="", mode="")
     result = parser._handle_closing_parenthesis(children, current_operator)
 
-    expected_result = Query(
+    expected_result = Query.create(
         value=current_operator, operator=True, children=list(children)
     )
 
@@ -263,7 +264,7 @@ def test_check_search_fields_year() -> None:
 
     for field in year_fields:
         result = syntax_str_to_generic_search_field_set(field)
-        assert result == {Fields.YEAR}
+        assert result == {Fields.YEAR_PUBLICATION}
 
 
 def test_query_parsing_1() -> None:

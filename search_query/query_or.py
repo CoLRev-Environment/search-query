@@ -18,7 +18,7 @@ class OrQuery(Query):
         children: typing.List[typing.Union[str, Query]],
         *,
         search_field: typing.Optional[typing.Union[SearchField, str]] = None,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
         """init method
@@ -38,3 +38,26 @@ class OrQuery(Query):
             position=position,
             platform=platform,
         )
+
+    @property
+    def children(self) -> typing.List[Query]:
+        """Children property."""
+        return self._children
+
+    @children.setter
+    def children(self, children: typing.List[Query]) -> None:
+        """Set the children of OR query, updating parent pointers."""
+        # Clear existing children and reset parent links (if necessary)
+        self._children.clear()
+        if not isinstance(children, list):
+            raise TypeError("children must be a list of Query instances or strings")
+
+        if len(children) < 2:
+            raise ValueError("An OR query must have two children")
+
+        # Add each new child using add_child (ensures parent is set)
+        for child in children or []:
+            self.add_child(child)
+
+    def selects_record(self, record_dict: dict) -> bool:
+        return any(x.selects(record_dict=record_dict) for x in self.children)

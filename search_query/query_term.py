@@ -2,8 +2,10 @@
 """Query class."""
 from __future__ import annotations
 
+import re
 import typing
 
+from search_query.constants import Fields
 from search_query.constants import SearchField
 from search_query.query import Query
 
@@ -16,7 +18,7 @@ class Term(Query):
         value: str,
         *,
         search_field: typing.Optional[SearchField] = None,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
         super().__init__(
@@ -27,3 +29,23 @@ class Term(Query):
             position=position,
             platform=platform,
         )
+
+    def selects_record(self, record_dict: dict) -> bool:
+        assert self.search_field is not None, "Search field must be set for terms"
+        if self.search_field.value == Fields.TITLE:
+            field_value = record_dict.get("title", "").lower()
+        elif self.search_field.value == Fields.ABSTRACT:
+            field_value = record_dict.get("abstract", "").lower()
+        else:
+            raise ValueError(f"Unsupported search field: {self.search_field}")
+
+        value = self.value.lower().lstrip('"').rstrip('"')
+
+        # Handle wildcards
+        if "*" in value:
+            pattern = re.compile(value.replace("*", ".*").lower())
+            match = pattern.search(field_value)
+            return match is not None
+
+        # Match exact word
+        return value.lower() in field_value

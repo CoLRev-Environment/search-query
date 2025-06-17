@@ -12,10 +12,10 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
-from search_query.query import Operators
-from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 from search_query.wos.parser import WOSListParser
 from search_query.wos.parser import WOSParser
 
@@ -977,7 +977,7 @@ def test_list_parser_case_4() -> None:
     print(query.to_string())
     assert (
         query.to_string()
-        == '(TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats"))'
+        == 'TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")'
     )
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
@@ -1063,7 +1063,7 @@ def test_list_parser_case_6() -> None:
     # Note: parentheses for inflamm* AND bowl* are missing?
     assert (
         query.to_string()
-        == "(TS=(interven* OR trial* OR study) AND TS=(prebiotic* OR synbiotic OR inulin OR galactan* OR *oligosacc* OR pectin) AND TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR ulcer* colitis OR crohn OR crohns OR ileitis OR ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis))"
+        == "TS=(interven* OR trial* OR study) AND TS=(prebiotic* OR synbiotic OR inulin OR galactan* OR *oligosacc* OR pectin) AND TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR ulcer* colitis OR crohn OR crohns OR ileitis OR ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)"
     )
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
@@ -1104,19 +1104,15 @@ def test_list_parser_case_6() -> None:
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""
     # This should NOT raise
-    Query(
-        value=Operators.OR,
-        operator=True,
+    OrQuery(
         children=[
-            Query(
+            Term(
                 value="AI",
-                operator=False,
                 search_field=SearchField("TI="),
                 platform=PLATFORM.WOS.value,
             ),
-            Query(
+            Term(
                 value="ethics",
-                operator=False,
                 search_field=SearchField("AB="),
                 platform=PLATFORM.WOS.value,
             ),
@@ -1130,15 +1126,13 @@ def test_wos_invalid_nested_with_operator_field() -> None:
     with pytest.raises(Exception):
         AndQuery(
             [
-                Query(
+                Term(
                     value="DE12",
-                    operator=False,
                     search_field=SearchField("IS="),
                     platform=PLATFORM.WOS.value,
                 ),
-                Query(
+                Term(
                     value="ethics",
-                    operator=False,
                     search_field=SearchField("AB"),
                     platform=PLATFORM.WOS.value,
                 ),
@@ -1153,15 +1147,13 @@ def test_wos_invalid_fields() -> None:
     with pytest.raises(Exception):
         AndQuery(
             [
-                Query(
+                Term(
                     value="DE12",
-                    operator=False,
                     search_field=SearchField("[ti]"),
                     platform=PLATFORM.WOS.value,
                 ),
-                Query(
+                Term(
                     value="ethics",
-                    operator=False,
                     search_field=SearchField("AB="),
                     platform=PLATFORM.WOS.value,
                 ),

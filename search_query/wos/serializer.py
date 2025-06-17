@@ -16,49 +16,31 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 def to_string_wos(query: Query) -> str:
-    """Serialize the Query tree into a WoS search string."""
+    """Serialize the Query tree into a Web of Science (WoS) search string."""
 
-    result = ""
+    # Leaf node
+    if not query.children:
+        field = query.search_field.value if query.search_field else ""
+        return f"{field}{query.value}"
+
+    parts = []
     for child in query.children:
-        if child.operator:
-            # query is operator query
-            if child.value == Operators.NOT:
-                # current element is NOT Operator -> no parenthesis in WoS
-                result = f"{result}{to_string_wos(child)}"
-
-            elif (child == query.children[0]) & (child != query.children[-1]):
-                result = (
-                    f"{result}"
-                    f"{query.search_field.value if query.search_field else ''}"
-                    f"({to_string_wos(child)}"
-                )
-            else:
-                result = f"{result} {query.value} {to_string_wos(child)}"
-
-            if (child == query.children[-1]) & (child.value != Operators.NOT):
-                result = f"{result})"
+        if child.operator and child.value == Operators.NOT:
+            # Special handling: inject "NOT ..." directly
+            not_child = child.children[0]
+            not_str = to_string_wos(not_child)
+            parts.append(f"NOT {not_str}")
         else:
-            # query is not an operator
-            if (child == query.children[0]) & (child != query.children[-1]):
-                # current element is first but not only child element
-                # -->operator does not need to be appended again
-                result = (
-                    f"{result}"
-                    f"{query.search_field.value if query.search_field else ''}"
-                    f"({child.search_field.value if child.search_field else ''}"
-                    f"{child.value}"
-                )
+            parts.append(to_string_wos(child))
 
-            else:
-                # current element is not first child
-                result = (
-                    f"{result} {query.value} "
-                    f"{child.search_field.value if child.search_field else ''}"
-                    f"{child.value}"
-                )
+    joined = f" {query.value} ".join(parts)
 
-            if child == query.children[-1]:
-                # current Element is last Element -> closing parenthesis
-                result = f"{result})"
+    if query.get_parent():
+        field = query.search_field.value if query.search_field else ""
+        return f"{field}({joined})"
 
-    return result
+    # Top-level: wrap=False
+    if query.search_field and all(not c.search_field for c in query.children):
+        return f"{query.search_field.value}({joined})"
+
+    return joined

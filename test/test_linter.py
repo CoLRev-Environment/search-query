@@ -4,7 +4,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
-from search_query.query import Query
+from search_query.query_and import AndQuery
 from search_query.query_term import Term
 
 # ruff: noqa: E501
@@ -149,9 +149,7 @@ def test_check_boolean_operator_readability() -> None:
 
 def test_check_invalid_characters_in_search_term_query() -> None:
     linter = QueryStringLinter("digitalizat#ion AND work")  # type: ignore
-    query = Query(
-        value="AND",
-        operator=True,
+    query = AndQuery(
         children=[
             Term(
                 value="digitalizat#ion",

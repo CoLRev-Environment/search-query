@@ -44,6 +44,8 @@
    search_query.query_near
    search_query.query_not
    search_query.query_or
+   search_query.query_range
+   search_query.query_term
    search_query.search_file
    search_query.serializer_base
    search_query.serializer_structured

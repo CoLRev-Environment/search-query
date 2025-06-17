@@ -39,7 +39,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    if __name__ == "__main__":
 
-       query = OrQuery(["microsourcing", "lululemon"], search_field="ti")
+       query = OrQuery(["microsourcing", "lululemon"], search_field="title")
 
        url = to_crossref_url(query)
        api_crossref = crossref_api.CrossrefAPI(params={"url": url})

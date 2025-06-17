@@ -20,9 +20,11 @@ def query_setup() -> dict:
     test_node = Term(
         "testvalue", position=(1, 10), search_field=SearchField(Fields.TITLE)
     )
-    query_robot = NotQuery(["robot*"], search_field=SearchField(Fields.TITLE))
+    query_robot = NotQuery(
+        ['"Machine Learning"', "robot*"], search_field=SearchField(Fields.TITLE)
+    )
     query_ai = OrQuery(
-        ['"AI"', '"Artificial Intelligence"', '"Machine Learning"', query_robot],
+        ['"AI"', '"Artificial Intelligence"'],
         search_field=SearchField(Fields.TITLE),
     )
     query_health = OrQuery(

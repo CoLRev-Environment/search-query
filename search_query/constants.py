@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Tuple
 
 # noqa: E501
+# ruff: noqa: E501
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
@@ -86,7 +87,7 @@ class SearchField:
         self,
         value: str,
         *,
-        position: typing.Optional[tuple] = None,
+        position: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> None:
         """init method"""
         self.value = value
@@ -114,54 +115,59 @@ class Operators:
 class Fields:
     """Search fields"""
 
-    TITLE = "ti"
-    ALL = "all"
-    ABSTRACT = "ab"
-    TOPIC = "ts"
-    LANGUAGE = "la"
-    YEAR = "py"
-    ADDRESS = "ad"
-    AUTHOR_IDENTIFIERS = "ai"
-    AUTHOR_KEYWORDS = "ak"
-    AUTHOR = "au"
-    CONFERENCE = "cf"
-    PUBLISHER = "pb"
-    CITY = "ci"
-    COUNTRY_REGION = "cu"
-    DOI = "do"
-    EDITOR = "ed"
-    GRANT_NUMBER = "fg"
-    FUNDING_AGENCY = "fo"
-    FUNDING_TEXT = "ft"
-    GROUP_AUTHOR = "gp"
-    ISSN_ISBN = "is"
-    KEYWORDS_PLUS = "kp"
-    ORGANIZATION_ENHANCED = "og"
-    ORGANIZATION = "oo"
-    PUBMED_ID = "pmid"
-    PROVINCE_STATE = "ps"
-    STREET_ADDRESS = "sa"
-    SUBORGANIZATION = "sg"
-    PUBLICATION_NAME = "so"
-    RESEARCH_AREA = "su"
-    ACCESSION_NUMBER = "ut"
-    WEB_OF_SCIENCE_CATEGORY = "wc"
-    ZIP_POSTAL_CODE = "zp"
+    TITLE = "title"
+    ALL = "all-fields"
+    ABSTRACT = "abstract"
+    TOPIC = "topic"
+    LANGUAGE = "language"
+    YEAR_PUBLICATION = "year-publication"
+    TEXT_WORD = "text-word"
+
+    RESEARCH_AREA = "research-area"
+    WEB_OF_SCIENCE_CATEGORY = "wos-category"
+    MESH_TERM = "mesh-term"
     FILTER = "sb"
-    JOURNAL = "ta"
-    MESH_TERM = "mh"
-    PUBLICATION_TYPE = "pt"
-    TEXT_WORD = "tw"
-    AFFILIATION = "ad"
-    LANGUAGE = "la"
-    KEYWORDS = "kw"
-    SUBJECT_TERMS = "st"
-    SOURCE = "so"
-    ISSN = "is"
-    ISBN = "ib"
-    LANGUAGE = "la"
-    DESCRIPTORS = "de"
-    PUBLICATION_DATE = "dp"
+    SUBJECT_TERMS = "subject-terms"
+    SOURCE = "source"
+    DESCRIPTORS = "descriptors"
+
+    AUTHOR_KEYWORDS = "keywords-author"
+    KEYWORDS = "keywords"
+    KEYWORDS_PLUS = "keywords-plus"
+    GROUP_AUTHOR = "group-author"
+
+    JOURNAL = "journal"
+    PUBLICATION_TYPE = "publication-type"
+    CONFERENCE = "conference"
+    PUBLISHER = "publisher"
+    PUBLICATION_NAME = "publication-name"
+
+    AUTHOR = "author"
+    AUTHOR_IDENTIFIERS = "author-identifiers"
+    EDITOR = "editor"
+    AFFILIATION = "affiliation"
+
+    DOI = "doi"
+    PUBMED_ID = "pmid"
+    ACCESSION_NUMBER = "accession-nr"
+
+    GRANT_NUMBER = "grant-nr"
+    FUNDING_AGENCY = "funding-agency"
+    FUNDING_TEXT = "funding-text"
+
+    ISSN = "issn"
+    ISBN = "isbn"
+    ISSN_ISBN = "issn-isbn"
+
+    ORGANIZATION_ENHANCED = "organization-enhanced"
+    ORGANIZATION = "organization"
+    CITY = "city"
+    ADDRESS = "address"
+    ZIP_POSTAL_CODE = "zip"
+    COUNTRY_REGION = "country-region"
+    PROVINCE_STATE = "province-state"
+    STREET_ADDRESS = "street-address"
+    SUBORGANIZATION = "suborganization"
 
     @classmethod
     def all(cls) -> list:
@@ -383,7 +389,19 @@ class QueryErrorCode(Enum):
         "F2012",
         "year-without-search-terms",
         "A search for publication years must include at least another search term.",
-        "",
+        """**Typical fix**: A search for publication years must include at least another search term.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    PY=2000
+
+**Correct query**:
+
+.. code-block:: python
+
+    PY=2000 AND TI=eHealth""",
     )
     NESTED_QUERY_WITH_SEARCH_FIELD = (
         [PLATFORM.PUBMED],
@@ -508,11 +526,18 @@ class QueryErrorCode(Enum):
         "operator-capitalization",
         "Operators should be capitalized",
         """**Typical fix**: Capitalize the operator
+
+
 **Problematic query**:
+
 .. code-block:: python
+
     a and b or c
+
 **Correct query**:
+
 .. code-block:: python
+
     a AND b OR c""",
     )
     IMPLICIT_NEAR_VALUE = (
