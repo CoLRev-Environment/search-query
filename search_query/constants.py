@@ -239,7 +239,19 @@ class QueryErrorCode(Enum):
         "F1002",
         "unbalanced-quotes",
         "Quotes are unbalanced in the query",
-        "",
+        """**Typical fix**: Add the missing closing quote to balance the quotation marks.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    "eHealth[ti]
+
+**Correct query**:
+
+.. code-block:: python
+
+    "eHealth"[ti] """,
     )
 
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
@@ -252,7 +264,7 @@ class QueryErrorCode(Enum):
         "The sequence of tokens is invalid." "",
         """**Problematic query**:
 
-.. code-block:: text
+.. code-block:: texts
 
     # Example: Two operators in a row
     eHealth AND OR digital health
@@ -780,7 +792,25 @@ class QueryErrorCode(Enum):
         "W0004",
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
-        "",
+        """**Typical fix**: Remove redundant terms when one term is already covered by a broader or encompassing term in the query.
+
+**Problematic query**:
+
+.. code-block:: python
+
+# PLATFORM.EBSCO
+   MH "sleep" OR MH "sleep disorders"
+# PLATFORM.PUBMED
+    ("device"[ti] OR ("mobile application"[ti] OR "wearable device"[ti])) AND "health tracking"[ti]
+**Correct query**:
+
+.. code-block:: python
+
+# PLATFORM.EBSCO
+    MH "sleep"
+# PLATFORM.PUBMED
+    ("device"[ti] OR "mobile application"[ti]) AND "health tracking"[ti]
+    """,
     )
     OPERATOR_CAPITALIZATION = (
         ["all"],
