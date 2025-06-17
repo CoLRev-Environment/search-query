@@ -587,22 +587,25 @@ class QueryErrorCode(Enum):
 **Problematic query**:
 
 .. code-block:: python 
-# PLATFORM.WOS:
+    # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
     3. #1 AND #5
-# PLATFORM.PUBMED:
+    
+    # PLATFORM.PUBMED:
     1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
     2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
     3. #1 AND #2 AND #4
+
 **Correct query**:
 
 .. code-block:: python
-# PLATFORM.WOS:
+    # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
     3. #1 AND #2
-# PLATFORM.PUBMED:
+    
+    # PLATFORM.PUBMED:
     1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
     2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
     3. #1 AND #2
@@ -639,9 +642,10 @@ class QueryErrorCode(Enum):
 **Correct query**:
 
 .. code-block:: python
-# PLATFORM.WOS:
+    # PLATFORM.WOS:
     digital AND online
-# PLATFORM.PUBMED:
+
+    # PLATFORM.PUBMED:
     "eHealth"[Title] "digital health"[Title]
     search_field_general = Title""",
     )
@@ -785,16 +789,19 @@ class QueryErrorCode(Enum):
 **Problematic query**:
 
 .. code-block:: python
-# PLATFORM.PUBMED
+    # PLATFORM.PUBMED
    "health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")
-# PLATFORM.WOS
+
+    # PLATFORM.WOS
     TI=term1 AND OR
+
 **Correct query**:
 
 .. code-block:: python
-# PLATFORM.PUBMED
+    # PLATFORM.PUBMED
     ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")
-# PLATFORM.WOS
+
+    # PLATFORM.WOS
     TI=term1 AND ( ... ) OR ( ... )
     """,
     )
