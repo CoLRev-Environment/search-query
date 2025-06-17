@@ -17,6 +17,7 @@ from search_query.pubmed.linter import PubmedQueryListLinter
 from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_near import NEARQuery
 from search_query.query_term import Term
 
 
@@ -186,7 +187,7 @@ class PubmedParser(QueryStringParser):
         query_start_pos = tokens[0].position[0]
         query_end_pos = tokens[-1].position[1]
 
-        return Query(
+        return Query.create(
             value=operator_type,
             search_field=None,
             children=list(children),
@@ -205,6 +206,32 @@ class PubmedParser(QueryStringParser):
 
         # Determine the search field of the search term.
         if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
+            if ":~" in tokens[1].value:
+                # Parse NEAR query
+                field_value, distance = self.PROXIMITY_REGEX.match(
+                    tokens[1].value
+                ).groups()  # type: ignore
+                field_value = "[" + field_value + "]"
+                return NEARQuery(
+                    value=Operators.NEAR,
+                    search_field=None,
+                    children=[
+                        Term(
+                            value=search_term_token.value,
+                            search_field=SearchField(
+                                value=field_value, position=tokens[1].position
+                            ),
+                            position=tokens[0].position,
+                            platform="deactivated",
+                        )
+                    ],
+                    position=(tokens[0].position[0], tokens[1].position[1]),
+                    # TODO : pass int (ensuring valid NEAR distances)
+                    # or string (preventing errors during parsing)?
+                    distance=distance,  # type: ignore
+                    platform="deactivated",
+                )
+
             search_field = SearchField(
                 value=tokens[1].value, position=tokens[1].position
             )
@@ -247,6 +274,9 @@ class PubmedParser(QueryStringParser):
         self.linter.check_status()
 
         query.set_platform_unchecked(PLATFORM.PUBMED.value, silent=True)
+
+        self.linter.validate_platform_query(query)  # type: ignore
+        self.linter.check_status()
 
         return query
 
@@ -310,7 +340,7 @@ class PubmedListParser(QueryListParser):
         if operator.upper() in {"|", "OR"}:
             operator = Operators.OR
 
-        return Query(
+        return Query.create(
             value=operator,
             search_field=None,
             children=children,
@@ -346,6 +376,10 @@ class PubmedListParser(QueryListParser):
                 )
 
         query = list(self.query_dict.values())[-1]["query"]
+
+        linter = PubmedQueryStringLinter(query_str=self.query_list)
+        linter.validate_query_tree(query)
+        linter.check_status()
 
         # linter.check_status() ?
         query.set_platform_unchecked(PLATFORM.PUBMED.value)

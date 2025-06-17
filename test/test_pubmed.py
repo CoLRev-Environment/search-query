@@ -346,7 +346,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(18, 20), (49, 52)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+                    "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
                 },
                 {
                     "code": "E0001",
@@ -479,7 +479,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(0, 14)],
-                    "details": "When using proximity operators, search terms consisting of 2 or more words (i.e., digital health) must be enclosed in double quotes",
+                    "details": "Proximity search requires 2 or more search terms enclosed in double quotes.",
                 },
             ],
         ),
@@ -500,10 +500,19 @@ def test_pubmed_invalid_token_sequences(
         (
             '"digital health"[tiab:~5] OR "eHealth"[tiab:~5]',
             "",
-            [],
+            [
+                {
+                    "code": "E0005",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": False,
+                    "position": [(29, 38)],
+                    "details": "Proximity search requires 2 or more search terms enclosed in double quotes.",
+                },
+            ],
         ),
         (
-            '"digital health"[sb:~5] OR "eHealth"[sb:~5]',
+            '"digital health"[sb:~5] OR "mobile health"[sb:~5]',
             "",
             [
                 {
@@ -519,7 +528,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
-                    "position": [(36, 43)],
+                    "position": [(42, 49)],
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
                 },
             ],
@@ -709,6 +718,66 @@ def test_pubmed_invalid_token_sequences(
                 }
             ],
         ),
+        (
+            '((AI OR "Artificial Intelligence") AND Aversion) OR ((AI OR "Artificial Intelligence") AND Appreciation)',
+            "",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(-1, -1)],
+                    "details": "Search field is missing (TODO: default?)",
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(39, 47), (91, 103)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                },
+            ],
+        ),
+        (
+            '(Algorithm* Aversion) OR (Algorithm* Appreciation) OR ((AI OR "Artificial Intelligence") AND Aversion) OR ((AI OR "Artificial Intelligence") AND Appreciation) OR ("AI recommendation" OR "Artificial intelligence recommendation" OR "Machine learning recommendation" OR "ML recommendation") OR ("AI decision*" OR "Artificial intelligence decision*" OR "Algorithm* decision" OR "Machine learning decision*" OR "ML decision*") OR ("AI Advice" OR "Artificial intelligence advice" OR "Algorithm* advice" OR "Machine learning advice" OR "ML advice") OR (("AI" OR "Artificial Intelligence" OR "Algorithm*" OR "Machine learning" OR "ML") AND "Decision aid")',
+            "",
+            [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(-1, -1)],
+                    "details": "Search field is missing (TODO: default?)",
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(93, 101), (145, 157)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(93, 101), (632, 646)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
+                },
+                {
+                    "code": "W0004",
+                    "label": "query-structure-unnecessarily-complex",
+                    "message": "Query structure is more complex than necessary",
+                    "is_fatal": False,
+                    "position": [(145, 157), (632, 646)],
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
+                },
+            ],
+        ),
     ],
 )
 def test_linter(
@@ -852,7 +921,7 @@ def test_linter_with_general_search_field(
         (
             '"health tracking" OR "remote monitoring" AND "wearable device"',
             "All Fields",
-            'OR["health tracking"[[all]], AND["remote monitoring"[[all]], "wearable device"[[all]]]]',
+            'AND[OR["health tracking"[[all]], "remote monitoring"[[all]]], "wearable device"[[all]]]',
         ),
         (
             '"AI" AND "robotics" OR "ethics"',
@@ -862,7 +931,7 @@ def test_linter_with_general_search_field(
         (
             '"AI" OR "robotics" AND "ethics"',
             "All Fields",
-            'OR["AI"[[all]], AND["robotics"[[all]], "ethics"[[all]]]]',
+            'AND[OR["AI"[[all]], "robotics"[[all]]], "ethics"[[all]]]',
         ),
         (
             '"AI" NOT "robotics" OR "ethics"',
@@ -872,12 +941,12 @@ def test_linter_with_general_search_field(
         (
             '"digital health" AND ("apps" OR "wearables" NOT "privacy") OR "ethics"',
             "All Fields",
-            'OR[AND["digital health"[[all]], OR["apps"[[all]], NOT["wearables"[[all]], "privacy"[[all]]]]], "ethics"[[all]]]',
+            'OR[AND["digital health"[[all]], NOT[OR["apps"[[all]], "wearables"[[all]]], "privacy"[[all]]]], "ethics"[[all]]]',
         ),
         (
             '"eHealth" OR "digital health" AND "bias" NOT "equity" OR "policy"',
             "All Fields",
-            'OR["eHealth"[[all]], AND["digital health"[[all]], NOT["bias"[[all]], "equity"[[all]]]], "policy"[[all]]]',
+            'OR[NOT[AND[OR["eHealth"[[all]], "digital health"[[all]]], "bias"[[all]]], "equity"[[all]]], "policy"[[all]]]',
         ),
         (
             'eHealth[ti] AND ("2006/01/01"[Date - Create] : "2023/08/18"[Date - Create])',
@@ -889,6 +958,7 @@ def test_linter_with_general_search_field(
             "",
             'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
         ),
+        ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
     ],
 )
 def test_parser(
@@ -987,12 +1057,12 @@ def test_list_parser_case_3() -> None:
             "eHealth[title]",
         ),
         (
-            "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
+            "eHealth[tiab]",
+            "OR[eHealth[abstract], eHealth[title]]",
         ),
         (
-            "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[abstract], eHealth[title]], OR[mHealth[abstract], mHealth[title]]]",
+            "eHealth[tiab] OR mHealth[tiab]",
+            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
         ),
         (
             "eHealth[tiab] AND mHealth[tiab]",
@@ -1009,6 +1079,22 @@ def test_list_parser_case_3() -> None:
         (
             "eHealth[tiab] OR mHealth[tiab]",
             "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
+        ),
+        (
+            '"digital health"[ti:~2]',
+            "OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
+        ),
+        (
+            'eHealth[ti] AND "digital health"[ti:~2]',
+            "AND[eHealth[title], OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]]",
+        ),
+        (
+            '"digital health"[tiab:~2]',
+            "OR[NEAR/2[digital[abstract], health[abstract]], NEAR/2[health[abstract], digital[abstract]], NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
+        ),
+        (
+            '"digital health platforms"[tiab:~0]',
+            "OR[NEAR/0[digital[abstract], health[abstract]], NEAR/0[digital[abstract], platforms[abstract]], NEAR/0[health[abstract], digital[abstract]], NEAR/0[health[abstract], platforms[abstract]], NEAR/0[platforms[abstract], digital[abstract]], NEAR/0[platforms[abstract], health[abstract]], NEAR/0[digital[title], health[title]], NEAR/0[digital[title], platforms[title]], NEAR/0[health[title], digital[title]], NEAR/0[health[title], platforms[title]], NEAR/0[platforms[title], digital[title]], NEAR/0[platforms[title], health[title]]]",
         ),
     ],
 )
@@ -1059,5 +1145,5 @@ def test_general_list_parser_call() -> None:
 
     assert (
         query.to_string()
-        == "((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract]))"
+        == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
     )

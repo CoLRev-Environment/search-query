@@ -12,10 +12,10 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
-from search_query.query import Operators
-from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 from search_query.wos.parser import WOSListParser
 from search_query.wos.parser import WOSParser
 
@@ -987,19 +987,15 @@ def test_list_parser_case_4() -> None:
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""
     # This should NOT raise
-    Query(
-        value=Operators.OR,
-        operator=True,
+    OrQuery(
         children=[
-            Query(
+            Term(
                 value="AI",
-                operator=False,
                 search_field=SearchField("TI="),
                 platform=PLATFORM.WOS.value,
             ),
-            Query(
+            Term(
                 value="ethics",
-                operator=False,
                 search_field=SearchField("AB="),
                 platform=PLATFORM.WOS.value,
             ),
@@ -1013,15 +1009,13 @@ def test_wos_invalid_nested_with_operator_field() -> None:
     with pytest.raises(Exception):
         AndQuery(
             [
-                Query(
+                Term(
                     value="DE12",
-                    operator=False,
                     search_field=SearchField("IS="),
                     platform=PLATFORM.WOS.value,
                 ),
-                Query(
+                Term(
                     value="ethics",
-                    operator=False,
                     search_field=SearchField("AB"),
                     platform=PLATFORM.WOS.value,
                 ),
@@ -1036,15 +1030,13 @@ def test_wos_invalid_fields() -> None:
     with pytest.raises(Exception):
         AndQuery(
             [
-                Query(
+                Term(
                     value="DE12",
-                    operator=False,
                     search_field=SearchField("[ti]"),
                     platform=PLATFORM.WOS.value,
                 ),
-                Query(
+                Term(
                     value="ethics",
-                    operator=False,
                     search_field=SearchField("AB="),
                     platform=PLATFORM.WOS.value,
                 ),

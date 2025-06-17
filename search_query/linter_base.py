@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-lines
+# ruff: noqa: E501
 
 
 # Could indeed be a general Validator class
@@ -435,7 +436,7 @@ class QueryStringLinter:
         if quote_count % 2 != 0:
             return query_str  # unbalanced quotes, do not attempt trimming
 
-        suffix_match = re.search(r"\)(?!\s*(AND|OR))[^()\[\]]*$", query_str)
+        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", query_str)
 
         original_query_str = query_str  # preserve for position calculation
 
@@ -703,6 +704,8 @@ class QueryStringLinter:
         previous_value = -1
         # Added artificial parentheses
         art_par = 0
+        # Start index
+        start_index = index
 
         self._print_unequal_precedence_warning(index)
 
@@ -720,16 +723,28 @@ class QueryStringLinter:
             if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
                 output.append(self.tokens[index])
                 index += 1
-                # Add closed parenthesis in case there are still open ones
-                while art_par > 0:
-                    output.append(
-                        Token(
-                            value=")",
-                            type=TokenTypes.PARENTHESIS_CLOSED,
-                            position=(-1, -1),
+                # Add parentheses in case there are missing ones
+                if art_par > 0:
+                    while art_par > 0:
+                        output.append(
+                            Token(
+                                value=")",
+                                type=TokenTypes.PARENTHESIS_CLOSED,
+                                position=(-1, -1),
+                            )
                         )
-                    )
-                    art_par -= 1
+                        art_par -= 1
+                if art_par < 0:
+                    while art_par < 0:
+                        output.insert(
+                            start_index,
+                            Token(
+                                value="(",
+                                type=TokenTypes.PARENTHESIS_OPEN,
+                                position=(-1, -1),
+                            ),
+                        )
+                        art_par += 1
                 return index, output
 
             if self.tokens[index].type in [
@@ -1059,6 +1074,60 @@ class QueryStringLinter:
                                 f"Therefore, the term {term_b.value} is redundant.",
                             )
                             redundant_terms.append(term_b)
+
+    def _check_for_opportunities_to_combine_subqueries(
+        self, term_field_query: Query
+    ) -> None:
+        """Check for opportunities to combine subqueries with the same search field."""
+
+        # Only consider top-level OR-connected subqueries with two children each
+        if term_field_query.operator and term_field_query.value == Operators.OR:
+            candidates = [
+                q
+                for q in term_field_query.children
+                if q.operator and q.value == Operators.AND and len(q.children) == 2
+            ]
+
+            for i, q1 in enumerate(candidates):
+                for q2 in candidates[i + 1 :]:
+                    a1, a2 = q1.children
+                    b1, b2 = q2.children
+
+                    # Identify identical and differing pairs
+                    if a1.value == b1.value and a2.value != b2.value:
+                        identical = (a1, b1)
+                        differing = (a2, b2)
+                    elif a2.value == b2.value and a1.value != b1.value:
+                        identical = (a2, b2)
+                        differing = (a1, b1)
+                    else:
+                        continue  # Skip if no clearly matching pair
+
+                    details = (
+                        f"The queries share {Colors.GREY}identical query parts{Colors.END}:"
+                        f"\n({Colors.GREY}{identical[0].to_string()}{Colors.END} AND "
+                        f"{Colors.ORANGE}{differing[0].to_string()}{Colors.END}) OR \n"
+                        f"({Colors.GREY}{identical[1].to_string()}{Colors.END} AND "
+                        f"{Colors.ORANGE}{differing[1].to_string()}{Colors.END})\n"
+                        f"Combine the {Colors.ORANGE}differing parts{Colors.END} into a "
+                        f"{Colors.GREEN}single OR-group{Colors.END} to reduce redundancy:\n"
+                        f"({Colors.GREY}{identical[0].to_string()}{Colors.END} AND "
+                        f"({Colors.GREEN}{differing[0].to_string()} OR "
+                        f"{differing[1].to_string()}{Colors.END}))"
+                    )
+
+                    positions = [differing[0].position, differing[1].position]
+
+                    self.add_linter_message(
+                        QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                        positions=positions,  # type: ignore
+                        details=details,
+                    )
+
+        # iterate over subqueries
+        if term_field_query.children:
+            for child in term_field_query.children:
+                self._check_for_opportunities_to_combine_subqueries(child)
 
 
 class QueryListLinter:

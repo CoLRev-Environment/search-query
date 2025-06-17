@@ -230,9 +230,7 @@ def test_platform_setter() -> None:
 def test_value_setter() -> None:
     """Test value setter."""
 
-    ethics = Query(
-        value="OR",
-        operator=True,
+    ethics = OrQuery(
         children=["ethics", "morality"],
         search_field=Fields.ABSTRACT,  # type: ignore
     )
@@ -242,12 +240,15 @@ def test_value_setter() -> None:
         ethics.value = {"key": "value"}  # type: ignore
 
     with pytest.raises(ValueError):
-        ethics.value = "non_operators"
+        Query.create(
+            value="non_operator", operator=True, children=["ethics", "morality"]
+        )
 
     with pytest.raises(TypeError):
         ethics.operator = "non_operators"  # type: ignore
 
-    ethics.value = "NEAR"
+    with pytest.raises(AttributeError):
+        ethics.value = "NEAR"
 
 
 def test_children_setter() -> None:

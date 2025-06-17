@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """Pubmed query translator."""
+import typing
+from collections import defaultdict
+from itertools import permutations
+
 from search_query.constants import Fields
 from search_query.constants import Operators
 from search_query.pubmed.constants import generic_search_field_to_syntax_field
 from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
 from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_near import NEARQuery
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 from search_query.translator_base import QueryTranslator
 
 
@@ -35,11 +42,9 @@ class PubmedTranslator(QueryTranslator):
                 if not child.search_field:  # pragma: no cover
                     continue
                 child.search_field.value = Fields.TITLE
-                new_child = Query(
+                new_child = Term(
                     value=child.value,
-                    operator=False,
                     search_field=SearchField(value=Fields.ABSTRACT),
-                    children=None,
                 )
                 query.add_child(new_child)
 
@@ -115,16 +120,114 @@ class PubmedTranslator(QueryTranslator):
         for child in query.children:
             cls._combine_tiab(child)
 
+    # pylint: disable=too-many-locals, too-many-branches
     @classmethod
-    def translate_search_fields_to_generic(cls, query: Query) -> None:
+    def _collapse_near_queries(cls, query: Query) -> Query:
+        """Recursively collapse NEAR queries in the query tree."""
+        if not query.children:
+            return query
+
+        if query.value == Operators.NEAR:
+            query.children[
+                0
+            ].value = f'"{query.children[0].value} {query.children[1].value}"'
+            query.children.pop()
+            return query
+
+        if query.value == Operators.OR:
+            # Extract NEAR queries
+            near_queries: typing.List[Query] = []
+            other_queries: typing.List[Query] = []
+            for child in query.children:
+                # pylint: disable=unidiomatic-typecheck
+                (near_queries if type(child) is NEARQuery else other_queries).append(
+                    child
+                )
+
+            for other_query in other_queries:
+                cls._collapse_near_queries(other_query)
+
+            # Group NEAR queries by their proximity distance
+            grouped_queries = defaultdict(list)
+            for near_query in near_queries:
+                key = near_query.distance if hasattr(near_query, "distance") else 0
+                grouped_queries[key].append(near_query)
+
+            combined_near_queries = []
+            for distance, queries in grouped_queries.items():
+                # For each group, extract term pairs from NEAR queries and
+                # map them to corresponding fields
+                term_field_map = defaultdict(set)
+                for q in queries:
+                    term_a = q.children[0].value
+                    term_b = q.children[1].value
+                    assert q.children[0].search_field
+                    term_field_map[(min(term_a, term_b), max(term_a, term_b))].add(
+                        q.children[0].search_field.value
+                    )
+
+                for (term_a, term_b), fields in term_field_map.items():
+                    if Fields.TITLE in fields and Fields.ABSTRACT in fields:
+                        # Merge 'Title' and 'Abstract' into '[tiab]' in the mapping
+                        fields.add("[tiab]")
+                        fields.remove(Fields.TITLE)
+                        fields.remove(Fields.ABSTRACT)
+                    for field in fields:
+                        # Generate NEAR queries from the mapping
+                        combined_near_queries.append(
+                            NEARQuery(
+                                value=Operators.NEAR,
+                                children=[
+                                    Term(
+                                        value=f'"{term_a} {term_b}"',
+                                        search_field=SearchField(value=field),
+                                        platform="deactivated",
+                                    )
+                                ],
+                                distance=distance,
+                                platform="deactivated",
+                            )
+                        )
+
+                    # Collapse proximity searches with 3+ terms ?
+
+            query_children = other_queries + combined_near_queries
+
+            if len(query_children) == 1:
+                # If only one NEAR query remains, replace the OR query with it
+                if not query.get_parent():
+                    return query_children.pop()
+                query.replace(query_children.pop())
+            else:
+                query.children = query_children
+
+            return query
+
+        for child in query.children:
+            cls._collapse_near_queries(child)
+
+        return query
+
+    @classmethod
+    def translate_search_fields_to_generic(cls, query: Query) -> Query:
         """Translate search fields"""
 
         if query.children:
-            expanded = cls._expand_flat_or_chains(query)
-            if not expanded:
-                for child in query.children:
-                    cls.translate_search_fields_to_generic(child)
-            return
+            if query.value == Operators.NEAR:
+                # Expand NEAR queries
+                assert query.children[0].search_field
+                search_field_set = syntax_str_to_generic_search_field_set(
+                    query.children[0].search_field.value
+                )
+                expanded_query = cls._expand_near_query(query, search_field_set)
+                if not query.get_parent():
+                    return expanded_query
+                query.replace(expanded_query)
+            else:
+                expanded = cls._expand_flat_or_chains(query)
+                if not expanded:
+                    for child in query.children:
+                        cls.translate_search_fields_to_generic(child)
 
         if query.search_field:
             search_field_set = syntax_str_to_generic_search_field_set(
@@ -135,10 +238,15 @@ class PubmedTranslator(QueryTranslator):
             else:
                 # Convert queries in the form 'Term [tiab]'
                 # into 'Term [ti] OR Term [ab]'.
-                cls._expand_combined_fields(query, search_field_set)
+                expanded_query = cls._expand_combined_fields(query, search_field_set)
+                if not query.get_parent():
+                    return expanded_query
+                query.replace(expanded_query)
+
+        return query
 
     @classmethod
-    def _expand_combined_fields(cls, query: Query, search_fields: set) -> None:
+    def _expand_combined_fields(cls, query: Query, search_fields: set) -> Query:
         """Expand queries with combined search fields into an OR query"""
         query_children = []
         # Note: PubMed accepts fields only at the level of terms.
@@ -146,26 +254,61 @@ class PubmedTranslator(QueryTranslator):
         # Note: sorted list for deterministic order of fields
         for search_field in sorted(list(search_fields)):
             query_children.append(
-                Query(
+                Term(
                     value=query.value,
-                    operator=False,
                     search_field=SearchField(value=search_field),
-                    children=None,
                 )
             )
+        return OrQuery(
+            children=query_children,  # type: ignore
+            search_field=None,
+        )
 
-        query.value = Operators.OR
-        query.operator = True
-        query.search_field = None
-        query.children = query_children  # type: ignore
+    @classmethod
+    def _expand_near_query(cls, query: Query, search_fields: set) -> Query:
+        """Expand NEAR query into an OR query"""
+        if type(query) is not NEARQuery:  # pylint: disable=unidiomatic-typecheck
+            return query
+        distance = 0
+        if hasattr(query, "distance"):
+            distance = int(query.distance)  # type: ignore
+
+        query_children = []
+        search_terms = query.children[0].value.strip('"').split()
+        # Handle [tiab] by generating NEAR queries for both 'title' and 'abstract'
+        for search_field in sorted(list(search_fields)):
+            # Get all possible ordered pairs of search terms
+            # in the proximity search phrase
+            pairs = list(permutations(search_terms, 2))
+            for pair in pairs:
+                # Create binary near query for each pair
+                query_children.append(
+                    NEARQuery(
+                        value=Operators.NEAR,
+                        children=[
+                            Term(
+                                value=pair[0],
+                                search_field=SearchField(value=search_field),
+                            ),
+                            Term(
+                                value=pair[1],
+                                search_field=SearchField(value=search_field),
+                            ),
+                        ],
+                        distance=distance,
+                    )
+                )
+        return OrQuery(
+            children=query_children,  # type: ignore
+            search_field=None,
+        )
 
     @classmethod
     def to_generic_syntax(cls, query: "Query") -> "Query":
         """Convert the query to a generic syntax."""
 
         query = query.copy()
-        cls.translate_search_fields_to_generic(query)
-
+        query = cls.translate_search_fields_to_generic(query)
         return query
 
     @classmethod
@@ -176,6 +319,7 @@ class PubmedTranslator(QueryTranslator):
 
         cls.move_fields_to_terms(query)
         cls.flatten_nested_operators(query)
+        query = cls._collapse_near_queries(query)
         cls._combine_tiab(query)
         cls._translate_search_fields(query)
         cls._remove_redundant_terms(query)

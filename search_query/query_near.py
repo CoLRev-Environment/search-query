@@ -50,6 +50,9 @@ class NEARQuery(Query):
             platform=platform,
         )
         self.children = query_children
+        # assert isinstance(distance, int) and distance >= 0, (
+        #     "distance must be a non-negative integer"
+        # )
         self.distance: int = distance
 
     @property
@@ -85,7 +88,10 @@ class NEARQuery(Query):
         if not isinstance(children, list):
             raise TypeError("children must be a list of Query instances or strings")
 
-        if self.platform != "deactivated":  # Note: temporary for EBSCO parser
+        if self.platform not in {
+            "deactivated",
+            "pubmed",
+        }:  # Note: temporary for EBSCO parser
             if len(children) != 2:
                 raise ValueError("A NEAR query must have two children")
 

@@ -13,9 +13,11 @@ from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
-from search_query.query import Query
 from search_query.query import SearchField
+from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
+from search_query.query_or import OrQuery
+from search_query.query_term import Term
 
 # flake8: noqa: E501
 
@@ -565,35 +567,30 @@ def test_parser(query_str: str, expected_translation: str) -> None:
 
 
 def test_leaf_node_with_field() -> None:
-    query = Query(
+    query = Term(
         value="diabetes",
         search_field=SearchField("TI"),
-        operator=False,
         platform="ebscohost",
     )
     assert to_string_ebsco(query) == "TI diabetes"
 
 
 def test_leaf_node_without_field() -> None:
-    query = Query(value="diabetes", operator=False)
+    query = Term(value="diabetes")
     assert to_string_ebsco(query) == "diabetes"
 
 
 def test_boolean_query_with_two_terms() -> None:
-    query = Query(
-        value="AND",
-        operator=True,
+    query = AndQuery(
         children=[
-            Query(
+            Term(
                 value="diabetes",
                 search_field=SearchField("TI"),
-                operator=False,
                 platform="ebscohost",
             ),
-            Query(
+            Term(
                 value="insulin",
                 search_field=SearchField("TI"),
-                operator=False,
                 platform="ebscohost",
             ),
         ],
@@ -603,20 +600,16 @@ def test_boolean_query_with_two_terms() -> None:
 
 
 def test_nested_boolean_with_field() -> None:
-    inner = Query(
-        value="AND",
-        operator=True,
+    inner = AndQuery(
         children=[
-            Query(value="diabetes", operator=False),
-            Query(value="insulin", operator=False),
+            Term(value="diabetes"),
+            Term(value="insulin"),
         ],
         platform="ebscohost",
     )
-    outer = Query(
-        value="OR",
-        operator=True,
+    outer = OrQuery(
         search_field=SearchField("AB"),
-        children=[inner, Query(value="therapy", operator=False)],
+        children=[inner, Term(value="therapy")],
         platform="ebscohost",
     )
     # Test search field propagation and parentheses
@@ -628,8 +621,8 @@ def test_proximity_near_operator() -> None:
         value="NEAR",
         distance=5,
         children=[
-            Query(value="diabetes", operator=False, platform="ebscohost"),
-            Query(value="therapy", operator=False, platform="ebscohost"),
+            Term(value="diabetes", platform="ebscohost"),
+            Term(value="therapy", platform="ebscohost"),
         ],
         platform="ebscohost",
     )
@@ -642,8 +635,8 @@ def test_proximity_within_operator_with_field() -> None:
         distance=3,
         search_field=SearchField("AB"),
         children=[
-            Query(value="insulin", operator=False, platform="ebscohost"),
-            Query(value="resistance", operator=False, platform="ebscohost"),
+            Term(value="insulin", platform="ebscohost"),
+            Term(value="resistance", platform="ebscohost"),
         ],
         platform="ebscohost",
     )
