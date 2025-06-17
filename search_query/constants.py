@@ -309,7 +309,19 @@ class QueryErrorCode(Enum):
         "F2001",
         "wildcard-unsupported",
         "Unsupported wildcard in search string.",
-        "",
+        """**Typical fix**:  Remove unsupported wildcard characters from the query.
+
+**Problematic query**:
+
+.. code-block:: python
+
+   TI=term1 !term2
+
+**Correct query**:
+
+.. code-block:: python
+
+    TI=term1 term2""",
     )
     WILDCARD_IN_YEAR = (
         [PLATFORM.WOS],
