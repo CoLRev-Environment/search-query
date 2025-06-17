@@ -49,7 +49,7 @@ class NotQuery(Query):
             platform=platform,
         )
 
-        self.children = query_children
+        self.children = query_children  # type: ignore
 
     @property
     def children(self) -> typing.List[Query]:

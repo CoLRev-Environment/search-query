@@ -228,24 +228,29 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for idx, op in enumerate(precedence_list):
             if idx == 0:
                 precedence_lines.append(
-                    f"Operator {Colors.GREEN}{op}{Colors.END} at position {idx + 1} is evaluated first "
+                    f"Operator {Colors.GREEN}{op}{Colors.END} "
+                    f"at position {idx + 1} is evaluated first "
                     f"because it is the leftmost operator."
                 )
             elif idx == len(precedence_list) - 1:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} at position {idx + 1} is evaluated last "
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
+                    f"at position {idx + 1} is evaluated last "
                     f"because it is the rightmost operator."
                 )
             else:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} at position {idx + 1} is evaluated next."
+                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
+                    f"at position {idx + 1} is evaluated next."
                 )
 
         precedence_info = "\n".join(precedence_lines)
 
         details = (
-            "The query uses multiple operators, but without parentheses to make the intended logic explicit. "
-            "PubMed evaluates queries strictly from left to right without applying traditional operator precedence. "
+            "The query uses multiple operators, but without parentheses "
+            "to make the intended logic explicit. "
+            "PubMed evaluates queries strictly from left to right "
+            "without applying traditional operator precedence. "
             "This can lead to unexpected interpretations of the query.\n\n"
             "Specifically:\n"
             f"{precedence_info}\n\n"
@@ -410,7 +415,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
             ):
-                details = "Proximity search requires 2 or more search terms enclosed in double quotes."
+                details = (
+                    "Proximity search requires 2 or "
+                    "more search terms enclosed in double quotes."
+                )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[self.tokens[index - 1].position],

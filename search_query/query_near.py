@@ -50,6 +50,9 @@ class NEARQuery(Query):
             platform=platform,
         )
         self.children = query_children
+        # assert isinstance(distance, int) and distance >= 0, (
+        #     "distance must be a non-negative integer"
+        # )
         self.distance: int = distance
 
     @property

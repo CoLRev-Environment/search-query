@@ -36,7 +36,7 @@ def to_string_structured(query: Query, *, level: int = 0) -> str:
         search_field = f"[{query.search_field}]"
 
     query_value = query.value
-    if hasattr(query, "distance") and query.distance:
+    if hasattr(query, "distance"):  # and isinstance(query.distance, int):
         query_value += f"/{query.distance}"
     result = _reindent(f"{query_value} {search_field}", level)
 

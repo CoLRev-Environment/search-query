@@ -20,6 +20,7 @@ def to_string_pubmed(query: Query) -> str:
     if query.value == Operators.NEAR:
         # Serialize near query
         distance = query.distance if hasattr(query, "distance") else 0
+        assert query.children[0].search_field
         return (
             f"{query.children[0].value}"
             f"{query.children[0].search_field.value[:-1]}"
@@ -27,6 +28,8 @@ def to_string_pubmed(query: Query) -> str:
         )
     if query.value == Operators.RANGE:
         # Serialize range query
+        assert query.children[0].search_field
+        assert query.children[1]
         return (
             f"{query.children[0].value}:{query.children[1].value}"
             f"{query.children[0].search_field.value}"

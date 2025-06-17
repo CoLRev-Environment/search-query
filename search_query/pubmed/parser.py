@@ -208,9 +208,9 @@ class PubmedParser(QueryStringParser):
         if len(tokens) > 1 and tokens[1].type == TokenTypes.FIELD:
             if ":~" in tokens[1].value:
                 # Parse NEAR query
-                field_value, prox_value = self.PROXIMITY_REGEX.match(
+                field_value, distance = self.PROXIMITY_REGEX.match(
                     tokens[1].value
-                ).groups()
+                ).groups()  # type: ignore
                 field_value = "[" + field_value + "]"
                 return NEARQuery(
                     value=Operators.NEAR,
@@ -226,7 +226,9 @@ class PubmedParser(QueryStringParser):
                         )
                     ],
                     position=(tokens[0].position[0], tokens[1].position[1]),
-                    distance=prox_value,
+                    # TODO : pass int (ensuring valid NEAR distances)
+                    # or string (preventing errors during parsing)?
+                    distance=distance,  # type: ignore
                     platform="deactivated",
                 )
 

@@ -31,7 +31,7 @@ class Query:
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
-        if type(self) is Query:
+        if type(self) is Query:  # pylint: disable=unidiomatic-typecheck
             raise TypeError(
                 "The base Query type cannot be instantiated directly. "
                 "Use Query.create() or the appropriate query subclass."
@@ -80,6 +80,7 @@ class Query:
     ) -> Query:
         """Factory method for query creation."""
         if not operator:
+            # pylint: disable=import-outside-toplevel
             from search_query.query_term import Term
 
             return Term(
@@ -96,33 +97,33 @@ class Query:
             "platform": platform,
         }
 
+        # pylint: disable=import-outside-toplevel
         if value == Operators.AND:
             from search_query.query_and import AndQuery
 
-            return AndQuery(**args)
+            return AndQuery(**args)  # type: ignore
 
-        elif value == Operators.OR:
+        if value == Operators.OR:
             from search_query.query_or import OrQuery
 
-            return OrQuery(**args)
+            return OrQuery(**args)  # type: ignore
 
-        elif value == Operators.NOT:
+        if value == Operators.NOT:
             from search_query.query_not import NotQuery
 
-            return NotQuery(**args)
+            return NotQuery(**args)  # type: ignore
 
-        elif value in {Operators.NEAR, Operators.WITHIN}:
+        if value in {Operators.NEAR, Operators.WITHIN}:
             from search_query.query_near import NEARQuery
 
-            return NEARQuery(value=value, distance=distance, **args)
+            return NEARQuery(value=value, distance=distance, **args)  # type: ignore
 
-        elif value == Operators.RANGE:
+        if value == Operators.RANGE:
             from search_query.query_range import RangeQuery
 
-            return RangeQuery(**args)
+            return RangeQuery(**args)  # type: ignore
 
-        else:
-            raise ValueError(f"Invalid operator value: {value}")
+        raise ValueError(f"Invalid operator value: {value}")
 
     def _validate_platform_constraints(self) -> None:
         if self.platform == "deactivated":
@@ -319,14 +320,17 @@ class Query:
         """Set search field property."""
         self._search_field = copy.deepcopy(sf) if sf else None
 
-    def replace(self, new_query) -> None:
-        if self.get_parent():
-            for index, child in enumerate(self.get_parent().children):
+    def replace(self, new_query: Query) -> None:
+        """Replace this query with a new query in the parent's children list."""
+        parent = self.get_parent()
+        if parent:
+            children = parent.children
+            assert children
+            for index, child in enumerate(children):
                 if child is self:
-                    self.get_parent().children[index] = new_query
+                    children[index] = new_query
                     return
-        else:
-            raise RuntimeError("Root node of a query cannot be replaced")
+        raise RuntimeError("Root node of a query cannot be replaced")
 
     def selects(self, *, record_dict: dict) -> bool:
         """Indicates whether the query selects a given record."""

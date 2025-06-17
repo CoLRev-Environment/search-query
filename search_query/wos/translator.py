@@ -53,7 +53,7 @@ class WOSTranslator(QueryTranslator):
 
         query.replace(
             OrQuery(
-                children=query_children,
+                children=query_children,  # type: ignore
             )
         )
 

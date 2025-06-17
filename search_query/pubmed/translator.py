@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Pubmed query translator."""
+import typing
 from collections import defaultdict
 from itertools import permutations
 
@@ -119,6 +120,7 @@ class PubmedTranslator(QueryTranslator):
         for child in query.children:
             cls._combine_tiab(child)
 
+    # pylint: disable=too-many-locals, too-many-branches
     @classmethod
     def _collapse_near_queries(cls, query: Query) -> Query:
         """Recursively collapse NEAR queries in the query tree."""
@@ -132,11 +134,12 @@ class PubmedTranslator(QueryTranslator):
             query.children.pop()
             return query
 
-        elif query.value == Operators.OR:
+        if query.value == Operators.OR:
             # Extract NEAR queries
-            near_queries = []
-            other_queries = []
+            near_queries: typing.List[Query] = []
+            other_queries: typing.List[Query] = []
             for child in query.children:
+                # pylint: disable=unidiomatic-typecheck
                 (near_queries if type(child) is NEARQuery else other_queries).append(
                     child
                 )
@@ -152,11 +155,13 @@ class PubmedTranslator(QueryTranslator):
 
             combined_near_queries = []
             for distance, queries in grouped_queries.items():
-                # For each group, extract term pairs from NEAR queries and map them to corresponding fields
+                # For each group, extract term pairs from NEAR queries and
+                # map them to corresponding fields
                 term_field_map = defaultdict(set)
                 for q in queries:
                     term_a = q.children[0].value
                     term_b = q.children[1].value
+                    assert q.children[0].search_field
                     term_field_map[(min(term_a, term_b), max(term_a, term_b))].add(
                         q.children[0].search_field.value
                     )
@@ -175,7 +180,7 @@ class PubmedTranslator(QueryTranslator):
                                 children=[
                                     Term(
                                         value=f'"{term_a} {term_b}"',
-                                        search_field=field,
+                                        search_field=SearchField(value=field),
                                         platform="deactivated",
                                     )
                                 ],
@@ -210,6 +215,7 @@ class PubmedTranslator(QueryTranslator):
         if query.children:
             if query.value == Operators.NEAR:
                 # Expand NEAR queries
+                assert query.children[0].search_field
                 search_field_set = syntax_str_to_generic_search_field_set(
                     query.children[0].search_field.value
                 )
@@ -254,22 +260,25 @@ class PubmedTranslator(QueryTranslator):
                 )
             )
         return OrQuery(
-            children=query_children,
+            children=query_children,  # type: ignore
             search_field=None,
         )
 
     @classmethod
     def _expand_near_query(cls, query: Query, search_fields: set) -> Query:
         """Expand NEAR query into an OR query"""
-        if type(query) is not NEARQuery:
+        if type(query) is not NEARQuery:  # pylint: disable=unidiomatic-typecheck
             return query
+        distance = 0
+        if hasattr(query, "distance"):
+            distance = int(query.distance)  # type: ignore
 
-        distance = query.distance if hasattr(query, "distance") else 0
         query_children = []
         search_terms = query.children[0].value.strip('"').split()
         # Handle [tiab] by generating NEAR queries for both 'title' and 'abstract'
         for search_field in sorted(list(search_fields)):
-            # Get all possible ordered pairs of search terms in the proximity search phrase
+            # Get all possible ordered pairs of search terms
+            # in the proximity search phrase
             pairs = list(permutations(search_terms, 2))
             for pair in pairs:
                 # Create binary near query for each pair
@@ -290,7 +299,7 @@ class PubmedTranslator(QueryTranslator):
                     )
                 )
         return OrQuery(
-            children=query_children,
+            children=query_children,  # type: ignore
             search_field=None,
         )
 
