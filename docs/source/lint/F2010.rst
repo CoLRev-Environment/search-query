@@ -13,13 +13,13 @@ F2010 — year-span-violation
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND PY=2000-2020
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND PY=2015-2020
 

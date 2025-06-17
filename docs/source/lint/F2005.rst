@@ -9,6 +9,18 @@ F2005 — wildcard-after-special-char
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Wildcard cannot be preceded by special characters.
+**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=(term1 term2!*)
+
+**Correct query**:
+
+.. code-block:: text
+
+    TI=(term1 term2*)
 
 **Back to**: :ref:`lint`

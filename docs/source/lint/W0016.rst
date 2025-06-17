@@ -9,6 +9,18 @@ W0016 — unsupported-suffix
 
 **Scope**: PLATFORM.PUBMED
 
-**Description**: Unsupported suffix in search query
+**Typical fix**: Remove unsupported suffixes or trailing text from the search query to avoid errors.
+
+**Problematic query**:
+
+.. code-block:: text
+
+   (eHealth[Text Word]) Sort by: Publication Date
+
+**Correct query**:
+
+.. code-block:: text
+
+    (eHealth[Text Word])
 
 **Back to**: :ref:`lint`

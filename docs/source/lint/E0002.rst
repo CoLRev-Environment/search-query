@@ -9,6 +9,28 @@ E0002 — search-field-contradiction
 
 **Scope**: all
 
-**Description**: Contradictory search fields specified
+**Typical fix**: Ensure that the search fields used in the query and the general search field parameter are consistent.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    TI=(digital AND online)
+
+    # PLATFORM.PUBMED:
+    "eHealth"[tiab] "digital health"[tiab]
+    search_field_general = Title
+
+**Correct query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    digital AND online
+
+    # PLATFORM.PUBMED:
+    "eHealth"[Title] "digital health"[Title]
+    search_field_general = Title
 
 **Back to**: :ref:`lint`

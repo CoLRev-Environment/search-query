@@ -9,6 +9,18 @@ F2008 — isbn-format-invalid
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Invalid ISBN format.
+**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
+
+**Problematic query**:
+
+.. code-block:: text
+
+    IS=978-3-16-148410-0
+
+**Correct query**:
+
+.. code-block:: text
+
+    IS=978-3-16-148410-0
 
 **Back to**: :ref:`lint`

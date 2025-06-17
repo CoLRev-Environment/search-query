@@ -14,13 +14,13 @@ W0005 — operator-capitalization
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     a and b or c
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     a AND b OR c
 

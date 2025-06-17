@@ -9,6 +9,20 @@ W0007 — implicit-precedence
 
 **Scope**: all, PLATFORM.PUBMED
 
-**Description**: Operator changed at the same level (explicit parentheses are recommended)
+**Typical fix**: Use explicit parentheses to clarify operator precedence and avoid ambiguity in mixed AND/OR queries.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED
+   "health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")
+
+**Correct query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED
+    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")
 
 **Back to**: :ref:`lint`

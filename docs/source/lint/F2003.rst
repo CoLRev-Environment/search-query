@@ -9,6 +9,20 @@ F2003 — wildcard-right-short-length
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Right-hand wildcard must preceded by at least three characters.
+**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=te*
+    TS=ca*
+
+**Correct query**:
+
+.. code-block:: text
+
+    TI=tech*
+    TS=cat*
 
 **Back to**: :ref:`lint`

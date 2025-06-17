@@ -9,6 +9,18 @@ W0010 — character-replacement
 
 **Scope**: PLATFORM.PUBMED
 
-**Description**: Character replacement
+**Typical fix**: Be aware that certain characters like . in search terms will be replaced with whitespace due to platform-specific conversions. Specify search fields explicitly within the query instead of relying on general settings.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    "healthcare" AND "Industry 4.0"
+
+**Correct query**:
+
+.. code-block:: text
+
+    "healthcare" AND "Industry 4 0"
 
 **Back to**: :ref:`lint`

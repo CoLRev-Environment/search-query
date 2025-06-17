@@ -9,6 +9,18 @@ F2014 — year-format-invalid
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Invalid year format.
+**Typical fix**: Use a valid numeric year format (e.g., 4-digit year).
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 AND PY=20xy
+
+**Correct query**:
+
+.. code-block:: text
+
+    TI=term1 AND PY=2020
 
 **Back to**: :ref:`lint`

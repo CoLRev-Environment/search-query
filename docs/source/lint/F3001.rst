@@ -9,6 +9,21 @@ F3001 — missing-root-node
 
 **Scope**: PLATFORM.WOS
 
-**Description**: List format query without root node (typically containing operators)
+**Typical fix**: Add a root-level operator to combine the list items into a single query.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+
+**Correct query**:
+
+.. code-block:: text
+
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    3. #1 AND #2
 
 **Back to**: :ref:`lint`

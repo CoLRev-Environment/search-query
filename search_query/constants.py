@@ -224,13 +224,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (a AND b OR c
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (a AND b) OR c""",
     )
@@ -271,14 +271,14 @@ class QueryErrorCode(Enum):
         "F1011",
         "too-many-operators",
         "Too many operators in the query",
-        "",
+        "",  # Note: do not include a long example
     )
     TOO_MANY_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F1012",
         "too-many-search-terms",
         "Too many search terms in the query",
-        "",
+        "",  # Note: do not include a long example
     )
 
     WILDCARD_UNSUPPORTED = (
@@ -297,13 +297,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND year=201*
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND (year >= 2010 AND year < 2020)""",
     )
@@ -316,14 +316,14 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=te*
     TS=ca*
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=tech*
     TS=cat*""",
@@ -337,13 +337,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=*te
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=abc*te""",
     )
@@ -356,13 +356,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=(term1 term2!*)
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=(term1 term2*)""",
     )
@@ -375,13 +375,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 AND "?"
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1""",
     )
@@ -394,13 +394,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 NEAR/20 term2
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 NEAR/15 term2""",
     )
@@ -413,13 +413,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     IS=978-3-16-148410-0
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     IS=978-3-16-148410-0""",
     )
@@ -432,13 +432,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     DO=12.1000/xyz
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     DO=10.1000/xyz""",
     )
@@ -451,13 +451,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND PY=2000-2020
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A AND PY=2015-2020""",
     )
@@ -470,13 +470,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 AND IY=2020
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 AND PY=2020""",
     )
@@ -489,13 +489,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     PY=200*
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term AND PY=200*""",
     )
@@ -507,7 +507,7 @@ class QueryErrorCode(Enum):
         """**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     OrQuery(
     [
@@ -520,7 +520,7 @@ class QueryErrorCode(Enum):
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     OrQuery(
     [
@@ -539,13 +539,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 AND PY=20xy
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TI=term1 AND PY=2020""",
     )
@@ -560,16 +560,18 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    TS=("Peer leader*" OR "Shared leader*") OR TS=("acrobatics" OR "acrobat" OR "acrobats")""",
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    3. #1 AND #2""",
     )
     MISSING_OPERATOR_NODES = (
         [PLATFORM.WOS],
@@ -587,7 +589,8 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
+
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
@@ -600,7 +603,8 @@ class QueryErrorCode(Enum):
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
+
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
@@ -633,7 +637,8 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
+
     # PLATFORM.WOS:
     TI=(digital AND online)
 
@@ -643,7 +648,8 @@ class QueryErrorCode(Enum):
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
+
     # PLATFORM.WOS:
     digital AND online
 
@@ -668,13 +674,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "digital health"[tiab:~0.5]
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "digital health"[tiab:5]""",
     )
@@ -687,13 +693,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "health tracking" AND AI*
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "health tracking" AND AID*""",
     )
@@ -724,14 +730,14 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     # PubMed search with general search field "Title"
     eHealth[ti]
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     # PubMed search without general search field
     eHealth[ti]""",
@@ -745,7 +751,7 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
 
     # EBSCO search with general search field = "Title"
@@ -753,7 +759,7 @@ class QueryErrorCode(Enum):
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     # EBSCO search without general search field
     TI Artificial Intelligence AND TI Future""",
@@ -775,13 +781,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     a and b or c
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     a AND b OR c""",
     )
@@ -794,13 +800,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR B
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR/15 B""",
     )
@@ -814,22 +820,17 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
+
     # PLATFORM.PUBMED
    "health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")
 
-    # PLATFORM.WOS
-    TI=term1 AND OR
-
 **Correct query**:
 
-.. code-block:: python
-    # PLATFORM.PUBMED
-    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")
+.. code-block:: text
 
-    # PLATFORM.WOS
-    TI=term1 AND ( ... ) OR ( ... )
-    """,
+    # PLATFORM.PUBMED
+    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")""",
     )
     TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
     BOOLEAN_OPERATOR_READABILITY = (
@@ -848,13 +849,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "healthcare" AND "Industry 4.0"
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "healthcare" AND "Industry 4 0" """,
     )
@@ -867,14 +868,14 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])
     device[ti] OR (wearable[ti] AND 2000:2010[dp])
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) OR ("ehealth"[Title/Abstract])) AND 2019/01/01:2019/12/01[publication date]
     (device[ti] OR wearable[ti]) AND 2000:2010[dp]""",
@@ -888,13 +889,13 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TS=“carbon”
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     TS="carbon" """,
     )
@@ -907,15 +908,15 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    "activity"[Title/Abstract] AND ("cancer"[Title/Abstract] AND "Lancet"[Journal])
+    "activity"[Title/Abstract] OR ("cancer"[Title/Abstract] AND "Lancet"[Journal])
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    ("activity"[Title/Abstract] AND "cancer"[Title/Abstract]) AND "Lancet"[Journal] """,
+    ("activity"[Title/Abstract] OR "cancer"[Title/Abstract]) AND "Lancet"[Journal] """,
     )
     UNSUPPORTED_PREFIX = (
         [PLATFORM.PUBMED],
@@ -926,15 +927,15 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-   Pubmed with no restrictions: (eHealth[Text Word])
+   Pubmed with no restrictions: (eHealth[ti])
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    eHealth[Text Word] """,
+    eHealth[ti] """,
     )
     UNSUPPORTED_SUFFIX = (
         [PLATFORM.PUBMED],
@@ -945,15 +946,15 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-   (eHealth[Text Word]) Sort by: Publication Date
+   (eHealth[ti]) Sort by: Publication Date
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    (eHealth[Text Word]) """,
+    (eHealth[ti]) """,
     )
 
     # pylint: disable=too-many-arguments

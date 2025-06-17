@@ -9,6 +9,18 @@ F2009 — doi-format-invalid
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Invalid DOI format.
+**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
+
+**Problematic query**:
+
+.. code-block:: text
+
+    DO=12.1000/xyz
+
+**Correct query**:
+
+.. code-block:: text
+
+    DO=10.1000/xyz
 
 **Back to**: :ref:`lint`

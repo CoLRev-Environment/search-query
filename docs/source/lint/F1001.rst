@@ -13,13 +13,13 @@ F1001 — unbalanced-parentheses
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (a AND b OR c
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     (a AND b) OR c
 

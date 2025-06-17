@@ -13,13 +13,13 @@ W0006 — implicit-near-value
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR B
 
 **Correct query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR/15 B
 
