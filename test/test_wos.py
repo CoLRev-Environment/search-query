@@ -981,7 +981,8 @@ def test_list_parser_case_4() -> None:
     )
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        -1: [
+        -1: [],
+        "1": [
             {
                 "code": "W0004",
                 "label": "query-structure-unnecessarily-complex",
@@ -998,6 +999,8 @@ def test_list_parser_case_4() -> None:
                 "position": [(25, 41), (63, 79)],
                 "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
             },
+        ],
+        "2": [
             {
                 "code": "W0004",
                 "label": "query-structure-unnecessarily-complex",
@@ -1022,7 +1025,7 @@ def test_list_parser_case_4() -> None:
                 "position": [(117, 127), (160, 170)],
                 "details": 'Term "acrobats" is contained multiple times i.e., redundantly.',
             },
-        ]
+        ],
     }
 
 
@@ -1047,6 +1050,54 @@ def test_list_parser_case_5() -> None:
                 "details": "Last token of query item 3 must be a list item.",
             }
         ]
+    }
+
+
+# Test case 6
+def test_list_parser_case_6() -> None:
+    query_list = "1. TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR (ulcer* colitis) OR crohn OR crohns OR ileitis or ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)\n2. TS=(prebiotic* OR synbiotic OR inulin OR galactan* or *oligosacc* OR pectin)\n3. TS=(interven* OR trial* or study)\n4. #3 AND #2 AND #1\n"
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_string())
+    # Note: parentheses for inflamm* AND bowl* are missing?
+    assert (
+        query.to_string()
+        == "(TS=(interven* OR trial* OR study) AND TS=(prebiotic* OR synbiotic OR inulin OR galactan* OR *oligosacc* OR pectin) AND TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR ulcer* colitis OR crohn OR crohns OR ileitis OR ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis))"
+    )
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [],
+        "3": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(319, 321)],
+                "details": "",
+            }
+        ],
+        "2": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(266, 268)],
+                "details": "",
+            }
+        ],
+        "1": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(110, 112)],
+                "details": "",
+            }
+        ],
     }
 
 

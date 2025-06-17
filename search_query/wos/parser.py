@@ -114,9 +114,14 @@ class WOSParser(QueryStringParser):
 
     def adjust_token_positions(self) -> None:
         """Adjust virtual positions of tokens using offset mapping."""
-        if not hasattr(self, "offset") or not isinstance(self.offset, dict):
+        if (
+            not hasattr(self, "offset")
+            or not isinstance(self.offset, dict)
+            or not self.offset
+        ):
             return  # No offsets to apply
 
+        # print(f"Adjusting token positions with offsets: {self.offset}")
         next_offset_keys = sorted(self.offset.keys())
         current_offset = 0
         next_offset_index = 0
@@ -127,21 +132,51 @@ class WOSParser(QueryStringParser):
             start, end = token.position
 
             # Apply offset shifts if we passed new offset positions
+            offset_applied = False
             while (
                 next_offset_index < len(next_offset_keys)
                 and start >= next_offset_keys[next_offset_index]
             ):
                 current_offset = self.offset[next_offset_keys[next_offset_index]]
                 virtual_position = current_offset
+                offset_applied = True
                 next_offset_index += 1
 
+            # print(f"Virtual position: {virtual_position}")
             gap_length = start - last_end
-            if start > current_offset and gap_length > 0:
+            if not offset_applied and gap_length > 0:
                 virtual_position += gap_length
+                # print(f"Adjusted virtual position: {virtual_position} "
+                # f"(gap length {gap_length})")
 
             token_length = end - start
+
+            # print("")
+            # print(f"{token.value} (token value)")
+            # print(
+            #     self.query_str[token.position[0] : token.position[1]]
+            #     + f" (query_str, original positions: {token.position})"
+            # )
             token.position = (virtual_position, virtual_position + token_length)
+            # print(
+            #     self.original_str[token.position[0] : token.position[1]]
+            #     + f" (original_str, adjusted positions: {token.position})"
+            # )
+            # print("---------------")
+            # print(self.original_str)
+            # Compare only letters (ignore case and non-letters)
+            orig = "".join(
+                c
+                for c in self.original_str[token.position[0] : token.position[1]]
+                if c.isalpha()
+            ).lower()
+            val = "".join(c for c in token.value if c.isalpha()).lower()
+            assert orig == val, (
+                f"Token value mismatch (letters only): {token.value} != "
+                f"{self.original_str[token.position[0]:token.position[1]]}"
+            )
             virtual_position += token_length
+            assert virtual_position == token.position[1]
             last_end = end
 
     # Parse a query tree from tokens recursively
@@ -456,48 +491,99 @@ class WOSListParser(QueryListParser):
         return tokens
 
     def _build_query_str(self) -> typing.Tuple[str, dict]:
-        query_str = ""
-        pos_dict = {}
+        # The `offset` dictionary maps positions in the `query_str` back to their
+        # corresponding character positions in the original (list) query string.
+        #
+        # Key (int): character offset in the `query_str`.
+        # Value (int): character offset in the original input (e.g., from content_pos).
+        #
+        # This mapping enables linters to trace tokens and messages
+        # back to their original location.
+        #
+        # Example:
+        # Given `query_str`` like: "cancer OR tumor"
+        # and source nodes:
+        #   "1": {"node_content": "cancer", "content_pos": [100]}
+        #   "2": {"node_content": "#1 OR tumor", "content_pos": [200]}
+        # The offset map might include:
+        #   {0: 100, 7: 203, 10: 206}
+        # So position 7 ("O" in "OR") traces back to character 203 in the original.
+        offset: typing.Dict[int, int] = {}
 
-        # Build map: token_nr -> (query_text, original_start_pos)
-        query_map = {
-            str(token_nr): (
-                node_content["node_content"],
-                node_content["content_pos"][0],
-            )
-            for token_nr, node_content in self.query_dict.items()
-            if node_content["type"] == ListTokenTypes.QUERY_NODE
-        }
+        # Helper function to recursively resolve query references
+        def resolve_reference(ref_nr: str) -> typing.Tuple[str, dict]:
+            # pylint: disable=too-many-locals
+            if ref_nr not in self.query_dict:
+                return "", {}
 
-        # Process OPERATOR_NODEs
-        for token_nr, node_content in self.query_dict.items():
+            node_content = self.query_dict[ref_nr]
+            if node_content["type"] == ListTokenTypes.QUERY_NODE:
+                query = node_content["node_content"]
+                pos = node_content["content_pos"][0]
+                return query, {0: pos}
+
             if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
                 tokens = self.tokenize_operator_node(
-                    node_content["node_content"], token_nr
+                    node_content["node_content"], int(ref_nr)
                 )
                 operator_base_offset = node_content["content_pos"][0]
 
                 parts = []
+                local_pos_dict = {}
                 current_pos = 0
 
                 for token in tokens:
                     if token.type.name == "LIST_ITEM_REFERENCE":
-                        ref_nr = token.value.lstrip("#")
-                        ref_query, original_pos = query_map.get(ref_nr, ("", -1))
-                        parts.append(ref_query)
-                        pos_dict[current_pos] = original_pos
-                        current_pos += len(ref_query)
+                        nested_ref_nr = token.value.lstrip("#")
+                        resolved_query, nested_pos_dict = resolve_reference(
+                            nested_ref_nr
+                        )
+                        parts.append(resolved_query)
+                        for rel_pos, orig_pos in nested_pos_dict.items():
+                            local_pos_dict[current_pos + rel_pos] = orig_pos
+                        current_pos += len(resolved_query)
                     else:
                         parts.append(token.value)
-                        pos_dict[current_pos] = operator_base_offset + token.position[0]
+                        token_pos = operator_base_offset + token.position[0]
+                        local_pos_dict[current_pos] = token_pos
                         current_pos += len(token.value)
 
-                    # Add space after each token
                     parts.append(" ")
                     current_pos += 1
 
-                query_str = "".join(parts).strip()
-        return query_str, pos_dict
+                resolved = "".join(parts).strip()
+                return resolved, local_pos_dict
+
+            return "", {}
+
+        # Entry point: find the top-level operator node and resolve it
+        for token_nr, node_content in self.query_dict.items():
+            if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
+                query_str, offset = resolve_reference(token_nr)
+                break  # Assuming only one top-level OPERATOR_NODE
+
+        return query_str, offset
+
+    def _assign_linter_messages(self, query_parser: WOSParser) -> None:
+        if GENERAL_ERROR_POSITION not in self.linter.messages:
+            self.linter.messages[GENERAL_ERROR_POSITION] = []
+        for message in query_parser.linter.messages:
+            assigned = False
+            if message["position"] != [(-1, -1)]:
+                for level, node in self.query_dict.items():
+                    if (
+                        node["content_pos"][0]
+                        <= message["position"][0][0]
+                        <= node["content_pos"][1]
+                    ):
+                        if level not in self.linter.messages:
+                            self.linter.messages[level] = []
+                        self.linter.messages[level].append(message)
+                        assigned = True
+                        break
+
+            if not assigned:
+                self.linter.messages[GENERAL_ERROR_POSITION].append(message)
 
     def parse(self) -> Query:
         """Parse the list of queries."""
@@ -507,25 +593,24 @@ class WOSListParser(QueryListParser):
         self.linter.validate_list_tokens()
         self.linter.check_status()
 
-        query_str, pos_dict = self._build_query_str()
+        query_str, offset = self._build_query_str()
 
         query_parser = WOSParser(
             query_str=query_str,
             original_str=self.query_list,
             search_field_general=self.search_field_general,
             mode=self.mode,
-            offset=pos_dict,
+            offset=offset,
+            silent=True,
         )
         try:
             query = query_parser.parse()
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            if GENERAL_ERROR_POSITION not in self.linter.messages:
-                self.linter.messages[GENERAL_ERROR_POSITION] = []
-            self.linter.messages[GENERAL_ERROR_POSITION].extend(
-                query_parser.linter.messages
-            )
+            self._assign_linter_messages(query_parser)
+
+            self.linter.check_status()
 
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 

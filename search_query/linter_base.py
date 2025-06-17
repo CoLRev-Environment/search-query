@@ -1112,6 +1112,7 @@ class QueryListLinter:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
 
+    # pylint: disable=too-many-branches
     def print_messages(self) -> None:
         """Print the latest linter messages."""
         if not self.messages:
@@ -1123,9 +1124,17 @@ class QueryListLinter:
 
             messages = messages[self.last_read_index[list_position] :]
 
-            for message in messages:
-                code = message["code"]
+            grouped_messages = defaultdict(list)
+            str(sys.stdout.encoding).lower().startswith("utf")
+
+            for message in messages[self.last_read_index[list_position] :]:
+                grouped_messages[message["code"]].append(message)
+
+            for code, group in grouped_messages.items():
+                # Take the first message as representative
+                representative = group[0]
                 color = Colors.ORANGE
+                code = representative["code"]
 
                 category = ""
                 if code.startswith("F"):
@@ -1136,13 +1145,21 @@ class QueryListLinter:
                 elif code.startswith("W"):
                     category = "💡 Warning"
 
-                print(f"{color}{category}{Colors.END}: {message['label']} ({code})")
-                _print_bullet_message(message["message"])
-                if message["details"]:
-                    print(f"  {message['details']}")
-                if message["position"] != [(-1, -1)]:
+                print(
+                    f"{color}{category}{Colors.END}: {representative['label']} ({code})"
+                )
+                consolidated_messages = []
+                for message in group:
+                    if message["details"]:
+                        consolidated_messages.append(f"  {message['details']}")
+                    else:
+                        consolidated_messages.append(f"  {message['message']}")
+                for item in set(consolidated_messages):
+                    _print_bullet_message(item)
+                positions = [pos for message in group for pos in message["position"]]
+                if list(set(positions))[0] != (-1, -1):
                     query_info = format_query_string_positions(
-                        self.original_query_str, message["position"], color=color
+                        self.original_query_str, positions, color=color
                     )
                     _print_bullet_message(query_info, bullet=" ")
 
