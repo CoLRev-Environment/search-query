@@ -334,7 +334,7 @@ class QueryErrorCode(Enum):
         "wildcard-left-short-length",
         "Left-hand wildcard must be preceded by at least three characters.",
         """**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
-        
+
 **Problematic query**:
 
 .. code-block:: python
@@ -353,7 +353,7 @@ class QueryErrorCode(Enum):
         "wildcard-after-special-char",
         "Wildcard cannot be preceded by special characters.",
         """**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
-        
+
 **Problematic query**:
 
 .. code-block:: python
@@ -371,8 +371,8 @@ class QueryErrorCode(Enum):
         "F2006",
         "wildcard-standalone",
         "Wildcard cannot be standalone.",
-         """**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
-        
+        """**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
+
 **Problematic query**:
 
 .. code-block:: python
@@ -391,7 +391,7 @@ class QueryErrorCode(Enum):
         "near-distance-too-large",
         "NEAR distance is too large (max: 15).",
         """**Typical fix**: Reduce the NEAR distance to 15 or less.
-        
+
 **Problematic query**:
 
 .. code-block:: python
@@ -410,7 +410,7 @@ class QueryErrorCode(Enum):
         "isbn-format-invalid",
         "Invalid ISBN format.",
         """**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
-        
+
 **Problematic query**:
 
 .. code-block:: python
@@ -429,7 +429,7 @@ class QueryErrorCode(Enum):
         "doi-format-invalid",
         "Invalid DOI format.",
         """**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
-        
+
 **Problematic query**:
 
 .. code-block:: python
@@ -587,12 +587,12 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python 
+.. code-block:: python
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
     3. #1 AND #5
-    
+
     # PLATFORM.PUBMED:
     1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
     2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
@@ -605,7 +605,7 @@ class QueryErrorCode(Enum):
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
     3. #1 AND #2
-    
+
     # PLATFORM.PUBMED:
     1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
     2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
@@ -621,7 +621,7 @@ class QueryErrorCode(Enum):
         ["all"],
         "E0001",
         "search-field-missing",
-        "Expected search field is missing", 
+        "Expected search field is missing",
         "",
     )
     SEARCH_FIELD_CONTRADICTION = (
@@ -633,10 +633,11 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python 
-# PLATFORM.WOS:
+.. code-block:: python
+    # PLATFORM.WOS:
     TI=(digital AND online)
-# PLATFORM.PUBMED:
+
+    # PLATFORM.PUBMED:
     "eHealth"[tiab] "digital health"[tiab]
     search_field_general = Title
 
@@ -663,7 +664,19 @@ class QueryErrorCode(Enum):
         "E0005",
         "invalid-proximity-use",
         "Invalid use of the proximity operator",
-        "",
+        """Proximity operators must have a non-negative integer as the distance.
+
+**Problematic query**:
+
+.. code-block:: python
+
+    "digital health"[tiab:~0.5]
+
+**Correct query**:
+
+.. code-block:: python
+
+    "digital health"[tiab:5]""",
     )
     INVALID_WILDCARD_USE = (
         [PLATFORM.PUBMED],
@@ -674,7 +687,7 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python 
+.. code-block:: python
 
     "health tracking" AND AI*
 
@@ -711,15 +724,17 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python 
+.. code-block:: python
 
+    # PubMed search with general search field "Title"
     eHealth[ti]
 
 **Correct query**:
 
 .. code-block:: python
 
-    eHealth""",
+    # PubMed search without general search field
+    eHealth[ti]""",
     )
     SEARCH_FIELD_EXTRACTED = (
         ["all"],
@@ -730,15 +745,18 @@ class QueryErrorCode(Enum):
 
 **Problematic query**:
 
-.. code-block:: python 
+.. code-block:: python
 
-    TI Artificial Intelligence AND AB Future
+
+    # EBSCO search with general search field = "Title"
+    Artificial Intelligence AND Future
 
 **Correct query**:
 
 .. code-block:: python
 
-    TI Artificial Intelligence AND AB Future""",
+    # EBSCO search without general search field
+    TI Artificial Intelligence AND TI Future""",
     )
     QUERY_STRUCTURE_COMPLEX = (
         ["all"],
@@ -861,13 +879,6 @@ class QueryErrorCode(Enum):
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) OR ("ehealth"[Title/Abstract])) AND 2019/01/01:2019/12/01[publication date]
     (device[ti] OR wearable[ti]) AND 2000:2010[dp]""",
     )
-    IMPLICIT_OPERATOR = (
-        [PLATFORM.PUBMED],
-        "W0012",
-        "implicit-operator",
-        "Implicit operator",
-        "",
-    )
     NON_STANDARD_QUOTES = (
         ["all"],
         "W0013",
@@ -950,6 +961,7 @@ class QueryErrorCode(Enum):
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:
+        # TODO: remove the database scope ?
         self.scope = scope
         self.code = code
         self.label = label

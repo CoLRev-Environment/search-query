@@ -19,7 +19,7 @@ When working with `search-query`, we recommend extracting the **Search terms** f
 
    EBSCOHost query syntax includes field tags such as `AB`, `TI`, `SU`, etc. These should be included directly in the `search_string`.
 
-   Avoid setting a `general_search_field` unless the entire query targets the same field (e.g., all terms limited to `AB` for Abstract). Mixed fields should keep `general_search_field` empty.
+   Avoid setting a `general_search_field` (available in `Advanced Search`) unless the entire query targets the same field (e.g., all terms limited to `AB` for Abstract). Mixed fields should keep `general_search_field` empty.
 
 Store a Query
 -------------
