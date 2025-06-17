@@ -250,7 +250,18 @@ class QueryErrorCode(Enum):
         # Note: provide details like
         # ([token_type] followed by [token_type] is not allowed)
         "The sequence of tokens is invalid." "",
-        "",
+        """**Problematic query**:
+
+.. code-block:: text
+
+    # Example: Two operators in a row
+    eHealth AND OR digital health
+
+**Correct query**:
+
+.. code-block:: text
+
+    eHealth OR digital health""",
     )
     EMPTY_PARENTHESES = (
         [PLATFORM.PUBMED],
