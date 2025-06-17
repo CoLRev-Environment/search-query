@@ -471,13 +471,13 @@ class QueryErrorCode(Enum):
 
 .. code-block:: python
 
-    TI=term1 AND IY=digital
+    TI=term1 AND IY=2020
 
 **Correct query**:
 
 .. code-block:: python
 
-    TI=term1 AND PY=digital""",
+    TI=term1 AND PY=2020""",
     )
     YEAR_WITHOUT_SEARCH_TERMS = (
         [PLATFORM.WOS],
