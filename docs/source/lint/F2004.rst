@@ -9,6 +9,18 @@ F2004 — wildcard-left-short-length
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Left-hand wildcard must be preceded by at least three characters.
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=*te
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=abc*te
+
+**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
 
 **Back to**: :ref:`lint`

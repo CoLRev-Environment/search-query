@@ -9,6 +9,18 @@ E0001 — search-field-missing
 
 **Scope**: all
 
-**Description**: Expected search field is missing
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED:
+    "eHealth" OR "digital health"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED:
+    "eHealth"[all] OR "digital health"[all]
 
 **Back to**: :ref:`lint`

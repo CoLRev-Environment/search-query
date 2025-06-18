@@ -9,6 +9,23 @@ F1012 — too-many-search-terms
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Too many search terms in the query
+**Explanation:** The query contains too many search terms, which may lead to performance issues or exceed platform limits.
+
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    # too many terms
+    TI=(eHealth OR digital health OR telemedicine OR mHealth OR ...)
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    # split into multiple queries
+    TI=(eHealth OR digital health OR telemedicine OR ...)
+    TI=(mHealth OR telehealth OR ...)
 
 **Back to**: :ref:`lint`

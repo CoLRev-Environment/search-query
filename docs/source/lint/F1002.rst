@@ -9,6 +9,18 @@ F1002 — unbalanced-quotes
 
 **Scope**: all
 
-**Description**: Quotes are unbalanced in the query
+**Problematic query**:
+
+.. code-block:: text
+
+    "eHealth[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    "eHealth"[ti]
+
+**Typical fix**: Add the missing closing quote to balance the quotation marks.
 
 **Back to**: :ref:`lint`

@@ -9,6 +9,18 @@ F2006 — wildcard-standalone
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Wildcard cannot be standalone.
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 AND "?"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term1
+
+**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
 
 **Back to**: :ref:`lint`

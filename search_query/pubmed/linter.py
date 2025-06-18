@@ -556,7 +556,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
             self.add_linter_message(
                 QueryErrorCode.SEARCH_FIELD_MISSING,
                 positions=[(-1, -1)],
-                details="Search field is missing (TODO: default?)",
+                # TODO : default search field: [all]
+                # TODO : distinguish MISSING vs. IMPLICIT?
+                details="Search field is missing.",
             )
 
 

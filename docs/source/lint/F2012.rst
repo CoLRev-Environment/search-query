@@ -9,18 +9,18 @@ F2012 — year-without-search-terms
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: A search for publication years must include at least another search term.
-
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    PY=2000
+    PY=200*
 
-**Correct query**:
+**Recommended query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    PY=2000 AND TI=eHealth
+    TI=term AND PY=200*
+
+**Typical fix**: Combine the year filter with at least one other search term.
 
 **Back to**: :ref:`lint`
