@@ -610,13 +610,13 @@ class QueryErrorCode(Enum):
 
 .. code-block:: text
 
-    PY=200*
+    PY=2000
 
 **Recommended query**:
 
 .. code-block:: text
 
-    TI=term AND PY=200*
+    TI=term AND PY=2000
 
 **Typical fix**: Combine the year filter with at least one other search term.
 """,
