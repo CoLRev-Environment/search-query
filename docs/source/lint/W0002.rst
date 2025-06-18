@@ -9,21 +9,21 @@ W0002 — search-field-extracted
 
 **Scope**: all
 
-**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
-
 **Problematic query**:
 
-.. code-block:: text
 
+.. code-block:: text
 
     # EBSCO search with general search field = "Title"
     Artificial Intelligence AND Future
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # EBSCO search without general search field
     TI Artificial Intelligence AND TI Future
+
+**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
 
 **Back to**: :ref:`lint`

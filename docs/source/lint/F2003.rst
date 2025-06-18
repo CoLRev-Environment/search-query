@@ -9,8 +9,6 @@ F2003 — wildcard-right-short-length
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
-
 **Problematic query**:
 
 .. code-block:: text
@@ -18,11 +16,13 @@ F2003 — wildcard-right-short-length
     TI=te*
     TS=ca*
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     TI=tech*
     TS=cat*
+
+**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
 
 **Back to**: :ref:`lint`

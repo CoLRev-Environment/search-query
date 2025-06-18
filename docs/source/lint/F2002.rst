@@ -9,18 +9,18 @@ F2002 — wildcard-in-year
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: Replace with year range.
-
 **Problematic query**:
 
 .. code-block:: text
 
-    A AND year=201*
+    dHealth[ti] AND 200*[dp]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    A AND (year >= 2010 AND year < 2020)
+    dHealth[ti] AND 2000:2010[dp]
+
+**Typical fix**: Replace with year range.
 
 **Back to**: :ref:`lint`

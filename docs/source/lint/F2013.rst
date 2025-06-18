@@ -9,30 +9,18 @@ F2013 — nested-query-with-search-field
 
 **Scope**: PLATFORM.PUBMED
 
-**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
 **Problematic query**:
 
 .. code-block:: text
 
-    OrQuery(
-    [
-        Term("health tracking"),
-        Term("remote monitoring"),
-    ],
-    search_field="[tiab]",
-    platform=PLATFORM.PUBMED.value,
-)
+    eHealth[ti] AND ("health tracking" OR "remote monitoring")[tiab]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    OrQuery(
-    [
-        Term("health tracking"),
-        Term("remote monitoring"),
-    ],
-    platform=PLATFORM.PUBMED.value,
-)
+    eHealth[ti] AND ("health tracking"[tiab] OR "remote monitoring"[tiab])
+
+**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
 
 **Back to**: :ref:`lint`

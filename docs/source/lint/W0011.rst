@@ -9,8 +9,6 @@ W0011 — date-filter-in-subquery
 
 **Scope**: PLATFORM.PUBMED
 
-**Typical fix**: Apply date filters at the top-level of the query instead of inside subqueries to ensure the date restriction applies as intended.
-
 **Problematic query**:
 
 .. code-block:: text
@@ -18,11 +16,13 @@ W0011 — date-filter-in-subquery
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])
     device[ti] OR (wearable[ti] AND 2000:2010[dp])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) OR ("ehealth"[Title/Abstract])) AND 2019/01/01:2019/12/01[publication date]
     (device[ti] OR wearable[ti]) AND 2000:2010[dp]
+
+**Typical fix**: Apply date filters at the top-level of the query instead of inside subqueries to ensure the date restriction applies as intended.
 
 **Back to**: :ref:`lint`

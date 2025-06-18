@@ -9,18 +9,18 @@ F1001 — unbalanced-parentheses
 
 **Scope**: all
 
-**Typical fix**: Check the parentheses in the query
-
 **Problematic query**:
 
 .. code-block:: text
 
     (a AND b OR c
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     (a AND b) OR c
+
+**Typical fix**: Check the parentheses in the query
 
 **Back to**: :ref:`lint`

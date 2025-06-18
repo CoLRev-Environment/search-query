@@ -17,7 +17,7 @@ Proximity operators must have a non-negative integer as the distance.
 
     "digital health"[tiab:~0.5]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 

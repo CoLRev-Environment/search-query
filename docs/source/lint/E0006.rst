@@ -9,18 +9,18 @@ E0006 — invalid-wildcard-use
 
 **Scope**: PLATFORM.PUBMED
 
-**Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
-
 **Problematic query**:
 
 .. code-block:: text
 
     "health tracking" AND AI*
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     "health tracking" AND AID*
+
+**Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
 
 **Back to**: :ref:`lint`

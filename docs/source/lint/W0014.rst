@@ -9,18 +9,18 @@ W0014 — journal-filter-in-subquery
 
 **Scope**: PLATFORM.PUBMED
 
-**Typical fix**: Apply journal (publication name) filters at the top level of the query instead of inside subqueries to ensure the filter applies to the entire result set.
-
 **Problematic query**:
 
 .. code-block:: text
 
     "activity"[Title/Abstract] OR ("cancer"[Title/Abstract] AND "Lancet"[Journal])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     ("activity"[Title/Abstract] OR "cancer"[Title/Abstract]) AND "Lancet"[Journal]
+
+**Typical fix**: Apply journal (publication name) filters at the top level of the query instead of inside subqueries to ensure the filter applies to the entire result set.
 
 **Back to**: :ref:`lint`

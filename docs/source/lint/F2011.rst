@@ -9,18 +9,18 @@ F2011 — search-field-unsupported
 
 **Scope**: all, PLATFORM.WOS
 
-**Typical fix**: Replace the unsupported field with a supported one for the selected database.
-
 **Problematic query**:
 
 .. code-block:: text
 
     TI=term1 AND IY=2020
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     TI=term1 AND PY=2020
+
+**Typical fix**: Replace the unsupported field with a supported one for the selected database.
 
 **Back to**: :ref:`lint`

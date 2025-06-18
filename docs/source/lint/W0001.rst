@@ -9,8 +9,6 @@ W0001 — search-field-redundant
 
 **Scope**: all
 
-**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
-
 **Problematic query**:
 
 .. code-block:: text
@@ -18,11 +16,13 @@ W0001 — search-field-redundant
     # PubMed search with general search field "Title"
     eHealth[ti]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PubMed search without general search field
     eHealth[ti]
+
+**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
 
 **Back to**: :ref:`lint`

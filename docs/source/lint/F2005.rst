@@ -9,18 +9,18 @@ F2005 — wildcard-after-special-char
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
-
 **Problematic query**:
 
 .. code-block:: text
 
-    TI=(term1 term2!*)
+    TI=(term1 OR term2!*)
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=(term1 term2*)
+    TI=(term1 OR term2*)
+
+**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
 
 **Back to**: :ref:`lint`

@@ -9,34 +9,24 @@ F3003 — invalid-list-reference
 
 **Scope**: PLATFORM.WOS, PLATFORM.PUBMED
 
-**Typical fix**: Reference only existing list items in your query.
-
 **Problematic query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
-    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #5
 
-    # PLATFORM.PUBMED:
-    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
-    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-    3. #1 AND #2 AND #4
-
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
-    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #2
 
-    # PLATFORM.PUBMED:
-    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
-    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-    3. #1 AND #2
+**Typical fix**: Reference only existing list items in your query.
 
 **Back to**: :ref:`lint`

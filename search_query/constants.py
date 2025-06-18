@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Tuple
 
-# noqa: E501
+# flake8: noqa: E501
 # ruff: noqa: E501
 
 # pylint: disable=too-few-public-methods
@@ -213,45 +213,48 @@ class QueryErrorCode(Enum):
         "F0001",
         "tokenizing-failed",
         "Fatal error during tokenization",
-        "",
+        """**Typical fix**: Check the query syntax and ensure it is correctly formatted.""",
     )
     UNBALANCED_PARENTHESES = (
         ["all"],
         "F1001",
         "unbalanced-parentheses",
         "Parentheses are unbalanced in the query",
-        """**Typical fix**: Check the parentheses in the query
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     (a AND b OR c
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    (a AND b) OR c""",
+    (a AND b) OR c
+
+**Typical fix**: Check the parentheses in the query
+""",
     )
     UNBALANCED_QUOTES = (
         ["all"],
         "F1002",
         "unbalanced-quotes",
         "Quotes are unbalanced in the query",
-        """**Typical fix**: Add the missing closing quote to balance the quotation marks.
-
+        """
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     "eHealth[ti]
 
-**Correct query**:
+**Recommended query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    "eHealth"[ti] """,
+    "eHealth"[ti]
+
+**Typical fix**: Add the missing closing quote to balance the quotation marks.""",
     )
 
     # merged with INVALID_OPERATOR_POSITION, INVALID_SEARCH_FIELD_POSITION
@@ -269,86 +272,149 @@ class QueryErrorCode(Enum):
     # Example: Two operators in a row
     eHealth AND OR digital health
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    eHealth OR digital health""",
+    eHealth OR digital health
+
+**Typical fix**: Check the sequence of operators and terms in the query
+""",
     )
+    # TODO : implement and test this error
     EMPTY_PARENTHESES = (
         [PLATFORM.PUBMED],
         "F1009",
         "empty-parentheses",
         "Query contains empty parentheses",
-        "",
+        """
+
+**Problematic query**:
+
+.. code-block:: text
+
+    eHealth[ti] OR ()
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # Replace with actual search terms
+    eHealth[ti] OR "digital health"[ti]
+    """,
     )
     INVALID_SYNTAX = (
         ["all"],
         "F1010",
         "invalid-syntax",
         "Query contains invalid syntax",
-        "",
+        """**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    eHealth[ti]
+
+    # PLATFORM.PUBMED
+    TI=eHealth
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    TI=eHealth
+
+    # PLATFORM.PUBMED
+    eHealth[ti]
+""",
     )
+    # TODO : cover in linters and tests
     TOO_MANY_OPERATORS = (
         [PLATFORM.WOS],
         "F1011",
         "too-many-operators",
         "Too many operators in the query",
-        "",  # Note: do not include a long example
+        """
+**Explanation:** The query contains too many logical operators (AND, OR, NOT) or proximity operators (NEAR, WITHIN).
+""",  # Note: do not include a long example
     )
     TOO_MANY_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F1012",
         "too-many-search-terms",
         "Too many search terms in the query",
-        "",  # Note: do not include a long example
-    )
-
-    WILDCARD_UNSUPPORTED = (
-        [PLATFORM.WOS],
-        "F2001",
-        "wildcard-unsupported",
-        "Unsupported wildcard in search string.",
-        """**Typical fix**:  Remove unsupported wildcard characters from the query.
+        """
+**Explanation:** The query contains too many search terms, which may lead to performance issues or exceed platform limits.
 
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-   TI=term1 !term2
+    # PLATFORM.WOS
+    # too many terms
+    TI=(eHealth OR digital health OR telemedicine OR mHealth OR ...)
 
-**Correct query**:
+**Recommended query**:
 
-.. code-block:: python
+.. code-block:: text
 
-    TI=term1 term2""",
+    # PLATFORM.WOS
+    # split into multiple queries
+    TI=(eHealth OR digital health OR telemedicine OR ...)
+    TI=(mHealth OR telehealth OR ...)
+""",  # Note: do not include a long example
+    )
+
+    WILDCARD_UNSUPPORTED = (
+        [PLATFORM.WOS, PLATFORM.EBSCO],
+        "F2001",
+        "wildcard-unsupported",
+        "Unsupported wildcard in search string.",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+   # PLATFORM.EBSCO: no leading wildcard
+   TI=*Health
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.EBSCO
+    TI=Health*
+
+**Typical fix**:  Remove unsupported wildcard characters from the query.""",
     )
     WILDCARD_IN_YEAR = (
         [PLATFORM.WOS],
         "F2002",
         "wildcard-in-year",
         "Wildcard characters (*, ?, $) not supported in year search.",
-        """**Typical fix**: Replace with year range.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
-    A AND year=201*
+    dHealth[ti] AND 200*[dp]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    A AND (year >= 2010 AND year < 2020)""",
+    dHealth[ti] AND 2000:2010[dp]
+
+**Typical fix**: Replace with year range.
+""",
     )
     WILDCARD_RIGHT_SHORT_LENGTH = (
         [PLATFORM.WOS],
         "F2003",
         "wildcard-right-short-length",
         "Right-hand wildcard must preceded by at least three characters.",
-        """**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
@@ -356,233 +422,246 @@ class QueryErrorCode(Enum):
     TI=te*
     TS=ca*
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     TI=tech*
-    TS=cat*""",
+    TS=cat*
+
+**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
+""",
     )
     WILDCARD_LEFT_SHORT_LENGTH = (
         [PLATFORM.WOS],
         "F2004",
         "wildcard-left-short-length",
         "Left-hand wildcard must be preceded by at least three characters.",
-        """**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TI=*te
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=abc*te""",
+    TI=abc*te
+
+**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
+""",
     )
     WILDCARD_AFTER_SPECIAL_CHAR = (
         [PLATFORM.WOS],
         "F2005",
         "wildcard-after-special-char",
         "Wildcard cannot be preceded by special characters.",
-        """**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
-    TI=(term1 term2!*)
+    TI=(term1 OR term2!*)
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=(term1 term2*)""",
+    TI=(term1 OR term2*)
+
+**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
+""",
     )
     WILDCARD_STANDALONE = (
         [PLATFORM.WOS],
         "F2006",
         "wildcard-standalone",
         "Wildcard cannot be standalone.",
-        """**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TI=term1 AND "?"
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=term1""",
+    TI=term1
+
+**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
+""",
     )
     NEAR_DISTANCE_TOO_LARGE = (
         [PLATFORM.WOS],
         "F2007",
         "near-distance-too-large",
         "NEAR distance is too large (max: 15).",
-        """**Typical fix**: Reduce the NEAR distance to 15 or less.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TI=term1 NEAR/20 term2
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=term1 NEAR/15 term2""",
+    TI=term1 NEAR/15 term2
+
+**Typical fix**: Reduce the NEAR distance to 15 or less.
+""",
     )
     ISBN_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2008",
         "isbn-format-invalid",
         "Invalid ISBN format.",
-        """**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     IS=978-3-16-148410-0
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    IS=978-3-16-148410-0""",
+    IS=978-3-16-148410-0
+
+**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
+""",
     )
     DOI_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2009",
         "doi-format-invalid",
         "Invalid DOI format.",
-        """**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     DO=12.1000/xyz
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    DO=10.1000/xyz""",
+    DO=10.1000/xyz
+
+**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
+""",
     )
     YEAR_SPAN_VIOLATION = (
         [PLATFORM.WOS],
         "F2010",
         "year-span-violation",
         "Year span must be five or less.",
-        """**Typical fix**: The parser automatically sets the year span to 5.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     A AND PY=2000-2020
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    A AND PY=2015-2020""",
+    A AND PY=2015-2020
+
+**Typical fix**: The parser automatically adjusts the year span to 5 years.
+""",
     )
     SEARCH_FIELD_UNSUPPORTED = (
         ["all", PLATFORM.WOS],
         "F2011",
         "search-field-unsupported",
         "Search field is not supported for this database",
-        """**Typical fix**: Replace the unsupported field with a supported one for the selected database.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TI=term1 AND IY=2020
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=term1 AND PY=2020""",
+    TI=term1 AND PY=2020
+
+**Typical fix**: Replace the unsupported field with a supported one for the selected database.
+""",
     )
     YEAR_WITHOUT_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F2012",
         "year-without-search-terms",
         "A search for publication years must include at least another search term.",
-        """**Typical fix**: Combine the year filter with at least one other search term.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     PY=200*
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=term AND PY=200*""",
+    TI=term AND PY=200*
+
+**Typical fix**: Combine the year filter with at least one other search term.
+""",
     )
     NESTED_QUERY_WITH_SEARCH_FIELD = (
         [PLATFORM.PUBMED],
         "F2013",
         "nested-query-with-search-field",
         "A Nested query cannot have a search field.",
-        """**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
+        """
 **Problematic query**:
 
 .. code-block:: text
 
-    OrQuery(
-    [
-        Term("health tracking"),
-        Term("remote monitoring"),
-    ],
-    search_field="[tiab]",
-    platform=PLATFORM.PUBMED.value,
-)
+    eHealth[ti] AND ("health tracking" OR "remote monitoring")[tiab]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    OrQuery(
-    [
-        Term("health tracking"),
-        Term("remote monitoring"),
-    ],
-    platform=PLATFORM.PUBMED.value,
-)""",
+    eHealth[ti] AND ("health tracking"[tiab] OR "remote monitoring"[tiab])
+
+**Typical fix**: Remove the search field from the nested query (operator) since nested queries cannot have search fields.
+""",
     )
     YEAR_FORMAT_INVALID = (
         [PLATFORM.WOS],
         "F2014",
         "year-format-invalid",
         "Invalid year format.",
-        """**Typical fix**: Use a valid numeric year format (e.g., 4-digit year).
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TI=term1 AND PY=20xy
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TI=term1 AND PY=2020""",
+    TI=term1 AND PY=2020
+
+**Typical fix**: Use a valid numeric year format (e.g., 4-digit year).
+""",
     )
 
     MISSING_ROOT_NODE = (
@@ -590,9 +669,7 @@ class QueryErrorCode(Enum):
         "F3001",
         "missing-root-node",
         "List format query without root node (typically containing operators)",
-        # The last item of the list must be a "combining string"
-        """**Typical fix**: Add a root-level operator to combine the list items into a single query.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
@@ -600,14 +677,18 @@ class QueryErrorCode(Enum):
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
-    3. #1 AND #2""",
+    3. #1 AND #2
+
+**Typical fix**: Add a root-level operator to combine the list items into a single query.
+""",
     )
+    # TODO : implement with list-parser/linters
     MISSING_OPERATOR_NODES = (
         [PLATFORM.WOS],
         "F3002",
@@ -620,36 +701,27 @@ class QueryErrorCode(Enum):
         "F3003",
         "invalid-list-reference",
         "Invalid list reference in list query",
-        """**Typical fix**: Reference only existing list items in your query.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
-    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #5
 
-    # PLATFORM.PUBMED:
-    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
-    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-    3. #1 AND #2 AND #4
-
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
     1. TS=("Peer leader*" OR "Shared leader*")
-    2. TS=("acrobatics" OR "acrobat" OR "acrobats")
+    2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #2
 
-    # PLATFORM.PUBMED:
-    1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
-    2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-    3. #1 AND #2
-    """,
+**Typical fix**: Reference only existing list items in your query.
+""",
     )
 
     # -------------------------------------------------------
@@ -661,36 +733,46 @@ class QueryErrorCode(Enum):
         "E0001",
         "search-field-missing",
         "Expected search field is missing",
-        "",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED:
+    "eHealth" OR "digital health"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.PUBMED:
+    "eHealth"[all] OR "digital health"[all]
+""",
     )
     SEARCH_FIELD_CONTRADICTION = (
         ["all"],
         "E0002",
         "search-field-contradiction",
         "Contradictory search fields specified",
-        """**Typical fix**: Ensure that the search fields used in the query and the general search field parameter are consistent.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
+    # Search with general search field = "ALL FIELDS"
     TI=(digital AND online)
 
-    # PLATFORM.PUBMED:
-    "eHealth"[tiab] "digital health"[tiab]
-    search_field_general = Title
-
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PLATFORM.WOS:
-    digital AND online
+    # Search without general search field
+    TI=(digital AND online)
 
-    # PLATFORM.PUBMED:
-    "eHealth"[Title] "digital health"[Title]
-    search_field_general = Title""",
+**Typical fix**: Ensure that the search fields used in the query and the general search field parameter are consistent.
+""",
     )
 
     INVALID_CHARACTER = (
@@ -698,14 +780,31 @@ class QueryErrorCode(Enum):
         "E0004",
         "invalid-character",
         "Search term contains invalid character",
-        "",
+        # TODO : document and test invalid characters for each platform
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "@digital-native"[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "digital-native"[ti]
+
+""",  # Note: PubMed does not have INVALID_CHARACTER, but CHARACTER_REPLACEMENT
     )
     INVALID_PROXIMITY_USE = (
         [PLATFORM.PUBMED, PLATFORM.EBSCO],
         "E0005",
         "invalid-proximity-use",
         "Invalid use of the proximity operator",
-        """Proximity operators must have a non-negative integer as the distance.
+        """
+Proximity operators must have a non-negative integer as the distance.
 
 **Problematic query**:
 
@@ -713,56 +812,89 @@ class QueryErrorCode(Enum):
 
     "digital health"[tiab:~0.5]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    "digital health"[tiab:5]""",
+    "digital health"[tiab:5]
+""",
     )
     INVALID_WILDCARD_USE = (
         [PLATFORM.PUBMED],
         "E0006",
         "invalid-wildcard-use",
         "Invalid use of the wildcard operator *",
-        """**Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     "health tracking" AND AI*
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    "health tracking" AND AID*""",
+    "health tracking" AND AID*
+
+**Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
+""",
     )
+    # TODO : write unit tests for this error
     QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
-        [PLATFORM.WOS],
+        ["all"],
         "E0007",
         "query-starts-with-platform-identifier",
         "Query starts with platform identifier",
-        "",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    WOS: eHealth[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    eHealth[ti]
+""",
     )
+    # TODO : add to ebsco, pubmed:
     QUERY_IN_QUOTES = (
-        [PLATFORM.WOS],
+        ["all"],
         "E0008",
         "query-in-quotes",
         "The whole Search string is in quotes.",
-        "",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "eHealth[ti] AND digital health[ti]"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    eHealth[ti] AND digital health[ti]
+""",
     )
 
     # -------------------------------------------------------
     # Warnings (prefix: W)
     # -------------------------------------------------------
+    # TODO : for EBSCO: SEARCH_FIELD_REDUNDANT
     SEARCH_FIELD_REDUNDANT = (
         ["all"],
         "W0001",
         "search-field-redundant",
         "Recommend specifying search field only once in the search string",
-        """**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
-
+        """
 **Problematic query**:
 
 .. code-block:: text
@@ -770,98 +902,112 @@ class QueryErrorCode(Enum):
     # PubMed search with general search field "Title"
     eHealth[ti]
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PubMed search without general search field
-    eHealth[ti]""",
+    eHealth[ti]
+
+**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
+""",
     )
+    # TODO : for WOS and PUBMED too?
     SEARCH_FIELD_EXTRACTED = (
         ["all"],
         "W0002",
         "search-field-extracted",
         "Recommend explicitly specifying the search field in the string",
-        """**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
-
+        """
 **Problematic query**:
 
-.. code-block:: text
 
+.. code-block:: text
 
     # EBSCO search with general search field = "Title"
     Artificial Intelligence AND Future
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # EBSCO search without general search field
-    TI Artificial Intelligence AND TI Future""",
+    TI Artificial Intelligence AND TI Future
+
+**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
+""",
     )
     QUERY_STRUCTURE_COMPLEX = (
         ["all"],
         "W0004",
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
-        """**Typical fix**: Remove redundant terms when one term is already covered by a broader or encompassing term in the query.
-
+        """
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
-# PLATFORM.EBSCO
-   MH "sleep" OR MH "sleep disorders"
-# PLATFORM.PUBMED
-    ("device"[ti] OR ("mobile application"[ti] OR "wearable device"[ti])) AND "health tracking"[ti]
-**Correct query**:
+    # PLATFORM.EBSCO
+    TI "sleep" OR TI "sleep disorders"
 
-.. code-block:: python
+    # PLATFORM.EBSCO
+    TI "sleep" AND TI "sleep disorders"
 
-# PLATFORM.EBSCO
-    MH "sleep"
-# PLATFORM.PUBMED
-    ("device"[ti] OR "mobile application"[ti]) AND "health tracking"[ti]
-    """,
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.EBSCO
+    TI "sleep"
+
+    # PLATFORM.EBSCO
+    TI "sleep disorders"
+
+
+**Typical fix**: Remove redundant terms when one term is already covered by a broader (OR) or encompassing (AND) term in the query.""",
     )
     OPERATOR_CAPITALIZATION = (
         ["all"],
         "W0005",
         "operator-capitalization",
         "Operators should be capitalized",
-        """**Typical fix**: Capitalize the operator
-
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
-    a and b or c
+    dHealth and mHealth
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    a AND b OR c""",
+    dHealth AND mHealth
+
+**Typical fix**: Capitalize the operator
+""",
     )
     IMPLICIT_NEAR_VALUE = (
         [PLATFORM.WOS],
         "W0006",
         "implicit-near-value",
         "The value of NEAR operator is implicit",
-        """**Typical fix**: The parser automatically sets NEAR values to 15 (default).
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     A NEAR B
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    A NEAR/15 B""",
+    A NEAR/15 B
+
+**Typical fix**: The parser automatically sets NEAR values to 15 (default).
+""",
     )
     # Note : merged QUERY_PRECEDENCE and OPERATOR_CHANGED_AT_SAME_LEVEL into:
     IMPLICIT_PRECEDENCE = (
@@ -869,8 +1015,7 @@ class QueryErrorCode(Enum):
         "W0007",
         "implicit-precedence",
         "Operator changed at the same level (explicit parentheses are recommended)",
-        """**Typical fix**: Use explicit parentheses to clarify operator precedence and avoid ambiguity in mixed AND/OR queries.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
@@ -878,47 +1023,62 @@ class QueryErrorCode(Enum):
     # PLATFORM.PUBMED
    "health tracking" OR ("remote" AND "monitoring") AND ("mobile application" OR "wearable device")
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     # PLATFORM.PUBMED
-    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")""",
+    ("health tracking" OR ("remote" AND "monitoring")) AND ("mobile application" OR "wearable device")
+
+**Typical fix**: Use explicit parentheses to clarify operator precedence and avoid ambiguity in mixed AND/OR queries.
+""",
     )
-    TOKEN_AMBIGUITY = (["all"], "W0008", "token-ambiguity", "Token ambiguity", "")
     BOOLEAN_OPERATOR_READABILITY = (
         ["all"],
         "W0009",
         "boolean-operator-readability",
         "Boolean operator readability",
-        "",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    eHealth[ti] | mHealth[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    eHealth[ti] OR mHealth[ti]
+""",
     )
     CHARACTER_REPLACEMENT = (
         [PLATFORM.PUBMED],
         "W0010",
         "character-replacement",
         "Character replacement",
-        """**Typical fix**: Be aware that certain characters like . in search terms will be replaced with whitespace due to platform-specific conversions. Specify search fields explicitly within the query instead of relying on general settings.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     "healthcare" AND "Industry 4.0"
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    "healthcare" AND "Industry 4 0" """,
+    "healthcare" AND "Industry 4 0"
+
+**Typical fix**: Be aware that certain characters like . in search terms will be replaced with whitespace due to platform-specific conversions. Specify search fields explicitly within the query instead of relying on general settings.
+""",
     )
     DATE_FILTER_IN_SUBQUERY = (
         [PLATFORM.PUBMED],
         "W0011",
         "date-filter-in-subquery",
         "Date filter in subquery",
-        """**Typical fix**: Apply date filters at the top-level of the query instead of inside subqueries to ensure the date restriction applies as intended.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
@@ -926,88 +1086,99 @@ class QueryErrorCode(Enum):
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])
     device[ti] OR (wearable[ti] AND 2000:2010[dp])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     (("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) OR ("ehealth"[Title/Abstract])) AND 2019/01/01:2019/12/01[publication date]
-    (device[ti] OR wearable[ti]) AND 2000:2010[dp]""",
+    (device[ti] OR wearable[ti]) AND 2000:2010[dp]
+
+**Typical fix**: Apply date filters at the top-level of the query instead of inside subqueries to ensure the date restriction applies as intended.
+""",
     )
     NON_STANDARD_QUOTES = (
         ["all"],
         "W0013",
         "non-standard-quotes",
         "Non-standard quotes",
-        """**Typical fix**: Replace non-standard quotes (e.g., “ ”) with standard ASCII quotes (").
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     TS=“carbon”
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    TS="carbon" """,
+    TS="carbon"
+
+**Typical fix**: Replace non-standard quotes (e.g., “ ”) with standard ASCII quotes (").
+""",
     )
     JOURNAL_FILTER_IN_SUBQUERY = (
         [PLATFORM.PUBMED],
         "W0014",
         "journal-filter-in-subquery",
         "Journal (or publication name) filter in subquery",
-        """**Typical fix**: Apply journal (publication name) filters at the top level of the query instead of inside subqueries to ensure the filter applies to the entire result set.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
     "activity"[Title/Abstract] OR ("cancer"[Title/Abstract] AND "Lancet"[Journal])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    ("activity"[Title/Abstract] OR "cancer"[Title/Abstract]) AND "Lancet"[Journal] """,
+    ("activity"[Title/Abstract] OR "cancer"[Title/Abstract]) AND "Lancet"[Journal]
+
+**Typical fix**: Apply journal (publication name) filters at the top level of the query instead of inside subqueries to ensure the filter applies to the entire result set.
+""",
     )
     UNSUPPORTED_PREFIX = (
         [PLATFORM.PUBMED],
         "W0015",
         "unsupported-prefix",
         "Unsupported prefix in search query",
-        """**Typical fix**: Remove unsupported prefixes or introductory text from the search query to ensure it runs correctly.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
    Pubmed with no restrictions: (eHealth[ti])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    eHealth[ti] """,
+    eHealth[ti]
+
+**Typical fix**: Remove unsupported prefixes or introductory text from the search query to ensure it runs correctly.
+""",
     )
     UNSUPPORTED_SUFFIX = (
         [PLATFORM.PUBMED],
         "W0016",
         "unsupported-suffix",
         "Unsupported suffix in search query",
-        """**Typical fix**: Remove unsupported suffixes or trailing text from the search query to avoid errors.
-
+        """
 **Problematic query**:
 
 .. code-block:: text
 
    (eHealth[ti]) Sort by: Publication Date
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    (eHealth[ti]) """,
+    (eHealth[ti])
+
+**Typical fix**: Remove unsupported suffixes or trailing text from the search query to avoid errors.
+""",
     )
 
     # pylint: disable=too-many-arguments

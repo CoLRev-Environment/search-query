@@ -9,19 +9,18 @@ W0005 — operator-capitalization
 
 **Scope**: all
 
-**Typical fix**: Capitalize the operator
-
-
 **Problematic query**:
 
 .. code-block:: text
 
-    a and b or c
+    dHealth and mHealth
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    a AND b OR c
+    dHealth AND mHealth
+
+**Typical fix**: Capitalize the operator
 
 **Back to**: :ref:`lint`

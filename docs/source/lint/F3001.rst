@@ -9,8 +9,6 @@ F3001 — missing-root-node
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: Add a root-level operator to combine the list items into a single query.
-
 **Problematic query**:
 
 .. code-block:: text
@@ -18,12 +16,14 @@ F3001 — missing-root-node
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     1. TS=("Peer leader*" OR "Shared leader*")
     2. TS=("acrobatics" OR "acrobat" OR "acrobats")
     3. #1 AND #2
+
+**Typical fix**: Add a root-level operator to combine the list items into a single query.
 
 **Back to**: :ref:`lint`

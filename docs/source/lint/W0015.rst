@@ -9,18 +9,18 @@ W0015 — unsupported-prefix
 
 **Scope**: PLATFORM.PUBMED
 
-**Typical fix**: Remove unsupported prefixes or introductory text from the search query to ensure it runs correctly.
-
 **Problematic query**:
 
 .. code-block:: text
 
-   Pubmed with no restrictions: (eHealth[Text Word])
+   Pubmed with no restrictions: (eHealth[ti])
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
-    eHealth[Text Word]
+    eHealth[ti]
+
+**Typical fix**: Remove unsupported prefixes or introductory text from the search query to ensure it runs correctly.
 
 **Back to**: :ref:`lint`

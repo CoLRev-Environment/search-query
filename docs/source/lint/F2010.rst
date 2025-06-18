@@ -9,18 +9,18 @@ F2010 — year-span-violation
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: The parser automatically sets the year span to 5.
-
 **Problematic query**:
 
 .. code-block:: text
 
     A AND PY=2000-2020
 
-**Correct query**:
+**Recommended query**:
 
 .. code-block:: text
 
     A AND PY=2015-2020
+
+**Typical fix**: The parser automatically adjusts the year span to 5 years.
 
 **Back to**: :ref:`lint`
