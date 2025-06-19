@@ -1040,16 +1040,17 @@ def test_list_parser_case_5() -> None:
         print(exc)
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        -1: [
+        -1: [],
+        "3": [
             {
                 "code": "F1004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
                 "position": [(104, 107)],
-                "details": "Last token of query item 3 must be a list item.",
+                "details": "Cannot end with LOGIC_OPERATOR",
             }
-        ]
+        ],
     }
 
 
@@ -1099,6 +1100,20 @@ def test_list_parser_case_6() -> None:
             }
         ],
     }
+
+
+# Test case 7
+def test_list_parser_case_7() -> None:
+    query_list = "1. TS=(inflammatory bowel diseases OR ileitis or ileocolitis)\n2. TS=(prebiotic* OR synbiotic)\n3. #1 AND #2 AND PY=2000\n"
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_string())
+    # Note: parentheses for inflamm* AND bowl* are missing?
+    assert (
+        query.to_string()
+        == "TS=(inflammatory bowel diseases OR ileitis OR ileocolitis) AND TS=(prebiotic* OR synbiotic) AND PY=2000"
+    )
 
 
 def test_wos_valid_query() -> None:

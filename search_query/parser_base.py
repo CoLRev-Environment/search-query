@@ -333,25 +333,54 @@ class QueryListParser:
             previous += len(line) + 1
 
     def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
-        """Tokenize the query_list."""
+        """Tokenize the query string into list-references and logic operator tokens."""
 
         tokens = []
-        for match in self.OPERATOR_NODE_REGEX.finditer(query_str):
-            value = match.group()
+        pos = 0
+        length = len(query_str)
 
-            position = match.span()
-            if self.LIST_ITEM_REFERENCE.fullmatch(value):
-                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            elif self.parser_class.LOGIC_OPERATOR_REGEX.fullmatch(value):
-                token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            else:  # pragma: no cover
-                token_type = OperatorNodeTokenTypes.UNKNOWN
+        while pos < length:
+            # Skip any whitespace
+            while pos < length and query_str[pos].isspace():
+                pos += 1
 
-            tokens.append(
-                ListToken(
-                    value=value, type=token_type, level=node_nr, position=position
+            if pos >= length:
+                break
+
+            match = self.LIST_ITEM_REFERENCE.match(query_str, pos)
+            if match:
+                start, end = match.span()
+                tokens.append(
+                    ListToken(
+                        value=match.group(),
+                        type=OperatorNodeTokenTypes.LIST_ITEM_REFERENCE,
+                        level=node_nr,
+                        position=(start, end),
+                    )
                 )
-            )
+                pos = end
+            else:
+                # Collect non-space, non-list-ref characters
+                start = pos
+                while (
+                    pos < length
+                    and not query_str[pos].isspace()
+                    and not self.LIST_ITEM_REFERENCE.match(query_str, pos)
+                ):
+                    pos += 1
+
+                if start != pos:
+                    value = query_str[start:pos]
+                    tokens.append(
+                        ListToken(
+                            value=value,
+                            # TODO : rename  OperatorNodeTokenTypes.LOGIC_OPERATOR
+                            # can also contain search terms or other tokens
+                            type=OperatorNodeTokenTypes.LOGIC_OPERATOR,
+                            level=node_nr,
+                            position=(start, pos),
+                        )
+                    )
 
         return tokens
 
@@ -426,7 +455,7 @@ class QueryListParser:
             if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
                 query_str, offset = resolve_reference(token_nr)
                 break  # Assuming only one top-level OPERATOR_NODE
-        print(query_str)
+
         return query_str, offset
 
     def assign_linter_messages(self, parser_messages, linter) -> None:  # type: ignore

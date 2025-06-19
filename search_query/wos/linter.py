@@ -580,56 +580,6 @@ class WOSQueryListLinter(QueryListLinter):
                         positions=[position],
                     )
 
-            # Note: details should pass "format should be #1 [operator] #2"
-
-            # Must start with LIST_ITEM
-            if tokens[0].type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                details = f"First token for query item {node_nr} must be a list item."
-                position = (
-                    tokens[0].position[0] + offset,
-                    tokens[0].position[1] + offset,
-                )
-                self.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    list_position=GENERAL_ERROR_POSITION,
-                    positions=[position],
-                    details=details,
-                )
-                return
-
-            # Expect alternating pattern after first LIST_ITEM
-            expected = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            for _, token in enumerate(tokens[1:], start=1):
-                if token.type != expected:
-                    position = (token.position[0] + offset, token.position[1] + offset)
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        list_position=GENERAL_ERROR_POSITION,
-                        positions=[position],
-                        details=f"Expected {expected.name} for query item {node_nr} "
-                        f"at position {token.position}, but found {token.type.name}.",
-                    )
-                    return
-                # Alternate between LOGIC_OPERATOR and LIST_ITEM
-                expected = (
-                    OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-                    if expected == OperatorNodeTokenTypes.LOGIC_OPERATOR
-                    else OperatorNodeTokenTypes.LOGIC_OPERATOR
-                )
-
-            # The final token must be a LIST_ITEM (if even-length list of tokens)
-            if expected == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                position = (
-                    tokens[-1].position[0] + offset,
-                    tokens[-1].position[1] + offset,
-                )
-                self.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    list_position=GENERAL_ERROR_POSITION,
-                    positions=[position],
-                    details=f"Last token of query item {node_nr} must be a list item.",
-                )
-
     def _check_invalid_list_reference(self) -> None:
         # check if all list-references exist
         for ind, query_node in enumerate(self.parser.query_dict.values()):
