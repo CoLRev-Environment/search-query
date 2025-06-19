@@ -1181,3 +1181,25 @@ def test_general_list_parser_1() -> None:
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {-1: []}
+
+
+def test_general_list_parser_2() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. (school[Title/Abstract] OR university[Title/Abstract])
+4. #1 AND #2 OR #3
+"""
+
+    list_parser = PubmedListParser(
+        query_list=query_list, search_field_general="", mode=""
+    )
+    try:
+        query = list_parser.parse()
+    except ListQuerySyntaxError:
+        pass
+
+    assert (
+        query.to_string()
+        == "((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])) OR (school[Title/Abstract] OR university[Title/Abstract])"
+    )
