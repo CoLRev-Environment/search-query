@@ -5,17 +5,13 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import LinterMode
-from search_query.constants import ListToken
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
-from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOListLinter
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.exception import QuerySyntaxError
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
@@ -57,12 +53,21 @@ class EBSCOParser(QueryStringParser):
         *,
         search_field_general: str = "",
         mode: str = LinterMode.STRICT,
+        offset: typing.Optional[dict] = None,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str, search_field_general=search_field_general, mode=mode
+            query_str,
+            search_field_general=search_field_general,
+            mode=mode,
+            offset=offset,
+            original_str=original_str,
         )
-        self.linter = EBSCOQueryStringLinter(query_str=query_str)
+        self.linter = EBSCOQueryStringLinter(
+            query_str=query_str, original_str=original_str, silent=silent
+        )
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
@@ -320,6 +325,7 @@ class EBSCOListParser(QueryListParser):
 
     LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
     LIST_ITEM_REF = re.compile(r"[#S]\d+")
+    LIST_ITEM_REFERENCE = re.compile(r"S\d+")
     OPERATOR_NODE_REGEX = re.compile(r"[#S]\d+|AND|OR|NOT")
 
     def __init__(
@@ -336,65 +342,6 @@ class EBSCOListParser(QueryListParser):
         )
         self.linter = EBSCOListLinter(parser=self, string_parser_class=EBSCOParser)
 
-    def get_token_str(self, token_nr: str) -> str:
-        """Get the string representation of a token."""
-        pattern = rf"(S|#){token_nr}"
-        match = re.search(pattern, self.query_list)
-        if match:
-            return f"{match.group(1)}{token_nr}"
-        details = (
-            "Connecting lines possibly failed. "
-            "Use format: S1 OR S2 OR S3 / #1 OR #2 OR #3"
-        )
-        self.linter.add_linter_message(
-            QueryErrorCode.INVALID_LIST_REFERENCE,
-            list_position=GENERAL_ERROR_POSITION,
-            positions=[(-1, -1)],
-            details=details,
-        )
-        return token_nr
-
-    def get_operator_node_tokens(self, token_nr: int) -> list:
-        """Get tokens from an operator node."""
-        node_content = self.query_dict[token_nr]["node_content"]
-        tokens = []
-        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
-            value = match.group()
-            start, end = match.span()
-            if not value.strip():
-                continue
-            if value.upper() in {"AND", "OR", "NOT"}:
-                token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            elif self.LIST_ITEM_REF.match(value):
-                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            elif value == "(":
-                token_type = OperatorNodeTokenTypes.PARENTHESIS_OPEN
-            elif value == ")":
-                token_type = OperatorNodeTokenTypes.PARENTHESIS_CLOSED
-            else:
-                token_type = OperatorNodeTokenTypes.UNKNOWN
-            tokens.append(
-                ListToken(
-                    value=value, type=token_type, level=token_nr, position=(start, end)
-                )
-            )
-        return tokens
-
-    def _parse_operator_node(self, token_nr: int) -> Query:
-        tokens = self.get_operator_node_tokens(token_nr)
-        operator = ""
-        children = []
-        for token in tokens:
-            if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                ref = token.value.lstrip("#S")
-                children.append(self.query_dict[ref]["query"])
-            elif token.type == OperatorNodeTokenTypes.LOGIC_OPERATOR:
-                operator = token.value.upper()
-
-        return Query.create(
-            value=operator, search_field=None, children=children, platform="deactivated"
-        )
-
     def parse(self) -> Query:
         """Parse EBSCO list query."""
 
@@ -402,17 +349,28 @@ class EBSCOListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        for token_nr, query_element in self.query_dict.items():
-            if query_element["type"] == ListTokenTypes.QUERY_NODE:
-                parser = self.parser_class(
-                    query_element["node_content"],
-                    search_field_general=self.search_field_general,
-                )
-                query_element["query"] = parser.parse()
-            elif query_element["type"] == ListTokenTypes.OPERATOR_NODE:
-                query_element["query"] = self._parse_operator_node(token_nr)
+        self.tokenize_list()
+        self.linter.validate_tokens()
+        self.linter.check_status()
 
-        query = list(self.query_dict.values())[-1]["query"]
+        query_str, offset = self.build_query_str()
+
+        query_parser = EBSCOParser(
+            query_str=query_str,
+            original_str=self.query_list,
+            search_field_general=self.search_field_general,
+            mode=self.mode,
+            offset=offset,
+            silent=True,
+        )
+        try:
+            query = query_parser.parse()
+        except QuerySyntaxError as exc:
+            raise exc
+        finally:
+            self.assign_linter_messages(query_parser.linter.messages, self.linter)
+
+            self.linter.check_status()
 
         query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
 

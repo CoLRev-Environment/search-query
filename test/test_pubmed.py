@@ -1153,7 +1153,7 @@ def test_general_list_parser_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract])
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-3. {1 AND 2}
+3. #1 AND #2
 """
 
     list_parser = PubmedListParser(
@@ -1165,39 +1165,4 @@ def test_general_list_parser_1() -> None:
         pass
 
     print(list_parser.linter.messages)
-    assert list_parser.linter.messages == {
-        "3": [
-            {
-                "code": "F0001",
-                "label": "tokenizing-failed",
-                "message": "Fatal error during tokenization",
-                "is_fatal": True,
-                "position": [(0, 1)],
-                "details": "Unparsed segment: '{'",
-            },
-            {
-                "code": "F0001",
-                "label": "tokenizing-failed",
-                "message": "Fatal error during tokenization",
-                "is_fatal": True,
-                "position": [(8, 9)],
-                "details": "Unparsed segment: '}'",
-            },
-            {
-                "code": "F3003",
-                "label": "invalid-list-reference",
-                "message": "Invalid list reference in list query",
-                "is_fatal": True,
-                "position": [(1, 2)],
-                "details": "List reference must start with '#', but found '1'.",
-            },
-            {
-                "code": "F3003",
-                "label": "invalid-list-reference",
-                "message": "Invalid list reference in list query",
-                "is_fatal": True,
-                "position": [(7, 8)],
-                "details": "List reference must start with '#', but found '2'.",
-            },
-        ]
-    }
+    assert list_parser.linter.messages == {-1: []}

@@ -61,8 +61,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
