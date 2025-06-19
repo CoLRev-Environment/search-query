@@ -95,6 +95,8 @@ class QueryStringParser(ABC):
                 # )
 
             token_length = end - start
+            if virtual_position == -1:
+                token_length = 0  # Special case for artificial parentheses tokens
 
             # print("")
             # print(f"{token.value} (token value)")
@@ -123,70 +125,6 @@ class QueryStringParser(ABC):
             virtual_position += token_length
             assert virtual_position == token.position[1]
             last_end = end
-
-    def insert_artificial_parentheses(self) -> None:
-        """Insert artificial parentheses around subqueries based on offset changes."""
-
-        if not self.offset or not isinstance(self.offset, dict):
-            return
-
-        offset_boundaries = sorted(self.offset.items())  # [(start_pos, virtual_offset)]
-        if not offset_boundaries:
-            return
-
-        new_tokens = []
-        token_index = 0
-        num_tokens = len(self.tokens)
-
-        for i, _ in enumerate(offset_boundaries):
-            boundary_end = (
-                offset_boundaries[i + 1][0]
-                if i + 1 < len(offset_boundaries)
-                else float("inf")
-            )
-
-            # Collect tokens within this boundary that are not logic operators
-            subquery_tokens = []
-            while token_index < num_tokens:
-                token = self.tokens[token_index]
-                token_start = token.position[0]
-
-                if token_start >= boundary_end:
-                    break
-
-                subquery_tokens.append(token)
-                token_index += 1
-
-            # Filter out pure logic operators
-            non_operator_tokens = [
-                t
-                for t in subquery_tokens
-                if not self.LOGIC_OPERATOR_REGEX.fullmatch(t.value)
-            ]
-
-            if non_operator_tokens:
-                # Insert open paren before first non-operator token
-                first_non_op_idx = subquery_tokens.index(non_operator_tokens[0])
-                for t in subquery_tokens[:first_non_op_idx]:
-                    new_tokens.append(t)
-
-                new_tokens.append(
-                    Token(
-                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
-                    )
-                )
-                for t in subquery_tokens[first_non_op_idx:]:
-                    new_tokens.append(t)
-                new_tokens.append(
-                    Token(
-                        value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(-1, -1)
-                    )
-                )
-            else:
-                # No real content to wrap
-                new_tokens.extend(subquery_tokens)
-
-        self.tokens = new_tokens
 
     def _make_artificial_token(self, value: str) -> Token:
         """Create a synthetic parenthesis token."""
@@ -413,6 +351,10 @@ class QueryListParser:
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
                 query = node_content["node_content"]
                 pos = node_content["content_pos"][0]
+                if query[-1] != ")":
+                    query = f"({query})"
+                    offset = {0: -1, 1: pos, len(query) - 1: -1}
+                    return query, offset
                 return query, {0: pos}
 
             if node_content["type"] == ListTokenTypes.OPERATOR_NODE:

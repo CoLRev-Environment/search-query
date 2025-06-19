@@ -1116,6 +1116,28 @@ def test_list_parser_case_7() -> None:
     )
 
 
+# Test case 8
+def test_list_parser_case_8() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat")\n3. #1 AND #2\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    assert (
+        query.to_string()
+        == 'TS=("Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat")'
+    )
+
+    query_list = '1. "Peer leader*" OR "Shared leader*"\n2. "acrobatics" OR "acrobat"\n3. #1 AND #2\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_structured_string())
+    assert (
+        query.to_string()
+        == '("Peer leader*" OR "Shared leader*") AND ("acrobatics" OR "acrobat")'
+    )
+
+
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""
     # This should NOT raise

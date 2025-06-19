@@ -107,8 +107,6 @@ class WOSParser(QueryStringParser):
             self.tokens.append(Token(value=value, type=token_type, position=position))
 
         self.adjust_token_positions()
-        # TODO : do not double-wrap parentheses
-        # self.insert_artificial_parentheses()
 
         self.combine_subsequent_terms()
         self.split_operators_with_missing_whitespace()
@@ -360,6 +358,7 @@ class WOSParser(QueryStringParser):
         )
 
         self.tokenize()
+        self.print_tokens()
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,

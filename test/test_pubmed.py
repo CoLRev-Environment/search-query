@@ -1149,21 +1149,6 @@ def test_nested_query_with_field() -> None:
         ]
 
 
-def test_general_list_parser_call() -> None:
-    query_list = """
-1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
-2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
-3. #1 AND #2
-"""
-
-    query = parse(query_list, platform=PLATFORM.PUBMED.value)
-
-    assert (
-        query.to_string()
-        == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
-    )
-
-
 def test_general_list_parser_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract])
@@ -1202,4 +1187,34 @@ def test_general_list_parser_2() -> None:
     assert (
         query.to_string()
         == "((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])) OR (school[Title/Abstract] OR university[Title/Abstract])"
+    )
+
+
+def test_general_list_parser_3() -> None:
+    query_list = """
+1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract])
+2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
+3. #1 AND #2
+"""
+
+    query = parse(query_list, platform=PLATFORM.PUBMED.value)
+
+    assert (
+        query.to_string()
+        == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
+    )
+
+
+def test_general_list_parser_4() -> None:
+    query_list = """
+1. Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]
+2. acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract]
+3. #1 AND #2
+"""
+
+    query = parse(query_list, platform=PLATFORM.PUBMED.value)
+
+    assert (
+        query.to_string()
+        == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
     )

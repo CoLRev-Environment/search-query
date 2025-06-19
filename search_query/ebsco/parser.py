@@ -186,7 +186,6 @@ class EBSCOParser(QueryStringParser):
             )
 
         self.adjust_token_positions()
-        self.insert_artificial_parentheses()
 
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
