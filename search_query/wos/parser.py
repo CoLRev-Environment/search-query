@@ -113,172 +113,6 @@ class WOSParser(QueryStringParser):
         self.combine_subsequent_terms()
         self.split_operators_with_missing_whitespace()
 
-    # Parse a query tree from tokens recursively
-    # pylint: disable=too-many-branches
-    def parse_query_tree(
-        self,
-        index: int = 0,
-        search_field: typing.Optional[SearchField] = None,
-    ) -> typing.Tuple[Query, int]:
-        """Parse tokens starting at the given index,
-        handling parentheses, operators, search fields and terms recursively."""
-
-        children: typing.List[Query] = []
-        current_operator = ""
-        current_negation = False
-        distance: typing.Optional[int] = None
-
-        search_field = None
-        while index < len(self.tokens):
-            token = self.tokens[index]
-
-            # Handle nested expressions within parentheses
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                # Parse the expression inside the parentheses
-                sub_query, index = self.parse_query_tree(
-                    index=index + 1,
-                    search_field=search_field,
-                )
-                sub_query.search_field = search_field
-                search_field = None
-
-                if current_negation:
-                    # If the current operator is NOT, wrap the sub_query in a NOT
-                    not_part = NotQuery(
-                        children=[sub_query],
-                        search_field=search_field,
-                        platform="deactivated",
-                    )
-                    children.append(not_part)
-                    current_negation = False
-                    current_operator = "AND"
-                else:
-                    children.append(sub_query)
-
-            # Handle closing parentheses
-            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                return (
-                    self._handle_closing_parenthesis(
-                        children=children,
-                        current_operator=current_operator,
-                        search_field=search_field,
-                        distance=distance,
-                    ),
-                    index,
-                )
-
-            # Handle operators
-            elif token.type == TokenTypes.LOGIC_OPERATOR:
-                current_operator = token.value.upper()
-
-                # Set a flag if the token is NOT and change to AND
-                if current_operator == "NOT":
-                    current_negation = True
-                    current_operator = "AND"
-
-            elif token.type == TokenTypes.PROXIMITY_OPERATOR:
-                current_operator = token.value.upper()
-                if "NEAR" in current_operator:
-                    assert "/" in current_operator  # fixed in linter
-                    current_operator, raw_distance = current_operator.split("/")
-                    distance = int(raw_distance)
-
-            # Handle search fields
-            elif token.type == TokenTypes.FIELD:
-                search_field = SearchField(value=token.value, position=token.position)
-
-            # Handle terms
-            elif token.type == TokenTypes.SEARCH_TERM:
-                if current_negation:
-                    not_part = NotQuery(
-                        children=[
-                            Term(
-                                value=token.value,
-                                search_field=search_field,
-                                position=token.position,
-                            )
-                        ],
-                        search_field=search_field,
-                        platform="deactivated",
-                    )
-                    children = children + [not_part]
-                    current_negation = False
-                    current_operator = "AND"
-                else:
-                    term_node = Term(
-                        value=token.value,
-                        search_field=search_field,
-                        position=token.position,
-                        platform="deactivated",
-                    )
-                    children.append(term_node)
-                    search_field = None
-
-            index += 1
-
-        # Return options if there are no more tokens
-        # Return the children if there is only one child
-        if len(children) == 1:
-            return children[0], index
-
-        if not current_operator:  # pragma: no cover
-            raise NotImplementedError("Error in parsing the query tree")
-
-        # Return the operator and children if there is an operator
-        return (
-            Query.create(
-                value=current_operator,
-                children=list(children),
-                search_field=search_field,
-                platform="deactivated",
-            ),
-            index,
-        )
-
-    def _handle_closing_parenthesis(
-        self,
-        children: list,
-        current_operator: str,
-        search_field: typing.Optional[SearchField] = None,
-        distance: typing.Optional[int] = None,
-    ) -> Query:
-        """Handle closing parentheses."""
-        # Return the children if there is only one child
-        if len(children) == 1:
-            return children[0]
-
-        # Return the operator and children if there is an operator
-        if current_operator:
-            if distance:
-                # If there is a distance, it must be a proximity operator
-                if current_operator not in {"NEAR", "WITHIN"}:
-                    raise ValueError(
-                        f"Distance {distance} "
-                        "is only allowed for NEAR or WITHIN operators, "
-                        f"not {current_operator}"
-                    )
-                return NEARQuery(
-                    value=current_operator,
-                    children=children,
-                    search_field=search_field,
-                    platform="deactivated",
-                    distance=distance,
-                )
-            return Query.create(
-                value=current_operator,
-                children=children,
-                search_field=search_field,
-                platform="deactivated",
-            )
-
-        # Multiple children without operator are not allowed
-        # This should already be caught in the token validation
-        raise ValueError(  # pragma: no cover
-            "[ERROR] Multiple children without operator are not allowed."
-            + "\nFound: "
-            + str(children)
-        )
-
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
         # Combine subsequent terms (without quotes)
@@ -330,6 +164,185 @@ class WOSParser(QueryStringParser):
 
         self.tokens = combined_tokens
 
+    def parse_query_tree(self, tokens: list[Token]) -> Query:
+        """Top-down predictive parser for query tree."""
+
+        if self._is_not_query(tokens):
+            return self._parse_not_query(tokens)
+        if self._is_compound_query(tokens):
+            return self._parse_compound_query(tokens)
+        if self._is_near_query(tokens):
+            return self._parse_near_query(tokens)
+        if self._is_nested_query(tokens):
+            return self._parse_nested_query(tokens)
+        if self._is_term_query(tokens):
+            return self._parse_search_term(tokens)
+
+        raise ValueError(f"Unrecognized query structure: {tokens}")
+
+    def _is_term_query(self, tokens: list[Token]) -> bool:
+        return bool(
+            tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.SEARCH_TERM
+        )
+
+    def _is_near_query(self, tokens: list[Token]) -> bool:
+        return (
+            len(tokens) == 3
+            and tokens[0].type == TokenTypes.SEARCH_TERM
+            and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
+            and tokens[2].type == TokenTypes.SEARCH_TERM
+        )
+
+    def _is_not_query(self, tokens: list[Token]) -> bool:
+        return (
+            len(tokens) >= 2
+            and tokens[0].type == TokenTypes.LOGIC_OPERATOR
+            and tokens[0].value.upper() == "NOT"
+        )
+
+    def _is_compound_query(self, tokens: list[Token]) -> bool:
+        return bool(self._get_operator_indices(tokens))
+
+    def _is_nested_query(self, tokens: list[Token]) -> bool:
+        return (
+            tokens[0].type == TokenTypes.PARENTHESIS_OPEN
+            or (
+                tokens[0].type == TokenTypes.FIELD
+                and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
+            )
+        ) and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
+
+    def _get_operator_type(self, token: Token) -> str:
+        val = token.value.upper()
+        if val in {"AND", "&"}:
+            return "AND"
+        if val in {"OR", "|"}:
+            return "OR"
+        if val == "NOT":
+            return "NOT"
+        raise ValueError(f"Unrecognized operator: {token.value}")
+
+    def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
+        indices = []
+        depth = 0
+        first_op = None
+
+        for i, token in enumerate(tokens):
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                depth += 1
+            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
+                depth -= 1
+            elif depth == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+                op = self._get_operator_type(token)
+                if first_op is None:
+                    first_op = op
+                elif op != first_op:
+                    raise ValueError("Mixed operators without parentheses.")
+                indices.append(i)
+        return indices
+
+    def _parse_compound_query(self, tokens: list[Token]) -> Query:
+        op_indices = self._get_operator_indices(tokens)
+        if not op_indices:
+            raise ValueError("No operator found for compound query.")
+
+        operator_type = self._get_operator_type(tokens[op_indices[0]])
+        children = []
+
+        start = 0
+        for idx in op_indices:
+            sub_tokens = tokens[start:idx]
+            children.append(self.parse_query_tree(sub_tokens))
+            start = idx + 1
+
+        children.append(self.parse_query_tree(tokens[start:]))
+
+        return Query.create(
+            value=operator_type,
+            children=children,  # type: ignore
+            position=(tokens[0].position[0], tokens[-1].position[1]),
+            platform="deactivated",
+        )
+
+    def _parse_nested_query(self, tokens: list[Token]) -> Query:
+        if tokens[0].type == TokenTypes.PARENTHESIS_OPEN:
+            nested_query = self.parse_query_tree(tokens[1:-1])
+        elif (
+            tokens[0].type == TokenTypes.FIELD
+            and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
+        ):
+            nested_query = self.parse_query_tree(tokens[2:-1])
+            nested_query.search_field = SearchField(
+                value=tokens[0].value, position=tokens[0].position
+            )
+        else:
+            raise ValueError("Invalid nested query structure.")
+
+        return nested_query
+
+    def _parse_near_query(self, tokens: list[Token]) -> Query:
+        left_token = tokens[0]
+        operator_token = tokens[1]
+        right_token = tokens[2]
+
+        distance = self._extract_proximity_distance(operator_token)
+
+        return NEARQuery(
+            value=operator_token.value.upper().split("/")[0],
+            distance=distance,
+            position=(left_token.position[0], right_token.position[1]),
+            children=[
+                Term(
+                    value=left_token.value,
+                    position=left_token.position,
+                    search_field=None,  # ← clear to avoid double nesting
+                    platform="deactivated",
+                ),
+                Term(
+                    value=right_token.value,
+                    position=right_token.position,
+                    search_field=None,
+                    platform="deactivated",
+                ),
+            ],
+            platform="deactivated",
+        )
+
+    def _parse_not_query(self, tokens: list[Token]) -> Query:
+        # NOT must be followed by a single query (term or nested)
+        assert tokens[0].value.upper() == "NOT"
+        child = self.parse_query_tree(tokens[1:])
+
+        return NotQuery(
+            children=[child],
+            platform="deactivated",
+        )
+
+    def _parse_search_term(self, tokens: list[Token]) -> Query:
+        if len(tokens) == 1:
+            return Term(
+                value=tokens[0].value,
+                position=tokens[0].position,
+                platform="deactivated",
+            )
+        assert len(tokens) == 2
+        return Term(
+            value=tokens[1].value,
+            position=tokens[1].position,
+            search_field=SearchField(
+                value=tokens[0].value,
+                position=tokens[0].position or (-1, -1),
+            ),
+            platform="deactivated",
+        )
+
+    def _extract_proximity_distance(self, token: Token) -> int:
+        """Extract distance from proximity operator like NEAR/5 or WITHIN/3"""
+        match = re.search(r"/(\d+)", token.value)
+        if not match:
+            raise ValueError(f"Invalid proximity operator: {token.value}")
+        return int(match.group(1))
+
     def parse(self) -> Query:
         """Parse a query string."""
 
@@ -354,7 +367,7 @@ class WOSParser(QueryStringParser):
         )
         self.linter.check_status()
 
-        query, _ = self.parse_query_tree()
+        query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 

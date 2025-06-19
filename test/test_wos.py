@@ -694,7 +694,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "too-many-search-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
-                    "position": [(-1, -1)],
+                    "position": [(5, 512)],
                     "details": "The maximum number of search terms (for ALL Fields) is 50.",
                 }
             ],
@@ -708,7 +708,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "too-many-search-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
-                    "position": [(-1, -1)],
+                    "position": [(0, 715)],
                     "details": "The maximum number of search terms (for ALL Fields) is 50.",
                 }
             ],
@@ -854,15 +854,15 @@ def test_query_parsing_basic_vs_advanced() -> None:
         ),
         (
             'TS=("cancer treatment") NOT TS=("chemotherapy")',
-            'AND["cancer treatment"[TS=], NOT["chemotherapy"[TS=]]]',
+            'NOT["cancer treatment"[TS=], "chemotherapy"[TS=]]',
         ),
         (
             'TS=("cancer treatment" NOT "chemotherapy")',
-            'AND[TS=]["cancer treatment", NOT["chemotherapy"]]',
+            'NOT[TS=]["cancer treatment", "chemotherapy"]',
         ),
         (
             'TS=("cancer treatment") NOT TS=("chemotherapy" OR "radiation")',
-            'AND["cancer treatment"[TS=], NOT[OR[TS=]["chemotherapy", "radiation"]]]',
+            'NOT["cancer treatment"[TS=], OR[TS=]["chemotherapy", "radiation"]]',
         ),
         (
             'TS=("deep learning" NEAR/3 "image analysis") AND TS=("MRI" NEAR "brain")',
