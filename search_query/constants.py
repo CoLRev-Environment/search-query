@@ -10,7 +10,7 @@ from typing import Tuple
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
-
+# pylint: disable=too-many-lines
 
 class PLATFORM(Enum):
     """Database identifier"""

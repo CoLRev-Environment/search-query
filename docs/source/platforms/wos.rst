@@ -33,6 +33,25 @@ Example::
 
    (TS="digital health") AND (TS="privacy")
 
+
+List Query Format
+---------------------
+
+Web of Science allows users to **construct complex queries** by combining previously defined search sets using numbered references (e.g., ``#1 AND #2``). This list-based approach is commonly used in systematic searches where multiple search lines are logically combined.
+
+Such list queries are supported by the ``search-query`` parsers and allow referencing earlier statements using ``#`` followed by the search line number.
+
+List queries should be formatted as follows:
+
+.. code-block:: json
+
+   {
+       "search_string": "1. TS=(digital health OR telemedicine)\n2. TS=(physical activity OR exercise)\n3. #1 AND #2",
+       "general_search_field": ""
+   }
+
+Each numbered line represents an individual query component, and later lines can combine previous results using logical operators like ``AND``, ``OR``, or ``NOT``.
+
 Best Practices and Recommendations
 ----------------------------------
 

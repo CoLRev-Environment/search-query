@@ -35,6 +35,15 @@ List Query Format
 
 PubMed allows users to **combine previous searches** using the search history panel. These list-based queries can reference earlier searches using numbered identifiers (e.g., `#1 OR #2`). In the advanced search interface, such combinations can also be created via the **“Add”** button. List queries are supported by `search-query` parsers.
 
+List queries should be formatted as follows:
+
+.. code-block:: json
+
+   {
+       "search_string": "1. dHealth[ti] OR telemedicine[ti]\n2. activity[ti] OR exercise[ti]\n3. #1 AND #2",
+       "general_search_field": ""
+   }
+
 Best Practices and Recommendations
 ----------------------------------
 
