@@ -246,9 +246,9 @@ class EBSCOParser(QueryStringParser):
 
     def _get_operator_type(self, token: Token) -> str:
         val = token.value.upper()
-        if val in {"AND", "&"}:
+        if val in {"AND"}:
             return "AND"
-        if val in {"OR", "|"}:
+        if val in {"OR"}:
             return "OR"
         if val == "NOT":
             return "NOT"
