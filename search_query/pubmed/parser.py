@@ -89,6 +89,7 @@ class PubmedParser(QueryStringParser):
                 Token(value=value, type=token_type, position=match.span())
             )
 
+        self.adjust_token_positions()
         self.combine_subsequent_terms()
 
     def parse_query_tree(self, tokens: list) -> Query:

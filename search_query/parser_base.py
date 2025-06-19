@@ -54,6 +54,74 @@ class QueryStringParser(ABC):
             # UNKNOWN could be color-coded
             print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
+    # TODO : introduce artificial parentheses once the offset changes?!
+    def adjust_token_positions(self) -> None:
+        """Adjust virtual positions of tokens using offset mapping."""
+        if (
+            not hasattr(self, "offset")
+            or not isinstance(self.offset, dict)
+            or not self.offset
+        ):
+            return  # No offsets to apply
+
+        # print(f"Adjusting token positions with offsets: {self.offset}")
+        next_offset_keys = sorted(self.offset.keys())
+        current_offset = 0
+        next_offset_index = 0
+        virtual_position = self.offset[next_offset_keys[0]] if next_offset_keys else 0
+        last_end = 0
+
+        for token in self.tokens:
+            start, end = token.position
+
+            # Apply offset shifts if we passed new offset positions
+            offset_applied = False
+            while (
+                next_offset_index < len(next_offset_keys)
+                and start >= next_offset_keys[next_offset_index]
+            ):
+                current_offset = self.offset[next_offset_keys[next_offset_index]]
+                virtual_position = current_offset
+                offset_applied = True
+                next_offset_index += 1
+
+            # print(f"Virtual position: {virtual_position}")
+            gap_length = start - last_end
+            if not offset_applied and gap_length > 0:
+                virtual_position += gap_length
+                # print(f"Adjusted virtual position: {virtual_position} "
+                # f"(gap length {gap_length})")
+
+            token_length = end - start
+
+            # print("")
+            # print(f"{token.value} (token value)")
+            # print(
+            #     self.query_str[token.position[0] : token.position[1]]
+            #     + f" (query_str, original positions: {token.position})"
+            # )
+            token.position = (virtual_position, virtual_position + token_length)
+            # print(
+            #     self.original_str[token.position[0] : token.position[1]]
+            #     + f" (original_str, adjusted positions: {token.position})"
+            # )
+            # print("---------------")
+            # print(self.original_str)
+            # Compare only letters (ignore case and non-letters)
+            orig = "".join(
+                c
+                for c in self.original_str[token.position[0] : token.position[1]]
+                if c.isalpha()
+            ).lower()
+            val = "".join(c for c in token.value if c.isalpha()).lower()
+            assert orig == val, (
+                f"Token value mismatch (letters only): {token.value} != "
+                f"{self.original_str[token.position[0]:token.position[1]]}"
+            )
+            virtual_position += token_length
+            assert virtual_position == token.position[1]
+            last_end = end
+
     def combine_subsequent_terms(self) -> None:
         """Combine all consecutive SEARCH_TERM tokens into one."""
         combined_tokens = []
@@ -148,7 +216,9 @@ class QueryListParser:
         search_field_general: str,
         mode: str = LinterMode.STRICT,
     ) -> None:
-        self.query_list = query_list
+        # Remove leading whitespaces/newlines from the query_list
+        # to ensure correct token positions
+        self.query_list = query_list.lstrip()
         self.parser_class = parser_class
         self.search_field_general = search_field_general
         self.mode = mode

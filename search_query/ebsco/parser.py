@@ -184,6 +184,7 @@ class EBSCOParser(QueryStringParser):
                 Token(value=value, type=token_type, position=(start, end))
             )
 
+        self.adjust_token_positions()
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
