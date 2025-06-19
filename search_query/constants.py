@@ -12,6 +12,7 @@ from typing import Tuple
 # pylint: disable=line-too-long
 # pylint: disable=too-many-lines
 
+
 class PLATFORM(Enum):
     """Database identifier"""
 

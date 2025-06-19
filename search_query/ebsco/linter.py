@@ -165,7 +165,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         # TODO : compare with pubmed linter: check_general_search_field_mismatch()
         # ErrorCodes: SEARCH_FIELD_MISSING, SEARCH_FIELD_CONTRADICTION
-        # TODO : also add unit tests
         if self.search_field_general != "":
             self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 

@@ -55,7 +55,6 @@ class QueryStringParser(ABC):
             # UNKNOWN could be color-coded
             print(f"{token.value:<30} {token.type:<40} {str(token.position):<10}")
 
-    # TODO : introduce artificial parentheses once the offset changes?!
     def adjust_token_positions(self) -> None:
         """Adjust virtual positions of tokens using offset mapping."""
         if (
