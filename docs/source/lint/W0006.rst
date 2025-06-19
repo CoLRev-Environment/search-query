@@ -9,18 +9,18 @@ W0006 — implicit-near-value
 
 **Scope**: PLATFORM.WOS
 
-**Typical fix**: The parser automatically sets NEAR values to 15 (default).
-
 **Problematic query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR B
 
-**Correct query**:
+**Recommended query**:
 
-.. code-block:: python
+.. code-block:: text
 
     A NEAR/15 B
+
+**Typical fix**: The parser automatically sets NEAR values to 15 (default).
 
 **Back to**: :ref:`lint`

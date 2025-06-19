@@ -9,6 +9,16 @@ W0009 — boolean-operator-readability
 
 **Scope**: all
 
-**Description**: Boolean operator readability
+**Problematic query**:
+
+.. code-block:: text
+
+    eHealth[ti] | mHealth[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    eHealth[ti] OR mHealth[ti]
 
 **Back to**: :ref:`lint`

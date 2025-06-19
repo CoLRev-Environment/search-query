@@ -248,6 +248,7 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(47, 48)],
                     "details": "Unbalanced opening parenthesis",
                 },
+                # TODO : should not raise search-field-missing with general-search-field specified?
                 {
                     "code": "E0001",
                     "label": "search-field-missing",
@@ -630,7 +631,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(-1, -1)],
-                    "details": "Search field is missing (TODO: default?)",
+                    "details": "Search field is missing.",
                 },
             ],
         ),
@@ -728,7 +729,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(-1, -1)],
-                    "details": "Search field is missing (TODO: default?)",
+                    "details": "Search field is missing.",
                 },
                 {
                     "code": "W0004",
@@ -750,7 +751,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(-1, -1)],
-                    "details": "Search field is missing (TODO: default?)",
+                    "details": "Search field is missing.",
                 },
                 {
                     "code": "W0004",
@@ -776,6 +777,20 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(145, 157), (632, 646)],
                     "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
                 },
+            ],
+        ),
+        (
+            "eHealth[ti] | mHealth[ti]",
+            "",
+            [
+                {
+                    "code": "W0009",
+                    "label": "boolean-operator-readability",
+                    "message": "Boolean operator readability",
+                    "is_fatal": False,
+                    "position": [(12, 13)],
+                    "details": "Please use AND, OR, NOT instead of |&",
+                }
             ],
         ),
     ],
@@ -854,7 +869,7 @@ def test_linter(
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(-1, -1)],
-                    "details": "Search field is missing (TODO: default?)",
+                    "details": "Search field is missing.",
                 }
             ],
         ),

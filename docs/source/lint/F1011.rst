@@ -9,6 +9,6 @@ F1011 — too-many-operators
 
 **Scope**: PLATFORM.WOS
 
-**Description**: Too many operators in the query
+**Explanation:** The query contains too many logical operators (AND, OR, NOT) or proximity operators (NEAR, WITHIN).
 
 **Back to**: :ref:`lint`

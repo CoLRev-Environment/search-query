@@ -13,5 +13,6 @@ search\_query.linter
 
    .. autosummary::
 
-      get_parser
+      lint_file
+      lint_query_string
       pre_commit_hook

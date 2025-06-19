@@ -9,6 +9,18 @@ F2011 — search-field-unsupported
 
 **Scope**: all, PLATFORM.WOS
 
-**Description**: Search field is not supported for this database
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 AND IY=2020
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term1 AND PY=2020
+
+**Typical fix**: Replace the unsupported field with a supported one for the selected database.
 
 **Back to**: :ref:`lint`

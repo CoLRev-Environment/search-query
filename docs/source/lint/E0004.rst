@@ -9,6 +9,18 @@ E0004 — invalid-character
 
 **Scope**: PLATFORM.PUBMED
 
-**Description**: Search term contains invalid character
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "@digital-native"[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "digital-native"[ti]
 
 **Back to**: :ref:`lint`

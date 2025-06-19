@@ -7,8 +7,22 @@ F2001 — wildcard-unsupported
 
 **Message**: ``Unsupported wildcard in search string.``
 
-**Scope**: PLATFORM.WOS
+**Scope**: PLATFORM.WOS, PLATFORM.EBSCO
 
-**Description**: Unsupported wildcard in search string.
+**Problematic query**:
+
+.. code-block:: text
+
+   # PLATFORM.EBSCO: no leading wildcard
+   TI=*Health
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.EBSCO
+    TI=Health*
+
+**Typical fix**:  Remove unsupported wildcard characters from the query.
 
 **Back to**: :ref:`lint`

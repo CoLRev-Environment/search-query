@@ -9,6 +9,18 @@ W0013 — non-standard-quotes
 
 **Scope**: all
 
-**Description**: Non-standard quotes
+**Problematic query**:
+
+.. code-block:: text
+
+    TS=“carbon”
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TS="carbon"
+
+**Typical fix**: Replace non-standard quotes (e.g., “ ”) with standard ASCII quotes (").
 
 **Back to**: :ref:`lint`

@@ -9,6 +9,17 @@ F1009 — empty-parentheses
 
 **Scope**: PLATFORM.PUBMED
 
-**Description**: Query contains empty parentheses
+**Problematic query**:
+
+.. code-block:: text
+
+    eHealth[ti] OR ()
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # Replace with actual search terms
+    eHealth[ti] OR "digital health"[ti]
 
 **Back to**: :ref:`lint`
