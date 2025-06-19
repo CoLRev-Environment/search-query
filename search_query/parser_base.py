@@ -89,8 +89,10 @@ class QueryStringParser(ABC):
             gap_length = start - last_end
             if not offset_applied and gap_length > 0:
                 virtual_position += gap_length
-                # print(f"Adjusted virtual position: {virtual_position} "
-                # f"(gap length {gap_length})")
+                # print(
+                #     f"Adjusted virtual position: {virtual_position} "
+                #     f"(gap length {gap_length})"
+                # )
 
             token_length = end - start
 
@@ -121,6 +123,85 @@ class QueryStringParser(ABC):
             virtual_position += token_length
             assert virtual_position == token.position[1]
             last_end = end
+
+    def insert_artificial_parentheses(self) -> None:
+        """Insert artificial parentheses around subqueries based on offset changes."""
+
+        LOGIC_OPERATOR_REGEX = re.compile(r"AND|OR|NOT", re.IGNORECASE)
+
+        if not self.offset or not isinstance(self.offset, dict):
+            return
+
+        offset_boundaries = sorted(self.offset.items())  # [(start_pos, virtual_offset)]
+        if not offset_boundaries:
+            return
+
+        new_tokens = []
+        token_index = 0
+        num_tokens = len(self.tokens)
+
+        for i, (boundary_start, _) in enumerate(offset_boundaries):
+            boundary_end = (
+                offset_boundaries[i + 1][0]
+                if i + 1 < len(offset_boundaries)
+                else float("inf")
+            )
+
+            # Collect tokens within this boundary that are not logic operators
+            subquery_tokens = []
+            while token_index < num_tokens:
+                token = self.tokens[token_index]
+                token_start = token.position[0]
+
+                if token_start >= boundary_end:
+                    break
+
+                subquery_tokens.append(token)
+                token_index += 1
+
+            # Filter out pure logic operators
+            non_operator_tokens = [
+                t
+                for t in subquery_tokens
+                if not LOGIC_OPERATOR_REGEX.fullmatch(t.value)
+            ]
+
+            if non_operator_tokens:
+                # Insert open paren before first non-operator token
+                first_non_op_idx = subquery_tokens.index(non_operator_tokens[0])
+                for t in subquery_tokens[:first_non_op_idx]:
+                    new_tokens.append(t)
+
+                new_tokens.append(
+                    Token(
+                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
+                    )
+                )
+                for t in subquery_tokens[first_non_op_idx:]:
+                    new_tokens.append(t)
+                new_tokens.append(
+                    Token(
+                        value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(-1, -1)
+                    )
+                )
+            else:
+                # No real content to wrap
+                new_tokens.extend(subquery_tokens)
+
+        self.tokens = new_tokens
+
+    def _make_artificial_token(self, value: str) -> Token:
+        """Create a synthetic parenthesis token."""
+
+        assert value in ("(", ")"), "Value must be '(' or ')'"
+        if value == "(":
+            token_type = TokenTypes.PARENTHESIS_OPEN
+        if value == ")":
+            token_type = TokenTypes.PARENTHESIS_CLOSED
+
+        return Token(
+            value=value, type=token_type, position=(-1, -1)
+        )  # Replace with your Token constructor
 
     def combine_subsequent_terms(self) -> None:
         """Combine all consecutive SEARCH_TERM tokens into one."""

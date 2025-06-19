@@ -185,6 +185,8 @@ class EBSCOParser(QueryStringParser):
             )
 
         self.adjust_token_positions()
+        self.insert_artificial_parentheses()
+
         # Combine subsequent search_terms in case of no quotation marks
         self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
@@ -225,6 +227,7 @@ class EBSCOParser(QueryStringParser):
     def parse_query_tree(
         self,
         tokens: typing.Optional[list] = None,
+        *,
         field_context: typing.Optional[SearchField] = None,
     ) -> Query:
         """
@@ -283,7 +286,9 @@ class EBSCOParser(QueryStringParser):
 
             elif token.type == TokenTypes.PARENTHESIS_OPEN:
                 # Recursively parse subexpression with same effective field
-                subtree = self.parse_query_tree(tokens, search_field or field_context)
+                subtree = self.parse_query_tree(
+                    tokens, field_context=search_field or field_context
+                )
                 parent, current_operator = self.append_node(
                     parent, current_operator, subtree
                 )
