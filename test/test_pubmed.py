@@ -97,7 +97,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, "")
+    parser = PubmedParser(query_str)
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
 
@@ -1100,7 +1100,7 @@ def test_list_parser_case_3() -> None:
 )
 def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     print(query_str)
-    parser = PubmedParser(query_str, "")
+    parser = PubmedParser(query_str)
     query = parser.parse()
 
     translator = PubmedTranslator()

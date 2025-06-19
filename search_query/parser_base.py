@@ -29,6 +29,7 @@ class QueryStringParser(ABC):
 
     linter: QueryStringLinter
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         query_str: str,
@@ -127,8 +128,6 @@ class QueryStringParser(ABC):
     def insert_artificial_parentheses(self) -> None:
         """Insert artificial parentheses around subqueries based on offset changes."""
 
-        LOGIC_OPERATOR_REGEX = re.compile(r"AND|OR|NOT", re.IGNORECASE)
-
         if not self.offset or not isinstance(self.offset, dict):
             return
 
@@ -140,7 +139,7 @@ class QueryStringParser(ABC):
         token_index = 0
         num_tokens = len(self.tokens)
 
-        for i, (boundary_start, _) in enumerate(offset_boundaries):
+        for i, _ in enumerate(offset_boundaries):
             boundary_end = (
                 offset_boundaries[i + 1][0]
                 if i + 1 < len(offset_boundaries)
@@ -163,7 +162,7 @@ class QueryStringParser(ABC):
             non_operator_tokens = [
                 t
                 for t in subquery_tokens
-                if not LOGIC_OPERATOR_REGEX.fullmatch(t.value)
+                if not self.LOGIC_OPERATOR_REGEX.fullmatch(t.value)
             ]
 
             if non_operator_tokens:
@@ -194,6 +193,7 @@ class QueryStringParser(ABC):
         """Create a synthetic parenthesis token."""
 
         assert value in ("(", ")"), "Value must be '(' or ')'"
+        token_type = TokenTypes.UNKNOWN
         if value == "(":
             token_type = TokenTypes.PARENTHESIS_OPEN
         if value == ")":

@@ -44,9 +44,11 @@ class PubmedParser(QueryStringParser):
         flags=re.IGNORECASE,
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         query_str: str,
+        *,
         search_field_general: str = "",
         mode: str = LinterMode.NONSTRICT,
         offset: typing.Optional[dict] = None,
