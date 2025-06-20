@@ -221,10 +221,8 @@ class QueryStringParser(ABC):
 class QueryListParser:
     """QueryListParser"""
 
-    # TODO : better label than LIST_ITEM_REGEX ?
-    LIST_ITEM_REGEX: re.Pattern = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^(\d+).\s+(.*)$")
     LIST_ITEM_REFERENCE = re.compile(r"#\d+")
-    OPERATOR_NODE_REGEX = re.compile(r"#\d+|AND|OR")
 
     def __init__(
         self,
@@ -251,7 +249,7 @@ class QueryListParser:
             if line.strip() == "":
                 continue
 
-            match = self.LIST_ITEM_REGEX.match(line)
+            match = self.LIST_QUERY_LINE_REGEX.match(line)
             if not match:  # pragma: no cover
                 raise ValueError(f"line not matching format: {line}")
             node_nr, node_content = match.groups()
@@ -259,7 +257,7 @@ class QueryListParser:
             pos_start += previous
             pos_end += previous
             query_type = ListTokenTypes.QUERY_NODE
-            if self.OPERATOR_NODE_REGEX.match(node_content):
+            if self.LIST_ITEM_REFERENCE.match(node_content):
                 query_type = ListTokenTypes.OPERATOR_NODE
 
             self.query_dict[str(node_nr)] = {
@@ -311,9 +309,7 @@ class QueryListParser:
                     tokens.append(
                         ListToken(
                             value=value,
-                            # TODO : rename  OperatorNodeTokenTypes.LOGIC_OPERATOR
-                            # can also contain search terms or other tokens
-                            type=OperatorNodeTokenTypes.LOGIC_OPERATOR,
+                            type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
                             level=node_nr,
                             position=(start, pos),
                         )

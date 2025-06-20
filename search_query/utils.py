@@ -26,6 +26,8 @@ def format_query_string_positions(
     """Format the query string with multiple positions marked in color."""
     if not positions:
         return query_str
+    if list(set(positions))[0] == (-1, -1):
+        return ""
 
     positions = [pos for pos in positions if pos is not None]
 
@@ -43,6 +45,8 @@ def format_query_string_positions(
     if _is_single_short_line_error(positions, query_str):
         # get line string surrounding the error
         start, end = positions[0]
+        if len(query_str[start:end].strip()) == 0:
+            return ""
 
         highlighted_query = (
             f"{query_str[:start]}{color}{query_str[start:end]}"

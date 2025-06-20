@@ -4,8 +4,6 @@ import re
 import typing
 
 from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -527,7 +525,6 @@ class WOSQueryListLinter(QueryListLinter):
         missing_root = self._check_missing_root()
         self._check_missing_operator_nodes(missing_root)
         self._check_invalid_list_reference()
-        self._validate_operator_node()
 
     def _check_missing_root(self) -> bool:
         missing_root = False
@@ -560,25 +557,6 @@ class WOSQueryListLinter(QueryListLinter):
                 list_position=GENERAL_ERROR_POSITION,
                 positions=[(-1, -1)],
             )
-
-    def _validate_operator_node(self) -> None:
-        """Validate the tokens of the combining list element."""
-
-        for node_nr, node in self.parser.query_dict.items():
-            if node["type"] != ListTokenTypes.OPERATOR_NODE:
-                continue
-
-            tokens = self.parser.tokenize_operator_node(node["node_content"], node_nr)
-            offset = node["content_pos"][0]
-
-            for token in tokens:
-                if token.type == OperatorNodeTokenTypes.UNKNOWN:
-                    position = (token.position[0] + offset, token.position[1] + offset)
-                    self.add_linter_message(
-                        QueryErrorCode.TOKENIZING_FAILED,
-                        list_position=GENERAL_ERROR_POSITION,
-                        positions=[position],
-                    )
 
     def _check_invalid_list_reference(self) -> None:
         # check if all list-references exist

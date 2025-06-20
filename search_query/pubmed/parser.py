@@ -4,8 +4,6 @@ import re
 import typing
 
 from search_query.constants import LinterMode
-from search_query.constants import ListToken
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import Token
@@ -296,13 +294,6 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
-    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
-    LIST_ITEM_REFERENCE = re.compile(r"#\d+")
-    OPERATOR_NODE_REGEX = re.compile(r"#?\d+|AND|OR|NOT")
-    # OPERATOR_NODE_REGEX = re.compile(
-    #     r"^\{?(?:#?\d+\s*(?:OR|AND)?\s*)+#?\d+\}?$", re.IGNORECASE
-    # )
-
     def __init__(
         self,
         query_list: str,
@@ -317,26 +308,6 @@ class PubmedListParser(QueryListParser):
             mode=mode,
         )
         self.linter = PubmedQueryListLinter(self, PubmedParser)
-
-    def get_operator_node_tokens(self, token_nr: int) -> list:
-        """Get operator node tokens"""
-        node_content = self.query_dict[token_nr]["node_content"]
-        operator_node_tokens = []
-        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
-            value = match.group(0)
-            start, end = match.span()
-            if value.upper() in {"AND", "OR", "NOT"}:
-                token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            elif self.LIST_ITEM_REFERENCE.match(value):
-                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            else:  # pragma: no cover
-                token_type = OperatorNodeTokenTypes.UNKNOWN
-            operator_node_tokens.append(
-                ListToken(
-                    value=value, type=token_type, level=token_nr, position=(start, end)
-                )
-            )
-        return operator_node_tokens
 
     def parse(self) -> Query:
         """Parse the query in list format."""

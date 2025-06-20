@@ -392,10 +392,7 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
-    LIST_ITEM_REF = re.compile(r"[#S]\d+")
     LIST_ITEM_REFERENCE = re.compile(r"S\d+")
-    OPERATOR_NODE_REGEX = re.compile(r"[#S]\d+|AND|OR|NOT")
 
     def __init__(
         self,

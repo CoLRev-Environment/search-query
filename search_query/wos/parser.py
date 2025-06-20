@@ -385,11 +385,6 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
-    LIST_ITEM_REFERENCE = re.compile(r"#\d+")
-    OPERATOR_NODE_REGEX = re.compile(r"#\d+|AND|OR")
-    query_dict: dict
-
     def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
         super().__init__(
             query_list=query_list,

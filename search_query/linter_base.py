@@ -1235,11 +1235,10 @@ class QueryListLinter:
                 for item in set(consolidated_messages):
                     _print_bullet_message(item)
                 positions = [pos for message in group for pos in message["position"]]
-                if list(set(positions))[0] != (-1, -1):
-                    query_info = format_query_string_positions(
-                        self.original_query_str, positions, color=color
-                    )
-                    _print_bullet_message(query_info, bullet=" ")
+                query_info = format_query_string_positions(
+                    self.parser.query_list, positions, color=color
+                )
+                _print_bullet_message(query_info, bullet=" ")
 
             self.last_read_index[list_position] += len(messages)
 

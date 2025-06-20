@@ -127,7 +127,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 Token("treatment", TokenTypes.SEARCH_TERM, (7, 16)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Missing operator",
+            'Missing operator between "cancer treatment"',
         ),
         (
             [
@@ -428,7 +428,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(9, 32)],
-                    "details": "Missing operator",
+                    "details": 'Missing operator between "[tiab] "digital health""',
                 },
                 {
                     "code": "E0002",
@@ -458,7 +458,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(41, 43)],
-                    "details": "Missing operator",
+                    "details": 'Missing operator between ") ("',
                 },
                 {
                     "code": "E0001",
@@ -1010,7 +1010,6 @@ def test_list_parser_case_2() -> None:
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 AND #2 AND #4
 """
-
     list_parser = PubmedListParser(
         query_list=query_list, search_field_general="", mode=""
     )
@@ -1027,19 +1026,19 @@ def test_list_parser_case_2() -> None:
                 "label": "invalid-list-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
-                "position": [(14, 16)],
-                "details": "List reference '#4' is invalid (a corresponding list element does not exist).",
+                "position": [(238, 240)],
+                "details": "List reference #4 not found.",
             }
         ]
     }
 
 
 def test_list_parser_case_3() -> None:
-    query_list = """
-1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+    query_list = """1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 #2
 """
+    print(query_list)
 
     list_parser = PubmedListParser(
         query_list=query_list, search_field_general="", mode=""
@@ -1051,16 +1050,25 @@ def test_list_parser_case_3() -> None:
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        "3": [
+        -1: [],
+        "1": [
             {
                 "code": "F1004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
-                "position": [(0, 5)],
-                "details": "Two list references in a row",
-            }
-        ]
+                "position": [(106, 112)],
+                "details": 'Missing operator between ") ("',
+            },
+            {
+                "code": "W0007",
+                "label": "implicit-precedence",
+                "message": "Operator changed at the same level (explicit parentheses are recommended)",
+                "is_fatal": False,
+                "position": [(33, 35), (67, 70)],
+                "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
+            },
+        ],
     }
 
 
