@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-lines
+# pylint: disable=too-many-instance-attributes
 # ruff: noqa: E501
 
 
@@ -48,7 +49,13 @@ class QueryStringLinter:
     PLATFORM: PLATFORM = PLATFORM.GENERIC
     VALID_FIELDS_REGEX: re.Pattern
 
-    def __init__(self, query_str: str) -> None:
+    def __init__(
+        self,
+        query_str: str,
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
         self.tokens: typing.List[Token] = []
 
         self.query_str = query_str
@@ -58,6 +65,11 @@ class QueryStringLinter:
         self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
         self.last_read_index = 0
+        # original_str: to preserve the original query string
+        # for error messages, if it is different from query_str
+        self.original_str = original_str or query_str
+        # silent: primarily for ListParsers
+        self.silent = silent
 
     def add_linter_message(
         self,
@@ -87,7 +99,7 @@ class QueryStringLinter:
 
     def print_messages(self) -> None:
         """Print the latest linter messages."""
-        if not self.messages:
+        if not self.messages or self.silent:
             return
 
         grouped_messages = defaultdict(list)
@@ -127,7 +139,7 @@ class QueryStringLinter:
 
             positions = [pos for message in group for pos in message["position"]]
             query_info = format_query_string_positions(
-                self._original_query_str,
+                self.original_str,
                 positions,
                 color=color,
             )
@@ -1137,10 +1149,13 @@ class QueryListLinter:
         self,
         parser: search_query.parser_base.QueryListParser,
         string_parser_class: typing.Type[search_query.parser_base.QueryStringParser],
+        original_query_str: str = "",
     ):
         self.parser = parser
         self.messages: dict = {}
         self.string_parser_class = string_parser_class
+        self.last_read_index: typing.Dict[int, int] = {}
+        self.original_query_str = original_query_str
 
     def add_linter_message(
         self,
@@ -1175,19 +1190,29 @@ class QueryListLinter:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
 
+    # pylint: disable=too-many-branches
     def print_messages(self) -> None:
         """Print the latest linter messages."""
         if not self.messages:
             return
 
         for list_position, messages in self.messages.items():
-            query_str = ""
-            if list_position in self.parser.query_dict:
-                query_str = self.parser.query_dict[list_position]["node_content"]
+            if list_position not in self.last_read_index:
+                self.last_read_index[list_position] = 0
 
-            for message in messages:
-                code = message["code"]
+            messages = messages[self.last_read_index[list_position] :]
+
+            grouped_messages = defaultdict(list)
+            str(sys.stdout.encoding).lower().startswith("utf")
+
+            for message in messages[self.last_read_index[list_position] :]:
+                grouped_messages[message["code"]].append(message)
+
+            for code, group in grouped_messages.items():
+                # Take the first message as representative
+                representative = group[0]
                 color = Colors.ORANGE
+                code = representative["code"]
 
                 category = ""
                 if code.startswith("F"):
@@ -1198,14 +1223,24 @@ class QueryListLinter:
                 elif code.startswith("W"):
                     category = "💡 Warning"
 
-                formatted_query = format_query_string_positions(
-                    query_str, message["position"], color=color
+                print(
+                    f"{color}{category}{Colors.END}: {representative['label']} ({code})"
                 )
-                print(f"{color}{category}{Colors.END}: " f"{message['label']} ({code})")
-                _print_bullet_message(message["message"])
-                print(f"  {message['details']}")
-                print(f"  {formatted_query}")
-                print("\n")
+                consolidated_messages = []
+                for message in group:
+                    if message["details"]:
+                        consolidated_messages.append(f"  {message['details']}")
+                    else:
+                        consolidated_messages.append(f"  {message['message']}")
+                for item in set(consolidated_messages):
+                    _print_bullet_message(item)
+                positions = [pos for message in group for pos in message["position"]]
+                query_info = format_query_string_positions(
+                    self.parser.query_list, positions, color=color
+                )
+                _print_bullet_message(query_info, bullet=" ")
+
+            self.last_read_index[list_position] += len(messages)
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors to the user"""

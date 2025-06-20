@@ -6,6 +6,7 @@ import re
 import typing
 
 from search_query.constants import Colors
+from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
@@ -58,8 +59,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
@@ -191,7 +198,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details = "Missing operator"
+                details = (
+                    "Missing operator between "
+                    f'"{self.tokens[i - 1].value} {token.value}"'
+                )
                 positions = [
                     (
                         self.tokens[i - 1].position[0],
@@ -402,7 +412,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
-                details = f"Proximity value '{prox_value}' is not a digit"
+                details = (
+                    f"Proximity value '{prox_value}' is not a digit. "
+                    "Using default 3 instead."
+                )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],
@@ -565,6 +578,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
 class PubmedQueryListLinter(QueryListLinter):
     """Linter for PubMed Query Strings"""
 
+    OPERATOR_NODE_REGEX = re.compile(r"#?\d+|AND|OR|NOT")
+
     def __init__(
         self,
         parser: PubmedListParser,
@@ -577,11 +592,46 @@ class PubmedQueryListLinter(QueryListLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
-        # self.parser.query_dict.items()
+        self._check_invalid_list_reference()
+        # self.check_operator_node_token_sequence()
 
-        self.check_invalid_list_reference()
-        # self.check_unknown_tokens()
-        self.check_operator_node_token_sequence()
+    def _check_invalid_list_reference(self) -> None:
+        # check if all list-references exist
+        for ind, query_node in self.parser.query_dict.items():
+            # check if all list references exist
+            for match in re.finditer(
+                self.parser.LIST_ITEM_REFERENCE,
+                str(query_node["node_content"]),
+            ):
+                reference = match.group()
+                position = match.span()
+                offset = query_node["content_pos"][0]
+                position = (position[0] + offset, position[1] + offset)
+                if reference.replace("#", "") not in self.parser.query_dict:
+                    self.add_linter_message(
+                        QueryErrorCode.INVALID_LIST_REFERENCE,
+                        list_position=ind,
+                        positions=[position],
+                        details=f"List reference {reference} not found.",
+                    )
+
+    def _get_operator_node_tokens(self, token_nr: int) -> list:
+        """Get operator node tokens"""
+        node_content = self.parser.query_dict[token_nr]["node_content"]
+        operator_node_tokens = []
+        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
+            value = match.group(0)
+            start, end = match.span()
+            if self.parser.LIST_ITEM_REFERENCE.match(value):
+                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+            else:
+                token_type = OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE
+            operator_node_tokens.append(
+                ListToken(
+                    value=value, type=token_type, level=token_nr, position=(start, end)
+                )
+            )
+        return operator_node_tokens
 
     def check_operator_node_token_sequence(self) -> None:
         """Check operator nodes"""
@@ -590,7 +640,7 @@ class PubmedQueryListLinter(QueryListLinter):
             if query["type"] != ListTokenTypes.OPERATOR_NODE:
                 continue
 
-            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+            operator_node_tokens = self._get_operator_node_tokens(level)
 
             # check token sequences: operator + list_ref
             if (
@@ -599,7 +649,7 @@ class PubmedQueryListLinter(QueryListLinter):
             ):
                 details = (
                     "Operator node must start with a list reference "
-                    f"but starts with {operator_node_tokens[0].type}"
+                    "(format: #1, #2, etc.)."
                 )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -624,7 +674,7 @@ class PubmedQueryListLinter(QueryListLinter):
                         )
                     prev_token = token
 
-                if token.type == OperatorNodeTokenTypes.LOGIC_OPERATOR:
+                if token.type == OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE:
                     if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                         details = "Invalid operator position"
                         self.add_linter_message(
@@ -634,32 +684,3 @@ class PubmedQueryListLinter(QueryListLinter):
                             details=details,
                         )
                     prev_token = token
-
-    def check_invalid_list_reference(self) -> None:
-        """Check for invalid list reference"""
-
-        for level, query in self.parser.query_dict.items():
-            if query["type"] != ListTokenTypes.OPERATOR_NODE:
-                continue
-
-            operator_node_tokens = self.parser.get_operator_node_tokens(level)
-
-            for operator_node_token in operator_node_tokens:
-                if (
-                    operator_node_token.type
-                    != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-                ):
-                    continue
-                list_reference = operator_node_token.value.replace("#", "")
-
-                if list_reference not in self.parser.query_dict:
-                    details = (
-                        f"List reference '#{list_reference}' is invalid "
-                        "(a corresponding list element does not exist)."
-                    )
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_LIST_REFERENCE,
-                        list_position=level,
-                        positions=[operator_node_token.position],
-                        details=details,
-                    )

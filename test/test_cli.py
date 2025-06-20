@@ -35,7 +35,7 @@ def test_translate_cli() -> None:
     result_file = load_search_file(output_file)
     assert (
         result_file.search_string
-        == "((AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin))"
+        == "(AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin)"
     )
 
 

@@ -1,55 +1,14 @@
 #!/usr/bin/env python3
 """Web-of-Science unit tests for internals of query parser."""
 from search_query.constants import Fields
-from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.query import Query
-from search_query.query_term import Term
 from search_query.wos.constants import syntax_str_to_generic_search_field_set
 from search_query.wos.parser import WOSParser
 
 # ruff: noqa: E501
 # pylint: disable=too-many-lines
 # flake8: noqa: E501
-
-
-def test_handle_closing_parenthesis_single_child() -> None:
-    """
-    Test the `handle_closing_parenthesis` method with a single child.
-
-    This test verifies that the `handle_closing_parenthesis` method correctly returns
-    the single child when there is only one child in the list.
-    """
-    children = [Term(value="example", platform=PLATFORM.WOS.value)]
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser._handle_closing_parenthesis(children, current_operator="")
-
-    assert result == children[0]
-
-
-def test_handle_closing_parenthesis_with_operator() -> None:
-    """
-    Test the `handle_closing_parenthesis` method with an operator.
-
-    This test verifies that the `handle_closing_parenthesis` method correctly returns
-    a Query object with the given operator and children when there is an operator.
-    """
-    children = [
-        Term(value="example1", platform=PLATFORM.WOS.value),
-        Term(value="example2", platform=PLATFORM.WOS.value),
-    ]
-    current_operator = "AND"
-    parser = WOSParser(query_str="", search_field_general="", mode="")
-    result = parser._handle_closing_parenthesis(children, current_operator)
-
-    expected_result = Query.create(
-        value=current_operator, operator=True, children=list(children)
-    )
-
-    assert result.value == expected_result.value
-    assert result.operator == expected_result.operator
-    assert result.children == expected_result.children
 
 
 def test_combine_subsequent_terms_single_term() -> None:

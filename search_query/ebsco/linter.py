@@ -11,10 +11,14 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
 from search_query.ebsco.constants import VALID_FIELDS_REGEX
+from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
+    from search_query.parser_base import QueryStringParser
+
+    from search_query.ebsco.parser import EBSCOListParser
 
 
 class EBSCOQueryStringLinter(QueryStringLinter):
@@ -57,8 +61,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
@@ -155,7 +165,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         # TODO : compare with pubmed linter: check_general_search_field_mismatch()
         # ErrorCodes: SEARCH_FIELD_MISSING, SEARCH_FIELD_CONTRADICTION
-        # TODO : also add unit tests
         if self.search_field_general != "":
             self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 
@@ -364,3 +373,25 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # but is also returned when searching for MH "sleep"
         # MH "sleep hygiene" AND TI "A Brazilian Experience"
         # MH "sleep" AND TI "A Brazilian Experience"
+
+
+class EBSCOListLinter(QueryListLinter):
+    """Linter for PubMed Query Strings"""
+
+    def __init__(
+        self,
+        parser: EBSCOListParser,
+        string_parser_class: typing.Type[QueryStringParser],
+    ):
+        self.parser: EBSCOListParser = parser
+        self.string_parser_class = string_parser_class
+        super().__init__(parser, string_parser_class)
+
+    def validate_tokens(self) -> None:
+        """Validate token list"""
+
+        # self.parser.query_dict.items()
+        # self.check_missing_tokens()
+        # self.check_invalid_list_reference()
+        # # self.check_unknown_tokens()
+        # self.check_operator_node_token_sequence()

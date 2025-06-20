@@ -11,6 +11,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
 from search_query.query import SearchField
@@ -262,7 +263,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
@@ -275,7 +276,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
@@ -596,7 +597,7 @@ def test_boolean_query_with_two_terms() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(TI diabetes AND TI insulin)"
+    assert to_string_ebsco(query) == "TI diabetes AND TI insulin"
 
 
 def test_nested_boolean_with_field() -> None:
@@ -626,7 +627,7 @@ def test_proximity_near_operator() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(diabetes N5 therapy)"
+    assert to_string_ebsco(query) == "diabetes N5 therapy"
 
 
 def test_proximity_within_operator_with_field() -> None:
@@ -646,3 +647,20 @@ def test_proximity_within_operator_with_field() -> None:
 def test_proximity_missing_distance_raises() -> None:
     with pytest.raises(ValueError, match="NEAR operator requires a distance"):
         NEARQuery(value="NEAR", children=["AI", "health"], distance=None, platform="ebscohost")  # type: ignore
+        # Query(value="NEAR", operator=True, distance=None, platform="ebscohost")
+
+
+def test_list_parser_case_1() -> None:
+    query_list = """
+1. DE \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndromes\" OR \"irritable colon\" OR \"irritable colons\"
+2. DE \"Clinical Trials\" OR DE \"Randomized Controlled Trials\" OR DE \"Randomized Clinical Trials\" OR DE \"Random Sampling\" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies
+3. S1 AND S2
+"""
+
+    list_parser = EBSCOListParser(query_list=query_list)
+    q = list_parser.parse()
+
+    assert (
+        q.to_string()
+        == '(DE "Irritable Bowel Syndrome" OR "Irritable Bowel Syndrome" OR "Irritable Bowel Syndromes" OR "irritable colon" OR "irritable colons") AND (DE "Clinical Trials" OR DE "Randomized Controlled Trials" OR DE "Randomized Clinical Trials" OR DE "Random Sampling" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies)'
+    )

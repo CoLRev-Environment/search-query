@@ -694,7 +694,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "too-many-search-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
-                    "position": [(-1, -1)],
+                    "position": [(5, 512)],
                     "details": "The maximum number of search terms (for ALL Fields) is 50.",
                 }
             ],
@@ -708,7 +708,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "too-many-search-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
-                    "position": [(-1, -1)],
+                    "position": [(0, 715)],
                     "details": "The maximum number of search terms (for ALL Fields) is 50.",
                 }
             ],
@@ -854,15 +854,15 @@ def test_query_parsing_basic_vs_advanced() -> None:
         ),
         (
             'TS=("cancer treatment") NOT TS=("chemotherapy")',
-            'AND["cancer treatment"[TS=], NOT["chemotherapy"[TS=]]]',
+            'NOT["cancer treatment"[TS=], "chemotherapy"[TS=]]',
         ),
         (
             'TS=("cancer treatment" NOT "chemotherapy")',
-            'AND[TS=]["cancer treatment", NOT["chemotherapy"]]',
+            'NOT[TS=]["cancer treatment", "chemotherapy"]',
         ),
         (
             'TS=("cancer treatment") NOT TS=("chemotherapy" OR "radiation")',
-            'AND["cancer treatment"[TS=], NOT[OR[TS=]["chemotherapy", "radiation"]]]',
+            'NOT["cancer treatment"[TS=], OR[TS=]["chemotherapy", "radiation"]]',
         ),
         (
             'TS=("deep learning" NEAR/3 "image analysis") AND TS=("MRI" NEAR "brain")',
@@ -947,41 +947,195 @@ def test_list_parser_case_2() -> None:
 
 # Test case 3
 def test_list_parser_case_3() -> None:
-    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND not_a_ref_to_term_node\n'
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #4\n'
 
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
-    assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
-        "code": "F1004",
-        "is_fatal": True,
-        "label": "invalid-token-sequence",
-        "message": "The sequence of tokens is invalid.",
-        "position": [(3, 6)],
-        "details": "Last token of query item 3 must be a list item.",
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    assert list_parser.linter.messages == {
+        2: [
+            {
+                "code": "F3003",
+                "label": "invalid-list-reference",
+                "message": "Invalid list reference in list query",
+                "is_fatal": True,
+                "position": [(101, 103)],
+                "details": "List reference #4 not found.",
+            }
+        ]
     }
 
 
 # Test case 4
 def test_list_parser_case_4() -> None:
-    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #5\n'
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_string())
+    assert (
+        query.to_string()
+        == 'TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")'
+    )
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [],
+        "1": [
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(7, 21), (45, 59)],
+                "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(25, 41), (63, 79)],
+                "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
+            },
+        ],
+        "2": [
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(88, 100), (131, 143)],
+                "details": 'Term "acrobatics" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(104, 113), (147, 156)],
+                "details": 'Term "acrobat" is contained multiple times i.e., redundantly.',
+            },
+            {
+                "code": "W0004",
+                "label": "query-structure-unnecessarily-complex",
+                "message": "Query structure is more complex than necessary",
+                "is_fatal": False,
+                "position": [(117, 127), (160, 170)],
+                "details": 'Term "acrobats" is contained multiple times i.e., redundantly.',
+            },
+        ],
+    }
+
+
+# Test case 5
+def test_list_parser_case_5() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2 AND\n'
 
     list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
     try:
         list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
-
-    assert list_parser.linter.messages[2][0] == {
-        "code": "F3003",
-        "is_fatal": True,
-        "label": "invalid-list-reference",
-        "message": "Invalid list reference in list query",
-        "position": [(7, 9)],
-        "details": "List reference #5 not found.",
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [],
+        "3": [
+            {
+                "code": "F1004",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "is_fatal": True,
+                "position": [(104, 107)],
+                "details": "Cannot end with LOGIC_OPERATOR",
+            }
+        ],
     }
+
+
+# Test case 6
+def test_list_parser_case_6() -> None:
+    query_list = "1. TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR (ulcer* colitis) OR crohn OR crohns OR ileitis or ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)\n2. TS=(prebiotic* OR synbiotic OR inulin OR galactan* or *oligosacc* OR pectin)\n3. TS=(interven* OR trial* or study)\n4. #3 AND #2 AND #1\n"
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_string())
+    # Note: parentheses for inflamm* AND bowl* are missing?
+    assert (
+        query.to_string()
+        == "TS=(interven* OR trial* OR study) AND TS=(prebiotic* OR synbiotic OR inulin OR galactan* OR *oligosacc* OR pectin) AND TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR ulcer* colitis OR crohn OR crohns OR ileitis OR ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)"
+    )
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [],
+        "3": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(319, 321)],
+                "details": "",
+            }
+        ],
+        "2": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(266, 268)],
+                "details": "",
+            }
+        ],
+        "1": [
+            {
+                "code": "W0005",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(110, 112)],
+                "details": "",
+            }
+        ],
+    }
+
+
+# Test case 7
+def test_list_parser_case_7() -> None:
+    query_list = "1. TS=(inflammatory bowel diseases OR ileitis or ileocolitis)\n2. TS=(prebiotic* OR synbiotic)\n3. #1 AND #2 AND PY=2000\n"
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_string())
+    # Note: parentheses for inflamm* AND bowl* are missing?
+    assert (
+        query.to_string()
+        == "TS=(inflammatory bowel diseases OR ileitis OR ileocolitis) AND TS=(prebiotic* OR synbiotic) AND PY=2000"
+    )
+
+
+# Test case 8
+def test_list_parser_case_8() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat")\n3. #1 AND #2\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    assert (
+        query.to_string()
+        == 'TS=("Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat")'
+    )
+
+    query_list = '1. "Peer leader*" OR "Shared leader*"\n2. "acrobatics" OR "acrobat"\n3. #1 AND #2\n'
+
+    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    query = list_parser.parse()
+    print(query.to_structured_string())
+    assert (
+        query.to_string()
+        == '("Peer leader*" OR "Shared leader*") AND ("acrobatics" OR "acrobat")'
+    )
 
 
 def test_wos_valid_query() -> None:

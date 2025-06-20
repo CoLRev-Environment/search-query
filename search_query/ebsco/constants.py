@@ -27,6 +27,7 @@ SYNTAX_GENERIC_MAP = {
     "MH": {Fields.MESH_TERM},
     "ZY": {Fields.COUNTRY_REGION},
     "ZU": {Fields.SUBJECT_TERMS},
+    "PT": {Fields.PUBLICATION_TYPE},
 }
 
 _RAW_PREPROCESSING_MAP = {
@@ -45,6 +46,7 @@ _RAW_PREPROCESSING_MAP = {
     "MH": r"MH",
     "ZY": r"ZY",
     "ZU": r"ZU",
+    "PT": r"PT",
 }
 # Note: lower-case fields return different results
 PREPROCESSING_MAP = {k: re.compile(v) for k, v in _RAW_PREPROCESSING_MAP.items()}

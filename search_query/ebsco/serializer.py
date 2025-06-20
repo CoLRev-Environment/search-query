@@ -16,15 +16,12 @@ def to_string_ebsco(query: Query) -> str:
     # pylint: disable=import-outside-toplevel
     from search_query.query_near import NEARQuery
 
-    query = query.copy()
-
     if not query.children:
         # Leaf query (single search term)
         field = f"{query.search_field.value} " if query.search_field else ""
         return f"{field}{query.value}"
 
     result = []
-    needs_parentheses = len(query.children) > 1  # Parentheses needed for grouping
 
     for i, child in enumerate(query.children):
         child_str = to_string_ebsco(child)
@@ -48,7 +45,7 @@ def to_string_ebsco(query: Query) -> str:
 
     query_str = " ".join(result)
 
-    if needs_parentheses:
+    if query.get_parent() or query.search_field:
         query_str = f"({query_str})"
 
     if query.search_field:

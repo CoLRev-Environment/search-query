@@ -4,8 +4,6 @@ import re
 import typing
 
 from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -72,8 +70,14 @@ class WOSQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
@@ -497,10 +501,12 @@ class WOSQueryListLinter(QueryListLinter):
         self,
         parser: "search_query.wos.parser.WOSListParser",
         string_parser_class: typing.Type["search_query.wos.parser.WOSParser"],
+        original_query_str: str = "",
     ):
         super().__init__(
             parser=parser,
             string_parser_class=string_parser_class,
+            original_query_str=original_query_str,
         )
         self.messages: dict = {}
 
@@ -519,8 +525,6 @@ class WOSQueryListLinter(QueryListLinter):
         missing_root = self._check_missing_root()
         self._check_missing_operator_nodes(missing_root)
         self._check_invalid_list_reference()
-        self._check_query_tokenization()
-        self._validate_operator_node()
 
     def _check_missing_root(self) -> bool:
         missing_root = False
@@ -554,64 +558,6 @@ class WOSQueryListLinter(QueryListLinter):
                 positions=[(-1, -1)],
             )
 
-    def _validate_operator_node(self) -> None:
-        """Validate the tokens of the combining list element."""
-
-        for node_nr, node in self.parser.query_dict.items():
-            if node["type"] != ListTokenTypes.OPERATOR_NODE:
-                continue
-
-            tokens = self.parser.tokenize_operator_node(node["node_content"], node_nr)
-
-            for token in tokens:
-                if token.type == OperatorNodeTokenTypes.UNKNOWN:
-                    self.add_linter_message(
-                        QueryErrorCode.TOKENIZING_FAILED,
-                        list_position=GENERAL_ERROR_POSITION,
-                        positions=[token.position],
-                    )
-
-            # Note: details should pass "format should be #1 [operator] #2"
-
-            # Must start with LIST_ITEM
-            if tokens[0].type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                details = f"First token for query item {node_nr} must be a list item."
-                self.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    list_position=GENERAL_ERROR_POSITION,
-                    positions=[tokens[0].position],
-                    details=details,
-                )
-                return
-
-            # Expect alternating pattern after first LIST_ITEM
-            expected = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            for _, token in enumerate(tokens[1:], start=1):
-                if token.type != expected:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                        list_position=GENERAL_ERROR_POSITION,
-                        positions=[token.position],
-                        details=f"Expected {expected.name} for query item {node_nr} "
-                        f"at position {token.position}, but found {token.type.name}.",
-                    )
-                    return
-                # Alternate between LOGIC_OPERATOR and LIST_ITEM
-                expected = (
-                    OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-                    if expected == OperatorNodeTokenTypes.LOGIC_OPERATOR
-                    else OperatorNodeTokenTypes.LOGIC_OPERATOR
-                )
-
-            # The final token must be a LIST_ITEM (if even-length list of tokens)
-            if expected == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                self.add_linter_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    list_position=GENERAL_ERROR_POSITION,
-                    positions=[tokens[-1].position],
-                    details=f"Last token of query item {node_nr} must be a list item.",
-                )
-
     def _check_invalid_list_reference(self) -> None:
         # check if all list-references exist
         for ind, query_node in enumerate(self.parser.query_dict.values()):
@@ -623,6 +569,8 @@ class WOSQueryListLinter(QueryListLinter):
                 ):
                     reference = match.group()
                     position = match.span()
+                    offset = query_node["content_pos"][0]
+                    position = (position[0] + offset, position[1] + offset)
                     if reference.replace("#", "") not in self.parser.query_dict:
                         self.add_linter_message(
                             QueryErrorCode.INVALID_LIST_REFERENCE,
@@ -630,25 +578,3 @@ class WOSQueryListLinter(QueryListLinter):
                             positions=[position],
                             details=f"List reference {reference} not found.",
                         )
-
-    def _check_query_tokenization(self) -> None:
-        for ind, query_node in enumerate(self.parser.query_dict.values()):
-            if query_node["type"] != ListTokenTypes.QUERY_NODE:
-                continue
-            query_parser = self.string_parser_class(
-                query_str=query_node["node_content"],
-                search_field_general=self.parser.search_field_general,
-                mode=self.parser.mode,
-            )
-            try:
-                query_parser.parse()
-            except ValueError:
-                self.add_linter_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    list_position=ind,
-                    positions=[(-1, -1)],
-                )
-            for msg in query_parser.linter.messages:  # type: ignore
-                if ind not in self.messages:
-                    self.messages[ind] = []
-                self.messages[ind].append(msg)

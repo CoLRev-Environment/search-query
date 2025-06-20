@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Pubmed query parser."""
 import re
+import typing
 
 from search_query.constants import LinterMode
-from search_query.constants import ListToken
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import Token
@@ -25,7 +23,7 @@ class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
     SEARCH_FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
-    OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?\])")
+    LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?\])")
     PARENTHESIS_REGEX = re.compile(r"[\(\)]")
     SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
     SEARCH_TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
@@ -35,7 +33,7 @@ class PubmedParser(QueryStringParser):
         "|".join(
             [
                 SEARCH_FIELD_REGEX.pattern,
-                OPERATOR_REGEX.pattern,
+                LOGIC_OPERATOR_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
                 SEARCH_PHRASE_REGEX.pattern,
                 SEARCH_TERM_REGEX.pattern,
@@ -44,17 +42,28 @@ class PubmedParser(QueryStringParser):
         flags=re.IGNORECASE,
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         query_str: str,
+        *,
         search_field_general: str = "",
         mode: str = LinterMode.NONSTRICT,
+        offset: typing.Optional[dict] = None,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str=query_str, search_field_general=search_field_general, mode=mode
+            query_str=query_str,
+            search_field_general=search_field_general,
+            mode=mode,
+            offset=offset,
+            original_str=original_str,
         )
-        self.linter = PubmedQueryStringLinter(query_str=query_str)
+        self.linter = PubmedQueryStringLinter(
+            query_str=query_str, original_str=original_str, silent=silent
+        )
 
     def tokenize(self) -> None:
         """Tokenize the query_str"""
@@ -80,6 +89,7 @@ class PubmedParser(QueryStringParser):
                 Token(value=value, type=token_type, position=match.span())
             )
 
+        self.adjust_token_positions()
         self.combine_subsequent_terms()
 
     def parse_query_tree(self, tokens: list) -> Query:
@@ -211,6 +221,8 @@ class PubmedParser(QueryStringParser):
                 field_value, distance = self.PROXIMITY_REGEX.match(
                     tokens[1].value
                 ).groups()  # type: ignore
+                if not distance.isdigit():
+                    distance = 3
                 field_value = "[" + field_value + "]"
                 return NEARQuery(
                     value=Operators.NEAR,
@@ -226,9 +238,7 @@ class PubmedParser(QueryStringParser):
                         )
                     ],
                     position=(tokens[0].position[0], tokens[1].position[1]),
-                    # TODO : pass int (ensuring valid NEAR distances)
-                    # or string (preventing errors during parsing)?
-                    distance=distance,  # type: ignore
+                    distance=int(distance),  # type: ignore
                     platform="deactivated",
                 )
 
@@ -284,10 +294,6 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
-    LIST_ITEM_REGEX = re.compile(r"^(\d+).\s+(.*)$")
-    LIST_ITEM_REF = re.compile(r"#\d+")
-    OPERATOR_NODE_REGEX = re.compile(r"#\d|AND|OR|NOT")
-
     def __init__(
         self,
         query_list: str,
@@ -303,51 +309,6 @@ class PubmedListParser(QueryListParser):
         )
         self.linter = PubmedQueryListLinter(self, PubmedParser)
 
-    def get_operator_node_tokens(self, token_nr: int) -> list:
-        """Get operator node tokens"""
-        node_content = self.query_dict[token_nr]["node_content"]
-        operator_node_tokens = []
-        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
-            value = match.group(0)
-            start, end = match.span()
-            if value.upper() in {"AND", "OR", "NOT"}:
-                token_type = OperatorNodeTokenTypes.LOGIC_OPERATOR
-            elif self.LIST_ITEM_REF.match(value):
-                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            else:  # pragma: no cover
-                token_type = OperatorNodeTokenTypes.UNKNOWN
-            operator_node_tokens.append(
-                ListToken(
-                    value=value, type=token_type, level=token_nr, position=(start, end)
-                )
-            )
-        return operator_node_tokens
-
-    def _parse_operator_node(self, token_nr: int) -> Query:
-        """Parse an operator node."""
-
-        operator_node_tokens = self.get_operator_node_tokens(token_nr)
-
-        children_tokens = [
-            t.value.replace("#", "")
-            for t in operator_node_tokens
-            if t.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-        ]
-        children = [self.query_dict[token_nr]["query"] for token_nr in children_tokens]
-        operator = operator_node_tokens[1].value
-        if operator.upper() in {"&", "AND"}:
-            operator = Operators.AND
-        if operator.upper() in {"|", "OR"}:
-            operator = Operators.OR
-
-        return Query.create(
-            value=operator,
-            search_field=None,
-            children=children,
-            position=(1, 1),
-            platform="deactivated",
-        )
-
     def parse(self) -> Query:
         """Parse the query in list format."""
 
@@ -355,33 +316,25 @@ class PubmedListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        for token_nr, query_element in self.query_dict.items():
-            print(f"*** Query list element: #{token_nr} *************************")
-            if query_element["type"] == ListTokenTypes.QUERY_NODE:
-                parser = self.parser_class(
-                    query_element["node_content"],
-                    search_field_general=self.search_field_general,
-                )
-                try:
-                    query_element["query"] = parser.parse()
-                except QuerySyntaxError:  # pragma: no cover
-                    pass
+        query_str, offset = self.build_query_str()
 
-                self.linter.messages[token_nr] = parser.linter.messages
+        query_parser = PubmedParser(
+            query_str=query_str,
+            original_str=self.query_list,
+            search_field_general=self.search_field_general,
+            mode=self.mode,
+            offset=offset,
+            silent=True,
+        )
+        try:
+            query = query_parser.parse()
+        except QuerySyntaxError as exc:
+            raise exc
+        finally:
+            self.assign_linter_messages(query_parser.linter.messages, self.linter)
 
-            if query_element["type"] == ListTokenTypes.OPERATOR_NODE:
-                query_element["query"] = self._parse_operator_node(
-                    token_nr
-                    # query_element["node_content"]
-                )
+            self.linter.check_status()
 
-        query = list(self.query_dict.values())[-1]["query"]
-
-        linter = PubmedQueryStringLinter(query_str=self.query_list)
-        linter.validate_query_tree(query)
-        linter.check_status()
-
-        # linter.check_status() ?
-        query.set_platform_unchecked(PLATFORM.PUBMED.value)
+        query.set_platform_unchecked(PLATFORM.PUBMED.value, silent=True)
 
         return query

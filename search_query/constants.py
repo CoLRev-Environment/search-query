@@ -10,6 +10,7 @@ from typing import Tuple
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=line-too-long
+# pylint: disable=too-many-lines
 
 
 class PLATFORM(Enum):
@@ -40,8 +41,7 @@ class OperatorNodeTokenTypes(Enum):
     """Operator node token types (list queries)"""
 
     LIST_ITEM_REFERENCE = "LIST_ITEM_REFERENCE"
-    LOGIC_OPERATOR = "LOGIC_OPERATOR"
-    UNKNOWN = "UNKNOWN"
+    NON_LIST_ITEM_REFERENCE = "NON_LIST_ITEM_REFERENCE"
 
 
 class ListTokenTypes(Enum):

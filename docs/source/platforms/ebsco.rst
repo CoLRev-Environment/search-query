@@ -33,6 +33,23 @@ When storing an EBSCOHost query in a `.json` file or as a string:
 
    To ensure reproducibility, consider including the EBSCO database used (e.g., Business Source Complete) in the `database` field.
 
+List Query Format
+--------------------
+
+EBSCOhost supports building **multi-line queries** where individual components are defined as numbered search lines and later combined using references like ``S1 AND S2``. This method is often used in advanced or expert search modes.
+
+List queries should be formatted as follows:
+
+.. code-block:: json
+
+   {
+       "search_string": "1. TI (digital health OR telemedicine)\n2. AB (physical activity OR exercise)\n3. S1 AND S2",
+       "general_search_field": ""
+   }
+
+Each numbered item defines a part of the query using EBSCOhost's field syntax. Later lines can combine them using boolean operators like ``AND``, ``OR``, or ``NOT``, allowing for structured, transparent query design.
+
+
 Best Practices and Recommendations
 ----------------------------------
 
