@@ -494,7 +494,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
                     "position": [(16, 27)],
-                    "details": "Proximity value '0.5' is not a digit",
+                    "details": "Proximity value '0.5' is not a digit. Using default 3 instead.",
                 },
             ],
         ),

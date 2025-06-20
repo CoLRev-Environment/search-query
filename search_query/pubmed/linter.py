@@ -412,7 +412,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
-                details = f"Proximity value '{prox_value}' is not a digit"
+                details = (
+                    f"Proximity value '{prox_value}' is not a digit. "
+                    "Using default 3 instead."
+                )
                 self.add_linter_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],

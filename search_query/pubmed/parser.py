@@ -221,6 +221,8 @@ class PubmedParser(QueryStringParser):
                 field_value, distance = self.PROXIMITY_REGEX.match(
                     tokens[1].value
                 ).groups()  # type: ignore
+                if not distance.isdigit():
+                    distance = 3
                 field_value = "[" + field_value + "]"
                 return NEARQuery(
                     value=Operators.NEAR,
@@ -236,9 +238,7 @@ class PubmedParser(QueryStringParser):
                         )
                     ],
                     position=(tokens[0].position[0], tokens[1].position[1]),
-                    # TODO : pass int (ensuring valid NEAR distances)
-                    # or string (preventing errors during parsing)?
-                    distance=distance,  # type: ignore
+                    distance=int(distance),  # type: ignore
                     platform="deactivated",
                 )
 
