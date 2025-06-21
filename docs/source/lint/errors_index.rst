@@ -1,107 +1,133 @@
-Fatal Errors
+Parsing errors
+--------------
+
+.. toctree::
+   :maxdepth: 1
+
+   PARSE_0001
+
+   PARSE_0002
+
+   PARSE_0003
+
+   PARSE_0004
+
+   PARSE_0006
+
+   PARSE_0007
+
+   PARSE_0008
+
+   PARSE_0009
+
+   PARSE_0010
+
+   PARSE_1001
+
+   PARSE_1002
+
+Query structure errors
+----------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   STRUCT_0001
+
+   STRUCT_0002
+
+   STRUCT_0003
+
+   STRUCT_0004
+
+Term errors
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   TERM_0001
+
+   TERM_0002
+
+   TERM_0003
+
+   TERM_0004
+
+Field errors
 ------------
 
 .. toctree::
    :maxdepth: 1
 
-   F0001
+   FIELD_0001
 
-   F1001
+   FIELD_0002
 
-   F1002
+   FIELD_0003
 
-   F1004
+   FIELD_0004
 
-   F1009
-
-   F1010
-
-   F1011
-
-   F1012
-
-   F2001
-
-   F2002
-
-   F2003
-
-   F2004
-
-   F2005
-
-   F2006
-
-   F2007
-
-   F2008
-
-   F2009
-
-   F2010
-
-   F2011
-
-   F2012
-
-   F2013
-
-   F2014
-
-   F3001
-
-   F3002
-
-   F3003
-
-Errors
-------
+Database erros: Web of Science
+------------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   E0001
+   WOS_0001
 
-   E0002
+   WOS_0002
 
-   E0004
+   WOS_0003
 
-   E0005
+   WOS_0004
 
-   E0006
+   WOS_0005
 
-   E0007
+   WOS_0006
 
-   E0008
+   WOS_0007
 
-Warnings
---------
+   WOS_0008
+
+   WOS_0009
+
+   WOS_0010
+
+   WOS_0011
+
+   WOS_0012
+
+Database erros: EBSCOHost
+-------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   W0001
+   EBSCO_0001
 
-   W0002
+   EBSCO_0002
 
-   W0004
+Database erros: PubMed
+----------------------
 
-   W0005
+.. toctree::
+   :maxdepth: 1
 
-   W0006
+   PUBMED_0001
 
-   W0007
+   PUBMED_0002
 
-   W0009
+   PUBMED_0003
 
-   W0010
+Best practice qualities
+-----------------------
 
-   W0011
+.. toctree::
+   :maxdepth: 1
 
-   W0013
+   QUALITY_0001
 
-   W0014
+   QUALITY_0002
 
-   W0015
-
-   W0016
+   QUALITY_0003

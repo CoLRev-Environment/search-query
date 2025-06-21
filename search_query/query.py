@@ -26,7 +26,7 @@ class Query:
         value: str,
         *,
         operator: bool = True,
-        search_field: typing.Optional[SearchField] = None,
+        field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
@@ -39,13 +39,13 @@ class Query:
         self._value: str = ""
         self._operator = operator
         self._children: typing.List[Query] = []
-        self._search_field = None
+        self._field = None
 
         self.value = value
-        if isinstance(search_field, str):
-            self.search_field = SearchField(search_field)
+        if isinstance(field, str):
+            self.field = SearchField(field)
         else:
-            self.search_field = search_field
+            self.field = field
         self.position = position
         self.marked = False
         # Note: platform is only set for root nodes
@@ -72,7 +72,7 @@ class Query:
         value: str,
         *,
         operator: bool = True,
-        search_field: typing.Optional[SearchField] = None,
+        field: typing.Optional[SearchField] = None,
         children: typing.Optional[typing.List[typing.Union[str, Query]]] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
@@ -85,13 +85,13 @@ class Query:
 
             return Term(
                 value=value,
-                search_field=search_field,
+                field=field,
                 position=position,
                 platform=platform,
             )
 
         args = {
-            "search_field": search_field,
+            "field": field,
             "children": children,
             "position": position,
             "platform": platform,
@@ -289,7 +289,7 @@ class Query:
 
             child = Term(
                 child,
-                search_field=self.search_field,
+                field=self.field,
                 platform=self.platform,
             )
         if not isinstance(child, Query):
@@ -311,14 +311,14 @@ class Query:
         return self if self._parent is None else self._parent.get_root()
 
     @property
-    def search_field(self) -> typing.Optional[SearchField]:
+    def field(self) -> typing.Optional[SearchField]:
         """Search field property."""
-        return self._search_field
+        return self._field
 
-    @search_field.setter
-    def search_field(self, sf: typing.Optional[SearchField]) -> None:
+    @field.setter
+    def field(self, sf: typing.Optional[SearchField]) -> None:
         """Set search field property."""
-        self._search_field = copy.deepcopy(sf) if sf else None
+        self._field = copy.deepcopy(sf) if sf else None
 
     def replace(self, new_query: Query) -> None:
         """Replace this query with a new query in the parent's children list."""

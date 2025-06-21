@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Tests for search query translation"""
 from search_query.constants import PLATFORM
+from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
@@ -15,7 +16,7 @@ def test_check_missing_tokens() -> None:
     linter = QueryStringLinter("digitalization 2 AND work")  # type: ignore
     linter.tokens = [
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="digitalization",
             position=(0, 15),
         ),
@@ -25,7 +26,7 @@ def test_check_missing_tokens() -> None:
             position=(18, 21),
         ),
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="work",
             position=(25, 29),
         ),
@@ -33,7 +34,7 @@ def test_check_missing_tokens() -> None:
     linter.check_missing_tokens()
     assert linter.messages == [
         {
-            "code": "F0001",
+            "code": "PARSE_0001",
             "label": "tokenizing-failed",
             "message": "Fatal error during tokenization",
             "is_fatal": True,
@@ -47,7 +48,7 @@ def test_unknown_token_types() -> None:
     linter = QueryStringLinter("digitalization 2 AND work")  # type: ignore
     linter.tokens = [
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="digitalization",
             position=(0, 15),
         ),
@@ -62,7 +63,7 @@ def test_unknown_token_types() -> None:
             position=(18, 21),
         ),
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="work",
             position=(25, 29),
         ),
@@ -71,7 +72,7 @@ def test_unknown_token_types() -> None:
 
     assert linter.messages == [
         {
-            "code": "F0001",
+            "code": "PARSE_0001",
             "label": "tokenizing-failed",
             "message": "Fatal error during tokenization",
             "is_fatal": True,
@@ -81,11 +82,11 @@ def test_unknown_token_types() -> None:
     ]
 
 
-def test_check_invalid_characters_in_search_term() -> None:
+def test_check_invalid_characters_in_term() -> None:
     linter = QueryStringLinter("digitalization 2 AND work")  # type: ignore
     linter.tokens = [
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="digital#ization",
             position=(0, 15),
         ),
@@ -95,16 +96,16 @@ def test_check_invalid_characters_in_search_term() -> None:
             position=(18, 21),
         ),
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="work",
             position=(25, 29),
         ),
     ]
-    linter.check_invalid_characters_in_search_term("#%&")
+    linter.check_invalid_characters_in_term("#%&", QueryErrorCode.WOS_INVALID_CHARACTER)
     print(linter.messages)
     assert linter.messages == [
         {
-            "code": "E0004",
+            "code": "WOS_0012",
             "label": "invalid-character",
             "message": "Search term contains invalid character",
             "is_fatal": False,
@@ -118,7 +119,7 @@ def test_check_boolean_operator_readability() -> None:
     linter = QueryStringLinter("digitalization & work")  # type: ignore
     linter.tokens = [
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="digitalization",
             position=(0, 15),
         ),
@@ -128,7 +129,7 @@ def test_check_boolean_operator_readability() -> None:
             position=(16, 17),
         ),
         Token(
-            type=TokenTypes.SEARCH_TERM,
+            type=TokenTypes.TERM,
             value="work",
             position=(18, 22),
         ),
@@ -137,7 +138,7 @@ def test_check_boolean_operator_readability() -> None:
     print(linter.messages)
     assert linter.messages == [
         {
-            "code": "W0009",
+            "code": "STRUCT_0003",
             "label": "boolean-operator-readability",
             "message": "Boolean operator readability",
             "is_fatal": False,
@@ -147,7 +148,7 @@ def test_check_boolean_operator_readability() -> None:
     ]
 
 
-def test_check_invalid_characters_in_search_term_query() -> None:
+def test_check_invalid_characters_in_term_query() -> None:
     linter = QueryStringLinter("digitalizat#ion AND work")  # type: ignore
     query = AndQuery(
         children=[
@@ -162,11 +163,13 @@ def test_check_invalid_characters_in_search_term_query() -> None:
         ],
         platform=PLATFORM.WOS.value,
     )
-    linter.check_invalid_characters_in_search_term_query(query, "#%&")
+    linter.check_invalid_characters_in_term_query(
+        query, "#%&", QueryErrorCode.WOS_INVALID_CHARACTER
+    )
     print(linter.messages)
     assert linter.messages == [
         {
-            "code": "E0004",
+            "code": "WOS_0012",
             "label": "invalid-character",
             "message": "Search term contains invalid character",
             "is_fatal": False,

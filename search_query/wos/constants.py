@@ -5,7 +5,7 @@ from copy import deepcopy
 
 from search_query.constants import Fields
 
-# https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-search-field-tags.htm
+# https://webofscience.help.clarivate.com/en-us/Content/wos-core-collection/woscc-field-tags.htm
 
 
 # Mapping from standard WOS syntax to generic Fields
@@ -101,7 +101,7 @@ PREPROCESSING_MAP = {
     for k, v in _RAW_PREPROCESSING_MAP.items()
 }
 
-VALID_FIELDS_REGEX = re.compile(
+VALID_fieldS_REGEX = re.compile(
     "|".join(v.pattern for v in PREPROCESSING_MAP.values()), flags=re.IGNORECASE  # type: ignore
 )
 
@@ -114,7 +114,7 @@ def map_to_standard(syntax_str: str) -> str:
     raise ValueError(f"Search field not recognized: {syntax_str}")
 
 
-def syntax_str_to_generic_search_field_set(field_value: str) -> set:
+def syntax_str_to_generic_field_set(field_value: str) -> set:
     """Translate a search field string to a generic set of Fields."""
     field_value = field_value.strip().lower()
     field_value = map_to_standard(field_value.upper())
@@ -126,23 +126,23 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     )  # pragma: no cover
 
 
-def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
+def generic_field_to_syntax_field(generic_field: str) -> str:
     """Convert a set of generic search fields to a set of syntax strings."""
 
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if {generic_search_field} == value:
+        if {generic_field} == value:
             return key
 
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if {generic_search_field} & value:
+        if {generic_field} & value:
             return key
 
     raise ValueError(  # pragma: no cover
-        f"Generic search field set {generic_search_field} " "not supported by WOS"
+        f"Generic search field set {generic_field} " "not supported by WOS"
     )
 
 
-SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP = {
+field_GENERAL_TO_SYNTAX_MAP = {
     "All Fields": "ALL=",
     "Topic": "TS=",
     "Title": "TI=",
@@ -171,14 +171,12 @@ SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP = {
 }
 
 
-def search_field_general_to_syntax(
-    search_field: str,
+def field_general_to_syntax(
+    field: str,
 ) -> str:
     """Map the general search field to the standard syntax of WOS."""
-    search_field = search_field.strip()
-    if search_field in SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP:
-        return SEARCH_FIELD_GENERAL_TO_SYNTAX_MAP[search_field]
+    field = field.strip()
+    if field in field_GENERAL_TO_SYNTAX_MAP:
+        return field_GENERAL_TO_SYNTAX_MAP[field]
 
-    raise ValueError(
-        f"Search field {search_field} not supported by WOS"
-    )  # pragma: no cover
+    raise ValueError(f"Search field {field} not supported by WOS")  # pragma: no cover

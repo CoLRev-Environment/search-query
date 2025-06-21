@@ -1,0 +1,24 @@
+.. _TERM_0001:
+
+TERM_0001 — non-standard-quotes
+===============================
+
+**Error Code**: TERM_0001
+
+**Message**: ``Non-standard quotes``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TS=“carbon”
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TS="carbon"
+
+**Typical fix**: Replace non-standard quotes (e.g., “ ”) with standard ASCII quotes (").
+
+**Back to**: :ref:`lint`

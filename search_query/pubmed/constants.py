@@ -87,7 +87,7 @@ PROXIMITY_SEARCH_REGEX = re.compile(
 _VF_ELEMENTS = [
     v.pattern for v in list(PREPROCESSING_MAP.values()) + [PROXIMITY_SEARCH_REGEX]
 ]
-VALID_FIELDS_REGEX = re.compile(
+VALID_fieldS_REGEX = re.compile(
     "|".join(_VF_ELEMENTS), flags=re.IGNORECASE  # type: ignore
 )
 
@@ -104,7 +104,7 @@ def map_to_standard(syntax_str: str) -> str:
     raise ValueError
 
 
-def syntax_str_to_generic_search_field_set(field_value: str) -> set:
+def syntax_str_to_generic_field_set(field_value: str) -> set:
     """Translate a search field"""
 
     field_value = field_value.lower()
@@ -122,17 +122,17 @@ def syntax_str_to_generic_search_field_set(field_value: str) -> set:
     raise ValueError(f"Field {field_value} not supported by PubMed")  # pragma: no cover
 
 
-def generic_search_field_to_syntax_field(generic_search_field: str) -> str:
+def generic_field_to_syntax_field(generic_field: str) -> str:
     """Convert a set of generic search fields to a set of syntax strings."""
 
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if {generic_search_field} == value:
+        if {generic_field} == value:
             return key
 
     for key, value in SYNTAX_GENERIC_MAP.items():
-        if {generic_search_field} & value:
+        if {generic_field} & value:
             return key
 
     raise ValueError(  # pragma: no cover
-        f"Generic search field set {generic_search_field} " "not supported by Pubmed"
+        f"Generic search field set {generic_field} " "not supported by Pubmed"
     )

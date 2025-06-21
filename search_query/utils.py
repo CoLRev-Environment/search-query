@@ -6,6 +6,17 @@ import typing
 from search_query.constants import Colors
 
 
+def _is_single_short_line_error(positions: list, query_str: str) -> bool:
+    if len(positions) != 1 or "\n" not in query_str:
+        return False
+    start, end = positions[0]
+    # Check if the position is on a single line
+    single_line = query_str.count("\n", 0, start) == query_str.count("\n", 0, end)
+    short_line = end - start < 100  # Arbitrary threshold for "short" line
+    return single_line and short_line
+
+
+# pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
 def format_query_string_positions(
     query_str: str,
@@ -14,7 +25,9 @@ def format_query_string_positions(
 ) -> str:
     """Format the query string with multiple positions marked in color."""
     if not positions:
-        return query_str
+        return ""
+    if list(set(positions))[0] == (-1, -1):
+        return ""
 
     positions = [pos for pos in positions if pos is not None]
 
@@ -28,6 +41,27 @@ def format_query_string_positions(
         else:
             # Append new non-overlapping interval
             merged.append([start, end])
+
+    if _is_single_short_line_error(positions, query_str):
+        # get line string surrounding the error
+        start, end = positions[0]
+        if len(query_str[start:end].strip()) == 0:
+            return ""
+
+        highlighted_query = (
+            f"{query_str[:start]}{color}{query_str[start:end]}"
+            f"{Colors.END}{query_str[end:]}"
+        )
+        # Find the line containing the error
+        line_start = highlighted_query.rfind("\n", 0, start) + 1
+        line_end = highlighted_query.find("\n", end)
+        before = f"{Colors.GREY}[...]{Colors.END}\n"
+        after = f"\n{Colors.GREY}[...]{Colors.END}"
+        if line_end == -1:  # If no newline after end
+            line_end = len(highlighted_query)
+        line = highlighted_query[line_start:line_end]
+        line = f"{before}{line}{after}".rstrip("\n").lstrip("\n")
+        return line
 
     if len(positions) == 1 and len(query_str) > 200:
         start, end = merged[0]
@@ -83,4 +117,6 @@ def format_query_string_positions(
 
     # Add remaining unhighlighted part
     highlighted += query_str[last_index:]
+
+    highlighted = highlighted.rstrip("\n").lstrip("\n")
     return highlighted

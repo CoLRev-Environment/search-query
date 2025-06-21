@@ -17,7 +17,7 @@ class Term(Query):
         self,
         value: str,
         *,
-        search_field: typing.Optional[SearchField] = None,
+        field: typing.Optional[SearchField] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
@@ -25,19 +25,19 @@ class Term(Query):
             value=value,
             operator=False,
             children=None,
-            search_field=search_field,
+            field=field,
             position=position,
             platform=platform,
         )
 
     def selects_record(self, record_dict: dict) -> bool:
-        assert self.search_field is not None, "Search field must be set for terms"
-        if self.search_field.value == Fields.TITLE:
+        assert self.field is not None, "Search field must be set for terms"
+        if self.field.value == Fields.TITLE:
             field_value = record_dict.get("title", "").lower()
-        elif self.search_field.value == Fields.ABSTRACT:
+        elif self.field.value == Fields.ABSTRACT:
             field_value = record_dict.get("abstract", "").lower()
         else:
-            raise ValueError(f"Unsupported search field: {self.search_field}")
+            raise ValueError(f"Unsupported search field: {self.field}")
 
         value = self.value.lower().lstrip('"').rstrip('"')
 

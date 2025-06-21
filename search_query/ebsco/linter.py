@@ -9,45 +9,49 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebsco.constants import syntax_str_to_generic_search_field_set
-from search_query.ebsco.constants import VALID_FIELDS_REGEX
+from search_query.ebsco.constants import syntax_str_to_generic_field_set
+from search_query.ebsco.constants import VALID_fieldS_REGEX
+from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
+    from search_query.parser_base import QueryStringParser
+
+    from search_query.ebsco.parser import EBSCOListParser
 
 
 class EBSCOQueryStringLinter(QueryStringLinter):
     """Linter for EBSCO Query Strings"""
 
-    UNSUPPORTED_SEARCH_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
+    UNSUPPORTED_FIELD_REGEX = r"\b(?!OR\b)\b(?!S\d+\b)[A-Z]{2}\b"
 
     PLATFORM: PLATFORM = PLATFORM.EBSCO
-    VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
+    VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
-        TokenTypes.SEARCH_TERM: [
+        TokenTypes.TERM: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PROXIMITY_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
         ],
         TokenTypes.LOGIC_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PROXIMITY_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
             TokenTypes.FIELD,
         ],
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.FIELD,
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PARENTHESIS_CLOSED: [
@@ -57,20 +61,26 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Pre-linting checks."""
         self.tokens = tokens
         self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.field_general = field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -81,7 +91,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization()
         self.check_invalid_near_within_operators()
 
-        self.check_search_field_general()
+        self.check_general_field()
+
         return self.tokens
 
     def get_precedence(self, token: str) -> int:
@@ -97,8 +108,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             f"Invalid operator {token} for EBSCO query string precedence."
         )
 
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
-        return syntax_str_to_generic_search_field_set(field_value)
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set:
+        return syntax_str_to_generic_field_set(field_value)
 
     def check_invalid_syntax(self) -> None:
         """Check for invalid syntax in the query string."""
@@ -106,12 +117,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # Check for erroneous field syntax
         match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 positions=[match.span()],
                 details="EBSCOHOst fields must be before search terms "
                 "and without brackets, e.g. AB robot or TI monitor. "
                 f"'{match.group(0)}' is invalid.",
+                fatal=True,
             )
 
     def check_invalid_near_within_operators(self) -> None:
@@ -132,7 +144,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be N{digit} instead."
                     )
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
@@ -143,21 +155,12 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be W{digit} instead."
                     )
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
                     )
                     token.value = token.value.replace("WITHIN/", "W")
-
-    def check_search_field_general(self) -> None:
-        """Check field 'Search Fields' in content."""
-
-        # TODO : compare with pubmed linter: check_general_search_field_mismatch()
-        # ErrorCodes: SEARCH_FIELD_MISSING, SEARCH_FIELD_CONTRADICTION
-        # TODO : also add unit tests
-        if self.search_field_general != "":
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 
     def check_invalid_token_sequences(self) -> None:
         """
@@ -167,14 +170,15 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         # Check the first token
         if self.tokens[0].type not in [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type.value}",
+                fatal=True,
             )
 
         for i, token in enumerate(self.tokens):
@@ -215,10 +219,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ):
                     details = "Search field is not supported (must be upper case)"
                     positions = [self.tokens[i - 1].position]
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                    self.add_message(
+                        QueryErrorCode.FIELD_UNSUPPORTED,
                         positions=positions,
                         details=details,
+                        fatal=True,
                     )
                     continue
                 elif (
@@ -232,10 +237,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         )
                     ]
 
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=positions,
                     details=details,
+                    fatal=True,
                 )
 
         # Check the last token
@@ -244,10 +250,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.FIELD,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
+                fatal=True,
             )
 
     def check_invalid_near_within_operators_query(self, query: Query) -> None:
@@ -261,7 +268,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     f"Operator {query.value} "
                     "is not supported by EBSCO. Must be N/x instead."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -272,7 +279,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     f"Operator {query.value} "
                     "is not supported by EBSCO. Must be W/x instead."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -295,10 +302,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         query.position[0] + match.start(),
                         query.position[0] + match.end(),
                     )
-                self.add_linter_message(
-                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                self.add_message(
+                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details="Wildcard not allowed at the beginning of a term.",
+                    fatal=True,
                 )
 
             # Count each wildcard
@@ -314,10 +322,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     "at least two literal (non-wildcard) characters "
                     "must be present in that span."
                 )
-                self.add_linter_message(
-                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                self.add_message(
+                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details=details,
+                    fatal=True,
                 )
 
             if re.search(r"^[^\*\?\#](\*)", val):
@@ -328,10 +337,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     "Do not use * in the second position followed by "
                     "additional letters. Use ? or # instead (e.g., f?tal)."
                 )
-                self.add_linter_message(
-                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                self.add_message(
+                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details=details,
+                    fatal=True,
                 )
 
         for child in query.children:
@@ -344,8 +354,10 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_invalid_characters_in_search_term_query(query, "@%$^~\\<>{}[]")
-        self.check_unsupported_search_fields_in_query(query)
+        self.check_invalid_characters_in_term_query(
+            query, "@%$^~\\<>{}[]", QueryErrorCode.EBSCO_INVALID_CHARACTER
+        )
+        self.check_unsupported_fields_in_query(query)
         self.check_unsupported_wildcards(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
@@ -364,3 +376,25 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # but is also returned when searching for MH "sleep"
         # MH "sleep hygiene" AND TI "A Brazilian Experience"
         # MH "sleep" AND TI "A Brazilian Experience"
+
+
+class EBSCOListLinter(QueryListLinter):
+    """Linter for PubMed Query Strings"""
+
+    def __init__(
+        self,
+        parser: EBSCOListParser,
+        string_parser_class: typing.Type[QueryStringParser],
+    ):
+        self.parser: EBSCOListParser = parser
+        self.string_parser_class = string_parser_class
+        super().__init__(parser, string_parser_class)
+
+    def validate_tokens(self) -> None:
+        """Validate token list"""
+
+        # self.parser.query_dict.items()
+        # self.check_missing_tokens()
+        # self.check_LIST_QUERY_INVALID_REFERENCE()
+        # # self.check_unknown_tokens()
+        # self.check_operator_node_token_sequence()

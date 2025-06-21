@@ -99,7 +99,7 @@ def test_translation_wos_ebsco() -> None:
     translated_query = query.translate(PLATFORM.EBSCO.value)
     converted_query = translated_query.to_string()
     print(translated_query.to_structured_string())
-    expected = "((AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin))"
+    expected = "(AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin)"
 
     assert converted_query == expected
 
@@ -136,21 +136,21 @@ def test_translation_ebsco_wos() -> None:
         (
             # Nested OR structure
             OrQuery(
-                search_field=None,
+                field=None,
                 children=[
                     Term(
                         value="eHealth",
-                        search_field=SearchField(Fields.TITLE),
+                        field=SearchField(Fields.TITLE),
                     ),
                     OrQuery(
                         children=[
                             Term(
                                 value="mHealth",
-                                search_field=SearchField(Fields.TITLE),
+                                field=SearchField(Fields.TITLE),
                             ),
                             Term(
                                 value="telemedicine",
-                                search_field=SearchField(Fields.TITLE),
+                                field=SearchField(Fields.TITLE),
                             ),
                         ],
                     ),
@@ -164,17 +164,17 @@ def test_translation_ebsco_wos() -> None:
                 children=[
                     Term(
                         value="cancer",
-                        search_field=SearchField(Fields.TITLE),
+                        field=SearchField(Fields.TITLE),
                     ),
                     AndQuery(
                         children=[
                             Term(
                                 value="therapy",
-                                search_field=SearchField(Fields.TITLE),
+                                field=SearchField(Fields.TITLE),
                             ),
                             Term(
                                 value="survivorship",
-                                search_field=SearchField(Fields.TITLE),
+                                field=SearchField(Fields.TITLE),
                             ),
                         ],
                     ),

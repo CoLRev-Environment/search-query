@@ -1,0 +1,24 @@
+.. _WOS_0010:
+
+WOS_0010 — wildcard-standalone
+==============================
+
+**Error Code**: WOS_0010
+
+**Message**: ``Wildcard cannot be standalone.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 AND "?"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term1
+
+**Typical fix**: Replace the standalone wildcard with a complete search term or remove it entirely.
+
+**Back to**: :ref:`lint`

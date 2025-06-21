@@ -30,8 +30,8 @@ class SearchFile:
         self.authors = authors or []
         self.record_info = record_info or {}
         self.date = date or {}
-        # Note: this will be called search_field_general
-        self.search_field = ""
+        # Note: this will be called field_general
+        self.field = ""
         self._filepath = Path(filepath) if filepath else None
 
         for key, value in kwargs.items():

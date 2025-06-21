@@ -22,7 +22,7 @@ class NEARQuery(Query):
         value: str,
         children: typing.List[typing.Union[str, Query]],
         *,
-        search_field: typing.Optional[typing.Union[SearchField, str]] = None,
+        field: typing.Optional[typing.Union[SearchField, str]] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         distance: int,
         platform: str = "generic",
@@ -41,10 +41,10 @@ class NEARQuery(Query):
         super().__init__(
             value=value,
             children=cast(List[Union[str, Query]], query_children),
-            search_field=search_field
-            if isinstance(search_field, SearchField)
-            else SearchField(search_field)
-            if search_field is not None
+            field=field
+            if isinstance(field, SearchField)
+            else SearchField(field)
+            if field is not None
             else None,
             position=position,
             platform=platform,
@@ -102,16 +102,16 @@ class NEARQuery(Query):
     def selects_record(self, record_dict: dict) -> bool:
         """Check if the record matches the NEAR query."""
         assert len(self.children) == 2, "NEAR query must have two children"
-        assert self.children[0].search_field, "First child must have a search field"
-        assert self.children[1].search_field, "Second child must have a search field"
+        assert self.children[0].field, "First child must have a search field"
+        assert self.children[1].field, "Second child must have a search field"
         assert self.distance is not None, "NEAR query must have a distance"
         assert (
-            self.children[0].search_field.value == self.children[1].search_field.value
+            self.children[0].field.value == self.children[1].field.value
         ), "Both children of NEAR query must have the same search field"
 
         # the self.children[0].value
         # must be in self.distance words of self.children[1].value
-        field = self.children[0].search_field.value
+        field = self.children[0].field.value
         text = record_dict.get(field, "")
         if not isinstance(text, str):
             return False

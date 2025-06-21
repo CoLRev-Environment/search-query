@@ -23,10 +23,12 @@ from search_query.utils import format_query_string_positions
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
+    from search_query.parser_base import QueryStringParser
 
 
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-lines
+# pylint: disable=too-many-instance-attributes
 # ruff: noqa: E501
 
 
@@ -46,25 +48,37 @@ class QueryStringLinter:
         "OR": 0,
     }
     PLATFORM: PLATFORM = PLATFORM.GENERIC
-    VALID_FIELDS_REGEX: re.Pattern
+    VALID_fieldS_REGEX: re.Pattern
 
-    def __init__(self, query_str: str) -> None:
+    def __init__(
+        self,
+        query_str: str,
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
         self.tokens: typing.List[Token] = []
 
         self.query_str = query_str
         # Note: original, unchanged query string
         self._original_query_str = query_str
-        self.search_field_general = ""
+        self.field_general = ""
         self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
         self.last_read_index = 0
+        # original_str: to preserve the original query string
+        # for error messages, if it is different from query_str
+        self.original_str = original_str or query_str
+        # silent: primarily for ListParsers
+        self.silent = silent
 
-    def add_linter_message(
+    def add_message(
         self,
         error: QueryErrorCode,
         *,
         positions: typing.Sequence[tuple],
         details: str = "",
+        fatal: bool = False,
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
@@ -79,7 +93,7 @@ class QueryStringLinter:
                 "code": error.code,
                 "label": error.label,
                 "message": error.message,
-                "is_fatal": error.is_fatal(),
+                "is_fatal": fatal,
                 "position": positions,
                 "details": details,
             }
@@ -87,7 +101,7 @@ class QueryStringLinter:
 
     def print_messages(self) -> None:
         """Print the latest linter messages."""
-        if not self.messages:
+        if not self.messages or self.silent:
             return
 
         grouped_messages = defaultdict(list)
@@ -99,18 +113,14 @@ class QueryStringLinter:
         for code, group in grouped_messages.items():
             # Take the first message as representative
             representative = group[0]
-            color = Colors.ORANGE
-            category = "Info"
 
-            if code.startswith("F"):
+            if representative["is_fatal"]:
                 color = Colors.RED
                 category = "❌" if utf_output else "X"
                 category += " Fatal"
-            elif code.startswith("E"):
-                category = "⚠️" if utf_output else "-"
-                category += " Error"
-            elif code.startswith("W"):
+            else:
                 category = "💡" if utf_output else "i"
+                color = Colors.ORANGE
                 category += " Warning"
 
             print(
@@ -127,7 +137,7 @@ class QueryStringLinter:
 
             positions = [pos for message in group for pos in message["position"]]
             query_info = format_query_string_positions(
-                self._original_query_str,
+                self.original_str,
                 positions,
                 color=color,
             )
@@ -159,7 +169,7 @@ class QueryStringLinter:
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Validate tokens"""
 
@@ -196,10 +206,11 @@ class QueryStringLinter:
             if last_end < start:
                 segment = self.query_str[last_end:start]
                 if segment.strip():  # non-whitespace segment
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.TOKENIZING_FAILED,
                         positions=[(last_end, start)],
                         details=f"Unparsed segment: '{segment.strip()}'",
+                        fatal=True,
                     )
             last_end = end
 
@@ -207,44 +218,54 @@ class QueryStringLinter:
         if last_end < len(self.query_str):
             segment = self.query_str[last_end:]
             if segment.strip():
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     positions=[(last_end, len(self.query_str))],
                     details=f"Unparsed segment: '{segment.strip()}'",
+                    fatal=True,
                 )
 
-    def check_unsupported_search_fields_in_query(self, query: Query) -> None:
+    def check_general_field(self) -> None:
+        """Check the general search field"""
+
+        if self.field_general:
+            self.add_message(
+                QueryErrorCode.FIELD_EXTRACTED,
+                positions=[],
+                details="The search field is extracted and should be included in the query.",
+            )
+
+    def check_unsupported_fields_in_query(self, query: Query) -> None:
         """Check for the correct format of fields.
 
-        Note: compile valid_field_regex with/out flags=re.IGNORECASE
+        Note: compile valid_FIELD_REGEX with/out flags=re.IGNORECASE
         """
 
-        if query.search_field:
+        if query.field:
             # pylint: disable=no-member
-            if not self.VALID_FIELDS_REGEX.match(query.search_field.value):  # type: ignore
+            if not self.VALID_fieldS_REGEX.match(query.field.value):  # type: ignore
                 pos_info = ""
-                if query.search_field.position:
-                    pos_info = f" at position {query.search_field.position}"
-                details = (
-                    f"Search field {query.search_field}{pos_info} is not supported."
-                )
+                if query.field.position:
+                    pos_info = f" at position {query.field.position}"
+                details = f"Search field {query.field}{pos_info} is not supported."
                 details += f" Supported fields for {self.PLATFORM}: "
-                details += f"{self.VALID_FIELDS_REGEX.pattern}"
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                    positions=[query.search_field.position or (-1, -1)],
+                details += f"{self.VALID_fieldS_REGEX.pattern}"
+                self.add_message(
+                    QueryErrorCode.FIELD_UNSUPPORTED,
+                    positions=[query.field.position or (-1, -1)],
                     details=details,
+                    fatal=True,
                 )
 
         for child in query.children:
-            self.check_unsupported_search_fields_in_query(child)
+            self.check_unsupported_fields_in_query(child)
 
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
         for token in self.tokens:
             if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value != token.value.upper():
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.OPERATOR_CAPITALIZATION,
                         positions=[token.position],
                     )
@@ -258,10 +279,11 @@ class QueryStringLinter:
                 i += 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if i == 0:
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.UNBALANCED_PARENTHESES,
                         positions=[token.position],
                         details="Unbalanced closing parenthesis",
+                        fatal=True,
                     )
                 else:
                     i -= 1
@@ -273,10 +295,11 @@ class QueryStringLinter:
                     i += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
                     if i == 0:
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.UNBALANCED_PARENTHESES,
                             positions=[token.position],
                             details="Unbalanced opening parenthesis",
+                            fatal=True,
                         )
                     else:
                         i -= 1
@@ -297,32 +320,36 @@ class QueryStringLinter:
 
             # Case 2: unmatched opening quote
             if value.startswith('"') and not value.endswith('"'):
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
                     positions=[query.position or (-1, -1)],
                     details="Unmatched opening quote",
+                    fatal=True,
                 )
 
             # Case 3: unmatched closing quote
             elif value.endswith('"') and not value.startswith('"'):
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
                     positions=[query.position or (-1, -1)],
                     details="Unmatched closing quote",
+                    fatal=True,
                 )
 
             # Case 4: unbalanced or excessive quotes
             elif quote_count % 2 != 0:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
                     positions=[query.position or (-1, -1)],
                     details="Unbalanced quotes inside term",
+                    fatal=True,
                 )
             elif quote_count % 2 == 0:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
                     positions=[query.position or (-1, -1)],
                     details="Suspicious or excessive quote usage",
+                    fatal=True,
                 )
 
             return
@@ -334,17 +361,20 @@ class QueryStringLinter:
         """Check for unknown token types."""
         for token in self.tokens:
             if token.type == TokenTypes.UNKNOWN:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.TOKENIZING_FAILED,
                     positions=[token.position],
                     details=f"Unknown token: '{token.value}'",
+                    fatal=True,
                 )
 
-    def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
+    def check_invalid_characters_in_term(
+        self, invalid_characters: str, error: QueryErrorCode
+    ) -> None:
         """Check a search term for invalid characters"""
 
         for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
+            if token.type != TokenTypes.TERM:
                 continue
             value = token.value
 
@@ -352,8 +382,8 @@ class QueryStringLinter:
             # and replace them with whitespace
             for char in token.value:
                 if char in invalid_characters:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_CHARACTER,
+                    self.add_message(
+                        error,
                         positions=[token.position],
                         details=f"Invalid character '{char}' in search term '{value}'",
                     )
@@ -365,9 +395,14 @@ class QueryStringLinter:
                 continue
             near_distance = re.findall(r"\d{1,2}", token.value)
             if near_distance and int(near_distance[0]) > max_value:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.NEAR_DISTANCE_TOO_LARGE,
                     positions=[token.position],
+                    details=(
+                        f"NEAR distance {near_distance[0]} is larger "
+                        f"than the maximum allowed value of {max_value}."
+                    ),
+                    fatal=True,
                 )
 
     def check_boolean_operator_readability(
@@ -379,51 +414,14 @@ class QueryStringLinter:
             if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value in faulty_operators:
                     details = f"Please use AND, OR, NOT instead of {faulty_operators}"
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
                         positions=[token.position],
                         details=details,
                     )
                     # Replace?
 
-    def handle_prefix_in_query_str(self, query_str: str) -> str:
-        """Handle prefix in query string.
-
-        Removes tokens before a fully quoted query
-        if they are not connected with a valid operator.
-
-        Only applies if quotes are balanced (even number of quotes).
-        """
-
-        quote_count = query_str.count('"')
-        if quote_count % 2 != 0:
-            return query_str  # unbalanced quotes, do not attempt trimming
-
-        prefix_match = re.search(r"^(?!.*\b(?:AND|OR)\s*)[^()]*?(?=\()", query_str)
-
-        original_query_str = query_str  # preserve for position calculation
-
-        # Handle prefix
-        if (
-            prefix_match
-            and prefix_match.group(0) is not None
-            and prefix_match.group(0).strip() != "("
-        ):
-            prefix = prefix_match.group(0)[:-1]
-            if prefix:
-                query_str = query_str[len(prefix) :].lstrip()
-
-                start = original_query_str.find(prefix)
-                end = start + len(prefix)
-                self.add_linter_message(
-                    QueryErrorCode.UNSUPPORTED_PREFIX,
-                    positions=[(start, end)],
-                    details="Removed unsupported text at the beginning of the query.",
-                )
-
-        return query_str
-
-    def handle_suffix_in_query_str(self, query_str: str) -> str:
+    def handle_suffix_in_query_str(self, parser: QueryStringParser) -> None:
         """Handle suffix in query string.
 
         Removes tokens after a fully quoted query
@@ -432,13 +430,13 @@ class QueryStringLinter:
         Only applies if quotes are balanced (even number of quotes).
         """
 
-        quote_count = query_str.count('"')
+        quote_count = parser.query_str.count('"')
         if quote_count % 2 != 0:
-            return query_str  # unbalanced quotes, do not attempt trimming
+            return  # unbalanced quotes, do not attempt trimming
 
-        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", query_str)
+        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", parser.query_str)
 
-        original_query_str = query_str  # preserve for position calculation
+        original_query_str = parser.query_str  # preserve for position calculation
 
         # Handle suffix
         if (
@@ -448,31 +446,90 @@ class QueryStringLinter:
         ):
             suffix = suffix_match.group(0)[1:]
             if suffix:
-                query_str = query_str[: -len(suffix)].rstrip()
+                parser.query_str = parser.query_str[: -len(suffix)].rstrip()
 
                 start = original_query_str.rfind(suffix)
                 end = start + len(suffix)
 
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.UNSUPPORTED_SUFFIX,
                     positions=[(start, end)],
                     details="Removed unsupported text at the end of the query.",
                 )
 
-        return query_str
-
-    def handle_fully_quoted_query_str(self, query_str: str) -> str:
+    def handle_fully_quoted_query_str(self, parser: QueryStringParser) -> None:
         """Handle fully quoted query string."""
-        if '"' == query_str[0] and '"' == query_str[-1] and "(" in query_str:
-            self.add_linter_message(
-                QueryErrorCode.QUERY_IN_QUOTES,
-                positions=[(-1, -1)],
-            )
-            # remove quotes before tokenization
-            query_str = query_str[1:-1]
-        return query_str
+        if not ('"' == parser.query_str[0] and '"' == parser.query_str[-1]):
+            return
 
-    def handle_nonstandard_quotes_in_query_str(self, query_str: str) -> str:
+        # iterate over chars from left to right
+        for char in parser.query_str[1:]:
+            if char == '"':
+                # if we find a quote, we can stop
+                return
+            if char == "(":
+                # if we find an opening parenthesis, we can stop
+                break
+        # iterate in reverse
+        for char in reversed(parser.query_str[:-1]):
+            if char == '"':
+                # if we find a quote, we can stop
+                return
+            if char == ")":
+                # if we find a closing parenthesis, we can stop
+                break
+
+        if "(" in parser.query_str:
+            self.add_message(
+                QueryErrorCode.QUERY_IN_QUOTES,
+                # (0,1), (len(parser.query_str) - 1, len(parser.query_str))
+                # Note: positions will not be displayed correclty after the string was adjusted.
+                positions=[],
+            )
+            if (
+                '"' == self.query_str[0]
+                and '"' == self.query_str[-1]
+                and "(" in self.query_str
+            ):
+                self.query_str = self.query_str[1:-1]
+            if (
+                '"' == self.original_str[0]
+                and '"' == self.original_str[-1]
+                and "(" in self.original_str
+            ):
+                self.original_str = self.original_str[1:-1]
+            # remove quotes before tokenization
+            parser.query_str = parser.query_str[1:-1]
+            if (
+                '"' == parser.original_str[0]
+                and '"' == parser.original_str[-1]
+                and "(" in parser.original_str
+            ):
+                # also remove quotes from original string
+                parser.original_str = parser.original_str[1:-1]
+
+    def handle_prefix_in_query_str(
+        self, parser: QueryStringParser, *, prefix_regex: re.Pattern
+    ) -> None:
+        """Handle prefixes in query string."""
+
+        prefix_match = prefix_regex.match(parser.query_str)
+
+        if not prefix_match:
+            return
+
+        match = prefix_match.group(0)
+        self.add_message(
+            QueryErrorCode.UNSUPPORTED_PREFIX_PLATFORM_IDENTIFIER,
+            positions=[],
+        )
+
+        self.query_str = self.query_str[len(match) :]
+        self.original_str = self.original_str[len(match) :]
+        parser.query_str = parser.query_str[len(match) :]
+        parser.original_str = parser.original_str[len(match) :]
+
+    def handle_nonstandard_quotes_in_query_str(self, parser: QueryStringParser) -> None:
         """Handle non-standard quotes in query string."""
 
         non_standard_quotes = "“”«»„‟"
@@ -480,22 +537,21 @@ class QueryStringLinter:
         found_quotes = []
         for quote in non_standard_quotes:
             quote_positions = [
-                (i, i + 1) for i, c in enumerate(query_str) if c == quote
+                (i, i + 1) for i, c in enumerate(parser.query_str) if c == quote
             ]
             if not quote_positions:
                 continue
             positions.extend(quote_positions)
             found_quotes.append(quote)
             # Replace all occurrences of this quote with standard quote
-            query_str = query_str.replace(quote, '"')
+            parser.query_str = parser.query_str.replace(quote, '"')
+            self.query_str = self.query_str.replace(quote, '"')
         if positions:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.NON_STANDARD_QUOTES,
                 positions=positions,
                 details=f"Non-standard quotes found: {''.join(sorted(found_quotes))}",
             )
-
-        return query_str
 
     def add_higher_value(
         self,
@@ -680,7 +736,7 @@ class QueryStringLinter:
             "operator groups with higher precedence.\n\n"
         )
 
-        self.add_linter_message(
+        self.add_message(
             QueryErrorCode.IMPLICIT_PRECEDENCE,
             positions=[o.position for o in unequal_precedence_operators],
             details=details,
@@ -823,20 +879,20 @@ class QueryStringLinter:
 
         """
         modified_query = query.copy()
-        if modified_query.operator and modified_query.search_field:
+        if modified_query.operator and modified_query.field:
             # move search field from operator to terms
             for child in modified_query.children:
-                if not child.search_field:
-                    child.search_field = modified_query.search_field.copy()
-            modified_query.search_field = None
+                if not child.field:
+                    child.field = modified_query.field.copy()
+            modified_query.field = None
 
         for i, child in enumerate(modified_query.children):
             modified_query.children[i] = self.get_query_with_fields_at_terms(child)
 
         return modified_query
 
-    def check_invalid_characters_in_search_term_query(
-        self, query: Query, invalid_characters: str
+    def check_invalid_characters_in_term_query(
+        self, query: Query, invalid_characters: str, error: QueryErrorCode
     ) -> None:
         """Check a search term for invalid characters"""
 
@@ -848,23 +904,23 @@ class QueryStringLinter:
                     details = (
                         f"Invalid character '{char}' in search term '{query.value}'"
                     )
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_CHARACTER,
+                    self.add_message(
+                        error,
                         positions=[query.position or (-1, -1)],
                         details=details,
                     )
 
         for child in query.children:
-            self.check_invalid_characters_in_search_term_query(
-                child, invalid_characters
+            self.check_invalid_characters_in_term_query(
+                child, invalid_characters, error
             )
 
     def check_operators_with_fields(self, query: Query) -> None:
         """Check for operators with fields"""
 
-        if query.operator and query.search_field:
-            self.add_linter_message(
-                QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
+        if query.operator and query.field:
+            self.add_message(
+                QueryErrorCode.NESTED_QUERY_WITH_FIELD,
                 positions=[query.position or (-1, -1)],
                 details="Nested query (operator) with search field is not supported",
             )
@@ -873,7 +929,7 @@ class QueryStringLinter:
             self.check_operators_with_fields(child)
 
     @abstractmethod
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set[Fields]:
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set[Fields]:
         """Translate a search field"""
 
     def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
@@ -895,12 +951,10 @@ class QueryStringLinter:
                     pass
             return
 
-        if not query.search_field:
+        if not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_search_field_set(
-            query.search_field.value
-        )
+        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.YEAR_PUBLICATION}:
             details = (
                 "Please double-check whether date filters "
@@ -909,13 +963,10 @@ class QueryStringLinter:
             positions = [(-1, -1)]
             if query.position and query.position is not None:
                 positions = [query.position]
-                if (
-                    query.search_field.position
-                    and query.search_field.position is not None
-                ):
-                    positions.append(query.search_field.position)
+                if query.field.position and query.field.position is not None:
+                    positions.append(query.field.position)
 
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
                 positions=positions,
                 details=details,
@@ -940,18 +991,16 @@ class QueryStringLinter:
                     pass
             return
 
-        if not query.search_field:
+        if not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_search_field_set(
-            query.search_field.value
-        )
+        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.JOURNAL, Fields.PUBLICATION_NAME}:
             details = (
                 "Please double-check whether journal/publication-name filters "
-                f"({query.search_field.value}) should apply to the entire query."
+                f"({query.field.value}) should apply to the entire query."
             )
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.JOURNAL_FILTER_IN_SUBQUERY,
                 positions=[query.position or (-1, -1)],
                 details=details,
@@ -1009,7 +1058,7 @@ class QueryStringLinter:
 
             redundant_terms = []
             for term_a in terms:
-                if not term_a.search_field:
+                if not term_a.field:
                     continue
                 for term_b in terms:
                     if (
@@ -1019,11 +1068,11 @@ class QueryStringLinter:
                     ):
                         continue
 
-                    if not term_b.search_field:
+                    if not term_b.field:
                         continue
 
-                    field_a = term_a.search_field.value
-                    field_b = term_b.search_field.value
+                    field_a = term_a.field.value
+                    field_b = term_b.field.value
 
                     if field_a != field_b:
                         continue
@@ -1040,7 +1089,7 @@ class QueryStringLinter:
                                 f"Term {term_b.value} is contained multiple times"
                                 " i.e., redundantly."
                             )
-                            self.add_linter_message(
+                            self.add_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 positions=[term_a.position, term_b.position],
                                 details=details,
@@ -1058,14 +1107,14 @@ class QueryStringLinter:
                                 f"{term_a.value} does not further restrict the result "
                                 f"set and is therefore redundant."
                             )
-                            self.add_linter_message(
+                            self.add_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 positions=[term_a.position, term_b.position],
                                 details=details,
                             )
                             redundant_terms.append(term_a)
                         elif operator == Operators.OR:
-                            self.add_linter_message(
+                            self.add_message(
                                 QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                                 positions=[term_a.position, term_b.position],
                                 details=f"Results for term {term_b.value} are contained"
@@ -1118,7 +1167,7 @@ class QueryStringLinter:
 
                     positions = [differing[0].position, differing[1].position]
 
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
                         positions=positions,  # type: ignore
                         details=details,
@@ -1137,18 +1186,23 @@ class QueryListLinter:
         self,
         parser: search_query.parser_base.QueryListParser,
         string_parser_class: typing.Type[search_query.parser_base.QueryStringParser],
+        original_query_str: str = "",
     ):
         self.parser = parser
         self.messages: dict = {}
         self.string_parser_class = string_parser_class
+        self.last_read_index: typing.Dict[int, int] = {}
+        self.original_query_str = original_query_str
 
-    def add_linter_message(
+    # pylint: disable=too-many-arguments
+    def add_message(
         self,
         error: QueryErrorCode,
         *,
         list_position: int,
         positions: typing.List[tuple[int, int]],
         details: str = "",
+        fatal: bool = False,
     ) -> None:
         """Add a linter message."""
         # do not add duplicates
@@ -1165,7 +1219,7 @@ class QueryListLinter:
                 "code": error.code,
                 "label": error.label,
                 "message": error.message,
-                "is_fatal": error.is_fatal(),
+                "is_fatal": fatal,
                 "position": positions,
                 "details": details,
             }
@@ -1175,37 +1229,55 @@ class QueryListLinter:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
 
+    # pylint: disable=too-many-branches
     def print_messages(self) -> None:
         """Print the latest linter messages."""
         if not self.messages:
             return
 
         for list_position, messages in self.messages.items():
-            query_str = ""
-            if list_position in self.parser.query_dict:
-                query_str = self.parser.query_dict[list_position]["node_content"]
+            if list_position not in self.last_read_index:
+                self.last_read_index[list_position] = 0
 
-            for message in messages:
-                code = message["code"]
-                color = Colors.ORANGE
+            messages = messages[self.last_read_index[list_position] :]
+
+            grouped_messages = defaultdict(list)
+            str(sys.stdout.encoding).lower().startswith("utf")
+
+            for message in messages[self.last_read_index[list_position] :]:
+                grouped_messages[message["code"]].append(message)
+
+            for code, group in grouped_messages.items():
+                # Take the first message as representative
+                representative = group[0]
+                code = representative["code"]
 
                 category = ""
-                if code.startswith("F"):
+                if representative["is_fatal"]:
                     color = Colors.RED
                     category = "❌ Fatal"
-                elif code.startswith("E"):
-                    category = "⚠️ Error"
-                elif code.startswith("W"):
+                else:
+                    color = Colors.ORANGE
                     category = "💡 Warning"
 
-                formatted_query = format_query_string_positions(
-                    query_str, message["position"], color=color
+                print(
+                    f"{color}{category}{Colors.END}: {representative['label']} ({code})"
                 )
-                print(f"{color}{category}{Colors.END}: " f"{message['label']} ({code})")
-                _print_bullet_message(message["message"])
-                print(f"  {message['details']}")
-                print(f"  {formatted_query}")
-                print("\n")
+                consolidated_messages = []
+                for message in group:
+                    if message["details"]:
+                        consolidated_messages.append(f"  {message['details']}")
+                    else:
+                        consolidated_messages.append(f"  {message['message']}")
+                for item in set(consolidated_messages):
+                    _print_bullet_message(item)
+                positions = [pos for message in group for pos in message["position"]]
+                query_info = format_query_string_positions(
+                    self.parser.query_list, positions, color=color
+                )
+                _print_bullet_message(query_info, bullet=" ")
+
+            self.last_read_index[list_position] += len(messages)
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors to the user"""

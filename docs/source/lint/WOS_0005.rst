@@ -1,0 +1,24 @@
+.. _WOS_0005:
+
+WOS_0005 — year-span-violation
+==============================
+
+**Error Code**: WOS_0005
+
+**Message**: ``Year span must be five or less.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    A AND PY=2000-2020
+
+**Recommended query**:
+
+.. code-block:: text
+
+    A AND PY=2015-2020
+
+**Typical fix**: The parser automatically adjusts the year span to 5 years.
+
+**Back to**: :ref:`lint`

@@ -1,0 +1,24 @@
+.. _WOS_0006:
+
+WOS_0006 — wildcard-in-year
+===========================
+
+**Error Code**: WOS_0006
+
+**Message**: ``Wildcard characters (*, ?, $) not supported in year search.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    dHealth[ti] AND 200*[dp]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    dHealth[ti] AND 2000:2010[dp]
+
+**Typical fix**: Replace with year range.
+
+**Back to**: :ref:`lint`

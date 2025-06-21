@@ -13,7 +13,7 @@ search\_query.wos.constants
 
    .. autosummary::
 
-      generic_search_field_to_syntax_field
+      field_general_to_syntax
+      generic_field_to_syntax_field
       map_to_standard
-      search_field_general_to_syntax
-      syntax_str_to_generic_search_field_set
+      syntax_str_to_generic_field_set

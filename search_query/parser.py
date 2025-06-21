@@ -6,6 +6,7 @@ import typing
 
 from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
+from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
@@ -26,8 +27,7 @@ PARSERS: typing.Dict[str, type[QueryStringParser]] = {
 LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
     PLATFORM.WOS.value: WOSListParser,
     PLATFORM.PUBMED.value: PubmedListParser,
-    # from search_query.ebsco.parser import EBSCOListParser
-    # PLATFORM.EBSCO.value: EBSCOListParser,
+    PLATFORM.EBSCO.value: EBSCOListParser,
 }
 
 
@@ -35,7 +35,7 @@ LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
 def parse(
     query_str: str,
     *,
-    search_field_general: str = "",
+    field_general: str = "",
     platform: str = PLATFORM.WOS.value,
     mode: str = LinterMode.STRICT,
 ) -> Query:
@@ -48,7 +48,7 @@ def parse(
 
         return LIST_PARSERS[platform](  # type: ignore
             query_list=query_str,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
         ).parse()
 
@@ -58,9 +58,9 @@ def parse(
     parser_class = PARSERS[platform]
 
     query = parser_class(
-        query_str, search_field_general=search_field_general, mode=mode
+        query_str, field_general=field_general, mode=mode
     ).parse()  # type: ignore
-    query.platform = platform
+
     return query
 
 

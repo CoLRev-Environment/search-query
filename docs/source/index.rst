@@ -47,15 +47,15 @@ Creating a query programmatically is simple:
     from search_query import OrQuery, AndQuery
 
     # Typical building-blocks approach
-    digital_synonyms = OrQuery(["digital", "virtual", "online"], search_field="abstract")
-    work_synonyms = OrQuery(["work", "labor", "service"], search_field="abstract")
+    digital_synonyms = OrQuery(["digital", "virtual", "online"], field="abstract")
+    work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
     query = AndQuery([digital_synonyms, work_synonyms])
 
 ..
     Parameters:
 
     - list of strings or queries: strings that you want to include in the search query,
-    - ``search_field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
+    - ``field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
    Search strings can be either in string or list format.
 
 We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
@@ -77,7 +77,7 @@ A useful feature of parsers is the built-in **linter** functionality, which help
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
     query = parse(query_string, platform="pubmed")
    # Output:
-   # ❌ Fatal: unbalanced-parentheses (F1001)
+   # ❌ Fatal: unbalanced-parentheses (PARSE_0002)
    #    Unbalanced opening parenthesis
    #    ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
    #                                          ^^^

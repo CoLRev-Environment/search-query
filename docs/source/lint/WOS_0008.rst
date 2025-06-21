@@ -1,0 +1,26 @@
+.. _WOS_0008:
+
+WOS_0008 — wildcard-right-short-length
+======================================
+
+**Error Code**: WOS_0008
+
+**Message**: ``Right-hand wildcard must preceded by at least three characters.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=te*
+    TS=ca*
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=tech*
+    TS=cat*
+
+**Typical fix**: Replace short wildcard prefix with at least three characters or use a more specific term.
+
+**Back to**: :ref:`lint`

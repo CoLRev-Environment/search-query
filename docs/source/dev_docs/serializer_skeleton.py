@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 def to_string_custom(query: Query) -> str:
     # Leaf node (no children)
     if not query.children:
-        field = query.search_field.value if query.search_field else ""
+        field = query.field.value if query.field else ""
         return f"{field}{query.value}"
 
     # Composite node (operator with children)
@@ -23,6 +23,6 @@ def to_string_custom(query: Query) -> str:
         joined_children = f"({joined_children})"
 
     # Prefix with field if applicable
-    if query.search_field:
-        return f"{query.search_field.value}{joined_children}"
+    if query.field:
+        return f"{query.field.value}{joined_children}"
     return joined_children

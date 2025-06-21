@@ -19,7 +19,7 @@ def test_assert_unique_error_codes() -> None:
 
 # Assert ordered error codes
 def test_assert_ordered_error_codes() -> None:
-    codes = [e.code for e in QueryErrorCode if not e.is_fatal()]
+    codes = [e.code for e in QueryErrorCode]
     ordered_codes = sorted(codes)
 
     assert codes == ordered_codes, "Error codes are not in ascending order"
@@ -27,7 +27,10 @@ def test_assert_ordered_error_codes() -> None:
 
 # Assert that the error codes are in the correct range
 def test_assert_error_codes_in_range() -> None:
-    codes = [int(e.code[1:]) for e in QueryErrorCode]
+    for e in QueryErrorCode:
+        print(e.code)
+        print(e.code.split("_")[1])
+    codes = [int(e.code.split("_")[1]) for e in QueryErrorCode]
     min_code = min(codes)
     max_code = max(codes)
 

@@ -17,4 +17,5 @@ search\_query.ebsco.linter
 
    .. autosummary::
 
+      EBSCOListLinter
       EBSCOQueryStringLinter

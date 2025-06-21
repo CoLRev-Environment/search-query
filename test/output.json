@@ -1,5 +1,5 @@
 {
-    "search_string": "((AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin))",
+    "search_string": "(AB quantum OR KW quantum OR TI quantum) AND (AB dot OR KW dot OR TI dot) AND (AB spin OR KW spin OR TI spin)",
     "platform": "Web of Science",
     "authors": [
         {
@@ -12,7 +12,7 @@
         "data_entry": "2019.07.01",
         "search_conducted": "2019.07.01"
     },
-    "search_field": "",
+    "field": "",
     "database": [
         "SCI-EXPANDED",
         "SSCI",

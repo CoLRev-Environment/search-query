@@ -20,8 +20,8 @@ Recommended components::
     PARENTHESIS_REGEX = r"[\(\)]"
     LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
     PROXIMITY_OPERATOR_REGEX = r"NEAR/\d+"
-    SEARCH_FIELD_REGEX = r"\b\w{2}="  # generic: like TI=, AB=
-    SEARCH_TERM_REGEX = r"\"[^\"]+\"|\S+"
+    FIELD_REGEX = r"\b\w{2}="  # generic: like TI=, AB=
+    TERM_REGEX = r"\"[^\"]+\"|\S+"
 
 Join them into one pattern::
 
@@ -29,8 +29,8 @@ Join them into one pattern::
         PARENTHESIS_REGEX,
         LOGIC_OPERATOR_REGEX,
         PROXIMITY_OPERATOR_REGEX,
-        SEARCH_FIELD_REGEX,
-        SEARCH_TERM_REGEX
+        FIELD_REGEX,
+        TERM_REGEX
     ])
 
 .. note::

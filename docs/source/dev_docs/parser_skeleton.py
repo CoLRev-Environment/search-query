@@ -1,17 +1,15 @@
 class CustomParser(QueryStringParser):
     PARENTHESIS_REGEX = r"[\(\)]"
     LOGIC_OPERATOR_REGEX = r"\b(AND|OR|NOT)\b"
-    SEARCH_FIELD_REGEX = r"\b\w{2}="
-    SEARCH_TERM_REGEX = r"\"[^\"]+\"|\S+"
+    FIELD_REGEX = r"\b\w{2}="
+    TERM_REGEX = r"\"[^\"]+\"|\S+"
 
     pattern = "|".join(
-        [PARENTHESIS_REGEX, LOGIC_OPERATOR_REGEX, SEARCH_FIELD_REGEX, SEARCH_TERM_REGEX]
+        [PARENTHESIS_REGEX, LOGIC_OPERATOR_REGEX, FIELD_REGEX, TERM_REGEX]
     )
 
-    def __init__(self, query_str, *, search_field_general="", mode=LinterMode.STRICT):
-        super().__init__(
-            query_str, search_field_general=search_field_general, mode=mode
-        )
+    def __init__(self, query_str, *, field_general="", mode=LinterMode.STRICT):
+        super().__init__(query_str, field_general=field_general, mode=mode)
         self.linter = CustomLinter(self)
 
     def tokenize(self):

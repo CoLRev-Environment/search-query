@@ -11,6 +11,7 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
 from search_query.ebsco.serializer import to_string_ebsco
 from search_query.query import SearchField
@@ -31,29 +32,25 @@ from search_query.query_term import Term
                 Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
                 Token(
                     value='"Artificial Intelligence"',
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(3, 28),
                 ),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(33, 35)),
-                Token(value="Future", type=TokenTypes.SEARCH_TERM, position=(36, 42)),
+                Token(value="Future", type=TokenTypes.TERM, position=(36, 42)),
                 Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(43, 46)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(47, 49)),
-                Token(value="Past", type=TokenTypes.SEARCH_TERM, position=(50, 54)),
+                Token(value="Past", type=TokenTypes.TERM, position=(50, 54)),
             ],
         ),
         (
             "Artificial N2 Intelligence",
             [
-                Token(
-                    value="Artificial", type=TokenTypes.SEARCH_TERM, position=(0, 10)
-                ),
+                Token(value="Artificial", type=TokenTypes.TERM, position=(0, 10)),
                 Token(
                     value="N2", type=TokenTypes.PROXIMITY_OPERATOR, position=(11, 13)
                 ),
-                Token(
-                    value="Intelligence", type=TokenTypes.SEARCH_TERM, position=(14, 26)
-                ),
+                Token(value="Intelligence", type=TokenTypes.TERM, position=(14, 26)),
             ],
         ),
         (
@@ -62,7 +59,7 @@ from search_query.query_term import Term
             [
                 Token(
                     value="arrest*",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(0, 7),
                 ),
                 Token(
@@ -77,7 +74,7 @@ from search_query.query_term import Term
                 ),
                 Token(
                     value="record*",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(16, 23),
                 ),
                 Token(
@@ -87,7 +84,7 @@ from search_query.query_term import Term
                 ),
                 Token(
                     value="history*",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(27, 35),
                 ),
                 Token(
@@ -97,7 +94,7 @@ from search_query.query_term import Term
                 ),
                 Token(
                     value="police",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(39, 45),
                 ),
                 Token(
@@ -111,10 +108,10 @@ from search_query.query_term import Term
             "TI RN OR AB RN",
             [
                 Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
-                Token(value="RN", type=TokenTypes.SEARCH_TERM, position=(3, 5)),
+                Token(value="RN", type=TokenTypes.TERM, position=(3, 5)),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(6, 8)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(9, 11)),
-                Token(value="RN", type=TokenTypes.SEARCH_TERM, position=(12, 14)),
+                Token(value="RN", type=TokenTypes.TERM, position=(12, 14)),
             ],
         ),
         # (
@@ -129,7 +126,7 @@ def test_tokenization(
 ) -> None:
     """Test EBSCO parser tokenization."""
     print(query_string)
-    parser = EBSCOParser(query_string, search_field_general="")
+    parser = EBSCOParser(query_string, field_general="")
     parser.tokenize()
 
     actual_tokens = parser.tokens
@@ -143,14 +140,14 @@ def test_tokenization(
         (
             [
                 Token("AND", TokenTypes.LOGIC_OPERATOR, (0, 3)),
-                Token("diabetes", TokenTypes.SEARCH_TERM, (4, 12)),
+                Token("diabetes", TokenTypes.TERM, (4, 12)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Cannot start with LOGIC_OPERATOR",
         ),
         (
             [
-                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
+                Token("diabetes", TokenTypes.TERM, (0, 8)),
                 Token("AND", TokenTypes.LOGIC_OPERATOR, (9, 12)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
@@ -158,8 +155,8 @@ def test_tokenization(
         ),
         (
             [
-                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
-                Token("hypertension", TokenTypes.SEARCH_TERM, (9, 20)),
+                Token("diabetes", TokenTypes.TERM, (0, 8)),
+                Token("hypertension", TokenTypes.TERM, (9, 20)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Missing operator between terms",
@@ -174,17 +171,17 @@ def test_tokenization(
         ),
         (
             [
-                Token("ti", TokenTypes.SEARCH_TERM, (0, 2)),
+                Token("ti", TokenTypes.TERM, (0, 2)),
                 Token("(", TokenTypes.PARENTHESIS_OPEN, (3, 4)),
             ],
-            [QueryErrorCode.SEARCH_FIELD_UNSUPPORTED.label],
+            [QueryErrorCode.FIELD_UNSUPPORTED.label],
             "Search field is not supported (must be upper case)",
         ),
         (
             [
-                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 8)),
+                Token("diabetes", TokenTypes.TERM, (0, 8)),
                 Token("TI", TokenTypes.FIELD, (9, 11)),
-                Token("insulin", TokenTypes.SEARCH_TERM, (12, 19)),
+                Token("insulin", TokenTypes.TERM, (12, 19)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Invalid search field position",
@@ -192,7 +189,7 @@ def test_tokenization(
         (
             [
                 Token("TI", TokenTypes.FIELD, (0, 2)),
-                Token("diabetes", TokenTypes.SEARCH_TERM, (3, 11)),
+                Token("diabetes", TokenTypes.TERM, (3, 11)),
             ],
             [],
             "Valid field and term",
@@ -230,7 +227,7 @@ def test_invalid_token_sequences(
             "(Artificial Intelligence AND Future",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -243,7 +240,7 @@ def test_invalid_token_sequences(
             "TI AND Artificial Intelligence",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -257,12 +254,12 @@ def test_invalid_token_sequences(
             "AI governance OR AB Future",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
@@ -270,12 +267,12 @@ def test_invalid_token_sequences(
             'AI "governance" OR AB Future',
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
                 }
             ],
         ),
@@ -283,8 +280,8 @@ def test_invalid_token_sequences(
             "ti (ehealth OR mhealth)",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
@@ -296,7 +293,7 @@ def test_invalid_token_sequences(
             'MH "sleep" OR MH "sleep disorders"',
             [
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -314,7 +311,7 @@ def test_invalid_token_sequences(
             "bias OR OR politics",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -327,7 +324,7 @@ def test_invalid_token_sequences(
             "*ology",
             [
                 {
-                    "code": "F2001",
+                    "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
@@ -340,7 +337,7 @@ def test_invalid_token_sequences(
             "f??*",
             [
                 {
-                    "code": "F2001",
+                    "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
@@ -353,7 +350,7 @@ def test_invalid_token_sequences(
             "f*tal",
             [
                 {
-                    "code": "F2001",
+                    "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
@@ -390,7 +387,7 @@ def test_invalid_token_sequences(
 )
 def test_linter(query_string: str, messages: list) -> None:
     print(query_string)
-    parser = EBSCOParser(query_string, search_field_general="")
+    parser = EBSCOParser(query_string, field_general="")
     try:
         parser.parse()
     except Exception:
@@ -406,19 +403,19 @@ def test_linter(query_string: str, messages: list) -> None:
 
 
 @pytest.mark.parametrize(
-    "query_string, search_field_general, messages",
+    "query_string, field_general, messages",
     [
         (
             "TI Artificial Intelligence AND AB Future",
             "AB",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
-                    "details": "",
+                    "details": "The search field is extracted and should be included in the query.",
                 }
             ],
         ),
@@ -427,7 +424,7 @@ def test_linter(query_string: str, messages: list) -> None:
             "",
             [
                 {
-                    "code": "F1010",
+                    "code": "PARSE_0006",
                     "label": "invalid-syntax",
                     "message": "Query contains invalid syntax",
                     "is_fatal": True,
@@ -441,7 +438,7 @@ def test_linter(query_string: str, messages: list) -> None:
             "",
             [
                 {
-                    "code": "W0005",
+                    "code": "STRUCT_0002",
                     "label": "operator-capitalization",
                     "message": "Operators should be capitalized",
                     "is_fatal": False,
@@ -455,7 +452,7 @@ def test_linter(query_string: str, messages: list) -> None:
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -470,7 +467,7 @@ def test_linter(query_string: str, messages: list) -> None:
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -480,14 +477,42 @@ def test_linter(query_string: str, messages: list) -> None:
             ],
         ),
         ("arrest* W2 (record* OR history* OR police)", "", []),
+        (
+            '"Artificial Intelligence AND (Future OR Past)"',
+            "",
+            [
+                {
+                    "code": "PARSE_0007",
+                    "label": "query-in-quotes",
+                    "message": "The whole Search string is in quotes.",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
+        (
+            "EBSCOHost: Artificial Intelligence AND Future",
+            "",
+            [
+                {
+                    "code": "PARSE_0010",
+                    "label": "unsupported-prefix-platform-identifier",
+                    "message": "Query starts with platform identifier",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
     ],
 )
-def test_linter_general_search_field(
-    query_string: str, search_field_general: str, messages: list
+def test_linter_general_field(
+    query_string: str, field_general: str, messages: list
 ) -> None:
     print(query_string)
     parser = EBSCOParser(
-        query_string, search_field_general=search_field_general, mode=LinterMode.STRICT
+        query_string, field_general=field_general, mode=LinterMode.STRICT
     )
     try:
         parser.parse()
@@ -552,7 +577,7 @@ def test_parser(query_str: str, expected_translation: str) -> None:
 
     parser = EBSCOParser(
         query_str=query_str,
-        search_field_general="",
+        field_general="",
         mode="",
     )
     query_tree = parser.parse()
@@ -569,7 +594,7 @@ def test_parser(query_str: str, expected_translation: str) -> None:
 def test_leaf_node_with_field() -> None:
     query = Term(
         value="diabetes",
-        search_field=SearchField("TI"),
+        field=SearchField("TI"),
         platform="ebscohost",
     )
     assert to_string_ebsco(query) == "TI diabetes"
@@ -585,18 +610,18 @@ def test_boolean_query_with_two_terms() -> None:
         children=[
             Term(
                 value="diabetes",
-                search_field=SearchField("TI"),
+                field=SearchField("TI"),
                 platform="ebscohost",
             ),
             Term(
                 value="insulin",
-                search_field=SearchField("TI"),
+                field=SearchField("TI"),
                 platform="ebscohost",
             ),
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(TI diabetes AND TI insulin)"
+    assert to_string_ebsco(query) == "TI diabetes AND TI insulin"
 
 
 def test_nested_boolean_with_field() -> None:
@@ -608,7 +633,7 @@ def test_nested_boolean_with_field() -> None:
         platform="ebscohost",
     )
     outer = OrQuery(
-        search_field=SearchField("AB"),
+        field=SearchField("AB"),
         children=[inner, Term(value="therapy")],
         platform="ebscohost",
     )
@@ -626,14 +651,14 @@ def test_proximity_near_operator() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "(diabetes N5 therapy)"
+    assert to_string_ebsco(query) == "diabetes N5 therapy"
 
 
 def test_proximity_within_operator_with_field() -> None:
     query = NEARQuery(
         value="WITHIN",
         distance=3,
-        search_field=SearchField("AB"),
+        field=SearchField("AB"),
         children=[
             Term(value="insulin", platform="ebscohost"),
             Term(value="resistance", platform="ebscohost"),
@@ -646,3 +671,20 @@ def test_proximity_within_operator_with_field() -> None:
 def test_proximity_missing_distance_raises() -> None:
     with pytest.raises(ValueError, match="NEAR operator requires a distance"):
         NEARQuery(value="NEAR", children=["AI", "health"], distance=None, platform="ebscohost")  # type: ignore
+        # Query(value="NEAR", operator=True, distance=None, platform="ebscohost")
+
+
+def test_list_parser_case_1() -> None:
+    query_list = """
+1. DE \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndromes\" OR \"irritable colon\" OR \"irritable colons\"
+2. DE \"Clinical Trials\" OR DE \"Randomized Controlled Trials\" OR DE \"Randomized Clinical Trials\" OR DE \"Random Sampling\" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies
+3. S1 AND S2
+"""
+
+    list_parser = EBSCOListParser(query_list=query_list)
+    q = list_parser.parse()
+
+    assert (
+        q.to_string()
+        == '(DE "Irritable Bowel Syndrome" OR "Irritable Bowel Syndrome" OR "Irritable Bowel Syndromes" OR "irritable colon" OR "irritable colons") AND (DE "Clinical Trials" OR DE "Randomized Controlled Trials" OR DE "Randomized Clinical Trials" OR DE "Random Sampling" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies)'
+    )

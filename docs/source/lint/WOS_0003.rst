@@ -1,0 +1,24 @@
+.. _WOS_0003:
+
+WOS_0003 — year-without-terms
+=============================
+
+**Error Code**: WOS_0003
+
+**Message**: ``A search for publication years must include at least another search term.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    PY=2000
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term AND PY=2000
+
+**Typical fix**: Combine the year filter with at least one other search term.
+
+**Back to**: :ref:`lint`

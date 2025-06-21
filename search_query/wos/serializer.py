@@ -20,7 +20,7 @@ def to_string_wos(query: Query) -> str:
 
     # Leaf node
     if not query.children:
-        field = query.search_field.value if query.search_field else ""
+        field = query.field.value if query.field else ""
         return f"{field}{query.value}"
 
     parts = []
@@ -36,11 +36,11 @@ def to_string_wos(query: Query) -> str:
     joined = f" {query.value} ".join(parts)
 
     if query.get_parent():
-        field = query.search_field.value if query.search_field else ""
+        field = query.field.value if query.field else ""
         return f"{field}({joined})"
 
     # Top-level: wrap=False
-    if query.search_field and all(not c.search_field for c in query.children):
-        return f"{query.search_field.value}({joined})"
+    if query.field and all(not c.field for c in query.children):
+        return f"{query.field.value}({joined})"
 
     return joined

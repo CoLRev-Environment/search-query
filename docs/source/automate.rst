@@ -29,8 +29,8 @@ Using the Crossref API as an example, the following illustrates how to construct
        for child in query.children:
            if child.operator:
                raise ValueError("Nested operators are not supported in Crossref serializer.")
-           if child.search_field.value != Fields.TITLE:
-               raise ValueError(f"Only title field is supported in Crossref serializer ({child.search_field})")
+           if child.field.value != Fields.TITLE:
+               raise ValueError(f"Only title field is supported in Crossref serializer ({child.field})")
            query_parts.append(child.value.strip())
 
        # Crossref uses '+' for spaces in query values
@@ -39,7 +39,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    if __name__ == "__main__":
 
-       query = OrQuery(["microsourcing", "lululemon"], search_field="title")
+       query = OrQuery(["microsourcing", "lululemon"], field="title")
 
        url = to_crossref_url(query)
        api_crossref = crossref_api.CrossrefAPI(params={"url": url})
@@ -51,7 +51,7 @@ Using the Crossref API as an example, the following illustrates how to construct
            authors=[{"name": "Tom Brady"}],
            record_info={"source": "manual", "url": url},
            date={"data_entry": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")},
-           search_field="title",
+           field="title",
            description="Search for work authored by Tom Brady",
            tags=["microsourcing", "lululemon", "research"]
        )

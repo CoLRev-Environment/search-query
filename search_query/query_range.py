@@ -16,7 +16,7 @@ class RangeQuery(Query):
         self,
         children: typing.List[typing.Union[str, Query]],
         *,
-        search_field: typing.Optional[typing.Union[SearchField, str]] = None,
+        field: typing.Optional[typing.Union[SearchField, str]] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
@@ -29,10 +29,10 @@ class RangeQuery(Query):
         super().__init__(
             value=Operators.RANGE,
             children=children,
-            search_field=search_field
-            if isinstance(search_field, SearchField)
-            else SearchField(search_field)
-            if search_field is not None
+            field=field
+            if isinstance(field, SearchField)
+            else SearchField(field)
+            if field is not None
             else None,
             position=position,
             platform=platform,
@@ -61,16 +61,16 @@ class RangeQuery(Query):
     def selects_record(self, record_dict: dict) -> bool:
         """Check if the record matches the range query."""
         assert len(self.children) == 2, "RANGE query must have two children"
-        assert self.children[0].search_field, "First child must have a search field"
-        assert self.children[1].search_field, "Second child must have a search field"
+        assert self.children[0].field, "First child must have a search field"
+        assert self.children[1].field, "Second child must have a search field"
         assert (
-            self.children[0].search_field.value == self.children[1].search_field.value
+            self.children[0].field.value == self.children[1].field.value
         ), "Both children of RANGE query must have the same search field"
 
         term1 = self.children[0].value.lower()
         term2 = self.children[1].value.lower()
         record_field = record_dict.get(
-            self.children[0].search_field.value, record_dict.get("year", "")
+            self.children[0].field.value, record_dict.get("year", "")
         )
 
         if term1.isdigit() and term2.isdigit() and record_field.isdigit():

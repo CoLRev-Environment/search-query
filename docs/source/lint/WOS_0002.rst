@@ -1,0 +1,24 @@
+.. _WOS_0002:
+
+WOS_0002 — near-distance-too-large
+==================================
+
+**Error Code**: WOS_0002
+
+**Message**: ``NEAR distance is too large (max: 15).``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 NEAR/20 term2
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term1 NEAR/15 term2
+
+**Typical fix**: Reduce the NEAR distance to 15 or less.
+
+**Back to**: :ref:`lint`

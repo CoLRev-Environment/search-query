@@ -17,8 +17,8 @@ def to_string_generic(query: Query) -> str:
     query_content = query.value
     if hasattr(query, "distance"):  # and isinstance(query.distance, int):
         query_content += f"/{query.distance}"
-    if query.search_field:
-        query_content += f"[{query.search_field}]"
+    if query.field:
+        query_content += f"[{query.field}]"
 
     result = f"{result}{query_content}"
     if query.children == []:

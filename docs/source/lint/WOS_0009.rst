@@ -1,0 +1,24 @@
+.. _WOS_0009:
+
+WOS_0009 — wildcard-after-special-char
+======================================
+
+**Error Code**: WOS_0009
+
+**Message**: ``Wildcard cannot be preceded by special characters.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=(term1 OR term2!*)
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=(term1 OR term2*)
+
+**Typical fix**: Remove the special character before the wildcard or rephrase the query to avoid combining them.
+
+**Back to**: :ref:`lint`

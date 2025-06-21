@@ -1,0 +1,24 @@
+.. _TERM_0003:
+
+TERM_0003 — doi-format-invalid
+==============================
+
+**Error Code**: TERM_0003
+
+**Message**: ``Invalid DOI format.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    DO=12.1000/xyz
+
+**Recommended query**:
+
+.. code-block:: text
+
+    DO=10.1000/xyz
+
+**Typical fix**: Use a valid DOI format (e.g., starts with 10. followed by a numeric string and suffix).
+
+**Back to**: :ref:`lint`

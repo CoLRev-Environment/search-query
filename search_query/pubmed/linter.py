@@ -6,6 +6,7 @@ import re
 import typing
 
 from search_query.constants import Colors
+from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
@@ -16,7 +17,7 @@ from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.pubmed.constants import map_to_standard
 from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
-from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
+from search_query.pubmed.constants import syntax_str_to_generic_field_set
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -32,14 +33,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PARENTHESIS_CLOSED: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
         ],
-        TokenTypes.SEARCH_TERM: [
+        TokenTypes.TERM: [
             TokenTypes.FIELD,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
@@ -50,29 +51,35 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.RANGE_OPERATOR,
         ],
         TokenTypes.LOGIC_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.RANGE_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
         ],
     }
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
+    ) -> None:
+        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
 
     def validate_tokens(
         self,
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Validate token list"""
 
         self.tokens = tokens
         self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.field_general = field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -83,8 +90,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
-        self.check_unsupported_pubmed_search_fields()
-        self.check_general_search_field_mismatch()
+        self.check_unsupported_pubmed_fields()
+        self.check_general_field()
+        self.check_implicit_fields()
         self.check_boolean_operator_readability()
 
         self.check_invalid_proximity_operator()
@@ -96,15 +104,16 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # Check for erroneous field syntax
         match = re.search(r"\b[A-Z]{2}=", self.query_str)
         if match:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 positions=[match.span()],
                 details="PubMed fields must be enclosed in brackets and "
                 "after a search term, e.g. robot[TIAB] or monitor[TI]. "
                 f"'{match.group(0)}' is invalid.",
+                fatal=True,
             )
 
-    def check_character_replacement_in_search_term(self, query: Query) -> None:
+    def check_character_replacement_in_term(self, query: Query) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
@@ -125,27 +134,28 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     positions = [(-1, -1)]
                     if query.position:
                         positions = [(query.position[0] + i, query.position[0] + i + 1)]
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.CHARACTER_REPLACEMENT,
                         positions=positions,
                         details=details,
                     )
 
         for child in query.children:
-            self.check_character_replacement_in_search_term(child)
+            self.check_character_replacement_in_term(child)
 
     def check_invalid_token_sequences(self) -> None:
         """Check token list for invalid token sequences."""
 
         # Check the first token
         if self.tokens[0].type not in [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type.value}",
+                fatal=True,
             )
 
         # pylint: disable=duplicate-code
@@ -191,7 +201,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details = "Missing operator"
+                details = (
+                    "Missing operator between "
+                    f'"{self.tokens[i - 1].value} {token.value}"'
+                )
                 positions = [
                     (
                         self.tokens[i - 1].position[0],
@@ -199,10 +212,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
                 ]
 
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=positions,
                 details=details,
+                fatal=True,
             )
 
         # Check the last token
@@ -210,10 +224,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.PARENTHESIS_OPEN,
             TokenTypes.LOGIC_OPERATOR,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
+                fatal=True,
             )
 
     def _print_unequal_precedence_warning(self, index: int) -> None:
@@ -258,7 +273,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             "based on their left-to-right position in the query.\n\n"
         )
 
-        self.add_linter_message(
+        self.add_message(
             QueryErrorCode.IMPLICIT_PRECEDENCE,
             positions=[o.position for o in unequal_precedence_operators],
             details=details,
@@ -379,7 +394,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if "*" in query.value[:k]:
                 # Wildcard * is invalid
                 # when applied to terms with less than 4 characters
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_WILDCARD_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -402,8 +417,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
             field_value, prox_value = match.groups()
             field_value = "[" + field_value + "]"
             if not prox_value.isdigit():
-                details = f"Proximity value '{prox_value}' is not a digit"
-                self.add_linter_message(
+                details = (
+                    f"Proximity value '{prox_value}' is not a digit. "
+                    "Using default 3 instead."
+                )
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],
                     details=details,
@@ -419,7 +437,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     "Proximity search requires 2 or "
                     "more search terms enclosed in double quotes."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[self.tokens[index - 1].position],
                     details=details,
@@ -434,7 +452,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     f"Proximity operator is not supported: '{field_token.value}'"
                     + " (supported search fields: [tiab], [ti], [ad])"
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],
                     details=details,
@@ -447,7 +465,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_character_replacement_in_search_term(query)
+        self.check_character_replacement_in_term(query)
 
         self.check_operators_with_fields(query)
 
@@ -467,13 +485,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set:
         """Translate a search field"""
 
-        return syntax_str_to_generic_search_field_set(field_value)
+        return syntax_str_to_generic_field_set(field_value)
 
     # pylint: disable=duplicate-code
-    def check_unsupported_pubmed_search_fields(self) -> None:
+    def check_unsupported_pubmed_fields(self) -> None:
         """Check for the correct format of fields."""
 
         for token in self.tokens:
@@ -488,82 +506,42 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 if ":~" in token.value:
                     # Will be handled in check_invalid_proximity_operator
                     return
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                self.add_message(
+                    QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
                     details=f"Search field {token.value} at position "
                     f"{token.position} is not supported.",
+                    fatal=True,
                 )
 
-    def check_general_search_field_mismatch(self) -> None:
-        """Check general search field mismatch"""
+    def check_implicit_fields(self) -> None:
+        """Check the general search field"""
 
-        general_sf_parentheses = f"[{self.search_field_general.lower()}]"
-        try:
-            general_sf = map_to_standard(general_sf_parentheses)
-        except ValueError:
-            # If the general search field is not supported, we skip the check
-            general_sf = None
+        # search fields are required for each term.
+        # otherwise, pubmed implicitly sets [all]
 
-        standardized_sf_list = []
-        for token in self.tokens:
-            if token.type != TokenTypes.FIELD:
-                continue
-            try:
-                standardized_sf = map_to_standard(token.value)
-            except ValueError:
-                # If the search field is not supported, we skip the check
-                continue
+        implicit_positions = []
+        for i, _ in enumerate(self.tokens):
+            token_type = self.tokens[i].type
+            next_token_type = TokenTypes.TERM  # Default
+            if i < len(self.tokens) - 1:
+                next_token_type = self.tokens[i + 1].type
+            if token_type == TokenTypes.TERM and next_token_type != TokenTypes.FIELD:
+                implicit_positions.append(self.tokens[i].position)
 
-            standardized_sf_list.append(standardized_sf)
-            if general_sf and standardized_sf:
-                if general_sf != standardized_sf:
-                    details = (
-                        "The search_field_general "
-                        f"({self.search_field_general}) "
-                        f"and the search_field {token.value} do not match."
-                    )
-                    # User-provided fields and fields in the query do not match
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                        positions=[token.position],
-                        details=details,
-                    )
-                else:
-                    details = (
-                        "The search_field_general "
-                        f"({self.search_field_general}) "
-                        f"and the search_field {token.value} are redundant."
-                    )
-                    # User-provided fields match fields in the query
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                        positions=[token.position],
-                        details=details,
-                    )
-
-        if general_sf and not standardized_sf_list:
-            # User-provided fields are missing in the query
-            self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING,
-                positions=[(-1, -1)],
-                details="Search fields should be specified in the query "
-                "instead of the search_field_general",
-            )
-
-        if not general_sf and not any(t.type == TokenTypes.FIELD for t in self.tokens):
-            # Fields not specified
-            self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING,
-                positions=[(-1, -1)],
-                # TODO : default search field: [all]
-                # TODO : distinguish MISSING vs. IMPLICIT?
-                details="Search field is missing.",
+        if implicit_positions:
+            details = "The search field is implicit (will be set to [all] by PubMed)."
+            self.add_message(
+                QueryErrorCode.FIELD_IMPLICIT,
+                positions=implicit_positions,
+                details=details,
             )
 
 
 class PubmedQueryListLinter(QueryListLinter):
     """Linter for PubMed Query Strings"""
+
+    OPERATOR_NODE_REGEX = re.compile(r"#?\d+|AND|OR|NOT")
 
     def __init__(
         self,
@@ -577,11 +555,47 @@ class PubmedQueryListLinter(QueryListLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
-        # self.parser.query_dict.items()
+        self._check_list_query_invalid_reference()
+        # self.check_operator_node_token_sequence()
 
-        self.check_invalid_list_reference()
-        # self.check_unknown_tokens()
-        self.check_operator_node_token_sequence()
+    def _check_list_query_invalid_reference(self) -> None:
+        # check if all list-references exist
+        for ind, query_node in self.parser.query_dict.items():
+            # check if all list references exist
+            for match in re.finditer(
+                self.parser.LIST_ITEM_REFERENCE,
+                str(query_node["node_content"]),
+            ):
+                reference = match.group()
+                position = match.span()
+                offset = query_node["content_pos"][0]
+                position = (position[0] + offset, position[1] + offset)
+                if reference.replace("#", "") not in self.parser.query_dict:
+                    self.add_message(
+                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
+                        list_position=ind,
+                        positions=[position],
+                        details=f"List reference {reference} not found.",
+                        fatal=True,
+                    )
+
+    def _get_operator_node_tokens(self, token_nr: int) -> list:
+        """Get operator node tokens"""
+        node_content = self.parser.query_dict[token_nr]["node_content"]
+        operator_node_tokens = []
+        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
+            value = match.group(0)
+            start, end = match.span()
+            if self.parser.LIST_ITEM_REFERENCE.match(value):
+                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
+            else:
+                token_type = OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE
+            operator_node_tokens.append(
+                ListToken(
+                    value=value, type=token_type, level=token_nr, position=(start, end)
+                )
+            )
+        return operator_node_tokens
 
     def check_operator_node_token_sequence(self) -> None:
         """Check operator nodes"""
@@ -590,7 +604,7 @@ class PubmedQueryListLinter(QueryListLinter):
             if query["type"] != ListTokenTypes.OPERATOR_NODE:
                 continue
 
-            operator_node_tokens = self.parser.get_operator_node_tokens(level)
+            operator_node_tokens = self._get_operator_node_tokens(level)
 
             # check token sequences: operator + list_ref
             if (
@@ -599,13 +613,14 @@ class PubmedQueryListLinter(QueryListLinter):
             ):
                 details = (
                     "Operator node must start with a list reference "
-                    f"but starts with {operator_node_tokens[0].type}"
+                    "(format: #1, #2, etc.)."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=level,
                     positions=[operator_node_tokens[0].position],
                     details=details,
+                    fatal=True,
                 )
 
             prev_token = operator_node_tokens[0]
@@ -616,50 +631,23 @@ class PubmedQueryListLinter(QueryListLinter):
                 if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                     if prev_token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                         details = "Two list references in a row"
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
                             positions=[(prev_token.position[0], token.position[1])],
                             details=details,
+                            fatal=True,
                         )
                     prev_token = token
 
-                if token.type == OperatorNodeTokenTypes.LOGIC_OPERATOR:
+                if token.type == OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE:
                     if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                         details = "Invalid operator position"
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
                             positions=[token.position],
                             details=details,
+                            fatal=True,
                         )
                     prev_token = token
-
-    def check_invalid_list_reference(self) -> None:
-        """Check for invalid list reference"""
-
-        for level, query in self.parser.query_dict.items():
-            if query["type"] != ListTokenTypes.OPERATOR_NODE:
-                continue
-
-            operator_node_tokens = self.parser.get_operator_node_tokens(level)
-
-            for operator_node_token in operator_node_tokens:
-                if (
-                    operator_node_token.type
-                    != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-                ):
-                    continue
-                list_reference = operator_node_token.value.replace("#", "")
-
-                if list_reference not in self.parser.query_dict:
-                    details = (
-                        f"List reference '#{list_reference}' is invalid "
-                        "(a corresponding list element does not exist)."
-                    )
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_LIST_REFERENCE,
-                        list_position=level,
-                        positions=[operator_node_token.position],
-                        details=details,
-                    )

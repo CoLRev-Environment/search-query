@@ -6,8 +6,8 @@ from itertools import permutations
 
 from search_query.constants import Fields
 from search_query.constants import Operators
-from search_query.pubmed.constants import generic_search_field_to_syntax_field
-from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
+from search_query.pubmed.constants import generic_field_to_syntax_field
+from search_query.pubmed.constants import syntax_str_to_generic_field_set
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_near import NEARQuery
@@ -27,24 +27,22 @@ class PubmedTranslator(QueryTranslator):
             return False
         if not all(not child.operator for child in query.children):
             return False
-        assert all(child.search_field for child in query.children)
+        assert all(child.field for child in query.children)
 
-        search_fields = {
-            child.search_field.value for child in query.children if child.search_field
-        }
+        fields = {child.field.value for child in query.children if child.field}
 
-        if len(search_fields) != 1:
+        if len(fields) != 1:
             return False
 
-        if next(iter(search_fields)) in {"[title and abstract]", "[tiab]"}:
+        if next(iter(fields)) in {"[title and abstract]", "[tiab]"}:
             existing_children = list(query.children)
             for child in existing_children:
-                if not child.search_field:  # pragma: no cover
+                if not child.field:  # pragma: no cover
                     continue
-                child.search_field.value = Fields.TITLE
+                child.field.value = Fields.TITLE
                 new_child = Term(
                     value=child.value,
-                    search_field=SearchField(value=Fields.ABSTRACT),
+                    field=SearchField(value=Fields.ABSTRACT),
                 )
                 query.add_child(new_child)
 
@@ -55,16 +53,14 @@ class PubmedTranslator(QueryTranslator):
         return False  # pragma: no cover
 
     @classmethod
-    def _translate_search_fields(cls, query: "Query") -> None:
+    def _translate_fields(cls, query: "Query") -> None:
         if query.operator:
             for child in query.children:
-                cls._translate_search_fields(child)
+                cls._translate_fields(child)
 
         else:
-            if query.search_field and query.search_field.value not in ["[tiab]"]:
-                query.search_field.value = generic_search_field_to_syntax_field(
-                    query.search_field.value
-                )
+            if query.field and query.field.value not in ["[tiab]"]:
+                query.field.value = generic_field_to_syntax_field(query.field.value)
 
     @classmethod
     def _combine_tiab(cls, query: "Query") -> None:
@@ -74,12 +70,8 @@ class PubmedTranslator(QueryTranslator):
             # ab does not exist: always expand to tiab
             terms = []
             for child in query.children:
-                if (
-                    not child.operator
-                    and child.search_field
-                    and child.search_field.value == "ab"
-                ):
-                    child.search_field.value = "[tiab]"
+                if not child.operator and child.field and child.field.value == "ab":
+                    child.field.value = "[tiab]"
                     terms.append(child.value)
 
             if terms:
@@ -89,9 +81,7 @@ class PubmedTranslator(QueryTranslator):
             missing_terms = []
             for term in terms:
                 if not any(
-                    term == child.value
-                    and child.search_field
-                    and child.search_field.value == "ti"
+                    term == child.value and child.field and child.field.value == "ti"
                     for child in query.children
                 ):
                     missing_terms.append(term)
@@ -110,8 +100,8 @@ class PubmedTranslator(QueryTranslator):
                 if child.operator:
                     # unconditionally append operators
                     new_children.append(child)
-                elif child.search_field and not (
-                    child.search_field.value == "ti" and child.value in terms
+                elif child.field and not (
+                    child.field.value == "ti" and child.value in terms
                 ):
                     new_children.append(child)
             query.children = new_children
@@ -161,9 +151,9 @@ class PubmedTranslator(QueryTranslator):
                 for q in queries:
                     term_a = q.children[0].value
                     term_b = q.children[1].value
-                    assert q.children[0].search_field
+                    assert q.children[0].field
                     term_field_map[(min(term_a, term_b), max(term_a, term_b))].add(
-                        q.children[0].search_field.value
+                        q.children[0].field.value
                     )
 
                 for (term_a, term_b), fields in term_field_map.items():
@@ -180,7 +170,7 @@ class PubmedTranslator(QueryTranslator):
                                 children=[
                                     Term(
                                         value=f'"{term_a} {term_b}"',
-                                        search_field=SearchField(value=field),
+                                        field=SearchField(value=field),
                                         platform="deactivated",
                                     )
                                 ],
@@ -209,17 +199,17 @@ class PubmedTranslator(QueryTranslator):
         return query
 
     @classmethod
-    def translate_search_fields_to_generic(cls, query: Query) -> Query:
+    def translate_fields_to_generic(cls, query: Query) -> Query:
         """Translate search fields"""
 
         if query.children:
             if query.value == Operators.NEAR:
                 # Expand NEAR queries
-                assert query.children[0].search_field
-                search_field_set = syntax_str_to_generic_search_field_set(
-                    query.children[0].search_field.value
+                assert query.children[0].field
+                field_set = syntax_str_to_generic_field_set(
+                    query.children[0].field.value
                 )
-                expanded_query = cls._expand_near_query(query, search_field_set)
+                expanded_query = cls._expand_near_query(query, field_set)
                 if not query.get_parent():
                     return expanded_query
                 query.replace(expanded_query)
@@ -227,18 +217,16 @@ class PubmedTranslator(QueryTranslator):
                 expanded = cls._expand_flat_or_chains(query)
                 if not expanded:
                     for child in query.children:
-                        cls.translate_search_fields_to_generic(child)
+                        cls.translate_fields_to_generic(child)
 
-        if query.search_field:
-            search_field_set = syntax_str_to_generic_search_field_set(
-                query.search_field.value
-            )
-            if len(search_field_set) == 1:
-                query.search_field.value = search_field_set.pop()
+        if query.field:
+            field_set = syntax_str_to_generic_field_set(query.field.value)
+            if len(field_set) == 1:
+                query.field.value = field_set.pop()
             else:
                 # Convert queries in the form 'Term [tiab]'
                 # into 'Term [ti] OR Term [ab]'.
-                expanded_query = cls._expand_combined_fields(query, search_field_set)
+                expanded_query = cls._expand_combined_fields(query, field_set)
                 if not query.get_parent():
                     return expanded_query
                 query.replace(expanded_query)
@@ -246,26 +234,26 @@ class PubmedTranslator(QueryTranslator):
         return query
 
     @classmethod
-    def _expand_combined_fields(cls, query: Query, search_fields: set) -> Query:
+    def _expand_combined_fields(cls, query: Query, fields: set) -> Query:
         """Expand queries with combined search fields into an OR query"""
         query_children = []
         # Note: PubMed accepts fields only at the level of terms.
         # otherwise, the following would need to cover additional cases.
         # Note: sorted list for deterministic order of fields
-        for search_field in sorted(list(search_fields)):
+        for field in sorted(list(fields)):
             query_children.append(
                 Term(
                     value=query.value,
-                    search_field=SearchField(value=search_field),
+                    field=SearchField(value=field),
                 )
             )
         return OrQuery(
             children=query_children,  # type: ignore
-            search_field=None,
+            field=None,
         )
 
     @classmethod
-    def _expand_near_query(cls, query: Query, search_fields: set) -> Query:
+    def _expand_near_query(cls, query: Query, fields: set) -> Query:
         """Expand NEAR query into an OR query"""
         if type(query) is not NEARQuery:  # pylint: disable=unidiomatic-typecheck
             return query
@@ -274,12 +262,12 @@ class PubmedTranslator(QueryTranslator):
             distance = int(query.distance)  # type: ignore
 
         query_children = []
-        search_terms = query.children[0].value.strip('"').split()
+        terms = query.children[0].value.strip('"').split()
         # Handle [tiab] by generating NEAR queries for both 'title' and 'abstract'
-        for search_field in sorted(list(search_fields)):
+        for field in sorted(list(fields)):
             # Get all possible ordered pairs of search terms
             # in the proximity search phrase
-            pairs = list(permutations(search_terms, 2))
+            pairs = list(permutations(terms, 2))
             for pair in pairs:
                 # Create binary near query for each pair
                 query_children.append(
@@ -288,11 +276,11 @@ class PubmedTranslator(QueryTranslator):
                         children=[
                             Term(
                                 value=pair[0],
-                                search_field=SearchField(value=search_field),
+                                field=SearchField(value=field),
                             ),
                             Term(
                                 value=pair[1],
-                                search_field=SearchField(value=search_field),
+                                field=SearchField(value=field),
                             ),
                         ],
                         distance=distance,
@@ -300,7 +288,7 @@ class PubmedTranslator(QueryTranslator):
                 )
         return OrQuery(
             children=query_children,  # type: ignore
-            search_field=None,
+            field=None,
         )
 
     @classmethod
@@ -308,7 +296,7 @@ class PubmedTranslator(QueryTranslator):
         """Convert the query to a generic syntax."""
 
         query = query.copy()
-        query = cls.translate_search_fields_to_generic(query)
+        query = cls.translate_fields_to_generic(query)
         return query
 
     @classmethod
@@ -321,7 +309,7 @@ class PubmedTranslator(QueryTranslator):
         cls.flatten_nested_operators(query)
         query = cls._collapse_near_queries(query)
         cls._combine_tiab(query)
-        cls._translate_search_fields(query)
+        cls._translate_fields(query)
         cls._remove_redundant_terms(query)
 
         return query

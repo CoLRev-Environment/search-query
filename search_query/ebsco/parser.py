@@ -9,7 +9,10 @@ from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.ebsco.linter import EBSCOListLinter
 from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.exception import QuerySyntaxError
+from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
@@ -25,8 +28,8 @@ class EBSCOParser(QueryStringParser):
     PROXIMITY_OPERATOR_REGEX = re.compile(
         r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
     )
-    SEARCH_FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
+    FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
+    TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -38,24 +41,34 @@ class EBSCOParser(QueryStringParser):
                 PARENTHESIS_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
-                SEARCH_FIELD_REGEX.pattern,
-                SEARCH_TERM_REGEX.pattern,
+                FIELD_REGEX.pattern,
+                TERM_REGEX.pattern,
             ]
         )
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         query_str: str,
         *,
-        search_field_general: str = "",
+        field_general: str = "",
         mode: str = LinterMode.STRICT,
+        offset: typing.Optional[dict] = None,
+        original_str: typing.Optional[str] = None,
+        silent: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str, search_field_general=search_field_general, mode=mode
+            query_str,
+            field_general=field_general,
+            mode=mode,
+            offset=offset,
+            original_str=original_str,
         )
-        self.linter = EBSCOQueryStringLinter(query_str=query_str)
+        self.linter = EBSCOQueryStringLinter(
+            query_str=query_str, original_str=original_str, silent=silent
+        )
 
     def combine_subsequent_tokens(self) -> None:
         """Combine subsequent tokens based on specific conditions."""
@@ -67,17 +80,17 @@ class EBSCOParser(QueryStringParser):
             # Iterate through token list
             # current_token, current_token_type, position = self.tokens[i]
 
-            if self.tokens[i].type == TokenTypes.SEARCH_TERM:
-                # Filter out search_term
+            if self.tokens[i].type == TokenTypes.TERM:
+                # Filter out TERM
                 start_pos = self.tokens[i].position[0]
                 end_position = self.tokens[i].position[1]
                 combined_value = self.tokens[i].value
 
                 while (
                     i + 1 < len(self.tokens)
-                    and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
+                    and self.tokens[i + 1].type == TokenTypes.TERM
                 ):
-                    # Iterate over subsequent search_terms and combine
+                    # Iterate over subsequent terms and combine
                     combined_value += f" {self.tokens[i + 1].value}"
                     end_position = self.tokens[i + 1].position[1]
                     i += 1
@@ -137,8 +150,8 @@ class EBSCOParser(QueryStringParser):
                 and next_token.type == TokenTypes.FIELD
                 and is_potential_term(next_token.value)
             ):
-                # Reclassify the second FIELD token as a SEARCH_TERM
-                next_token.type = TokenTypes.SEARCH_TERM
+                # Reclassify the second field token as a TERM
+                next_token.type = TokenTypes.TERM
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -160,10 +173,10 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.LOGIC_OPERATOR
             elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
+            elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.SEARCH_TERM_REGEX.fullmatch(value):
-                token_type = TokenTypes.SEARCH_TERM
+            elif self.TERM_REGEX.fullmatch(value):
+                token_type = TokenTypes.TERM
             else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
 
@@ -172,134 +185,204 @@ class EBSCOParser(QueryStringParser):
                 Token(value=value, type=token_type, position=(start, end))
             )
 
-        # Combine subsequent search_terms in case of no quotation marks
+        self.adjust_token_positions()
+
+        # Combine subsequent terms in case of no quotation marks
         self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
 
-    def append_node(
-        self,
-        parent: typing.Optional[Query],
-        current_operator: typing.Optional[Query],
-        node: Query,
-    ) -> tuple[typing.Optional[Query], typing.Optional[Query]]:
-        """Append new Query node"""
-
-        assert current_operator or parent is None
-
-        if current_operator:
-            current_operator.children.append(node)
-        elif parent is None:
-            parent = node
-
-        return parent, current_operator
-
-    def append_operator(
-        self,
-        parent: typing.Optional[Query],
-        operator_node: Query,
-    ) -> tuple[Query, Query]:
-        """Append new Operator node"""
-        if parent:
-            operator_node.children.append(parent)
-        return operator_node, operator_node
-
-    def _check_for_none(self, parent: typing.Optional[Query]) -> Query:
-        """Check if parent is none"""
-        if parent is None:  # pragma: no cover
-            raise ValueError("Failed to construct a valid query tree.")
-        return parent
-
     def parse_query_tree(
-        self,
-        tokens: typing.Optional[list] = None,
-        field_context: typing.Optional[SearchField] = None,
+        self, tokens: list[Token], field_context: SearchField | None = None
     ) -> Query:
-        """
-        Build a query tree from a list of tokens
-        with dynamic restructuring based on PRECEDENCE.
-        """
-        if not tokens:
-            tokens = list(self.tokens)
+        """Top-down predictive parser for query tree."""
 
-        parent: typing.Optional[Query] = None
-        current_operator: typing.Optional[Query] = None
-        search_field: typing.Optional[SearchField] = None
+        # Look ahead to see if field is followed by something valid
+        if (
+            tokens
+            and tokens[0].type == TokenTypes.FIELD
+            and len(tokens) > 1
+            and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
+        ):
+            field_token = tokens.pop(0)
+            field_context = SearchField(
+                value=field_token.value, position=field_token.position
+            )
 
-        while tokens:
-            token = tokens.pop(0)
+        if self._is_compound_query(tokens):
+            return self._parse_compound_query(tokens, field_context)
+        if self._is_near_query(tokens):
+            return self._parse_near_query(tokens, field_context)
+        if self._is_nested_query(tokens):
+            return self._parse_nested_query(tokens, field_context)
+        if self._is_term_query(tokens):
+            return self._parse_term(tokens, field_context)
+        raise ValueError(
+            f"Unrecognized query structure: {tokens}. "
+            "Expected a term, near query, nested query, or compound query."
+        )
 
-            if token.type == TokenTypes.FIELD:
-                search_field = SearchField(token.value, position=token.position)
+    def _is_term_query(self, tokens: list[Token]) -> bool:
+        return bool(tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.TERM)
 
-            elif token.type == TokenTypes.SEARCH_TERM:
-                term_node = Term(
-                    value=token.value,
-                    position=token.position,
-                    search_field=search_field or field_context,
-                    platform="deactivated",
-                )
-                parent, current_operator = self.append_node(
-                    parent, current_operator, term_node
-                )
-                search_field = None
+    def _is_near_query(self, tokens: list[Token]) -> bool:
+        return (
+            len(tokens) == 3
+            and tokens[0].type == TokenTypes.TERM
+            and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
+            and tokens[2].type == TokenTypes.TERM
+        )
 
-            elif token.type == TokenTypes.PROXIMITY_OPERATOR:
-                distance = self._extract_proximity_distance(token)
-                proximity_node = NEARQuery(
-                    value=token.value,
-                    distance=distance,
-                    children=[],
-                    position=token.position,
-                    search_field=search_field or field_context,
-                    platform="deactivated",
-                )
-                parent, current_operator = self.append_operator(parent, proximity_node)
+    def _is_compound_query(self, tokens: list[Token]) -> bool:
+        return bool(self._get_operator_indices(tokens))
 
-            elif token.type == TokenTypes.LOGIC_OPERATOR:
-                new_operator_node = Query.create(
-                    value=token.value.upper(),
-                    position=token.position,
-                    search_field=search_field or field_context,
-                    platform="deactivated",
-                )
+    def _is_nested_query(self, tokens: list[Token]) -> bool:
+        return (
+            tokens[0].type == TokenTypes.PARENTHESIS_OPEN
+            and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
+        )
 
-                if not current_operator:
-                    parent, current_operator = self.append_operator(
-                        parent, new_operator_node
-                    )
+    def _get_operator_type(self, token: Token) -> str:
+        val = token.value.upper()
+        if val in {"AND"}:
+            return "AND"
+        if val in {"OR"}:
+            return "OR"
+        if val == "NOT":
+            return "NOT"
+        raise ValueError(f"Unrecognized operator: {token.value}")
 
-            elif token.type == TokenTypes.PARENTHESIS_OPEN:
-                # Recursively parse subexpression with same effective field
-                subtree = self.parse_query_tree(tokens, search_field or field_context)
-                parent, current_operator = self.append_node(
-                    parent, current_operator, subtree
-                )
+    def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
+        indices = []
+        depth = 0
+        first_op = None
 
+        for i, token in enumerate(tokens):
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                return self._check_for_none(parent)
+                depth -= 1
+            elif depth == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+                op = self._get_operator_type(token)
+                if first_op is None:
+                    first_op = op
+                elif op != first_op:
+                    raise ValueError("Mixed operators without parentheses.")
+                indices.append(i)
+        return indices
 
-        return self._check_for_none(parent)
+    def _parse_compound_query(
+        self, tokens: list[Token], field_context: SearchField | None
+    ) -> Query:
+        op_indices = self._get_operator_indices(tokens)
+        if not op_indices:
+            raise ValueError("No operator found for compound query.")
+
+        operator_type = self._get_operator_type(tokens[op_indices[0]])
+        children = []
+
+        start = 0
+        for idx in op_indices:
+            sub_tokens = tokens[start:idx]
+            children.append(
+                self.parse_query_tree(sub_tokens, field_context=field_context)
+            )
+            start = idx + 1
+
+        children.append(
+            self.parse_query_tree(tokens[start:], field_context=field_context)
+        )
+
+        return Query.create(
+            value=operator_type,
+            field=field_context,
+            children=children,  # type: ignore
+            position=(tokens[0].position[0], tokens[-1].position[1]),
+            platform="deactivated",
+        )
+
+    def _parse_nested_query(
+        self, tokens: list[Token], field_context: SearchField | None
+    ) -> Query:
+        return self.parse_query_tree(tokens[1:-1], field_context=field_context)
+
+    def _parse_term(
+        self, tokens: list[Token], field_context: SearchField | None
+    ) -> Query:
+        if len(tokens) == 1:
+            return Term(
+                value=tokens[0].value,
+                position=tokens[0].position,
+                field=field_context or None,
+                platform="deactivated",
+            )
+        assert len(tokens) == 2, "Expected exactly one search term token."
+
+        token = tokens[1]
+
+        return Term(
+            value=token.value,
+            position=token.position,
+            field=SearchField(
+                value=tokens[0].value, position=tokens[0].position or (-1, -1)
+            ),
+            platform="deactivated",
+        )
+
+    def _parse_near_query(
+        self, tokens: list[Token], field_context: SearchField | None
+    ) -> Query:
+        left_token = tokens[0]
+        operator_token = tokens[1]
+        right_token = tokens[2]
+
+        distance = self._extract_proximity_distance(operator_token)
+
+        return NEARQuery(
+            value=operator_token.value,
+            distance=int(distance),
+            position=(left_token.position[0], right_token.position[1]),
+            field=field_context,
+            children=[
+                Term(
+                    value=left_token.value,
+                    position=left_token.position,
+                    field=field_context,
+                    platform="deactivated",
+                ),
+                Term(
+                    value=right_token.value,
+                    position=right_token.position,
+                    field=field_context,
+                    platform="deactivated",
+                ),
+            ],
+            platform="deactivated",
+        )
+
+    def _pre_tokenization_checks(self) -> None:
+        self.linter.handle_fully_quoted_query_str(self)
+        self.linter.handle_nonstandard_quotes_in_query_str(self)
+        self.linter.handle_suffix_in_query_str(self)
+        self.linter.handle_prefix_in_query_str(
+            self,
+            prefix_regex=re.compile(r"^EBSCOHost.*\:\s*", flags=re.IGNORECASE),
+        )
 
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
-            self.query_str
-        )
-        self.query_str = self.query_str = self.linter.handle_suffix_in_query_str(
-            self.query_str
-        )
+        self._pre_tokenization_checks()
 
         self.tokenize()
 
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,
-            search_field_general=self.search_field_general,
+            field_general=self.field_general,
         )
         self.linter.check_status()
 
-        query = self.parse_query_tree()
+        query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
@@ -308,49 +391,55 @@ class EBSCOParser(QueryStringParser):
         return query
 
 
-# from search_query.constants import GENERAL_ERROR_POSITION
-# from search_query.constants import QueryErrorCode
-# from search_query.linter_base import QueryListLinter
-# from search_query.parser_base import QueryListParser
+class EBSCOListParser(QueryListParser):
+    """Parser for EBSCO (list format) queries."""
 
-# class EBSCOListParser(QueryListParser):
-#     """Parser for EBSCO (list format) queries."""
+    LIST_ITEM_REFERENCE = re.compile(r"S\d+")
 
-#     def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
-#         """Initialize with a query list and use EBSCOParser for parsing each query."""
-#         super().__init__(
-#             query_list=query_list,
-#             parser_class=EBSCOParser,
-#             search_field_general=search_field_general,
-#             mode=mode,
-#         )
-#         self.linter = QueryListLinter(parser=self, string_parser_class=EBSCOParser)
+    def __init__(
+        self,
+        query_list: str,
+        field_general: str = "",
+        mode: str = LinterMode.NONSTRICT,
+    ) -> None:
+        super().__init__(
+            query_list=query_list,
+            parser_class=EBSCOParser,
+            field_general=field_general,
+            mode=mode,
+        )
+        self.linter = EBSCOListLinter(parser=self, string_parser_class=EBSCOParser)
 
-#     def get_token_str(self, token_nr: str) -> str:
-#         """Format the token string for output or processing."""
+    def parse(self) -> Query:
+        """Parse EBSCO list query."""
 
-#         # Match string combinators such as S1 AND S2 ... ; #1 AND #2 ; ...
-#         pattern = rf"(S|#){token_nr}"
+        self.tokenize_list()
+        self.linter.validate_tokens()
+        self.linter.check_status()
 
-#         match = re.search(pattern, self.query_list)
+        self.tokenize_list()
+        self.linter.validate_tokens()
+        self.linter.check_status()
 
-#         if match:
-#             # Return the preceding character if found
-#             return f"{match.group(1)}{token_nr}"
+        query_str, offset = self.build_query_str()
 
-#         # Log a linter message and return the token number
-#         # 1 AND 2 ... are still possible,
-#         # however for standardization purposes it should be S/#
-#         self.linter.add_linter_message(
-#             QueryErrorCode.INVALID_LIST_REFERENCE,
-#             list_position=GENERAL_ERROR_POSITION,
-#             positions=[(-1, -1)],
-#             details="Connecting lines possibly failed. "
-#             "Please use this format for connection: "
-#             "S1 OR S2 OR S3 / #1 OR #2 OR #3",
-#         )
-#         return token_nr
+        query_parser = EBSCOParser(
+            query_str=query_str,
+            original_str=self.query_list,
+            field_general=self.field_general,
+            mode=self.mode,
+            offset=offset,
+            silent=True,
+        )
+        try:
+            query = query_parser.parse()
+        except QuerySyntaxError as exc:
+            raise exc
+        finally:
+            self.assign_linter_messages(query_parser.linter.messages, self.linter)
 
-#     def parse(self) -> Query:
-#         """Parse the query in list format."""
-#         raise NotImplementedError("List parsing not implemented yet.")
+            self.linter.check_status()
+
+        query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
+
+        return query
