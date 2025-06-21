@@ -999,7 +999,7 @@ def test_list_parser_case_3() -> None:
     assert list_parser.linter.messages == {
         2: [
             {
-                "code": "PARSE_1003",
+                "code": "PARSE_1002",
                 "label": "list-query-invalid-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
