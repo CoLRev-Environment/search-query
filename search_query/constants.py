@@ -678,7 +678,7 @@ class QueryErrorCode(Enum):
 """,
     )
     INVALID_LIST_REFERENCE = (
-        ["al"],
+        ["all"],
         "F3003",
         "invalid-list-reference",
         "Invalid list reference in list query",
@@ -708,6 +708,37 @@ class QueryErrorCode(Enum):
     # -------------------------------------------------------
     # Errors (prefix: E)
     # -------------------------------------------------------
+
+    # Search-Fields can be:
+    # Extracted (recommendation not to use the search_field_general to avoid accidental errors)
+    # Implicit or missing (depending on whether the platform adds a default field when it is not specified explicitly)
+
+    SEARCH_FIELD_EXTRACTED = (
+        ["all"],
+        "W0002",
+        "search-field-extracted",
+        "Recommend explicitly specifying the search field in the string",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # EBSCO search with general search field = "Title"
+    Artificial Intelligence AND Future
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # EBSCO search without general search field
+    TI Artificial Intelligence AND TI Future
+
+**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
+
+**Rationale**: Researchers may copy the search_string and miss the general_search_field, incorrectly reproducing the query.
+""",
+    )
+
     # Note: merged SEARCH_FIELD_NOT_SPECIFIED:
     SEARCH_FIELD_MISSING = (
         ["all"],
@@ -730,29 +761,30 @@ class QueryErrorCode(Enum):
     "eHealth"[all] OR "digital health"[all]
 """,
     )
-    SEARCH_FIELD_CONTRADICTION = (
+    SEARCH_FIELD_IMPLICIT = (
         ["all"],
-        "E0002",
-        "search-field-contradiction",
-        "Contradictory search fields specified",
+        # TODO : code
+        "E",
+        "search-field-implicit",
+        "Search field is implicitly specified",
         """
 **Problematic query**:
 
 .. code-block:: text
 
-    # PLATFORM.WOS:
-    # Search with general search field = "ALL FIELDS"
-    TI=(digital AND online)
+    # PLATFORM.PUBMED:
+
+    "eHealth" OR "digital health"
 
 **Recommended query**:
 
 .. code-block:: text
 
-    # PLATFORM.WOS:
-    # Search without general search field
-    TI=(digital AND online)
+    # PLATFORM.PUBMED:
 
-**Typical fix**: Ensure that the search fields used in the query and the general search field parameter are consistent.
+    "eHealth"[all] OR "digital health"[all]
+
+**Typical fix**: Explicitly specify the search field in the query string instead of relying on a general search field setting.
 """,
     )
 
@@ -821,7 +853,6 @@ Proximity operators must have a non-negative integer as the distance.
 **Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
 """,
     )
-    # TODO : write unit tests for this error
     QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
         ["all"],
         "E0007",
@@ -843,7 +874,6 @@ Proximity operators must have a non-negative integer as the distance.
     eHealth[ti]
 """,
     )
-    # TODO : add to ebsco, pubmed:
     QUERY_IN_QUOTES = (
         ["all"],
         "E0008",
@@ -869,54 +899,7 @@ Proximity operators must have a non-negative integer as the distance.
     # -------------------------------------------------------
     # Warnings (prefix: W)
     # -------------------------------------------------------
-    # TODO : for EBSCO: SEARCH_FIELD_REDUNDANT
-    SEARCH_FIELD_REDUNDANT = (
-        ["all"],
-        "W0001",
-        "search-field-redundant",
-        "Recommend specifying search field only once in the search string",
-        """
-**Problematic query**:
 
-.. code-block:: text
-
-    # PubMed search with general search field "Title"
-    eHealth[ti]
-
-**Recommended query**:
-
-.. code-block:: text
-
-    # PubMed search without general search field
-    eHealth[ti]
-
-**Typical fix**: Specify the search field either globally or within the search terms, but not both. (PUBMED)
-""",
-    )
-    # TODO : for WOS and PUBMED too?
-    SEARCH_FIELD_EXTRACTED = (
-        ["all"],
-        "W0002",
-        "search-field-extracted",
-        "Recommend explicitly specifying the search field in the string",
-        """
-**Problematic query**:
-
-.. code-block:: text
-
-    # EBSCO search with general search field = "Title"
-    Artificial Intelligence AND Future
-
-**Recommended query**:
-
-.. code-block:: text
-
-    # EBSCO search without general search field
-    TI Artificial Intelligence AND TI Future
-
-**Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
-""",
-    )
     QUERY_STRUCTURE_COMPLEX = (
         ["all"],
         "W0004",

@@ -23,6 +23,7 @@ from search_query.utils import format_query_string_positions
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
+    from search_query.parser_base import QueryStringParser
 
 
 # pylint: disable=too-many-public-methods
@@ -225,6 +226,16 @@ class QueryStringLinter:
                     details=f"Unparsed segment: '{segment.strip()}'",
                 )
 
+    def check_general_search_field(self) -> None:
+        """Check the general search field"""
+
+        if self.search_field_general:
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_EXTRACTED,
+                positions=[],
+                details="The search field is extracted and should be included in the query.",
+            )
+
     def check_unsupported_search_fields_in_query(self, query: Query) -> None:
         """Check for the correct format of fields.
 
@@ -398,44 +409,7 @@ class QueryStringLinter:
                     )
                     # Replace?
 
-    def handle_prefix_in_query_str(self, query_str: str) -> str:
-        """Handle prefix in query string.
-
-        Removes tokens before a fully quoted query
-        if they are not connected with a valid operator.
-
-        Only applies if quotes are balanced (even number of quotes).
-        """
-
-        quote_count = query_str.count('"')
-        if quote_count % 2 != 0:
-            return query_str  # unbalanced quotes, do not attempt trimming
-
-        prefix_match = re.search(r"^(?!.*\b(?:AND|OR)\s*)[^()]*?(?=\()", query_str)
-
-        original_query_str = query_str  # preserve for position calculation
-
-        # Handle prefix
-        if (
-            prefix_match
-            and prefix_match.group(0) is not None
-            and prefix_match.group(0).strip() != "("
-        ):
-            prefix = prefix_match.group(0)[:-1]
-            if prefix:
-                query_str = query_str[len(prefix) :].lstrip()
-
-                start = original_query_str.find(prefix)
-                end = start + len(prefix)
-                self.add_linter_message(
-                    QueryErrorCode.UNSUPPORTED_PREFIX,
-                    positions=[(start, end)],
-                    details="Removed unsupported text at the beginning of the query.",
-                )
-
-        return query_str
-
-    def handle_suffix_in_query_str(self, query_str: str) -> str:
+    def handle_suffix_in_query_str(self, parser: QueryStringParser) -> None:
         """Handle suffix in query string.
 
         Removes tokens after a fully quoted query
@@ -444,13 +418,13 @@ class QueryStringLinter:
         Only applies if quotes are balanced (even number of quotes).
         """
 
-        quote_count = query_str.count('"')
+        quote_count = parser.query_str.count('"')
         if quote_count % 2 != 0:
-            return query_str  # unbalanced quotes, do not attempt trimming
+            return  # unbalanced quotes, do not attempt trimming
 
-        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", query_str)
+        suffix_match = re.search(r"\)(?!\s*(AND|OR|NOT))[^()\[\]]*$", parser.query_str)
 
-        original_query_str = query_str  # preserve for position calculation
+        original_query_str = parser.query_str  # preserve for position calculation
 
         # Handle suffix
         if (
@@ -460,7 +434,7 @@ class QueryStringLinter:
         ):
             suffix = suffix_match.group(0)[1:]
             if suffix:
-                query_str = query_str[: -len(suffix)].rstrip()
+                parser.query_str = parser.query_str[: -len(suffix)].rstrip()
 
                 start = original_query_str.rfind(suffix)
                 end = start + len(suffix)
@@ -471,20 +445,79 @@ class QueryStringLinter:
                     details="Removed unsupported text at the end of the query.",
                 )
 
-        return query_str
-
-    def handle_fully_quoted_query_str(self, query_str: str) -> str:
+    def handle_fully_quoted_query_str(self, parser: QueryStringParser) -> None:
         """Handle fully quoted query string."""
-        if '"' == query_str[0] and '"' == query_str[-1] and "(" in query_str:
+        if not ('"' == parser.query_str[0] and '"' == parser.query_str[-1]):
+            return
+
+        # iterate over chars from left to right
+        for char in parser.query_str[1:]:
+            if char == '"':
+                # if we find a quote, we can stop
+                return
+            if char == "(":
+                # if we find an opening parenthesis, we can stop
+                break
+        # iterate in reverse
+        for char in reversed(parser.query_str[:-1]):
+            if char == '"':
+                # if we find a quote, we can stop
+                return
+            if char == ")":
+                # if we find a closing parenthesis, we can stop
+                break
+
+        if "(" in parser.query_str:
             self.add_linter_message(
                 QueryErrorCode.QUERY_IN_QUOTES,
-                positions=[(-1, -1)],
+                # (0,1), (len(parser.query_str) - 1, len(parser.query_str))
+                # Note: positions will not be displayed correclty after the string was adjusted.
+                positions=[],
             )
+            if (
+                '"' == self.query_str[0]
+                and '"' == self.query_str[-1]
+                and "(" in self.query_str
+            ):
+                self.query_str = self.query_str[1:-1]
+            if (
+                '"' == self.original_str[0]
+                and '"' == self.original_str[-1]
+                and "(" in self.original_str
+            ):
+                self.original_str = self.original_str[1:-1]
             # remove quotes before tokenization
-            query_str = query_str[1:-1]
-        return query_str
+            parser.query_str = parser.query_str[1:-1]
+            if (
+                '"' == parser.original_str[0]
+                and '"' == parser.original_str[-1]
+                and "(" in parser.original_str
+            ):
+                # also remove quotes from original string
+                parser.original_str = parser.original_str[1:-1]
 
-    def handle_nonstandard_quotes_in_query_str(self, query_str: str) -> str:
+    def handle_prefix_in_query_str(
+        self, parser: QueryStringParser, *, prefix_regex: re.Pattern
+    ) -> None:
+        """Handle prefixes in query string."""
+
+        prefix_match = prefix_regex.match(parser.query_str)
+
+        if not prefix_match:
+            return
+
+        match = prefix_match.group(0)
+        self.add_linter_message(
+            QueryErrorCode.QUERY_STARTS_WITH_PLATFORM_IDENTIFIER,
+            positions=[],
+        )
+
+        self.query_str = self.query_str[len(match) :]
+        self.original_str = self.original_str[len(match) :]
+        parser.query_str = parser.query_str[len(match) :]
+        parser.original_str = parser.original_str[len(match) :]
+
+    def handle_nonstandard_quotes_in_query_str(self, parser: QueryStringParser) -> None:
         """Handle non-standard quotes in query string."""
 
         non_standard_quotes = "“”«»„‟"
@@ -492,22 +525,21 @@ class QueryStringLinter:
         found_quotes = []
         for quote in non_standard_quotes:
             quote_positions = [
-                (i, i + 1) for i, c in enumerate(query_str) if c == quote
+                (i, i + 1) for i, c in enumerate(parser.query_str) if c == quote
             ]
             if not quote_positions:
                 continue
             positions.extend(quote_positions)
             found_quotes.append(quote)
             # Replace all occurrences of this quote with standard quote
-            query_str = query_str.replace(quote, '"')
+            parser.query_str = parser.query_str.replace(quote, '"')
+            self.query_str = self.query_str.replace(quote, '"')
         if positions:
             self.add_linter_message(
                 QueryErrorCode.NON_STANDARD_QUOTES,
                 positions=positions,
                 details=f"Non-standard quotes found: {''.join(sorted(found_quotes))}",
             )
-
-        return query_str
 
     def add_higher_value(
         self,

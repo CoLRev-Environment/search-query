@@ -361,15 +361,19 @@ class EBSCOParser(QueryStringParser):
             platform="deactivated",
         )
 
+    def _pre_tokenization_checks(self) -> None:
+        self.linter.handle_fully_quoted_query_str(self)
+        self.linter.handle_nonstandard_quotes_in_query_str(self)
+        self.linter.handle_suffix_in_query_str(self)
+        self.linter.handle_prefix_in_query_str(
+            self,
+            prefix_regex=re.compile(r"^EBSCOHost.*\:\s*", flags=re.IGNORECASE),
+        )
+
     def parse(self) -> Query:
         """Parse a query string."""
 
-        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
-            self.query_str
-        )
-        self.query_str = self.query_str = self.linter.handle_suffix_in_query_str(
-            self.query_str
-        )
+        self._pre_tokenization_checks()
 
         self.tokenize()
 

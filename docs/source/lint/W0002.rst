@@ -11,7 +11,6 @@ W0002 — search-field-extracted
 
 **Problematic query**:
 
-
 .. code-block:: text
 
     # EBSCO search with general search field = "Title"
@@ -25,5 +24,7 @@ W0002 — search-field-extracted
     TI Artificial Intelligence AND TI Future
 
 **Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
+
+**Rationale**: Researchers may copy the search_string and miss the general_search_field, incorrectly reproducing the query.
 
 **Back to**: :ref:`lint`

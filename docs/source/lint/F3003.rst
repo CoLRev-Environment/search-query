@@ -7,7 +7,7 @@ F3003 — invalid-list-reference
 
 **Message**: ``Invalid list reference in list query``
 
-**Scope**: PLATFORM.WOS, PLATFORM.PUBMED
+**Scope**: all
 
 **Problematic query**:
 

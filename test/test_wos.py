@@ -107,7 +107,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(0, 10)],
                     "details": "",
                 }
             ],
@@ -120,7 +120,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(1, 11)],
                     "details": "",
                 }
             ],
@@ -141,7 +141,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(0, 12), (16, 26)],
                     "details": "",
                 },
             ],
@@ -162,7 +162,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(1, 11)],
                     "details": "",
                 },
             ],
@@ -183,7 +183,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(0, 10)],
                     "details": "",
                 },
             ],
@@ -204,7 +204,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(1, 11)],
                     "details": "",
                 },
             ],
@@ -325,7 +325,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(0, 1)],
                     "details": "",
                 },
             ],
@@ -352,7 +352,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
-            "TI=term1 NEAR/20 term2",
+            "TI=term1 NEAR/20 TI=term2",
             [
                 {
                     "code": "F2007",
@@ -404,6 +404,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         (
             'TI=term1 AND "?"',
             [
+                {
+                    "code": "E0001",
+                    "label": "search-field-missing",
+                    "message": "Expected search field is missing",
+                    "is_fatal": False,
+                    "position": [(13, 16)],
+                    "details": "",
+                },
                 {
                     "code": "F2006",
                     "label": "wildcard-standalone",
@@ -623,7 +631,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "search-field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
-                    "position": [(-1, -1)],
+                    "position": [(0, 5), (10, 20)],
                     "details": "",
                 },
             ],
@@ -726,6 +734,32 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 }
             ],
         ),
+        (
+            '"TS=(eHealth) AND TS=(Review)"',
+            [
+                {
+                    "code": "E0008",
+                    "label": "query-in-quotes",
+                    "message": "The whole Search string is in quotes.",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
+        (
+            "Web of Science: TS=eHealth",
+            [
+                {
+                    "code": "E0007",
+                    "label": "query-starts-with-platform-identifier",
+                    "message": "Query starts with platform identifier",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
     ],
 )
 def test_linter(
@@ -733,7 +767,6 @@ def test_linter(
     expected_messages: typing.List[dict],
 ) -> None:
     print(query_str)
-
     parser = WOSParser(query_str)
     try:
         parser.parse()
@@ -788,16 +821,22 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
 
 def test_query_parsing_basic_vs_advanced() -> None:
     # Basic search
-    parser = WOSParser(
-        query_str="digital AND online", search_field_general="All Fields", mode=""
-    )
+    parser = WOSParser(query_str="digital AND online", mode="")
     parser.parse()
-    assert len(parser.linter.messages) == 0
+    assert parser.linter.messages == [
+        {
+            "code": "E0001",
+            "label": "search-field-missing",
+            "message": "Expected search field is missing",
+            "is_fatal": False,
+            "position": [(0, 7), (12, 18)],
+            "details": "",
+        }
+    ]
 
     # Search field could be nested
     parser = WOSParser(
         query_str="(TI=digital AND AB=online)",
-        search_field_general="All Fields",
         mode="",
     )
     parser.parse()
@@ -830,19 +869,9 @@ def test_query_parsing_basic_vs_advanced() -> None:
     print(parser.linter.messages)
 
     # ERROR: Advanced search with search_field_general
-    parser = WOSParser(
-        query_str="TI=(digital AND online)", search_field_general="All Fields", mode=""
-    )
+    parser = WOSParser(query_str="TI=(digital AND online)", mode="")
     parser.parse()
-    assert len(parser.linter.messages) == 1
-    assert parser.linter.messages[0] == {
-        "code": "E0002",
-        "label": "search-field-contradiction",
-        "message": "Contradictory search fields specified",
-        "is_fatal": False,
-        "details": "",
-        "position": [(0, 3)],
-    }
+    assert len(parser.linter.messages) == 0
 
 
 @pytest.mark.parametrize(
@@ -906,15 +935,33 @@ def test_artificial_parentheses() -> None:
     assert query.children[1].children[1].value == "work"
 
     # Check if linter messages contain one entry
-    assert len(parser.linter.messages) == 1
-    assert parser.linter.messages[0] == {
-        "code": "W0007",
-        "label": "implicit-precedence",
-        "message": "Operator changed at the same level (explicit parentheses are recommended)",
-        "is_fatal": False,
-        "position": [(7, 9), (17, 20)],
-        "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
-    }
+    print(parser.linter.messages)
+    assert parser.linter.messages == [
+        {
+            "code": "W0007",
+            "label": "implicit-precedence",
+            "message": "Operator changed at the same level (explicit parentheses are recommended)",
+            "is_fatal": False,
+            "position": [(7, 9), (17, 20)],
+            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+        },
+        {
+            "code": "W0002",
+            "label": "search-field-extracted",
+            "message": "Recommend explicitly specifying the search field in the string",
+            "is_fatal": False,
+            "position": [],
+            "details": "The search field is extracted and should be included in the query.",
+        },
+        {
+            "code": "E0001",
+            "label": "search-field-missing",
+            "message": "Expected search field is missing",
+            "is_fatal": False,
+            "position": [(0, 6)],
+            "details": "",
+        },
+    ]
     assert query.to_generic_string() == "OR[ALL=][remote, AND[online, work]]"
 
 

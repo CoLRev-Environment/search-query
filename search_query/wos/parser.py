@@ -341,24 +341,21 @@ class WOSParser(QueryStringParser):
             raise ValueError(f"Invalid proximity operator: {token.value}")
         return int(match.group(1))
 
+    def _pre_tokenization_checks(self) -> None:
+        self.linter.handle_fully_quoted_query_str(self)
+        self.linter.handle_nonstandard_quotes_in_query_str(self)
+        self.linter.handle_prefix_in_query_str(
+            self, prefix_regex=re.compile(r"^Web of Science\:?\s*", flags=re.IGNORECASE)
+        )
+        self.linter.handle_suffix_in_query_str(self)
+
     def parse(self) -> Query:
         """Parse a query string."""
 
-        # self.linter.query_str = self.query_str
-
-        self.query_str = self.linter.handle_fully_quoted_query_str(self.query_str)
-        self.query_str = self.linter.handle_nonstandard_quotes_in_query_str(
-            self.query_str
-        )
-        # self.query_str = self.query_str = self.linter.handle_prefix_in_query_str(
-        #     self.query_str
-        # )
-        self.query_str = self.query_str = self.linter.handle_suffix_in_query_str(
-            self.query_str
-        )
+        self._pre_tokenization_checks()
 
         self.tokenize()
-        self.print_tokens()
+
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,

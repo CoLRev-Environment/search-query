@@ -91,7 +91,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization()
         self.check_invalid_near_within_operators()
 
-        self.check_search_field_general()
+        self.check_general_search_field()
+
         return self.tokens
 
     def get_precedence(self, token: str) -> int:
@@ -159,14 +160,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         details=details,
                     )
                     token.value = token.value.replace("WITHIN/", "W")
-
-    def check_search_field_general(self) -> None:
-        """Check field 'Search Fields' in content."""
-
-        # TODO : compare with pubmed linter: check_general_search_field_mismatch()
-        # ErrorCodes: SEARCH_FIELD_MISSING, SEARCH_FIELD_CONTRADICTION
-        if self.search_field_general != "":
-            self.add_linter_message(QueryErrorCode.SEARCH_FIELD_EXTRACTED, positions=[])
 
     def check_invalid_token_sequences(self) -> None:
         """

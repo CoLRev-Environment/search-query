@@ -12,11 +12,7 @@ Fatal Errors
 
    F1004
 
-   F1009
-
    F1010
-
-   F1011
 
    F1012
 
@@ -62,7 +58,7 @@ Errors
 
    E0001
 
-   E0002
+   E
 
    E0004
 
@@ -79,8 +75,6 @@ Warnings
 
 .. toctree::
    :maxdepth: 1
-
-   W0001
 
    W0002
 

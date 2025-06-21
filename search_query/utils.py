@@ -25,7 +25,7 @@ def format_query_string_positions(
 ) -> str:
     """Format the query string with multiple positions marked in color."""
     if not positions:
-        return query_str
+        return ""
     if list(set(positions))[0] == (-1, -1):
         return ""
 

@@ -11,7 +11,6 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import search_field_general_to_syntax
 from search_query.wos.constants import syntax_str_to_generic_search_field_set
 from search_query.wos.constants import VALID_FIELDS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
@@ -99,12 +98,17 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
+        # if self.messages:
+        #     return self.tokens
 
         self.check_invalid_characters_in_search_term("@%^~\\<>{}()[]#")
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
         self.check_near_distance_in_range(max_value=15)
-        self.check_search_fields_general()
+
+        self.check_general_search_field()
+        self.check_missing_search_fields()
+
         self.check_implicit_near()
         return self.tokens
 
@@ -148,59 +152,39 @@ class WOSQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS, positions=positions
             )
 
-    def check_search_fields_general(
+    def check_missing_search_fields(
         self,
     ) -> None:
-        """Check the general search field (from JSON)."""
+        """Check for missing search fields."""
+
+        missing_positions = []
 
         first_token = self.tokens[0]
+        if first_token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
+            missing_positions.append(first_token.position)
 
-        if self.search_field_general == "":
-            if first_token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
-                self.add_linter_message(
-                    QueryErrorCode.SEARCH_FIELD_MISSING,
-                    positions=[(-1, -1)],
-                )
+        previous_token = self.tokens[0].type
 
-            if first_token.type == TokenTypes.PARENTHESIS_OPEN:
-                previous_token = TokenTypes.PARENTHESIS_OPEN
-                # iterate over remaining tokens on the first level
-                level = 0
-                for token in self.tokens[1:]:
-                    if token.type == TokenTypes.PARENTHESIS_OPEN:
-                        level += 1
-                    elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                        level -= 1
-                    elif (
-                        level == 0
-                        and token.type == TokenTypes.SEARCH_TERM
-                        and previous_token != TokenTypes.FIELD
-                    ):
-                        self.add_linter_message(
-                            QueryErrorCode.SEARCH_FIELD_MISSING,
-                            positions=[(-1, -1)],
-                        )
-                        break
-                    previous_token = token.type
+        # iterate over remaining tokens on the first level
+        level = 0
+        for token in self.tokens[1:]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                level += 1
+            elif token.type == TokenTypes.PARENTHESIS_CLOSED:
+                level -= 1
+            elif (
+                level == 0
+                and token.type == TokenTypes.SEARCH_TERM
+                and previous_token != TokenTypes.FIELD
+            ):
+                missing_positions.append(token.position)
+            previous_token = token.type
 
-            return
-
-        if self.search_field_general != "":
-            if first_token.type == TokenTypes.FIELD:
-                if first_token.value != search_field_general_to_syntax(
-                    self.search_field_general
-                ):
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                        positions=[first_token.position],
-                    )
-                else:
-                    # Note : in basic search, when starting the query with a field,
-                    # WOS raises a syntax error.
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                        positions=[first_token.position],
-                    )
+        if missing_positions:
+            self.add_linter_message(
+                QueryErrorCode.SEARCH_FIELD_MISSING,
+                positions=missing_positions,
+            )
 
     def check_implicit_near(self) -> None:
         """Check for implicit NEAR operator."""

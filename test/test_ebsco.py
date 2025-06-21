@@ -419,7 +419,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
-                    "details": "",
+                    "details": "The search field is extracted and should be included in the query.",
                 }
             ],
         ),
@@ -481,6 +481,34 @@ def test_linter(query_string: str, messages: list) -> None:
             ],
         ),
         ("arrest* W2 (record* OR history* OR police)", "", []),
+        (
+            '"Artificial Intelligence AND (Future OR Past)"',
+            "",
+            [
+                {
+                    "code": "E0008",
+                    "label": "query-in-quotes",
+                    "message": "The whole Search string is in quotes.",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
+        (
+            "EBSCOHost: Artificial Intelligence AND Future",
+            "",
+            [
+                {
+                    "code": "E0007",
+                    "label": "query-starts-with-platform-identifier",
+                    "message": "Query starts with platform identifier",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": "",
+                }
+            ],
+        ),
     ],
 )
 def test_linter_general_search_field(

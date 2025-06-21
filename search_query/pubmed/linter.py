@@ -91,7 +91,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization()
 
         self.check_unsupported_pubmed_search_fields()
-        self.check_general_search_field_mismatch()
+        self.check_general_search_field()
+        self.check_implicit_search_fields()
         self.check_boolean_operator_readability()
 
         self.check_invalid_proximity_operator()
@@ -508,70 +509,30 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     f"{token.position} is not supported.",
                 )
 
-    def check_general_search_field_mismatch(self) -> None:
-        """Check general search field mismatch"""
+    def check_implicit_search_fields(self) -> None:
+        """Check the general search field"""
 
-        general_sf_parentheses = f"[{self.search_field_general.lower()}]"
-        try:
-            general_sf = map_to_standard(general_sf_parentheses)
-        except ValueError:
-            # If the general search field is not supported, we skip the check
-            general_sf = None
+        # search fields are required for each term.
+        # otherwise, pubmed implicitly sets [all]
 
-        standardized_sf_list = []
-        for token in self.tokens:
-            if token.type != TokenTypes.FIELD:
-                continue
-            try:
-                standardized_sf = map_to_standard(token.value)
-            except ValueError:
-                # If the search field is not supported, we skip the check
-                continue
+        implicit_positions = []
+        for i, _ in enumerate(self.tokens):
+            token_type = self.tokens[i].type
+            next_token_type = TokenTypes.SEARCH_TERM  # Default
+            if i < len(self.tokens) - 1:
+                next_token_type = self.tokens[i + 1].type
+            if (
+                token_type == TokenTypes.SEARCH_TERM
+                and next_token_type != TokenTypes.FIELD
+            ):
+                implicit_positions.append(self.tokens[i].position)
 
-            standardized_sf_list.append(standardized_sf)
-            if general_sf and standardized_sf:
-                if general_sf != standardized_sf:
-                    details = (
-                        "The search_field_general "
-                        f"({self.search_field_general}) "
-                        f"and the search_field {token.value} do not match."
-                    )
-                    # User-provided fields and fields in the query do not match
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_CONTRADICTION,
-                        positions=[token.position],
-                        details=details,
-                    )
-                else:
-                    details = (
-                        "The search_field_general "
-                        f"({self.search_field_general}) "
-                        f"and the search_field {token.value} are redundant."
-                    )
-                    # User-provided fields match fields in the query
-                    self.add_linter_message(
-                        QueryErrorCode.SEARCH_FIELD_REDUNDANT,
-                        positions=[token.position],
-                        details=details,
-                    )
-
-        if general_sf and not standardized_sf_list:
-            # User-provided fields are missing in the query
+        if implicit_positions:
+            details = "The search field is implicit (will be set to [all] by PubMed)."
             self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING,
-                positions=[(-1, -1)],
-                details="Search fields should be specified in the query "
-                "instead of the search_field_general",
-            )
-
-        if not general_sf and not any(t.type == TokenTypes.FIELD for t in self.tokens):
-            # Fields not specified
-            self.add_linter_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING,
-                positions=[(-1, -1)],
-                # TODO : default search field: [all]
-                # TODO : distinguish MISSING vs. IMPLICIT?
-                details="Search field is missing.",
+                QueryErrorCode.SEARCH_FIELD_IMPLICIT,
+                positions=implicit_positions,
+                details=details,
             )
 
 

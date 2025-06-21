@@ -7,7 +7,7 @@ F3002 — missing-operator-nodes
 
 **Message**: ``List format query without operator nodes``
 
-**Scope**: PLATFORM.WOS
+**Scope**: all
 
 **Description**: List format query without operator nodes
 
