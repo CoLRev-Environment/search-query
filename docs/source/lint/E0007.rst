@@ -1,6 +1,6 @@
 .. _E0007:
 
-E0007 — query-starts-with-platform-identifier
+E0007 — unsupported-prefix-platform-identifier
 =============================================
 
 **Error Code**: E0007

@@ -228,7 +228,7 @@ def test_pubmed_invalid_token_sequences(
             [
                 {
                     "code": "E0007",
-                    "label": "query-starts-with-platform-identifier",
+                    "label": "unsupported-prefix-platform-identifier",
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
                     "position": [],
@@ -1159,7 +1159,7 @@ def test_list_parser_case_2() -> None:
         "3": [
             {
                 "code": "F3003",
-                "label": "invalid-list-reference",
+                "label": "list-query-invalid-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
                 "position": [(238, 240)],

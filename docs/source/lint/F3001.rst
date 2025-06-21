@@ -1,6 +1,6 @@
 .. _F3001:
 
-F3001 — missing-root-node
+F3001 — list-query-missing-root-node
 =========================
 
 **Error Code**: F3001

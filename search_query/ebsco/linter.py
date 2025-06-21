@@ -117,12 +117,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         # Check for erroneous field syntax
         match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 positions=[match.span()],
                 details="EBSCOHOst fields must be before search terms "
                 "and without brackets, e.g. AB robot or TI monitor. "
                 f"'{match.group(0)}' is invalid.",
+                fatal=True,
             )
 
     def check_invalid_near_within_operators(self) -> None:
@@ -143,7 +144,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be N{digit} instead."
                     )
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
@@ -154,7 +155,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be W{digit} instead."
                     )
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
@@ -173,10 +174,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type.value}",
+                fatal=True,
             )
 
         for i, token in enumerate(self.tokens):
@@ -217,10 +219,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 ):
                     details = "Search field is not supported (must be upper case)"
                     positions = [self.tokens[i - 1].position]
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                         positions=positions,
                         details=details,
+                        fatal=True,
                     )
                     continue
                 elif (
@@ -234,10 +237,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         )
                     ]
 
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=positions,
                     details=details,
+                    fatal=True,
                 )
 
         # Check the last token
@@ -246,10 +250,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.FIELD,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
+                fatal=True,
             )
 
     def check_invalid_near_within_operators_query(self, query: Query) -> None:
@@ -263,7 +268,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     f"Operator {query.value} "
                     "is not supported by EBSCO. Must be N/x instead."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -274,7 +279,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     f"Operator {query.value} "
                     "is not supported by EBSCO. Must be W/x instead."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -297,10 +302,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         query.position[0] + match.start(),
                         query.position[0] + match.end(),
                     )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details="Wildcard not allowed at the beginning of a term.",
+                    fatal=True,
                 )
 
             # Count each wildcard
@@ -316,10 +322,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     "at least two literal (non-wildcard) characters "
                     "must be present in that span."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details=details,
+                    fatal=True,
                 )
 
             if re.search(r"^[^\*\?\#](\*)", val):
@@ -330,10 +337,11 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     "Do not use * in the second position followed by "
                     "additional letters. Use ? or # instead (e.g., f?tal)."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details=details,
+                    fatal=True,
                 )
 
         for child in query.children:
@@ -385,6 +393,6 @@ class EBSCOListLinter(QueryListLinter):
 
         # self.parser.query_dict.items()
         # self.check_missing_tokens()
-        # self.check_invalid_list_reference()
+        # self.check_LIST_QUERY_INVALID_REFERENCE()
         # # self.check_unknown_tokens()
         # self.check_operator_node_token_sequence()

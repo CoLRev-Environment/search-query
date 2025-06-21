@@ -360,8 +360,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "NEAR distance is too large (max: 15).",
                     "is_fatal": True,
                     "position": [(9, 16)],
-                    "details": "",
-                },
+                    "details": "NEAR distance 20 is larger than the maximum allowed value of 15.",
+                }
             ],
         ),
         # TODO: should be implemented properly.
@@ -397,7 +397,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
                     "position": [(9, 10)],
-                    "details": "",
+                    "details": "The '!' character is not supported in WOS search strings.",
                 },
             ],
         ),
@@ -418,7 +418,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Wildcard cannot be standalone.",
                     "is_fatal": True,
                     "position": [(13, 16)],
-                    "details": "",
+                    "details": "Wildcard '?' cannot be used as a standalone character.",
                 },
             ],
         ),
@@ -432,15 +432,15 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         ),
         (
             "TI=(term1 term2!*)",
+            # TODO : should we raise only one message?
             [
-                # TODO : should we raise only one message?
                 {
                     "code": "F2005",
                     "label": "wildcard-after-special-char",
                     "message": "Wildcard cannot be preceded by special characters.",
                     "is_fatal": True,
                     "position": [(4, 17)],
-                    "details": "",
+                    "details": "Wildcard '*' is not allowed after a special character.",
                 },
                 {
                     "code": "F2001",
@@ -448,7 +448,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
                     "position": [(15, 16)],
-                    "details": "",
+                    "details": "The '!' character is not supported in WOS search strings.",
                 },
             ],
         ),
@@ -752,7 +752,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             [
                 {
                     "code": "E0007",
-                    "label": "query-starts-with-platform-identifier",
+                    "label": "unsupported-prefix-platform-identifier",
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
                     "position": [],
@@ -772,7 +772,8 @@ def test_linter(
         parser.parse()
     except SearchQueryException:
         pass
-    parser.print_tokens()
+    finally:
+        parser.print_tokens()
     print(parser.linter.messages)
     assert parser.linter.messages == expected_messages
 
@@ -984,11 +985,11 @@ def test_list_parser_case_2() -> None:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
         "code": "F3001",
-        "is_fatal": True,
-        "label": "missing-root-node",
+        "label": "list-query-missing-root-node",
         "message": "List format query without root node (typically containing operators)",
-        "position": [(-1, -1)],
-        "details": "",
+        "is_fatal": True,
+        "position": [],
+        "details": "The last item of the list must be a combining string.",
     }
 
 
@@ -1005,7 +1006,7 @@ def test_list_parser_case_3() -> None:
         2: [
             {
                 "code": "F3003",
-                "label": "invalid-list-reference",
+                "label": "list-query-invalid-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
                 "position": [(101, 103)],

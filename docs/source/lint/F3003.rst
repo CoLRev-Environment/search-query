@@ -1,6 +1,6 @@
 .. _F3003:
 
-F3003 — invalid-list-reference
+F3003 — list-query-invalid-reference
 ==============================
 
 **Error Code**: F3003

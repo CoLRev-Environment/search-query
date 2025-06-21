@@ -50,10 +50,11 @@ class XYQueryStringLinter(QueryStringLinter):
         for i, token in enumerate(self.parser.tokens[:-1]):
             expected = self.VALID_TOKEN_SEQUENCES.get(token.type, [])
             if self.parser.tokens[i + 1].type not in expected:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     position=self.parser.tokens[i + 1].position,
                     details=f"Unexpected token after {token.type}",
+                    fatal=True,
                 )
 
     def validate_query_tree(self, query: Query) -> None:

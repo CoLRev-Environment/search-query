@@ -501,7 +501,7 @@ def test_linter(query_string: str, messages: list) -> None:
             [
                 {
                     "code": "E0007",
-                    "label": "query-starts-with-platform-identifier",
+                    "label": "unsupported-prefix-platform-identifier",
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
                     "position": [],

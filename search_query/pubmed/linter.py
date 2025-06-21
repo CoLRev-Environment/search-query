@@ -104,12 +104,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
         # Check for erroneous field syntax
         match = re.search(r"\b[A-Z]{2}=", self.query_str)
         if match:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 positions=[match.span()],
                 details="PubMed fields must be enclosed in brackets and "
                 "after a search term, e.g. robot[TIAB] or monitor[TI]. "
                 f"'{match.group(0)}' is invalid.",
+                fatal=True,
             )
 
     def check_character_replacement_in_search_term(self, query: Query) -> None:
@@ -133,7 +134,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     positions = [(-1, -1)]
                     if query.position:
                         positions = [(query.position[0] + i, query.position[0] + i + 1)]
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.CHARACTER_REPLACEMENT,
                         positions=positions,
                         details=details,
@@ -150,10 +151,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.SEARCH_TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type.value}",
+                fatal=True,
             )
 
         # pylint: disable=duplicate-code
@@ -210,10 +212,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
                 ]
 
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=positions,
                 details=details,
+                fatal=True,
             )
 
         # Check the last token
@@ -221,10 +224,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.PARENTHESIS_OPEN,
             TokenTypes.LOGIC_OPERATOR,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
+                fatal=True,
             )
 
     def _print_unequal_precedence_warning(self, index: int) -> None:
@@ -269,7 +273,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             "based on their left-to-right position in the query.\n\n"
         )
 
-        self.add_linter_message(
+        self.add_message(
             QueryErrorCode.IMPLICIT_PRECEDENCE,
             positions=[o.position for o in unequal_precedence_operators],
             details=details,
@@ -390,7 +394,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if "*" in query.value[:k]:
                 # Wildcard * is invalid
                 # when applied to terms with less than 4 characters
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_WILDCARD_USE,
                     positions=[query.position or (-1, -1)],
                     details=details,
@@ -417,7 +421,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     f"Proximity value '{prox_value}' is not a digit. "
                     "Using default 3 instead."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],
                     details=details,
@@ -433,7 +437,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     "Proximity search requires 2 or "
                     "more search terms enclosed in double quotes."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[self.tokens[index - 1].position],
                     details=details,
@@ -448,7 +452,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     f"Proximity operator is not supported: '{field_token.value}'"
                     + " (supported search fields: [tiab], [ti], [ad])"
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_PROXIMITY_USE,
                     positions=[field_token.position],
                     details=details,
@@ -502,11 +506,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 if ":~" in token.value:
                     # Will be handled in check_invalid_proximity_operator
                     return
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
                     positions=[token.position],
                     details=f"Search field {token.value} at position "
                     f"{token.position} is not supported.",
+                    fatal=True,
                 )
 
     def check_implicit_search_fields(self) -> None:
@@ -529,7 +534,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         if implicit_positions:
             details = "The search field is implicit (will be set to [all] by PubMed)."
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.SEARCH_FIELD_IMPLICIT,
                 positions=implicit_positions,
                 details=details,
@@ -553,10 +558,10 @@ class PubmedQueryListLinter(QueryListLinter):
     def validate_tokens(self) -> None:
         """Validate token list"""
 
-        self._check_invalid_list_reference()
+        self._check_list_query_invalid_reference()
         # self.check_operator_node_token_sequence()
 
-    def _check_invalid_list_reference(self) -> None:
+    def _check_list_query_invalid_reference(self) -> None:
         # check if all list-references exist
         for ind, query_node in self.parser.query_dict.items():
             # check if all list references exist
@@ -569,11 +574,12 @@ class PubmedQueryListLinter(QueryListLinter):
                 offset = query_node["content_pos"][0]
                 position = (position[0] + offset, position[1] + offset)
                 if reference.replace("#", "") not in self.parser.query_dict:
-                    self.add_linter_message(
-                        QueryErrorCode.INVALID_LIST_REFERENCE,
+                    self.add_message(
+                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
                         list_position=ind,
                         positions=[position],
                         details=f"List reference {reference} not found.",
+                        fatal=True,
                     )
 
     def _get_operator_node_tokens(self, token_nr: int) -> list:
@@ -612,11 +618,12 @@ class PubmedQueryListLinter(QueryListLinter):
                     "Operator node must start with a list reference "
                     "(format: #1, #2, etc.)."
                 )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     list_position=level,
                     positions=[operator_node_tokens[0].position],
                     details=details,
+                    fatal=True,
                 )
 
             prev_token = operator_node_tokens[0]
@@ -627,21 +634,23 @@ class PubmedQueryListLinter(QueryListLinter):
                 if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                     if prev_token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                         details = "Two list references in a row"
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
                             positions=[(prev_token.position[0], token.position[1])],
                             details=details,
+                            fatal=True,
                         )
                     prev_token = token
 
                 if token.type == OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE:
                     if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
                         details = "Invalid operator position"
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                             list_position=level,
                             positions=[token.position],
                             details=details,
+                            fatal=True,
                         )
                     prev_token = token

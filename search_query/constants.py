@@ -643,10 +643,10 @@ class QueryErrorCode(Enum):
 """,
     )
 
-    MISSING_ROOT_NODE = (
+    LIST_QUERY_MISSING_ROOT_NODE = (
         [PLATFORM.WOS],
         "F3001",
-        "missing-root-node",
+        "list-query-missing-root-node",
         "List format query without root node (typically containing operators)",
         """
 **Problematic query**:
@@ -668,19 +668,19 @@ class QueryErrorCode(Enum):
 """,
     )
     # TODO : implement with list-parser/linters
-    MISSING_OPERATOR_NODES = (
+    LIST_QUERY_MISSING_OPERATOR_NODES = (
         ["all"],
         "F3002",
-        "missing-operator-nodes",
+        "list-query-missing-operator-nodes",
         "List format query without operator nodes",
         """
 
 """,
     )
-    INVALID_LIST_REFERENCE = (
+    LIST_QUERY_INVALID_REFERENCE = (
         ["all"],
         "F3003",
-        "invalid-list-reference",
+        "list-query-invalid-reference",
         "Invalid list reference in list query",
         """
 **Problematic query**:
@@ -853,10 +853,10 @@ Proximity operators must have a non-negative integer as the distance.
 **Typical fix**: Avoid using wildcards (*) with short strings (less than 4 characters). Specify search fields directly in the query instead of relying on general search field settings.
 """,
     )
-    QUERY_STARTS_WITH_PLATFORM_IDENTIFIER = (
+    UNSUPPORTED_PREFIX_PLATFORM_IDENTIFIER = (
         ["all"],
         "E0007",
-        "query-starts-with-platform-identifier",
+        "unsupported-prefix-platform-identifier",
         "Query starts with platform identifier",
         """
 **Problematic query**:
@@ -1154,18 +1154,3 @@ Proximity operators must have a non-negative integer as the distance.
         self.label = label
         self.message = message
         self.docs = docs
-
-    # Error type is defined by first letter
-    def is_fatal(self) -> bool:
-        """Check if error is fatal"""
-        return self.code.startswith("F")
-
-    # Note: needed for the documentation:
-    def is_error(self) -> bool:  # pragma: no cover
-        """Check if error is an error"""
-        return self.code.startswith("E")
-
-    # Note: needed for the documentation:
-    def is_warning(self) -> bool:  # pragma: no cover
-        """Check if error is a warning"""
-        return self.code.startswith("W")

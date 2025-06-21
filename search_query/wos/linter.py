@@ -118,12 +118,13 @@ class WOSQueryStringLinter(QueryStringLinter):
         # Check for erroneous field syntax
         match = re.search(r"\[[A-Za-z]*\]", self.query_str)
         if match:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_SYNTAX,
                 positions=[match.span()],
                 details="WOS fields must be before search terms and "
                 "without brackets, e.g. AB=robot or TI=monitor. "
                 f"'{match.group(0)}' is invalid.",
+                fatal=True,
             )
 
     def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
@@ -148,8 +149,10 @@ class WOSQueryStringLinter(QueryStringLinter):
                     )
                 ]
             # Year detected without other search fields
-            self.add_linter_message(
-                QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS, positions=positions
+            self.add_message(
+                QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS,
+                positions=positions,
+                fatal=True,
             )
 
     def check_missing_search_fields(
@@ -181,7 +184,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             previous_token = token.type
 
         if missing_positions:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.SEARCH_FIELD_MISSING,
                 positions=missing_positions,
             )
@@ -190,7 +193,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for implicit NEAR operator."""
         for token in self.tokens:
             if token.value == "NEAR":
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.IMPLICIT_NEAR_VALUE,
                     positions=[token.position],
                 )
@@ -205,16 +208,18 @@ class WOSQueryStringLinter(QueryStringLinter):
             if not YEAR_PUBLISHED_FIELD_REGEX.match(query.search_field.value):
                 return
             if any(char in query.value for char in ["*", "?", "$"]):
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.WILDCARD_IN_YEAR,
-                    positions=[query.position or (-1, -1)],
+                    positions=[query.position] if query.position else [],
+                    fatal=True,
                 )
                 return
 
             if not self.YEAR_VALUE_REGEX.match(query.value):
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.YEAR_FORMAT_INVALID,
-                    positions=[query.position or (-1, -1)],
+                    positions=[query.position] if query.position else [],
+                    fatal=True,
                 )
                 return
 
@@ -226,9 +231,10 @@ class WOSQueryStringLinter(QueryStringLinter):
                         str(int(query.value[5:9]) - 5) + "-" + query.value[5:9]
                     )
 
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.YEAR_SPAN_VIOLATION,
-                        positions=[query.position or (-1, -1)],
+                        positions=[query.position] if query.position else [],
+                        fatal=True,
                     )
 
         for child in query.children:
@@ -243,10 +249,11 @@ class WOSQueryStringLinter(QueryStringLinter):
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[0].position],
                 details=f"Cannot start with {self.tokens[0].type.value}",
+                fatal=True,
             )
 
         tokens = self.tokens
@@ -271,27 +278,30 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             # Two operators in a row
             if token.is_operator() and next_token.is_operator():
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
                     details="Two operators in a row are not allowed.",
+                    fatal=True,
                 )
                 continue
 
             # Two search fields in a row
             if token.type == TokenTypes.FIELD and next_token.type == TokenTypes.FIELD:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
+                    fatal=True,
                 )
                 continue
 
             # Check transition
             allowed_next_types = self.VALID_TOKEN_SEQUENCES.get(token.type, [])
             if next_token.type not in allowed_next_types:
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
+                    fatal=True,
                 )
 
         # Check the last token
@@ -300,10 +310,11 @@ class WOSQueryStringLinter(QueryStringLinter):
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.FIELD,
         ]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                 positions=[self.tokens[-1].position],
                 details=f"Cannot end with {self.tokens[-1].type.value}",
+                fatal=True,
             )
 
     def check_unsupported_wildcards(self, query: Query) -> None:
@@ -318,9 +329,11 @@ class WOSQueryStringLinter(QueryStringLinter):
                         query.position[0] + match.start(),
                         query.position[0] + match.end(),
                     )
-                self.add_linter_message(
+                self.add_message(
                     QueryErrorCode.WILDCARD_UNSUPPORTED,
                     positions=[position],
+                    details="The '!' character is not supported in WOS search strings.",
+                    fatal=True,
                 )
 
         for child in query.children:
@@ -337,9 +350,14 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if charachter in self.WILDCARD_CHARS:
                     # Check if wildcard is left or right-handed or standalone
                     if index == 0 and len(value) == 1:
-                        self.add_linter_message(
+                        self.add_message(
                             QueryErrorCode.WILDCARD_STANDALONE,
-                            positions=[query.position or (-1, -1)],
+                            positions=[query.position] if query.position else [],
+                            details=(
+                                f"Wildcard '{charachter}' "
+                                "cannot be used as a standalone character."
+                            ),
+                            fatal=True,
                         )
 
                     elif len(value) == index + 1:
@@ -359,24 +377,31 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for unsupported right-hand wildcards in the search string."""
 
         if query.value[index - 1] in ["/", "@", "#", ".", ":", ";", "!"]:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.WILDCARD_AFTER_SPECIAL_CHAR,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
+                details=(
+                    f"Wildcard '{query.value[index]}' "
+                    "is not allowed after a special character."
+                ),
+                fatal=True,
             )
 
         if len(query.value) < 4:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.WILDCARD_RIGHT_SHORT_LENGTH,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
+                fatal=True,
             )
 
     def check_format_left_hand_wildcards(self, query: Query) -> None:
         """Check for wrong usage among left-hand wildcards in the search string."""
 
         if len(query.value) < 4:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.WILDCARD_LEFT_SHORT_LENGTH,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
+                fatal=True,
             )
 
     def check_issn_isbn_format(self, query: "Query") -> None:
@@ -390,9 +415,10 @@ class WOSQueryStringLinter(QueryStringLinter):
                 if not self.ISSN_VALUE_REGEX.match(
                     query.value
                 ) and not self.ISBN_VALUE_REGEX.match(query.value):
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.ISBN_FORMAT_INVALID,
-                        positions=[query.position or (-1, -1)],
+                        positions=[query.position] if query.position else [],
+                        fatal=True,
                     )
 
             return
@@ -410,9 +436,10 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             if query.search_field.value == "DO=":
                 if not self.DOI_VALUE_REGEX.match(query.value):
-                    self.add_linter_message(
+                    self.add_message(
                         QueryErrorCode.DOI_FORMAT_INVALID,
-                        positions=[query.position or (-1, -1)],
+                        positions=[query.position] if query.position else [],
+                        fatal=True,
                     )
             return
 
@@ -440,17 +467,19 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check the number of search terms in the query."""
         nr_terms = query.get_nr_leaves()
         if nr_terms > 1600:  # pragma: no cover
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.TOO_MANY_SEARCH_TERMS,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
                 details="The maximum number of search terms is 16,000.",
+                fatal=True,
             )
         nr_all_terms = self.get_nr_terms_all(query)
         if nr_all_terms > 50:
-            self.add_linter_message(
+            self.add_message(
                 QueryErrorCode.TOO_MANY_SEARCH_TERMS,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
                 details="The maximum number of search terms (for ALL Fields) is 50.",
+                fatal=True,
             )
 
     def validate_query_tree(self, query: "Query") -> None:
@@ -498,8 +527,8 @@ class WOSQueryListLinter(QueryListLinter):
         """Lint the list parser."""
 
         missing_root = self._check_missing_root()
-        self._check_missing_operator_nodes(missing_root)
-        self._check_invalid_list_reference()
+        self._check_list_query_missing_operator_nodes(missing_root)
+        self._check_list_query_invalid_reference()
 
     def _check_missing_root(self) -> bool:
         missing_root = False
@@ -508,15 +537,17 @@ class WOSQueryListLinter(QueryListLinter):
         )
         # Raise an error if the last item of the list is not the last combining string
         if "#" not in root_node_content:
-            self.add_linter_message(
-                QueryErrorCode.MISSING_ROOT_NODE,
+            self.add_message(
+                QueryErrorCode.LIST_QUERY_MISSING_ROOT_NODE,
                 list_position=GENERAL_ERROR_POSITION,
-                positions=[(-1, -1)],
+                positions=[],
+                details="The last item of the list must be a combining string.",
+                fatal=True,
             )
             missing_root = True
         return missing_root
 
-    def _check_missing_operator_nodes(self, missing_root: bool) -> None:
+    def _check_list_query_missing_operator_nodes(self, missing_root: bool) -> None:
         if missing_root:
             return
         # require combining list items
@@ -527,13 +558,14 @@ class WOSQueryListLinter(QueryListLinter):
             # If there is no combining list item, raise a linter exception
             # Individual list items can not be connected
             # raise ValueError("[ERROR] No combining list item found.")
-            self.add_linter_message(
-                QueryErrorCode.MISSING_OPERATOR_NODES,
+            self.add_message(
+                QueryErrorCode.LIST_QUERY_MISSING_OPERATOR_NODES,
                 list_position=GENERAL_ERROR_POSITION,
-                positions=[(-1, -1)],
+                positions=[],
+                fatal=True,
             )
 
-    def _check_invalid_list_reference(self) -> None:
+    def _check_list_query_invalid_reference(self) -> None:
         # check if all list-references exist
         for ind, query_node in enumerate(self.parser.query_dict.values()):
             if "#" in str(query_node["node_content"]):
@@ -547,9 +579,10 @@ class WOSQueryListLinter(QueryListLinter):
                     offset = query_node["content_pos"][0]
                     position = (position[0] + offset, position[1] + offset)
                     if reference.replace("#", "") not in self.parser.query_dict:
-                        self.add_linter_message(
-                            QueryErrorCode.INVALID_LIST_REFERENCE,
+                        self.add_message(
+                            QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
                             list_position=ind,
                             positions=[position],
                             details=f"List reference {reference} not found.",
+                            fatal=True,
                         )

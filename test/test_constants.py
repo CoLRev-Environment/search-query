@@ -19,7 +19,7 @@ def test_assert_unique_error_codes() -> None:
 
 # Assert ordered error codes
 def test_assert_ordered_error_codes() -> None:
-    codes = [e.code for e in QueryErrorCode if not e.is_fatal()]
+    codes = [e.code for e in QueryErrorCode]
     ordered_codes = sorted(codes)
 
     assert codes == ordered_codes, "Error codes are not in ascending order"
