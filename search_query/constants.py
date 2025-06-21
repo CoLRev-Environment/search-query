@@ -539,17 +539,8 @@ class QueryErrorCode(Enum):
 **Typical fix**: Add a root-level operator to combine the list items into a single query.
 """,
     )
-    # TODO : implement with list-parser/linters
-    LIST_QUERY_MISSING_OPERATOR_NODES = (
-        "PARSE_1002",
-        "list-query-missing-operator-nodes",
-        "List format query without operator nodes",
-        """
-
-""",
-    )
     LIST_QUERY_INVALID_REFERENCE = (
-        "PARSE_1003",
+        "PARSE_1002",
         "list-query-invalid-reference",
         "Invalid list reference in list query",
         """

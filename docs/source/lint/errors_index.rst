@@ -26,8 +26,6 @@ Parsing errors
 
    PARSE_1002
 
-   PARSE_1003
-
 Query structure errors
 ----------------------
 
