@@ -7,7 +7,7 @@ from search_query.constants import Colors
 
 
 def _is_single_short_line_error(positions: list, query_str: str) -> bool:
-    if len(positions) != 1:
+    if len(positions) != 1 or "\n" not in query_str:
         return False
     start, end = positions[0]
     # Check if the position is on a single line

@@ -513,15 +513,6 @@ class WOSQueryListLinter(QueryListLinter):
     def validate_list_tokens(self) -> None:
         """Lint the list parser."""
 
-        # try:
-        #     self.tokenize_list()
-        # except ValueError:  # may catch other errors here
-        #     self.add_linter_message(
-        #         QueryErrorCode.TOKENIZING_FAILED,
-        #         list_position=self.GENERAL_ERROR_POSITION,
-        #         position=(-1, -1),
-        #     )
-
         missing_root = self._check_missing_root()
         self._check_missing_operator_nodes(missing_root)
         self._check_invalid_list_reference()

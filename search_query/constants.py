@@ -281,28 +281,6 @@ class QueryErrorCode(Enum):
 **Typical fix**: Check the sequence of operators and terms in the query
 """,
     )
-    # TODO : implement and test this error
-    EMPTY_PARENTHESES = (
-        [PLATFORM.PUBMED],
-        "F1009",
-        "empty-parentheses",
-        "Query contains empty parentheses",
-        """
-
-**Problematic query**:
-
-.. code-block:: text
-
-    eHealth[ti] OR ()
-
-**Recommended query**:
-
-.. code-block:: text
-
-    # Replace with actual search terms
-    eHealth[ti] OR "digital health"[ti]
-    """,
-    )
     INVALID_SYNTAX = (
         ["all"],
         "F1010",
@@ -329,16 +307,17 @@ class QueryErrorCode(Enum):
     eHealth[ti]
 """,
     )
-    # TODO : cover in linters and tests
-    TOO_MANY_OPERATORS = (
-        [PLATFORM.WOS],
-        "F1011",
-        "too-many-operators",
-        "Too many operators in the query",
-        """
-**Explanation:** The query contains too many logical operators (AND, OR, NOT) or proximity operators (NEAR, WITHIN).
-""",  # Note: do not include a long example
-    )
+    # Note: introduce this error for databases that have a limit on the number of operators
+    # WOS: 49 operators refers to ALL Search Fields
+    #     TOO_MANY_OPERATORS = (
+    #         ["all"],
+    #         "F1011",
+    #         "too-many-operators",
+    #         "Too many operators in the query",
+    #         """
+    # **Explanation:** The query contains too many logical operators (AND, OR, NOT) or proximity operators (NEAR, WITHIN).
+    # """,  # Note: do not include a long example
+    #   )
     TOO_MANY_SEARCH_TERMS = (
         [PLATFORM.WOS],
         "F1012",
@@ -690,14 +669,16 @@ class QueryErrorCode(Enum):
     )
     # TODO : implement with list-parser/linters
     MISSING_OPERATOR_NODES = (
-        [PLATFORM.WOS],
+        ["all"],
         "F3002",
         "missing-operator-nodes",
         "List format query without operator nodes",
-        "",
+        """
+
+""",
     )
     INVALID_LIST_REFERENCE = (
-        [PLATFORM.WOS, PLATFORM.PUBMED],
+        ["al"],
         "F3003",
         "invalid-list-reference",
         "Invalid list reference in list query",
@@ -920,7 +901,6 @@ Proximity operators must have a non-negative integer as the distance.
         "Recommend explicitly specifying the search field in the string",
         """
 **Problematic query**:
-
 
 .. code-block:: text
 
@@ -1186,7 +1166,6 @@ Proximity operators must have a non-negative integer as the distance.
     def __init__(
         self, scope: list, code: str, label: str, message: str, docs: str
     ) -> None:
-        # TODO: remove the database scope ?
         self.scope = scope
         self.code = code
         self.label = label
