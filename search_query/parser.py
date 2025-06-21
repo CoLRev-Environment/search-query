@@ -35,7 +35,7 @@ LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
 def parse(
     query_str: str,
     *,
-    search_field_general: str = "",
+    field_general: str = "",
     platform: str = PLATFORM.WOS.value,
     mode: str = LinterMode.STRICT,
 ) -> Query:
@@ -48,7 +48,7 @@ def parse(
 
         return LIST_PARSERS[platform](  # type: ignore
             query_list=query_str,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
         ).parse()
 
@@ -58,7 +58,7 @@ def parse(
     parser_class = PARSERS[platform]
 
     query = parser_class(
-        query_str, search_field_general=search_field_general, mode=mode
+        query_str, field_general=field_general, mode=mode
     ).parse()  # type: ignore
 
     return query

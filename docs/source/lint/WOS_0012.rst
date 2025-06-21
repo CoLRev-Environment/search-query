@@ -1,0 +1,24 @@
+.. _WOS_0012:
+
+WOS_0012 — invalid-character
+============================
+
+**Error Code**: WOS_0012
+
+**Message**: ``Search term contains invalid character``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "@digital-native"[ti]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "digital-native"[ti]
+
+**Back to**: :ref:`lint`

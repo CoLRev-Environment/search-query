@@ -14,25 +14,23 @@ def to_string_pubmed(query: Query) -> str:
     """Serialize the Query tree into a PubMed search string."""
     if not query.children:
         # Serialize term query
-        return (
-            f"{query.value}" f"{query.search_field.value if query.search_field else ''}"
-        )
+        return f"{query.value}" f"{query.field.value if query.field else ''}"
     if query.value == Operators.NEAR:
         # Serialize near query
         distance = query.distance if hasattr(query, "distance") else 0
-        assert query.children[0].search_field
+        assert query.children[0].field
         return (
             f"{query.children[0].value}"
-            f"{query.children[0].search_field.value[:-1]}"
+            f"{query.children[0].field.value[:-1]}"
             f":~{distance}]"
         )
     if query.value == Operators.RANGE:
         # Serialize range query
-        assert query.children[0].search_field
+        assert query.children[0].field
         assert query.children[1]
         return (
             f"{query.children[0].value}:{query.children[1].value}"
-            f"{query.children[0].search_field.value}"
+            f"{query.children[0].field.value}"
         )
     # Serialize compound query
     result = ""

@@ -32,14 +32,14 @@ from search_query.query_term import Term
                 Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(0, 1)),
                 Token(
                     value='"health tracking"',
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(1, 18),
                 ),
                 Token(value="[tw]", type=TokenTypes.FIELD, position=(19, 23)),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(24, 26)),
                 Token(
                     value='"remote monitoring"',
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(26, 45),
                 ),
                 Token(value="[tw]", type=TokenTypes.FIELD, position=(45, 49)),
@@ -47,12 +47,12 @@ from search_query.query_term import Term
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(50, 53)),
                 Token(
                     value="wearable device",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(54, 69),
                 ),
                 Token(value="[tw]", type=TokenTypes.FIELD, position=(69, 73)),
                 Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(73, 76)),
-                Token(value="Comment", type=TokenTypes.SEARCH_TERM, position=(77, 84)),
+                Token(value="Comment", type=TokenTypes.TERM, position=(77, 84)),
                 Token(value="[pt]", type=TokenTypes.FIELD, position=(84, 88)),
             ],
         ),
@@ -61,14 +61,14 @@ from search_query.query_term import Term
             [
                 Token(
                     value="home care workers",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(0, 17),
                 ),
                 Token(value="[Title]", type=TokenTypes.FIELD, position=(18, 25)),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(26, 28)),
                 Token(
                     value="health care workers",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(29, 48),
                 ),
                 Token(value="[Title]", type=TokenTypes.FIELD, position=(49, 56)),
@@ -77,16 +77,12 @@ from search_query.query_term import Term
         (
             'technician*[ Title/Abstract] OR "Personnel"[ MeSH Terms]',
             [
-                Token(
-                    value="technician*", type=TokenTypes.SEARCH_TERM, position=(0, 11)
-                ),
+                Token(value="technician*", type=TokenTypes.TERM, position=(0, 11)),
                 Token(
                     value="[ Title/Abstract]", type=TokenTypes.FIELD, position=(11, 28)
                 ),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(29, 31)),
-                Token(
-                    value='"Personnel"', type=TokenTypes.SEARCH_TERM, position=(32, 43)
-                ),
+                Token(value='"Personnel"', type=TokenTypes.TERM, position=(32, 43)),
                 Token(value="[ MeSH Terms]", type=TokenTypes.FIELD, position=(43, 56)),
             ],
         ),
@@ -108,14 +104,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         (
             [
                 Token("AND", TokenTypes.LOGIC_OPERATOR, (0, 3)),
-                Token("cancer", TokenTypes.SEARCH_TERM, (4, 10)),
+                Token("cancer", TokenTypes.TERM, (4, 10)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Cannot start with LOGIC_OPERATOR",
         ),
         (
             [
-                Token("cancer", TokenTypes.SEARCH_TERM, (0, 6)),
+                Token("cancer", TokenTypes.TERM, (0, 6)),
                 Token("AND", TokenTypes.LOGIC_OPERATOR, (7, 10)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
@@ -123,8 +119,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         ),
         (
             [
-                Token("cancer", TokenTypes.SEARCH_TERM, (0, 6)),
-                Token("treatment", TokenTypes.SEARCH_TERM, (7, 16)),
+                Token("cancer", TokenTypes.TERM, (0, 6)),
+                Token("treatment", TokenTypes.TERM, (7, 16)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             'Missing operator between "cancer treatment"',
@@ -149,7 +145,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             [
                 Token(")", TokenTypes.PARENTHESIS_CLOSED, (0, 1)),
                 Token("OR", TokenTypes.LOGIC_OPERATOR, (2, 4)),
-                Token("termb", TokenTypes.SEARCH_TERM, (2, 4)),
+                Token("termb", TokenTypes.TERM, (2, 4)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Cannot start with PARENTHESIS_CLOSED",
@@ -165,14 +161,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             [
                 Token("(", TokenTypes.PARENTHESIS_OPEN, (0, 1)),
                 Token("AND", TokenTypes.LOGIC_OPERATOR, (1, 4)),
-                Token("diabetes", TokenTypes.SEARCH_TERM, (5, 13)),
+                Token("diabetes", TokenTypes.TERM, (5, 13)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
             "Invalid operator position",
         ),
         (
             [
-                Token("diabetes", TokenTypes.SEARCH_TERM, (0, 10)),
+                Token("diabetes", TokenTypes.TERM, (0, 10)),
             ],
             [],
             "",
@@ -206,14 +202,14 @@ def test_pubmed_invalid_token_sequences(
 
 
 @pytest.mark.parametrize(
-    "query_str, search_field_general, messages",
+    "query_str, field_general, messages",
     [
         (
             "(eHealth[Text Word]) Sort by: Publication Date",
             "",
             [
                 {
-                    "code": "W0016",
+                    "code": "PARSE_0009",
                     "label": "unsupported-suffix",
                     "message": "Unsupported suffix in search query",
                     "is_fatal": False,
@@ -227,7 +223,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E0007",
+                    "code": "PARSE_0010",
                     "label": "unsupported-prefix-platform-identifier",
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
@@ -241,7 +237,7 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -249,16 +245,16 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Unbalanced opening parenthesis",
                 },
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 18), (22, 41), (49, 69), (73, 90)],
@@ -271,7 +267,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1002",
+                    "code": "PARSE_0003",
                     "label": "unbalanced-quotes",
                     "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
@@ -285,7 +281,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1002",
+                    "code": "PARSE_0003",
                     "label": "unbalanced-quotes",
                     "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
@@ -299,7 +295,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1002",
+                    "code": "PARSE_0003",
                     "label": "unbalanced-quotes",
                     "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
@@ -313,7 +309,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1002",
+                    "code": "PARSE_0003",
                     "label": "unbalanced-quotes",
                     "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
@@ -327,7 +323,7 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -335,16 +331,16 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Unbalanced closing parenthesis",
                 },
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 18), (22, 41), (49, 69), (73, 90)],
@@ -357,7 +353,7 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "W0007",
+                    "code": "STRUCT_0001",
                     "label": "implicit-precedence",
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
@@ -365,16 +361,16 @@ def test_pubmed_invalid_token_sequences(
                     "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
                 },
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 17), (22, 30), (35, 47), (54, 74), (78, 95)],
@@ -388,23 +384,23 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 12), (17, 31)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "W0010",
+                    "code": "PUBMED_0002",
                     "label": "character-replacement",
                     "message": "Character replacement",
                     "is_fatal": False,
@@ -418,23 +414,23 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 17), (22, 25)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "E0006",
+                    "code": "PUBMED_0003",
                     "label": "invalid-wildcard-use",
                     "message": "Invalid use of the wildcard operator *",
                     "is_fatal": False,
@@ -448,7 +444,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -456,8 +452,8 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Nested queries cannot have search fields",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 10), (14, 30)],
@@ -470,7 +466,7 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -478,8 +474,8 @@ def test_pubmed_invalid_token_sequences(
                     "details": 'Missing operator between "[tiab] "digital health""',
                 },
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
@@ -492,7 +488,7 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -500,16 +496,16 @@ def test_pubmed_invalid_token_sequences(
                     "details": 'Missing operator between ") ("',
                 },
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 18), (22, 41), (43, 63), (67, 84)],
@@ -522,7 +518,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -536,7 +532,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -550,7 +546,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -564,7 +560,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -572,7 +568,7 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
                 },
                 {
-                    "code": "E0005",
+                    "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
                     "is_fatal": False,
@@ -586,16 +582,16 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 20), (25, 36), (42, 59)],
@@ -608,23 +604,23 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 8), (14, 31), (36, 53)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -638,7 +634,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -652,8 +648,8 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(9, 13)],
@@ -667,7 +663,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0011",
+                    "code": "QUALITY_0002",
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
@@ -681,7 +677,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1010",
+                    "code": "PARSE_0006",
                     "label": "invalid-syntax",
                     "message": "Query contains invalid syntax",
                     "is_fatal": True,
@@ -689,8 +685,8 @@ def test_pubmed_invalid_token_sequences(
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 12)],
@@ -703,7 +699,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -711,8 +707,8 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Nested queries cannot have search fields",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 8), (12, 19)],
@@ -725,7 +721,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0011",
+                    "code": "QUALITY_0002",
                     "label": "date-filter-in-subquery",
                     "message": "Date filter in subquery",
                     "is_fatal": False,
@@ -739,7 +735,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0014",
+                    "code": "QUALITY_0003",
                     "label": "journal-filter-in-subquery",
                     "message": "Journal (or publication name) filter in subquery",
                     "is_fatal": False,
@@ -753,7 +749,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -767,7 +763,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -781,7 +777,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -795,8 +791,8 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [
@@ -810,7 +806,7 @@ def test_pubmed_invalid_token_sequences(
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -824,8 +820,8 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [
@@ -861,7 +857,7 @@ def test_pubmed_invalid_token_sequences(
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -869,7 +865,7 @@ def test_pubmed_invalid_token_sequences(
                     "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
                 },
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -877,7 +873,7 @@ def test_pubmed_invalid_token_sequences(
                     "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
                 },
                 {
-                    "code": "W0004",
+                    "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
@@ -891,7 +887,7 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "W0009",
+                    "code": "STRUCT_0003",
                     "label": "boolean-operator-readability",
                     "message": "Boolean operator readability",
                     "is_fatal": False,
@@ -904,14 +900,14 @@ def test_pubmed_invalid_token_sequences(
 )
 def test_linter(
     query_str: str,
-    search_field_general: str,
+    field_general: str,
     messages: list,
 ) -> None:
     print(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, search_field_general=search_field_general)
+    parser = PubmedParser(query_str, field_general=field_general)
     try:
         parser.parse()
     except SearchQueryException:
@@ -921,15 +917,15 @@ def test_linter(
 
 
 @pytest.mark.parametrize(
-    "query_str, search_field_general, messages",
+    "query_str, field_general, messages",
     [
         (
             "eHealth[tiab]",
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
@@ -942,8 +938,8 @@ def test_linter(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
@@ -956,16 +952,16 @@ def test_linter(
             "Title",
             [
                 {
-                    "code": "W0002",
-                    "label": "search-field-extracted",
+                    "code": "FIELD_0003",
+                    "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
                     "is_fatal": False,
                     "position": [],
                     "details": "The search field is extracted and should be included in the query.",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 7)],
@@ -978,8 +974,8 @@ def test_linter(
             "",
             [
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(0, 7)],
@@ -992,8 +988,8 @@ def test_linter(
             "",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(7, 13)],
@@ -1006,7 +1002,7 @@ def test_linter(
             "",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -1014,8 +1010,8 @@ def test_linter(
                     "details": "Nested queries cannot have search fields",
                 },
                 {
-                    "code": "E",
-                    "label": "search-field-implicit",
+                    "code": "FIELD_0004",
+                    "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
                     "position": [(1, 8), (12, 19)],
@@ -1028,7 +1024,7 @@ def test_linter(
             "",
             [
                 {
-                    "code": "E0008",
+                    "code": "PARSE_0007",
                     "label": "query-in-quotes",
                     "message": "The whole Search string is in quotes.",
                     "is_fatal": False,
@@ -1039,16 +1035,16 @@ def test_linter(
         ),
     ],
 )
-def test_linter_with_general_search_field(
+def test_linter_with_general_field(
     query_str: str,
-    search_field_general: str,
+    field_general: str,
     messages: list,
 ) -> None:
     print(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, search_field_general=search_field_general)
+    parser = PubmedParser(query_str, field_general=field_general)
     try:
         parser.parse()
     except SearchQueryException:
@@ -1061,7 +1057,7 @@ def test_linter_with_general_search_field(
 
 
 @pytest.mark.parametrize(
-    "query_str, search_field_general, expected_parsed",
+    "query_str, field_general, expected_parsed",
     [
         (
             '(eHealth[Title/Abstract] OR "eHealth"[MeSH Terms]) AND Review[Publication Type]',
@@ -1112,14 +1108,12 @@ def test_linter_with_general_search_field(
         ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
     ],
 )
-def test_parser(
-    query_str: str, search_field_general: str, expected_parsed: str
-) -> None:
+def test_parser(query_str: str, field_general: str, expected_parsed: str) -> None:
     print(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, search_field_general=search_field_general)
+    parser = PubmedParser(query_str, field_general=field_general)
     query = parser.parse()
 
     assert expected_parsed == query.to_generic_string(), print(
@@ -1134,9 +1128,7 @@ def test_list_parser_case_1() -> None:
 3. #1 OR #2
 """
 
-    list_parser = PubmedListParser(
-        query_list=query_list  # , search_field_general="", mode=""
-    )
+    list_parser = PubmedListParser(query_list=query_list)  # , field_general="", mode=""
     list_parser.parse()
 
 
@@ -1146,9 +1138,7 @@ def test_list_parser_case_2() -> None:
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 AND #2 AND #4
 """
-    list_parser = PubmedListParser(
-        query_list=query_list, search_field_general="", mode=""
-    )
+    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1158,7 +1148,7 @@ def test_list_parser_case_2() -> None:
     assert list_parser.linter.messages == {
         "3": [
             {
-                "code": "F3003",
+                "code": "PARSE_1003",
                 "label": "list-query-invalid-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
@@ -1176,9 +1166,7 @@ def test_list_parser_case_3() -> None:
 """
     print(query_list)
 
-    list_parser = PubmedListParser(
-        query_list=query_list, search_field_general="", mode=""
-    )
+    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1189,7 +1177,7 @@ def test_list_parser_case_3() -> None:
         -1: [],
         "1": [
             {
-                "code": "F1004",
+                "code": "PARSE_0004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
@@ -1197,7 +1185,7 @@ def test_list_parser_case_3() -> None:
                 "details": 'Missing operator between ") ("',
             },
             {
-                "code": "W0007",
+                "code": "STRUCT_0001",
                 "label": "implicit-precedence",
                 "message": "Operator changed at the same level (explicit parentheses are recommended)",
                 "is_fatal": False,
@@ -1270,21 +1258,21 @@ def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     )
 
 
-def test_nested_query_with_field() -> None:
+def test_NESTED_QUERY_WITH_FIELD() -> None:
     try:
         OrQuery(
             [
                 Term("health tracking"),
                 Term("remote monitoring"),
             ],
-            search_field="[tiab]",
+            field="[tiab]",
             platform=PLATFORM.PUBMED.value,
         )
     except QuerySyntaxError as exc:
         assert exc.linter.messages == [
             {
-                "code": "F2013",
-                "label": "nested-query-with-search-field",
+                "code": "PUBMED_0001",
+                "label": "nested-query-with-field",
                 "message": "A Nested query cannot have a search field.",
                 "is_fatal": True,
                 "position": [(-1, -1)],
@@ -1300,9 +1288,7 @@ def test_general_list_parser_1() -> None:
 3. #1 AND #2
 """
 
-    list_parser = PubmedListParser(
-        query_list=query_list, search_field_general="", mode=""
-    )
+    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1320,9 +1306,7 @@ def test_general_list_parser_2() -> None:
 4. #1 AND #2 OR #3
 """
 
-    list_parser = PubmedListParser(
-        query_list=query_list, search_field_general="", mode=""
-    )
+    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
     try:
         query = list_parser.parse()
     except ListQuerySyntaxError:

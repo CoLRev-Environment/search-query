@@ -1,0 +1,24 @@
+.. _WOS_0004:
+
+WOS_0004 — implicit-near-value
+==============================
+
+**Error Code**: WOS_0004
+
+**Message**: ``The value of NEAR operator is implicit``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    A NEAR B
+
+**Recommended query**:
+
+.. code-block:: text
+
+    A NEAR/15 B
+
+**Typical fix**: The parser automatically sets NEAR values to 15 (default).
+
+**Back to**: :ref:`lint`

@@ -53,7 +53,7 @@ def translate() -> None:
         query = search_query.parser.parse(
             search_file.search_string,
             platform=args.source,
-            search_field_general=search_file.search_field,
+            field_general=search_file.field,
         )
 
         translated_query = query.translate(args.target)

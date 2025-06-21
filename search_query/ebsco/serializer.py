@@ -18,7 +18,7 @@ def to_string_ebsco(query: Query) -> str:
 
     if not query.children:
         # Leaf query (single search term)
-        field = f"{query.search_field.value} " if query.search_field else ""
+        field = f"{query.field.value} " if query.field else ""
         return f"{field}{query.value}"
 
     result = []
@@ -45,10 +45,10 @@ def to_string_ebsco(query: Query) -> str:
 
     query_str = " ".join(result)
 
-    if query.get_parent() or query.search_field:
+    if query.get_parent() or query.field:
         query_str = f"({query_str})"
 
-    if query.search_field:
+    if query.field:
         # Add search field if present
-        query_str = f"{query.search_field.value} {query_str}"
+        query_str = f"{query.field.value} {query_str}"
     return query_str

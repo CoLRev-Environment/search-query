@@ -11,8 +11,8 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import syntax_str_to_generic_search_field_set
-from search_query.wos.constants import VALID_FIELDS_REGEX
+from search_query.wos.constants import syntax_str_to_generic_field_set
+from search_query.wos.constants import VALID_fieldS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -32,34 +32,34 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     WILDCARD_CHARS = ["?", "$", "*"]
 
-    VALID_FIELDS_REGEX = VALID_FIELDS_REGEX
+    VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
     PLATFORM: PLATFORM = PLATFORM.WOS
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
-        TokenTypes.SEARCH_TERM: [
-            TokenTypes.SEARCH_TERM,
+        TokenTypes.TERM: [
+            TokenTypes.TERM,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PROXIMITY_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
         ],
         TokenTypes.LOGIC_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PROXIMITY_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
             TokenTypes.FIELD,
         ],
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.FIELD,
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PARENTHESIS_CLOSED: [
@@ -83,13 +83,13 @@ class WOSQueryStringLinter(QueryStringLinter):
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Performs a pre-linting"""
 
         self.tokens = tokens
         self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.field_general = field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -101,13 +101,15 @@ class WOSQueryStringLinter(QueryStringLinter):
         # if self.messages:
         #     return self.tokens
 
-        self.check_invalid_characters_in_search_term("@%^~\\<>{}()[]#")
+        self.check_invalid_characters_in_term(
+            "@%^~\\<>{}()[]#", QueryErrorCode.WOS_INVALID_CHARACTER
+        )
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
         self.check_near_distance_in_range(max_value=15)
 
-        self.check_general_search_field()
-        self.check_missing_search_fields()
+        self.check_general_field()
+        self.check_missing_fields()
 
         self.check_implicit_near()
         return self.tokens
@@ -127,17 +129,17 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
-        return syntax_str_to_generic_search_field_set(field_value)
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set:
+        return syntax_str_to_generic_field_set(field_value)
 
-    def check_year_without_search_terms(self, query: Query) -> None:
+    def check_year_without_terms(self, query: Query) -> None:
         """Check if the year is used without a search terms."""
 
         if query.is_term():
-            if not query.search_field:
+            if not query.field:
                 return
 
-            if not YEAR_PUBLISHED_FIELD_REGEX.match(query.search_field.value):
+            if not YEAR_PUBLISHED_FIELD_REGEX.match(query.field.value):
                 return
 
             positions = []
@@ -150,12 +152,12 @@ class WOSQueryStringLinter(QueryStringLinter):
                 ]
             # Year detected without other search fields
             self.add_message(
-                QueryErrorCode.YEAR_WITHOUT_SEARCH_TERMS,
+                QueryErrorCode.YEAR_WITHOUT_TERMS,
                 positions=positions,
                 fatal=True,
             )
 
-    def check_missing_search_fields(
+    def check_missing_fields(
         self,
     ) -> None:
         """Check for missing search fields."""
@@ -177,7 +179,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 level -= 1
             elif (
                 level == 0
-                and token.type == TokenTypes.SEARCH_TERM
+                and token.type == TokenTypes.TERM
                 and previous_token != TokenTypes.FIELD
             ):
                 missing_positions.append(token.position)
@@ -185,7 +187,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         if missing_positions:
             self.add_message(
-                QueryErrorCode.SEARCH_FIELD_MISSING,
+                QueryErrorCode.FIELD_MISSING,
                 positions=missing_positions,
             )
 
@@ -203,9 +205,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct format of year."""
 
         if query.is_term():
-            if not query.search_field:
+            if not query.field:
                 return
-            if not YEAR_PUBLISHED_FIELD_REGEX.match(query.search_field.value):
+            if not YEAR_PUBLISHED_FIELD_REGEX.match(query.field.value):
                 return
             if any(char in query.value for char in ["*", "?", "$"]):
                 self.add_message(
@@ -245,7 +247,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         # Check the first token
         if self.tokens[0].type not in [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.FIELD,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
@@ -263,7 +265,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             # # Skip known exceptions like NEAR proximity modifier (custom rule)
             # if (
-            #     token.type == TokenTypes.SEARCH_TERM
+            #     token.type == TokenTypes.TERM
             #     and next_token.value == "("
             #     and index > 0
             #     and tokens[index - 1].value.upper() == "NEAR"
@@ -330,7 +332,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                         query.position[0] + match.end(),
                     )
                 self.add_message(
-                    QueryErrorCode.WILDCARD_UNSUPPORTED,
+                    QueryErrorCode.WOS_WILDCARD_UNSUPPORTED,
                     positions=[position],
                     details="The '!' character is not supported in WOS search strings.",
                     fatal=True,
@@ -408,10 +410,10 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct format of ISSN and ISBN."""
 
         if query.is_term():
-            if not query.search_field:
+            if not query.field:
                 return
 
-            if query.search_field.value == "IS=":
+            if query.field.value == "IS=":
                 if not self.ISSN_VALUE_REGEX.match(
                     query.value
                 ) and not self.ISBN_VALUE_REGEX.match(query.value):
@@ -431,10 +433,10 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Check for the correct format of DOI."""
 
         if query.is_term():
-            if not query.search_field:
+            if not query.field:
                 return
 
-            if query.search_field.value == "DO=":
+            if query.field.value == "DO=":
                 if not self.DOI_VALUE_REGEX.match(query.value):
                     self.add_message(
                         QueryErrorCode.DOI_FORMAT_INVALID,
@@ -451,7 +453,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         """Get the number of terms in the query."""
 
         if query.is_term():
-            if query.search_field and query.search_field.value == "ALL=":
+            if query.field and query.field.value == "ALL=":
                 return 1
 
             return 0
@@ -463,12 +465,12 @@ class WOSQueryStringLinter(QueryStringLinter):
 
         return nr_terms
 
-    def check_nr_search_terms(self, query: Query) -> None:
+    def check_nr_terms(self, query: Query) -> None:
         """Check the number of search terms in the query."""
         nr_terms = query.get_nr_leaves()
         if nr_terms > 1600:  # pragma: no cover
             self.add_message(
-                QueryErrorCode.TOO_MANY_SEARCH_TERMS,
+                QueryErrorCode.TOO_MANY_TERMS,
                 positions=[query.position] if query.position else [],
                 details="The maximum number of search terms is 16,000.",
                 fatal=True,
@@ -476,7 +478,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         nr_all_terms = self.get_nr_terms_all(query)
         if nr_all_terms > 50:
             self.add_message(
-                QueryErrorCode.TOO_MANY_SEARCH_TERMS,
+                QueryErrorCode.TOO_MANY_TERMS,
                 positions=[query.position] if query.position else [],
                 details="The maximum number of search terms (for ALL Fields) is 50.",
                 fatal=True,
@@ -488,16 +490,16 @@ class WOSQueryStringLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        self.check_year_without_search_terms(query)
+        self.check_year_without_terms(query)
 
         self.check_wildcards(query)
         self.check_unsupported_wildcards(query)
-        self.check_unsupported_search_fields_in_query(query)
+        self.check_unsupported_fields_in_query(query)
         self.check_unbalanced_quotes_in_terms(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self.check_year_format(term_field_query)
-        self.check_nr_search_terms(term_field_query)
+        self.check_nr_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
         self.check_doi_format(term_field_query)
         self._check_date_filters_in_subquery(term_field_query)

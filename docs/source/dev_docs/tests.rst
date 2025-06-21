@@ -28,7 +28,7 @@ Test Types
                         [
                            Token(value="AB=", type=TokenTypes.FIELD, position=(0, 3)),
                            Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(3, 4)),
-                           Token(value="Health", type=TokenTypes.SEARCH_TERM, position=(4, 10)),
+                           Token(value="Health", type=TokenTypes.TERM, position=(4, 10)),
                            Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(10, 11)),
                         ],
                   )
@@ -56,14 +56,14 @@ Test Types
    .. code-block:: python
 
          @pytest.mark.parametrize(
-            "query_str, search_field_general, messages",
+            "query_str, field_general, messages",
             [
                (
                      '("health tracking" OR "remote monitoring") AND (("mobile application" OR "wearable device")',
                      "Title",
                      [
                         {
-                           "code": "F1001",
+                           "code": "PARSE_0002",
                            "label": "unbalanced-parentheses",
                            "message": "Parentheses are unbalanced in the query",
                            "is_fatal": True,
@@ -71,21 +71,21 @@ Test Types
                            "details": "Unbalanced opening parenthesis",
                         },
                         {
-                           "code": "E0001",
-                           "label": "search-field-missing",
+                           "code": "FIELD_0002",
+                           "label": "field-missing",
                            "message": "Expected search field is missing",
                            "is_fatal": False,
                            "position": (-1, -1),
-                           "details": "Search fields should be specified in the query instead of the search_field_general",
+                           "details": "Search fields should be specified in the query instead of the field_general",
                         },
                      ],
                ),
                # add more cases here as needed...
             ],
          )
-         def test_linter(query_str: str, search_field_general: str, messages: list[dict]) -> None:
+         def test_linter(query_str: str, field_general: str, messages: list[dict]) -> None:
 
-            parser = XYParser(query_str, search_field_general=search_field_general)
+            parser = XYParser(query_str, field_general=field_general)
             try:
                parser.parse()
             except SearchQueryException:

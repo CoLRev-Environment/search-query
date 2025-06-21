@@ -13,7 +13,7 @@ Translator Responsibilities
 
 A translator must implement the following two class methods:
 
-- ``to_generic_syntax(query, *, search_field_general) -> Query``
+- ``to_generic_syntax(query, *, field_general) -> Query``
 - ``to_specific_syntax(query) -> Query``
 
 Each method receives a `Query` object (the internal AST) and must return a new `Query` object with appropriately translated search fields and structure.
@@ -35,8 +35,8 @@ Search Field Mapping
 
 Field mapping is expected to be defined in a `constants_<source>.py` file and typically includes:
 
-- ``syntax_str_to_generic_search_field_set()``: maps specific syntax string (e.g., `TI`, `AB`) to **set of generic `Fields`**. When the set contains multiple elements, the query must be extended with OR (see PubMed translator: ``_expand_combined_fields()``).
-- ``generic_search_field_to_syntax_field()``: maps generic `Fields` to platform-specific syntax (set of fields). When combined fields are available, the query must be adapted before (see PubMed tranlsator: ``_combine_tiab()``).
+- ``syntax_str_to_generic_field_set()``: maps specific syntax string (e.g., `TI`, `AB`) to **set of generic `Fields`**. When the set contains multiple elements, the query must be extended with OR (see PubMed translator: ``_expand_combined_fields()``).
+- ``generic_field_to_syntax_field()``: maps generic `Fields` to platform-specific syntax (set of fields). When combined fields are available, the query must be adapted before (see PubMed tranlsator: ``_combine_tiab()``).
 
 Each translator should:
 

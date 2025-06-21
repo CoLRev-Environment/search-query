@@ -22,10 +22,10 @@ def test_case1() -> None:
 
     query = AndQuery(
         [
-            OrQuery(["microsourcing"], search_field=Fields.TITLE),
-            OrQuery(["online"], search_field=Fields.TITLE),
+            OrQuery(["microsourcing"], field=Fields.TITLE),
+            OrQuery(["online"], field=Fields.TITLE),
         ],
-        search_field=Fields.TITLE,
+        field=Fields.TITLE,
     )
 
     result = query.evaluate(records_dict)

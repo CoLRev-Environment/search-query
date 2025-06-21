@@ -16,7 +16,7 @@ class AndQuery(Query):
         self,
         children: typing.List[typing.Union[str, Query]],
         *,
-        search_field: typing.Optional[typing.Union[SearchField, str]] = None,
+        field: typing.Optional[typing.Union[SearchField, str]] = None,
         position: typing.Optional[typing.Tuple[int, int]] = None,
         platform: str = "generic",
     ) -> None:
@@ -29,10 +29,10 @@ class AndQuery(Query):
         super().__init__(
             value=Operators.AND,
             children=children,
-            search_field=search_field
-            if isinstance(search_field, SearchField)
-            else SearchField(search_field)
-            if search_field is not None
+            field=field
+            if isinstance(field, SearchField)
+            else SearchField(field)
+            if field is not None
             else None,
             position=position,
             platform=platform,

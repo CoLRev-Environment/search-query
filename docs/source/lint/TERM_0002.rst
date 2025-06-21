@@ -1,0 +1,24 @@
+.. _TERM_0002:
+
+TERM_0002 — year-format-invalid
+===============================
+
+**Error Code**: TERM_0002
+
+**Message**: ``Invalid year format.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=term1 AND PY=20xy
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=term1 AND PY=2020
+
+**Typical fix**: Use a valid numeric year format (e.g., 4-digit year).
+
+**Back to**: :ref:`lint`

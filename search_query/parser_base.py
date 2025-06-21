@@ -34,7 +34,7 @@ class QueryStringParser(ABC):
         self,
         query_str: str,
         *,
-        search_field_general: str = "",
+        field_general: str = "",
         mode: str = LinterMode.STRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
@@ -43,8 +43,8 @@ class QueryStringParser(ABC):
         self.query_str = query_str
         self.tokens: list = []
         self.mode = mode
-        # The external search_fields (in the JSON file: "search_field")
-        self.search_field_general = search_field_general
+        # The external fields (in the JSON file: "field")
+        self.field_general = field_general
         self.silent = silent
         self.offset = offset or {}
         self.original_str = original_str or query_str
@@ -141,25 +141,22 @@ class QueryStringParser(ABC):
         )  # Replace with your Token constructor
 
     def combine_subsequent_terms(self) -> None:
-        """Combine all consecutive SEARCH_TERM tokens into one."""
+        """Combine all consecutive TERM tokens into one."""
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
-            if self.tokens[i].type == TokenTypes.SEARCH_TERM:
+            if self.tokens[i].type == TokenTypes.TERM:
                 start = self.tokens[i].position[0]
                 value_parts = [self.tokens[i].value]
                 end = self.tokens[i].position[1]
                 i += 1
-                while (
-                    i < len(self.tokens)
-                    and self.tokens[i].type == TokenTypes.SEARCH_TERM
-                ):
+                while i < len(self.tokens) and self.tokens[i].type == TokenTypes.TERM:
                     value_parts.append(self.tokens[i].value)
                     end = self.tokens[i].position[1]
                     i += 1
                 combined_token = Token(
                     value=" ".join(value_parts),
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(start, end),
                 )
                 combined_tokens.append(combined_token)
@@ -186,7 +183,7 @@ class QueryStringParser(ABC):
             # if the end of a search term (value) is a capitalized operator
             # without a whitespace, split the tokens
             if (
-                token.type == TokenTypes.SEARCH_TERM
+                token.type == TokenTypes.TERM
                 and next_token.type != TokenTypes.LOGIC_OPERATOR
                 and appended_operator_match
             ):
@@ -229,14 +226,14 @@ class QueryListParser:
         query_list: str,
         *,
         parser_class: type[QueryStringParser],
-        search_field_general: str,
+        field_general: str,
         mode: str = LinterMode.STRICT,
     ) -> None:
         # Remove leading whitespaces/newlines from the query_list
         # to ensure correct token positions
         self.query_list = query_list.lstrip()
         self.parser_class = parser_class
-        self.search_field_general = search_field_general
+        self.field_general = field_general
         self.mode = mode
         self.query_dict: dict = {}
 

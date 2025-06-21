@@ -1,0 +1,24 @@
+.. _WOS_0007:
+
+WOS_0007 — wildcard-left-short-length
+=====================================
+
+**Error Code**: WOS_0007
+
+**Message**: ``Left-hand wildcard must be followed by at least three characters.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    TI=*te
+
+**Recommended query**:
+
+.. code-block:: text
+
+    TI=abc*te
+
+**Typical fix**: Ensure the term before a left-hand wildcard (*) has at least three characters.
+
+**Back to**: :ref:`lint`

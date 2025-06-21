@@ -22,7 +22,7 @@ def test_invalid_tree_structure(query_setup: dict) -> None:
     with pytest.raises(ValueError):
         AndQuery(
             ["invalid", query_setup["query_complete"], query_setup["query_ai"]],
-            search_field=SearchField(Fields.TITLE),
+            field=SearchField(Fields.TITLE),
         )
 
 
@@ -62,13 +62,13 @@ def test_selects(query_setup: dict) -> None:
     assert not query_complete.selects(record_dict=record_3)
 
     with pytest.raises(ValueError):
-        query_complete.children[0].children[0].search_field.value = "au"
+        query_complete.children[0].children[0].field.value = "au"
         print(query_complete.to_structured_string())
         query_complete.selects(record_dict=record_1)
 
     range_query = RangeQuery(
         children=["2020", "2022"],
-        search_field=SearchField(Fields.YEAR_PUBLICATION),
+        field=SearchField(Fields.YEAR_PUBLICATION),
         position=(0, 0),
         platform="generic",
     )
@@ -78,13 +78,13 @@ def test_selects(query_setup: dict) -> None:
 
 
 def test_near_query_selects() -> None:
-    query_ai = Term(value="AI", search_field=SearchField("title"))
-    query_health = Term(value="health", search_field=SearchField("title"))
+    query_ai = Term(value="AI", field=SearchField("title"))
+    query_health = Term(value="health", field=SearchField("title"))
 
     near_query = NEARQuery(
         value="NEAR",
         children=[query_ai, query_health],
-        search_field=SearchField("title"),
+        field=SearchField("title"),
         distance=3,
     )
 
@@ -120,7 +120,7 @@ def test_near_query_selects() -> None:
     assert not near_query.selects(record_dict=record_5)
 
     # Triggering the assertion that both children must have same search field
-    query_wrong_field = Term(value="health", search_field=SearchField("abstract"))
+    query_wrong_field = Term(value="health", field=SearchField("abstract"))
     broken_query = NEARQuery(
         value="NEAR",
         children=[query_ai, query_wrong_field],
@@ -137,14 +137,14 @@ def test_parent_and_root() -> None:
     # Build a nested query structure
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field=SearchField(Fields.ABSTRACT),
+        field=SearchField(Fields.ABSTRACT),
     )
     ai = OrQuery(
         ["AI", "Artificial Intelligence"],
-        search_field=SearchField(Fields.TITLE),
+        field=SearchField(Fields.TITLE),
     )
 
-    root_query = AndQuery([ethics, ai], search_field=SearchField(Fields.TITLE))
+    root_query = AndQuery([ethics, ai], field=SearchField(Fields.TITLE))
 
     # Check that each subquery has root_query as its root
     assert ethics.get_parent() is root_query
@@ -174,21 +174,21 @@ def test_to_structured_string(query_setup: dict) -> None:
 
 def test_near_query() -> None:
     children = [
-        Term(value="AI", search_field=SearchField(Fields.TITLE)),
-        Term(value="health", search_field=SearchField(Fields.TITLE)),
+        Term(value="AI", field=SearchField(Fields.TITLE)),
+        Term(value="health", field=SearchField(Fields.TITLE)),
     ]
     n_query = NEARQuery(
-        "NEAR", distance=12, children=children, search_field=Fields.TITLE  # type: ignore
+        "NEAR", distance=12, children=children, field=Fields.TITLE  # type: ignore
     )
 
     assert n_query.to_generic_string() == "NEAR/12[title][AI[title], health[title]]"
 
     with pytest.raises(ValueError):
-        n_query = NEARQuery("NEAR", children=[], search_field=Fields.TITLE, distance=1)
+        n_query = NEARQuery("NEAR", children=[], field=Fields.TITLE, distance=1)
 
     OrQuery(
         ["health", "medicine"],
-        search_field=Fields.TITLE,
+        field=Fields.TITLE,
     )
 
 
@@ -202,14 +202,14 @@ def test_format_query_string_positions_merges_overlaps() -> None:
     assert result.startswith(expected)
 
 
-def test_search_field() -> None:
+def test_field() -> None:
     """Test search field."""
 
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field=Fields.ABSTRACT,
+        field=Fields.ABSTRACT,
     )
-    assert ethics.search_field.value == Fields.ABSTRACT  # type: ignore
+    assert ethics.field.value == Fields.ABSTRACT  # type: ignore
 
 
 def test_platform_setter() -> None:
@@ -217,7 +217,7 @@ def test_platform_setter() -> None:
 
     ethics = OrQuery(
         ["ethics", "morality"],
-        search_field=Fields.ABSTRACT,
+        field=Fields.ABSTRACT,
     )
     assert ethics.platform == "generic"
     with pytest.raises(ValueError):
@@ -232,7 +232,7 @@ def test_value_setter() -> None:
 
     ethics = OrQuery(
         children=["ethics", "morality"],
-        search_field=Fields.ABSTRACT,  # type: ignore
+        field=Fields.ABSTRACT,  # type: ignore
     )
     assert ethics.value == "OR"
 
@@ -256,7 +256,7 @@ def test_children_setter() -> None:
     # Test for OrQuery ---------------------------------------------
     or_query = OrQuery(
         ["ethics", "morality"],
-        search_field="abstract",
+        field="abstract",
     )
     assert or_query.children[0].value == "ethics"
     assert or_query.children[1].value == "morality"
@@ -275,7 +275,7 @@ def test_children_setter() -> None:
     # Test for AndQuery ---------------------------------------------
     and_query = AndQuery(
         ["ethics", "morality"],
-        search_field="abstract",
+        field="abstract",
     )
     assert and_query.children[0].value == "ethics"
     assert and_query.children[1].value == "morality"
@@ -294,7 +294,7 @@ def test_children_setter() -> None:
     # Test for NotQuery ---------------------------------------------
     not_query = NotQuery(
         ["AI", "ethics"],
-        search_field="abstract",
+        field="abstract",
     )
     assert not_query.children[0].value == "AI"
     assert not_query.children[1].value == "ethics"
@@ -316,7 +316,7 @@ def test_children_setter() -> None:
         "NEAR",
         distance=5,
         children=["ethics", "morality"],
-        search_field="abstract",
+        field="abstract",
     )
     assert near_query.children[0].value == "ethics"
     assert near_query.children[1].value == "morality"
@@ -336,7 +336,7 @@ def test_children_setter() -> None:
     # Test for RangeQuery ---------------------------------------------
     range_query = RangeQuery(
         children=["2010", "2020"],
-        search_field="year-publication",
+        field="year-publication",
     )
     assert range_query.children[0].value == "2010"
     assert range_query.children[1].value == "2020"

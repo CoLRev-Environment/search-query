@@ -1,0 +1,24 @@
+.. _WOS_0011:
+
+WOS_0011 — wildcard-unsupported
+===============================
+
+**Error Code**: WOS_0011
+
+**Message**: ``Unsupported wildcard in search string.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+   dHealth!
+
+**Recommended query**:
+
+.. code-block:: text
+
+    dHealth
+
+**Typical fix**:  Remove unsupported wildcard characters from the query.
+
+**Back to**: :ref:`lint`

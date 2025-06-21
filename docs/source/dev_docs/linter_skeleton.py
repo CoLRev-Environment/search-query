@@ -12,13 +12,13 @@ class XYQueryStringLinter(QueryStringLinter):
     """Linter for XY query strings"""
 
     VALID_TOKEN_SEQUENCES = {
-        TokenTypes.FIELD: [TokenTypes.SEARCH_TERM],
-        TokenTypes.SEARCH_TERM: [
+        TokenTypes.FIELD: [TokenTypes.TERM],
+        TokenTypes.TERM: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
         ],
         TokenTypes.LOGIC_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         # ...
@@ -29,13 +29,13 @@ class XYQueryStringLinter(QueryStringLinter):
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Main validation routine"""
 
         self.tokens = tokens
         self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.field_general = field_general
 
         self.check_unbalanced_parentheses()
         self.check_unknown_token_types()
@@ -63,8 +63,8 @@ class XYQueryStringLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        self.check_quoted_search_terms_query(query)
+        self.check_quoted_terms_query(query)
         self.check_operator_capitalization_query(query)
-        self.check_invalid_characters_in_search_term_query(query, "@&%$^~\\<>{}()[]#")
-        self.check_unsupported_search_fields_in_query(query)
+        self.check_invalid_characters_in_term_query(query, "@&%$^~\\<>{}()[]#")
+        self.check_unsupported_fields_in_query(query)
         # term_field_query = self.get_query_with_fields_at_terms(query)

@@ -1,0 +1,24 @@
+.. _TERM_0004:
+
+TERM_0004 — isbn-format-invalid
+===============================
+
+**Error Code**: TERM_0004
+
+**Message**: ``Invalid ISBN format.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    IS=978-3-16-148410-0
+
+**Recommended query**:
+
+.. code-block:: text
+
+    IS=978-3-16-148410-0
+
+**Typical fix**: Use a valid ISBN-10 or ISBN-13 format (e.g., 10 or 13 digits, optionally with hyphens in correct positions).
+
+**Back to**: :ref:`lint`

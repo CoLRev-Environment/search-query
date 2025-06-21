@@ -28,8 +28,8 @@ class EBSCOParser(QueryStringParser):
     PROXIMITY_OPERATOR_REGEX = re.compile(
         r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
     )
-    SEARCH_FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    SEARCH_TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
+    FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
+    TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -41,8 +41,8 @@ class EBSCOParser(QueryStringParser):
                 PARENTHESIS_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
-                SEARCH_FIELD_REGEX.pattern,
-                SEARCH_TERM_REGEX.pattern,
+                FIELD_REGEX.pattern,
+                TERM_REGEX.pattern,
             ]
         )
     )
@@ -52,7 +52,7 @@ class EBSCOParser(QueryStringParser):
         self,
         query_str: str,
         *,
-        search_field_general: str = "",
+        field_general: str = "",
         mode: str = LinterMode.STRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
@@ -61,7 +61,7 @@ class EBSCOParser(QueryStringParser):
         """Initialize the parser."""
         super().__init__(
             query_str,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
             offset=offset,
             original_str=original_str,
@@ -80,17 +80,17 @@ class EBSCOParser(QueryStringParser):
             # Iterate through token list
             # current_token, current_token_type, position = self.tokens[i]
 
-            if self.tokens[i].type == TokenTypes.SEARCH_TERM:
-                # Filter out search_term
+            if self.tokens[i].type == TokenTypes.TERM:
+                # Filter out TERM
                 start_pos = self.tokens[i].position[0]
                 end_position = self.tokens[i].position[1]
                 combined_value = self.tokens[i].value
 
                 while (
                     i + 1 < len(self.tokens)
-                    and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
+                    and self.tokens[i + 1].type == TokenTypes.TERM
                 ):
-                    # Iterate over subsequent search_terms and combine
+                    # Iterate over subsequent terms and combine
                     combined_value += f" {self.tokens[i + 1].value}"
                     end_position = self.tokens[i + 1].position[1]
                     i += 1
@@ -150,8 +150,8 @@ class EBSCOParser(QueryStringParser):
                 and next_token.type == TokenTypes.FIELD
                 and is_potential_term(next_token.value)
             ):
-                # Reclassify the second FIELD token as a SEARCH_TERM
-                next_token.type = TokenTypes.SEARCH_TERM
+                # Reclassify the second field token as a TERM
+                next_token.type = TokenTypes.TERM
 
     def tokenize(self) -> None:
         """Tokenize the query_str."""
@@ -173,10 +173,10 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.LOGIC_OPERATOR
             elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
+            elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.SEARCH_TERM_REGEX.fullmatch(value):
-                token_type = TokenTypes.SEARCH_TERM
+            elif self.TERM_REGEX.fullmatch(value):
+                token_type = TokenTypes.TERM
             else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
 
@@ -187,7 +187,7 @@ class EBSCOParser(QueryStringParser):
 
         self.adjust_token_positions()
 
-        # Combine subsequent search_terms in case of no quotation marks
+        # Combine subsequent terms in case of no quotation marks
         self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
 
@@ -196,7 +196,7 @@ class EBSCOParser(QueryStringParser):
     ) -> Query:
         """Top-down predictive parser for query tree."""
 
-        # Look ahead to see if FIELD is followed by something valid
+        # Look ahead to see if field is followed by something valid
         if (
             tokens
             and tokens[0].type == TokenTypes.FIELD
@@ -215,23 +215,21 @@ class EBSCOParser(QueryStringParser):
         if self._is_nested_query(tokens):
             return self._parse_nested_query(tokens, field_context)
         if self._is_term_query(tokens):
-            return self._parse_search_term(tokens, field_context)
+            return self._parse_term(tokens, field_context)
         raise ValueError(
             f"Unrecognized query structure: {tokens}. "
             "Expected a term, near query, nested query, or compound query."
         )
 
     def _is_term_query(self, tokens: list[Token]) -> bool:
-        return bool(
-            tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.SEARCH_TERM
-        )
+        return bool(tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.TERM)
 
     def _is_near_query(self, tokens: list[Token]) -> bool:
         return (
             len(tokens) == 3
-            and tokens[0].type == TokenTypes.SEARCH_TERM
+            and tokens[0].type == TokenTypes.TERM
             and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
-            and tokens[2].type == TokenTypes.SEARCH_TERM
+            and tokens[2].type == TokenTypes.TERM
         )
 
     def _is_compound_query(self, tokens: list[Token]) -> bool:
@@ -296,7 +294,7 @@ class EBSCOParser(QueryStringParser):
 
         return Query.create(
             value=operator_type,
-            search_field=field_context,
+            field=field_context,
             children=children,  # type: ignore
             position=(tokens[0].position[0], tokens[-1].position[1]),
             platform="deactivated",
@@ -307,14 +305,14 @@ class EBSCOParser(QueryStringParser):
     ) -> Query:
         return self.parse_query_tree(tokens[1:-1], field_context=field_context)
 
-    def _parse_search_term(
+    def _parse_term(
         self, tokens: list[Token], field_context: SearchField | None
     ) -> Query:
         if len(tokens) == 1:
             return Term(
                 value=tokens[0].value,
                 position=tokens[0].position,
-                search_field=field_context or None,
+                field=field_context or None,
                 platform="deactivated",
             )
         assert len(tokens) == 2, "Expected exactly one search term token."
@@ -324,7 +322,7 @@ class EBSCOParser(QueryStringParser):
         return Term(
             value=token.value,
             position=token.position,
-            search_field=SearchField(
+            field=SearchField(
                 value=tokens[0].value, position=tokens[0].position or (-1, -1)
             ),
             platform="deactivated",
@@ -343,18 +341,18 @@ class EBSCOParser(QueryStringParser):
             value=operator_token.value,
             distance=int(distance),
             position=(left_token.position[0], right_token.position[1]),
-            search_field=field_context,
+            field=field_context,
             children=[
                 Term(
                     value=left_token.value,
                     position=left_token.position,
-                    search_field=field_context,
+                    field=field_context,
                     platform="deactivated",
                 ),
                 Term(
                     value=right_token.value,
                     position=right_token.position,
-                    search_field=field_context,
+                    field=field_context,
                     platform="deactivated",
                 ),
             ],
@@ -380,7 +378,7 @@ class EBSCOParser(QueryStringParser):
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,
-            search_field_general=self.search_field_general,
+            field_general=self.field_general,
         )
         self.linter.check_status()
 
@@ -401,13 +399,13 @@ class EBSCOListParser(QueryListParser):
     def __init__(
         self,
         query_list: str,
-        search_field_general: str = "",
+        field_general: str = "",
         mode: str = LinterMode.NONSTRICT,
     ) -> None:
         super().__init__(
             query_list=query_list,
             parser_class=EBSCOParser,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
         )
         self.linter = EBSCOListLinter(parser=self, string_parser_class=EBSCOParser)
@@ -428,7 +426,7 @@ class EBSCOListParser(QueryListParser):
         query_parser = EBSCOParser(
             query_str=query_str,
             original_str=self.query_list,
-            search_field_general=self.search_field_general,
+            field_general=self.field_general,
             mode=self.mode,
             offset=offset,
             silent=True,

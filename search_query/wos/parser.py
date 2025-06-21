@@ -17,7 +17,7 @@ from search_query.query import SearchField
 from search_query.query_near import NEARQuery
 from search_query.query_not import NotQuery
 from search_query.query_term import Term
-from search_query.wos.constants import search_field_general_to_syntax
+from search_query.wos.constants import field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
 from search_query.wos.linter import WOSQueryStringLinter
 
@@ -27,16 +27,16 @@ from search_query.wos.linter import WOSQueryStringLinter
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    SEARCH_TERM_REGEX = re.compile(
+    TERM_REGEX = re.compile(
         r'\*?[\w\-/\.\!\*,&\\]+(?:[\*\$\?][\w\-/\.\!\*,&\\]*)*|"[^"]+"'
     )
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
     PROXIMITY_OPERATOR_REGEX = re.compile(
         r"\b(NEAR/\d{1,2}|NEAR)\b", flags=re.IGNORECASE
     )
-    SEARCH_FIELD_REGEX = re.compile(r"\b\w{2}=|\b\w{3}=")
+    FIELD_REGEX = re.compile(r"\b\w{2}=|\b\w{3}=")
     PARENTHESIS_REGEX = re.compile(r"[\(\)]")
-    SEARCH_FIELDS_REGEX = re.compile(r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*")
+    fieldS_REGEX = re.compile(r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*")
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -46,12 +46,12 @@ class WOSParser(QueryStringParser):
     pattern = re.compile(
         r"|".join(
             [
-                SEARCH_FIELD_REGEX.pattern,
+                FIELD_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
-                SEARCH_TERM_REGEX.pattern,
+                TERM_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
-                # self.SEARCH_FIELDS_REGEX.pattern,
+                # self.fieldS_REGEX.pattern,
             ]
         )
     )
@@ -61,7 +61,7 @@ class WOSParser(QueryStringParser):
         self,
         query_str: str,
         *,
-        search_field_general: str = "",
+        field_general: str = "",
         mode: str = LinterMode.STRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
@@ -70,7 +70,7 @@ class WOSParser(QueryStringParser):
         """Initialize the parser."""
         super().__init__(
             query_str,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
             offset=offset,
             original_str=original_str,
@@ -97,10 +97,10 @@ class WOSParser(QueryStringParser):
                 token_type = TokenTypes.LOGIC_OPERATOR
             elif self.PROXIMITY_OPERATOR_REGEX.fullmatch(value):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
-            elif self.SEARCH_FIELD_REGEX.fullmatch(value):
+            elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.SEARCH_TERM_REGEX.fullmatch(value):
-                token_type = TokenTypes.SEARCH_TERM
+            elif self.TERM_REGEX.fullmatch(value):
+                token_type = TokenTypes.TERM
             else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
 
@@ -123,12 +123,12 @@ class WOSParser(QueryStringParser):
         while i < len(self.tokens):
             if len(combined_tokens) > 0:
                 if (
-                    self.tokens[i].type == TokenTypes.SEARCH_TERM
-                    and combined_tokens[j - 1].type == TokenTypes.SEARCH_TERM
+                    self.tokens[i].type == TokenTypes.TERM
+                    and combined_tokens[j - 1].type == TokenTypes.TERM
                 ):
                     combined_token = Token(
                         value=combined_tokens[j - 1].value + " " + self.tokens[i].value,
-                        type=TokenTypes.SEARCH_TERM,
+                        type=TokenTypes.TERM,
                         position=(
                             combined_tokens[j - 1].position[0],
                             self.tokens[i].position[1],
@@ -141,12 +141,12 @@ class WOSParser(QueryStringParser):
 
             if (
                 i + 1 < len(self.tokens)
-                and self.tokens[i].type == TokenTypes.SEARCH_TERM
-                and self.tokens[i + 1].type == TokenTypes.SEARCH_TERM
+                and self.tokens[i].type == TokenTypes.TERM
+                and self.tokens[i + 1].type == TokenTypes.TERM
             ):
                 combined_token = Token(
                     value=self.tokens[i].value + " " + self.tokens[i + 1].value,
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(
                         self.tokens[i].position[0],
                         self.tokens[i + 1].position[1],
@@ -174,21 +174,19 @@ class WOSParser(QueryStringParser):
         if self._is_nested_query(tokens):
             return self._parse_nested_query(tokens)
         if self._is_term_query(tokens):
-            return self._parse_search_term(tokens)
+            return self._parse_term(tokens)
 
         raise ValueError(f"Unrecognized query structure: {tokens}")
 
     def _is_term_query(self, tokens: list[Token]) -> bool:
-        return bool(
-            tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.SEARCH_TERM
-        )
+        return bool(tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.TERM)
 
     def _is_near_query(self, tokens: list[Token]) -> bool:
         return (
             len(tokens) == 3
-            and tokens[0].type == TokenTypes.SEARCH_TERM
+            and tokens[0].type == TokenTypes.TERM
             and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
-            and tokens[2].type == TokenTypes.SEARCH_TERM
+            and tokens[2].type == TokenTypes.TERM
         )
 
     def _is_not_query(self, tokens: list[Token]) -> bool:
@@ -270,7 +268,7 @@ class WOSParser(QueryStringParser):
             and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
         ):
             nested_query = self.parse_query_tree(tokens[2:-1])
-            nested_query.search_field = SearchField(
+            nested_query.field = SearchField(
                 value=tokens[0].value, position=tokens[0].position
             )
         else:
@@ -293,13 +291,13 @@ class WOSParser(QueryStringParser):
                 Term(
                     value=left_token.value,
                     position=left_token.position,
-                    search_field=None,  # ← clear to avoid double nesting
+                    field=None,  # ← clear to avoid double nesting
                     platform="deactivated",
                 ),
                 Term(
                     value=right_token.value,
                     position=right_token.position,
-                    search_field=None,
+                    field=None,
                     platform="deactivated",
                 ),
             ],
@@ -316,7 +314,7 @@ class WOSParser(QueryStringParser):
             platform="deactivated",
         )
 
-    def _parse_search_term(self, tokens: list[Token]) -> Query:
+    def _parse_term(self, tokens: list[Token]) -> Query:
         if len(tokens) == 1:
             return Term(
                 value=tokens[0].value,
@@ -327,7 +325,7 @@ class WOSParser(QueryStringParser):
         return Term(
             value=tokens[1].value,
             position=tokens[1].position,
-            search_field=SearchField(
+            field=SearchField(
                 value=tokens[0].value,
                 position=tokens[0].position or (-1, -1),
             ),
@@ -359,7 +357,7 @@ class WOSParser(QueryStringParser):
         self.tokens = self.linter.validate_tokens(
             tokens=self.tokens,
             query_str=self.query_str,
-            search_field_general=self.search_field_general,
+            field_general=self.field_general,
         )
         self.linter.check_status()
 
@@ -367,12 +365,12 @@ class WOSParser(QueryStringParser):
         self.linter.validate_query_tree(query)
         self.linter.check_status()
 
-        if self.search_field_general:
-            search_field_general = SearchField(
-                value=search_field_general_to_syntax(self.search_field_general),
+        if self.field_general:
+            field_general = SearchField(
+                value=field_general_to_syntax(self.field_general),
                 position=(-1, -1),
             )
-            query.search_field = search_field_general
+            query.field = field_general
 
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 
@@ -382,11 +380,11 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    def __init__(self, query_list: str, search_field_general: str, mode: str) -> None:
+    def __init__(self, query_list: str, field_general: str, mode: str) -> None:
         super().__init__(
             query_list=query_list,
             parser_class=WOSParser,
-            search_field_general=search_field_general,
+            field_general=field_general,
             mode=mode,
         )
         self.linter = WOSQueryListLinter(
@@ -430,7 +428,7 @@ class WOSListParser(QueryListParser):
         query_parser = WOSParser(
             query_str=query_str,
             original_str=self.query_list,
-            search_field_general=self.search_field_general,
+            field_general=self.field_general,
             mode=self.mode,
             offset=offset,
             silent=True,

@@ -31,14 +31,14 @@ def to_string_structured(query: Query, *, level: int = 0) -> str:
     if not hasattr(query, "value"):  # pragma: no cover
         return f"{indent} (?)"
 
-    search_field = ""
-    if query.search_field:
-        search_field = f"[{query.search_field}]"
+    field = ""
+    if query.field:
+        field = f"[{query.field}]"
 
     query_value = query.value
     if hasattr(query, "distance"):  # and isinstance(query.distance, int):
         query_value += f"/{query.distance}"
-    result = _reindent(f"{query_value} {search_field}", level)
+    result = _reindent(f"{query_value} {field}", level)
 
     if query.children == []:
         return result

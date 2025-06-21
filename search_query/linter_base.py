@@ -48,7 +48,7 @@ class QueryStringLinter:
         "OR": 0,
     }
     PLATFORM: PLATFORM = PLATFORM.GENERIC
-    VALID_FIELDS_REGEX: re.Pattern
+    VALID_fieldS_REGEX: re.Pattern
 
     def __init__(
         self,
@@ -62,7 +62,7 @@ class QueryStringLinter:
         self.query_str = query_str
         # Note: original, unchanged query string
         self._original_query_str = query_str
-        self.search_field_general = ""
+        self.field_general = ""
         self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
         self.last_read_index = 0
@@ -169,7 +169,7 @@ class QueryStringLinter:
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Validate tokens"""
 
@@ -225,42 +225,40 @@ class QueryStringLinter:
                     fatal=True,
                 )
 
-    def check_general_search_field(self) -> None:
+    def check_general_field(self) -> None:
         """Check the general search field"""
 
-        if self.search_field_general:
+        if self.field_general:
             self.add_message(
-                QueryErrorCode.SEARCH_FIELD_EXTRACTED,
+                QueryErrorCode.FIELD_EXTRACTED,
                 positions=[],
                 details="The search field is extracted and should be included in the query.",
             )
 
-    def check_unsupported_search_fields_in_query(self, query: Query) -> None:
+    def check_unsupported_fields_in_query(self, query: Query) -> None:
         """Check for the correct format of fields.
 
-        Note: compile valid_field_regex with/out flags=re.IGNORECASE
+        Note: compile valid_FIELD_REGEX with/out flags=re.IGNORECASE
         """
 
-        if query.search_field:
+        if query.field:
             # pylint: disable=no-member
-            if not self.VALID_FIELDS_REGEX.match(query.search_field.value):  # type: ignore
+            if not self.VALID_fieldS_REGEX.match(query.field.value):  # type: ignore
                 pos_info = ""
-                if query.search_field.position:
-                    pos_info = f" at position {query.search_field.position}"
-                details = (
-                    f"Search field {query.search_field}{pos_info} is not supported."
-                )
+                if query.field.position:
+                    pos_info = f" at position {query.field.position}"
+                details = f"Search field {query.field}{pos_info} is not supported."
                 details += f" Supported fields for {self.PLATFORM}: "
-                details += f"{self.VALID_FIELDS_REGEX.pattern}"
+                details += f"{self.VALID_fieldS_REGEX.pattern}"
                 self.add_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
-                    positions=[query.search_field.position or (-1, -1)],
+                    QueryErrorCode.FIELD_UNSUPPORTED,
+                    positions=[query.field.position or (-1, -1)],
                     details=details,
                     fatal=True,
                 )
 
         for child in query.children:
-            self.check_unsupported_search_fields_in_query(child)
+            self.check_unsupported_fields_in_query(child)
 
     def check_operator_capitalization(self) -> None:
         """Check if operators are capitalized."""
@@ -370,11 +368,13 @@ class QueryStringLinter:
                     fatal=True,
                 )
 
-    def check_invalid_characters_in_search_term(self, invalid_characters: str) -> None:
+    def check_invalid_characters_in_term(
+        self, invalid_characters: str, error: QueryErrorCode
+    ) -> None:
         """Check a search term for invalid characters"""
 
         for token in self.tokens:
-            if token.type != TokenTypes.SEARCH_TERM:
+            if token.type != TokenTypes.TERM:
                 continue
             value = token.value
 
@@ -383,7 +383,7 @@ class QueryStringLinter:
             for char in token.value:
                 if char in invalid_characters:
                     self.add_message(
-                        QueryErrorCode.INVALID_CHARACTER,
+                        error,
                         positions=[token.position],
                         details=f"Invalid character '{char}' in search term '{value}'",
                     )
@@ -879,20 +879,20 @@ class QueryStringLinter:
 
         """
         modified_query = query.copy()
-        if modified_query.operator and modified_query.search_field:
+        if modified_query.operator and modified_query.field:
             # move search field from operator to terms
             for child in modified_query.children:
-                if not child.search_field:
-                    child.search_field = modified_query.search_field.copy()
-            modified_query.search_field = None
+                if not child.field:
+                    child.field = modified_query.field.copy()
+            modified_query.field = None
 
         for i, child in enumerate(modified_query.children):
             modified_query.children[i] = self.get_query_with_fields_at_terms(child)
 
         return modified_query
 
-    def check_invalid_characters_in_search_term_query(
-        self, query: Query, invalid_characters: str
+    def check_invalid_characters_in_term_query(
+        self, query: Query, invalid_characters: str, error: QueryErrorCode
     ) -> None:
         """Check a search term for invalid characters"""
 
@@ -905,22 +905,22 @@ class QueryStringLinter:
                         f"Invalid character '{char}' in search term '{query.value}'"
                     )
                     self.add_message(
-                        QueryErrorCode.INVALID_CHARACTER,
+                        error,
                         positions=[query.position or (-1, -1)],
                         details=details,
                     )
 
         for child in query.children:
-            self.check_invalid_characters_in_search_term_query(
-                child, invalid_characters
+            self.check_invalid_characters_in_term_query(
+                child, invalid_characters, error
             )
 
     def check_operators_with_fields(self, query: Query) -> None:
         """Check for operators with fields"""
 
-        if query.operator and query.search_field:
+        if query.operator and query.field:
             self.add_message(
-                QueryErrorCode.NESTED_QUERY_WITH_SEARCH_FIELD,
+                QueryErrorCode.NESTED_QUERY_WITH_FIELD,
                 positions=[query.position or (-1, -1)],
                 details="Nested query (operator) with search field is not supported",
             )
@@ -929,7 +929,7 @@ class QueryStringLinter:
             self.check_operators_with_fields(child)
 
     @abstractmethod
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set[Fields]:
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set[Fields]:
         """Translate a search field"""
 
     def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
@@ -951,12 +951,10 @@ class QueryStringLinter:
                     pass
             return
 
-        if not query.search_field:
+        if not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_search_field_set(
-            query.search_field.value
-        )
+        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.YEAR_PUBLICATION}:
             details = (
                 "Please double-check whether date filters "
@@ -965,11 +963,8 @@ class QueryStringLinter:
             positions = [(-1, -1)]
             if query.position and query.position is not None:
                 positions = [query.position]
-                if (
-                    query.search_field.position
-                    and query.search_field.position is not None
-                ):
-                    positions.append(query.search_field.position)
+                if query.field.position and query.field.position is not None:
+                    positions.append(query.field.position)
 
             self.add_message(
                 QueryErrorCode.DATE_FILTER_IN_SUBQUERY,
@@ -996,16 +991,14 @@ class QueryStringLinter:
                     pass
             return
 
-        if not query.search_field:
+        if not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_search_field_set(
-            query.search_field.value
-        )
+        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.JOURNAL, Fields.PUBLICATION_NAME}:
             details = (
                 "Please double-check whether journal/publication-name filters "
-                f"({query.search_field.value}) should apply to the entire query."
+                f"({query.field.value}) should apply to the entire query."
             )
             self.add_message(
                 QueryErrorCode.JOURNAL_FILTER_IN_SUBQUERY,
@@ -1065,7 +1058,7 @@ class QueryStringLinter:
 
             redundant_terms = []
             for term_a in terms:
-                if not term_a.search_field:
+                if not term_a.field:
                     continue
                 for term_b in terms:
                     if (
@@ -1075,11 +1068,11 @@ class QueryStringLinter:
                     ):
                         continue
 
-                    if not term_b.search_field:
+                    if not term_b.field:
                         continue
 
-                    field_a = term_a.search_field.value
-                    field_b = term_b.search_field.value
+                    field_a = term_a.field.value
+                    field_b = term_b.field.value
 
                     if field_a != field_b:
                         continue

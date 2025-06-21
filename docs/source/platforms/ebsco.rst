@@ -19,7 +19,7 @@ When working with `search-query`, we recommend extracting the **Search terms** f
 
    EBSCOHost query syntax includes field tags such as `AB`, `TI`, `SU`, etc. These should be included directly in the `search_string`.
 
-   Avoid setting a `general_search_field` (available in `Advanced Search`) unless the entire query targets the same field (e.g., all terms limited to `AB` for Abstract). Mixed fields should keep `general_search_field` empty.
+   Avoid setting a `general_field` (available in `Advanced Search`) unless the entire query targets the same field (e.g., all terms limited to `AB` for Abstract). Mixed fields should keep `general_field` empty.
 
 Store a Query
 -------------
@@ -27,7 +27,7 @@ Store a Query
 When storing an EBSCOHost query in a `.json` file or as a string:
 
 - Use the **Search History** or the **Search Terms** as the `search_string`.
-- Leave the `general_search_field` empty **unless** the same field is used consistently across all terms.
+- Leave the `general_field` empty **unless** the same field is used consistently across all terms.
 
 .. tip::
 
@@ -44,7 +44,7 @@ List queries should be formatted as follows:
 
    {
        "search_string": "1. TI (digital health OR telemedicine)\n2. AB (physical activity OR exercise)\n3. S1 AND S2",
-       "general_search_field": ""
+       "general_field": ""
    }
 
 Each numbered item defines a part of the query using EBSCOhost's field syntax. Later lines can combine them using boolean operators like ``AND``, ``OR``, or ``NOT``, allowing for structured, transparent query design.

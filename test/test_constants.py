@@ -27,7 +27,10 @@ def test_assert_ordered_error_codes() -> None:
 
 # Assert that the error codes are in the correct range
 def test_assert_error_codes_in_range() -> None:
-    codes = [int(e.code[1:]) for e in QueryErrorCode]
+    for e in QueryErrorCode:
+        print(e.code)
+        print(e.code.split("_")[1])
+    codes = [int(e.code.split("_")[1]) for e in QueryErrorCode]
     min_code = min(codes)
     max_code = max(codes)
 

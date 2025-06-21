@@ -17,7 +17,7 @@ from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.pubmed.constants import map_to_standard
 from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
-from search_query.pubmed.constants import syntax_str_to_generic_search_field_set
+from search_query.pubmed.constants import syntax_str_to_generic_field_set
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -33,14 +33,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.PARENTHESIS_CLOSED: [
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
         ],
-        TokenTypes.SEARCH_TERM: [
+        TokenTypes.TERM: [
             TokenTypes.FIELD,
             TokenTypes.LOGIC_OPERATOR,
             TokenTypes.PARENTHESIS_CLOSED,
@@ -51,11 +51,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.RANGE_OPERATOR,
         ],
         TokenTypes.LOGIC_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ],
         TokenTypes.RANGE_OPERATOR: [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
         ],
     }
 
@@ -73,13 +73,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Validate token list"""
 
         self.tokens = tokens
         self.query_str = query_str
-        self.search_field_general = search_field_general
+        self.field_general = field_general
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
@@ -90,9 +90,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
 
-        self.check_unsupported_pubmed_search_fields()
-        self.check_general_search_field()
-        self.check_implicit_search_fields()
+        self.check_unsupported_pubmed_fields()
+        self.check_general_field()
+        self.check_implicit_fields()
         self.check_boolean_operator_readability()
 
         self.check_invalid_proximity_operator()
@@ -113,7 +113,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def check_character_replacement_in_search_term(self, query: Query) -> None:
+    def check_character_replacement_in_term(self, query: Query) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
@@ -141,14 +141,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     )
 
         for child in query.children:
-            self.check_character_replacement_in_search_term(child)
+            self.check_character_replacement_in_term(child)
 
     def check_invalid_token_sequences(self) -> None:
         """Check token list for invalid token sequences."""
 
         # Check the first token
         if self.tokens[0].type not in [
-            TokenTypes.SEARCH_TERM,
+            TokenTypes.TERM,
             TokenTypes.PARENTHESIS_OPEN,
         ]:
             self.add_message(
@@ -465,7 +465,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_character_replacement_in_search_term(query)
+        self.check_character_replacement_in_term(query)
 
         self.check_operators_with_fields(query)
 
@@ -485,13 +485,13 @@ class PubmedQueryStringLinter(QueryStringLinter):
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set:
         """Translate a search field"""
 
-        return syntax_str_to_generic_search_field_set(field_value)
+        return syntax_str_to_generic_field_set(field_value)
 
     # pylint: disable=duplicate-code
-    def check_unsupported_pubmed_search_fields(self) -> None:
+    def check_unsupported_pubmed_fields(self) -> None:
         """Check for the correct format of fields."""
 
         for token in self.tokens:
@@ -507,14 +507,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     # Will be handled in check_invalid_proximity_operator
                     return
                 self.add_message(
-                    QueryErrorCode.SEARCH_FIELD_UNSUPPORTED,
+                    QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
                     details=f"Search field {token.value} at position "
                     f"{token.position} is not supported.",
                     fatal=True,
                 )
 
-    def check_implicit_search_fields(self) -> None:
+    def check_implicit_fields(self) -> None:
         """Check the general search field"""
 
         # search fields are required for each term.
@@ -523,19 +523,16 @@ class PubmedQueryStringLinter(QueryStringLinter):
         implicit_positions = []
         for i, _ in enumerate(self.tokens):
             token_type = self.tokens[i].type
-            next_token_type = TokenTypes.SEARCH_TERM  # Default
+            next_token_type = TokenTypes.TERM  # Default
             if i < len(self.tokens) - 1:
                 next_token_type = self.tokens[i + 1].type
-            if (
-                token_type == TokenTypes.SEARCH_TERM
-                and next_token_type != TokenTypes.FIELD
-            ):
+            if token_type == TokenTypes.TERM and next_token_type != TokenTypes.FIELD:
                 implicit_positions.append(self.tokens[i].position)
 
         if implicit_positions:
             details = "The search field is implicit (will be set to [all] by PubMed)."
             self.add_message(
-                QueryErrorCode.SEARCH_FIELD_IMPLICIT,
+                QueryErrorCode.FIELD_IMPLICIT,
                 positions=implicit_positions,
                 details=details,
             )

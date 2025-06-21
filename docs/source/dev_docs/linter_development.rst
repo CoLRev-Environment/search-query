@@ -25,7 +25,7 @@ Best Practices
   - `check_unbalanced_parentheses()`
   - `check_unknown_token_types()`
   - `add_artificial_parentheses_for_operator_precedence()`
-  - `check_invalid_characters_in_search_term(chars)`
+  - `check_invalid_characters_in_term(chars)`
   - `check_operator_capitalization()`
   - etc.
 - For **search field validation**, use a corresponding field mapping and helper functions like `map_to_standard()`.

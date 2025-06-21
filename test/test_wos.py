@@ -30,10 +30,10 @@ from search_query.wos.parser import WOSParser
             "TI=example AND AU=John Doe",
             [
                 Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
-                Token(value="example", type=TokenTypes.SEARCH_TERM, position=(3, 10)),
+                Token(value="example", type=TokenTypes.TERM, position=(3, 10)),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(11, 14)),
                 Token(value="AU=", type=TokenTypes.FIELD, position=(15, 18)),
-                Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(18, 26)),
+                Token(value="John Doe", type=TokenTypes.TERM, position=(18, 26)),
             ],
         ),
         (
@@ -42,12 +42,12 @@ from search_query.wos.parser import WOSParser
                 Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
                 Token(
                     value="example example2",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(3, 19),
                 ),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(20, 23)),
                 Token(value="AU=", type=TokenTypes.FIELD, position=(24, 27)),
-                Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(27, 35)),
+                Token(value="John Doe", type=TokenTypes.TERM, position=(27, 35)),
             ],
         ),
         (
@@ -56,42 +56,40 @@ from search_query.wos.parser import WOSParser
                 Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
                 Token(
                     value="example example2 example3",
-                    type=TokenTypes.SEARCH_TERM,
+                    type=TokenTypes.TERM,
                     position=(3, 28),
                 ),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
                 Token(value="AU=", type=TokenTypes.FIELD, position=(33, 36)),
-                Token(value="John Doe", type=TokenTypes.SEARCH_TERM, position=(36, 44)),
+                Token(value="John Doe", type=TokenTypes.TERM, position=(36, 44)),
             ],
         ),
         (
             "TI=ex$mple* AND AU=John?Doe",
             [
                 Token(value="TI=", type=TokenTypes.FIELD, position=(0, 3)),
-                Token(value="ex$mple*", type=TokenTypes.SEARCH_TERM, position=(3, 11)),
+                Token(value="ex$mple*", type=TokenTypes.TERM, position=(3, 11)),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(12, 15)),
                 Token(value="AU=", type=TokenTypes.FIELD, position=(16, 19)),
-                Token(value="John?Doe", type=TokenTypes.SEARCH_TERM, position=(19, 27)),
+                Token(value="John?Doe", type=TokenTypes.TERM, position=(19, 27)),
             ],
         ),
         (
             'direction*OR (route AND test)"',
             [
-                Token(
-                    value="direction*", type=TokenTypes.SEARCH_TERM, position=(0, 10)
-                ),
+                Token(value="direction*", type=TokenTypes.TERM, position=(0, 10)),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(10, 12)),
                 Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(13, 14)),
-                Token(value="route", type=TokenTypes.SEARCH_TERM, position=(14, 19)),
+                Token(value="route", type=TokenTypes.TERM, position=(14, 19)),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(20, 23)),
-                Token(value="test", type=TokenTypes.SEARCH_TERM, position=(24, 28)),
+                Token(value="test", type=TokenTypes.TERM, position=(24, 28)),
                 Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(28, 29)),
             ],
         ),
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
-    parser = WOSParser(query_str=query_str, search_field_general="", mode="")
+    parser = WOSParser(query_str=query_str, field_general="", mode="")
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
 
@@ -103,8 +101,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "test query",
             [
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(0, 10)],
@@ -116,8 +114,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "(test query)",
             [
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(1, 11)],
@@ -129,7 +127,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             r"collaborat\* OR assistance",
             [
                 {
-                    "code": "E0004",
+                    "code": "WOS_0012",
                     "label": "invalid-character",
                     "message": "Search term contains invalid character",
                     "is_fatal": False,
@@ -137,8 +135,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Invalid character '\\' in search term 'collaborat\\*'",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(0, 12), (16, 26)],
@@ -150,7 +148,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "(test query",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -158,8 +156,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Unbalanced opening parenthesis",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(1, 11)],
@@ -171,7 +169,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "test query)",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -179,8 +177,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Unbalanced closing parenthesis",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(0, 10)],
@@ -192,7 +190,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "(test query))",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -200,8 +198,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Unbalanced closing parenthesis",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(1, 11)],
@@ -213,7 +211,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "((test query)",
             [
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -226,7 +224,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 AND OR",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -234,7 +232,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Two operators in a row are not allowed.",
                 },
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -242,7 +240,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Cannot end with LOGIC_OPERATOR",
                 },
                 {
-                    "code": "W0007",
+                    "code": "STRUCT_0001",
                     "label": "implicit-precedence",
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
@@ -255,7 +253,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 au= ti=",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -263,7 +261,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 },
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -271,7 +269,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 },
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -284,7 +282,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 (query)",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -297,7 +295,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ") (query)",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -305,7 +303,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Cannot start with PARENTHESIS_CLOSED",
                 },
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -313,7 +311,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 },
                 {
-                    "code": "F1001",
+                    "code": "PARSE_0002",
                     "label": "unbalanced-parentheses",
                     "message": "Parentheses are unbalanced in the query",
                     "is_fatal": True,
@@ -321,8 +319,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Unbalanced closing parenthesis",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(0, 1)],
@@ -334,7 +332,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 au=",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -342,7 +340,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 },
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -355,7 +353,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 NEAR/20 TI=term2",
             [
                 {
-                    "code": "F2007",
+                    "code": "WOS_0002",
                     "label": "near-distance-too-large",
                     "message": "NEAR distance is too large (max: 15).",
                     "is_fatal": True,
@@ -379,7 +377,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         #     "term1 NEAR term2",  # Repeats earlier but for implicit NEAR warning
         #     [
         #         {
-        #             "code": "W0006",
+        #             "code": "WOS_0004",
         #             "is_fatal": False,
         #             "details": "",
         #             "label": "implicit-near-value",
@@ -392,7 +390,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 !term2",
             [
                 {
-                    "code": "F2001",
+                    "code": "WOS_0011",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
@@ -405,15 +403,15 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             'TI=term1 AND "?"',
             [
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(13, 16)],
                     "details": "",
                 },
                 {
-                    "code": "F2006",
+                    "code": "WOS_0010",
                     "label": "wildcard-standalone",
                     "message": "Wildcard cannot be standalone.",
                     "is_fatal": True,
@@ -435,7 +433,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             # TODO : should we raise only one message?
             [
                 {
-                    "code": "F2005",
+                    "code": "WOS_0009",
                     "label": "wildcard-after-special-char",
                     "message": "Wildcard cannot be preceded by special characters.",
                     "is_fatal": True,
@@ -443,7 +441,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Wildcard '*' is not allowed after a special character.",
                 },
                 {
-                    "code": "F2001",
+                    "code": "WOS_0011",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": True,
@@ -456,7 +454,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=te*",
             [
                 {
-                    "code": "F2003",
+                    "code": "WOS_0008",
                     "is_fatal": True,
                     "details": "",
                     "label": "wildcard-right-short-length",
@@ -469,7 +467,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 TI=*term2",
             [
                 {
-                    "code": "F1004",
+                    "code": "PARSE_0004",
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
@@ -482,11 +480,11 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=*te",
             [
                 {
-                    "code": "F2004",
+                    "code": "WOS_0007",
                     "is_fatal": True,
                     "details": "",
                     "label": "wildcard-left-short-length",
-                    "message": "Left-hand wildcard must be preceded by at least three characters.",
+                    "message": "Left-hand wildcard must be followed by at least three characters.",
                     "position": [(3, 6)],
                 },
             ],
@@ -499,7 +497,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "IS=1234-567",
             [
                 {
-                    "code": "F2008",
+                    "code": "TERM_0004",
                     "is_fatal": True,
                     "details": "",
                     "label": "isbn-format-invalid",
@@ -516,7 +514,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "IS=978-3-16-148410",
             [
                 {
-                    "code": "F2008",
+                    "code": "TERM_0004",
                     "is_fatal": True,
                     "details": "",
                     "label": "isbn-format-invalid",
@@ -533,7 +531,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "DO=12.1000/xyz",
             [
                 {
-                    "code": "F2009",
+                    "code": "TERM_0003",
                     "label": "doi-format-invalid",
                     "message": "Invalid DOI format.",
                     "is_fatal": True,
@@ -546,7 +544,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 and TI=term2",
             [
                 {
-                    "code": "W0005",
+                    "code": "STRUCT_0002",
                     "is_fatal": False,
                     "details": "",
                     "label": "operator-capitalization",
@@ -559,7 +557,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 AND PY=202*",
             [
                 {
-                    "code": "F2002",
+                    "code": "WOS_0006",
                     "is_fatal": True,
                     "details": "",
                     "label": "wildcard-in-year",
@@ -572,7 +570,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 AND PY=20xy",
             [
                 {
-                    "code": "F2014",
+                    "code": "TERM_0002",
                     "label": "year-format-invalid",
                     "message": "Invalid year format.",
                     "is_fatal": True,
@@ -585,8 +583,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 AND IY=digital",
             [
                 {
-                    "code": "F2011",
-                    "label": "search-field-unsupported",
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(13, 16)],
@@ -598,7 +596,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TI=term1 AND PY=1900-2000",
             [
                 {
-                    "code": "F2010",
+                    "code": "WOS_0005",
                     "label": "year-span-violation",
                     "message": "Year span must be five or less.",
                     "is_fatal": True,
@@ -611,7 +609,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "term1 AND ehealth[ti]",
             [
                 {
-                    "code": "F1010",
+                    "code": "PARSE_0006",
                     "label": "invalid-syntax",
                     "message": "Query contains invalid syntax",
                     "is_fatal": True,
@@ -619,7 +617,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "WOS fields must be before search terms and without brackets, e.g. AB=robot or TI=monitor. '[ti]' is invalid.",
                 },
                 {
-                    "code": "F0001",
+                    "code": "PARSE_0001",
                     "label": "tokenizing-failed",
                     "message": "Fatal error during tokenization",
                     "is_fatal": True,
@@ -627,8 +625,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "Unparsed segment: 'ehealth[ti]'",
                 },
                 {
-                    "code": "E0001",
-                    "label": "search-field-missing",
+                    "code": "FIELD_0002",
+                    "label": "field-missing",
                     "message": "Expected search field is missing",
                     "is_fatal": False,
                     "position": [(0, 5), (10, 20)],
@@ -651,15 +649,15 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "PY=200*",
             [
                 {
-                    "code": "F2012",
-                    "label": "year-without-search-terms",
+                    "code": "WOS_0003",
+                    "label": "year-without-terms",
                     "message": "A search for publication years must include at least another search term.",
                     "is_fatal": True,
                     "position": [(0, 7)],
                     "details": "",
                 },
                 {
-                    "code": "F2002",
+                    "code": "WOS_0006",
                     "label": "wildcard-in-year",
                     "message": "Wildcard characters (*, ?, $) not supported in year search.",
                     "is_fatal": True,
@@ -672,7 +670,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=ca*",
             [
                 {
-                    "code": "F2003",
+                    "code": "WOS_0008",
                     "label": "wildcard-right-short-length",
                     "message": "Right-hand wildcard must preceded by at least three characters.",
                     "is_fatal": True,
@@ -685,7 +683,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=“carbon”",
             [
                 {
-                    "code": "W0013",
+                    "code": "TERM_0001",
                     "label": "non-standard-quotes",
                     "message": "Non-standard quotes",
                     "is_fatal": False,
@@ -698,8 +696,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "ALL=(term1 OR term2 OR term3 OR term4 OR term5 OR term6 OR term7 OR term8 OR term9 OR term10 OR term11 OR term12 OR term13 OR term14 OR term15 OR term16 OR term17 OR term18 OR term19 OR term20 OR term21 OR term22 OR term23 OR term24 OR term25 OR term26 OR term27 OR term28 OR term29 OR term30 OR term31 OR term32 OR term33 OR term34 OR term35 OR term36 OR term37 OR term38 OR term39 OR term40 OR term41 OR term42 OR term43 OR term44 OR term45 OR term46 OR term47 OR term48 OR term49 OR term50 OR term51 OR term52)",
             [
                 {
-                    "code": "F1012",
-                    "label": "too-many-search-terms",
+                    "code": "WOS_0001",
+                    "label": "too-many-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
                     "position": [(5, 512)],
@@ -712,8 +710,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "ALL=term1 OR ALL=term2 OR ALL=term3 OR ALL=term4 OR ALL=term5 OR ALL=term6 OR ALL=term7 OR ALL=term8 OR ALL=term9 OR ALL=term10 OR ALL=term11 OR ALL=term12 OR ALL=term13 OR ALL=term14 OR ALL=term15 OR ALL=term16 OR ALL=term17 OR ALL=term18 OR ALL=term19 OR ALL=term20 OR ALL=term21 OR ALL=term22 OR ALL=term23 OR ALL=term24 OR ALL=term25 OR ALL=term26 OR ALL=term27 OR ALL=term28 OR ALL=term29 OR ALL=term30 OR ALL=term31 OR ALL=term32 OR ALL=term33 OR ALL=term34 OR ALL=term35 OR ALL=term36 OR ALL=term37 OR ALL=term38 OR ALL=term39 OR ALL=term40 OR ALL=term41 OR ALL=term42 OR ALL=term43 OR ALL=term44 OR ALL=term45 OR ALL=term46 OR ALL=term47 OR ALL=term48 OR ALL=term49 OR ALL=term50 OR ALL=term51 OR ALL=term52",
             [
                 {
-                    "code": "F1012",
-                    "label": "too-many-search-terms",
+                    "code": "WOS_0001",
+                    "label": "too-many-terms",
                     "message": "Too many search terms in the query",
                     "is_fatal": True,
                     "position": [(0, 715)],
@@ -725,7 +723,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=(activity) AND (TS=(cancer) AND SO=(Lancet))",
             [
                 {
-                    "code": "W0014",
+                    "code": "QUALITY_0003",
                     "label": "journal-filter-in-subquery",
                     "message": "Journal (or publication name) filter in subquery",
                     "is_fatal": False,
@@ -738,7 +736,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             '"TS=(eHealth) AND TS=(Review)"',
             [
                 {
-                    "code": "E0008",
+                    "code": "PARSE_0007",
                     "label": "query-in-quotes",
                     "message": "The whole Search string is in quotes.",
                     "is_fatal": False,
@@ -751,7 +749,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "Web of Science: TS=eHealth",
             [
                 {
-                    "code": "E0007",
+                    "code": "PARSE_0010",
                     "label": "unsupported-prefix-platform-identifier",
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
@@ -815,7 +813,7 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     assert len(parser.linter.messages) == 1
     msg = parser.linter.messages[0]
 
-    assert msg["code"] == "W0007"
+    assert msg["code"] == "STRUCT_0001"
     assert msg["label"] == "implicit-precedence"
     assert msg["is_fatal"] is False
 
@@ -826,8 +824,8 @@ def test_query_parsing_basic_vs_advanced() -> None:
     parser.parse()
     assert parser.linter.messages == [
         {
-            "code": "E0001",
-            "label": "search-field-missing",
+            "code": "FIELD_0002",
+            "label": "field-missing",
             "message": "Expected search field is missing",
             "is_fatal": False,
             "position": [(0, 7), (12, 18)],
@@ -844,32 +842,30 @@ def test_query_parsing_basic_vs_advanced() -> None:
     assert len(parser.linter.messages) == 0
 
     # Advanced search
-    parser = WOSParser(
-        query_str="ALL=(digital AND online)", search_field_general="", mode=""
-    )
+    parser = WOSParser(query_str="ALL=(digital AND online)", field_general="", mode="")
     parser.parse()
     assert len(parser.linter.messages) == 0
 
     parser = WOSParser(
-        query_str="(ALL=digital AND ALL=online)", search_field_general="", mode=""
+        query_str="(ALL=digital AND ALL=online)", field_general="", mode=""
     )
     parser.parse()
     assert len(parser.linter.messages) == 0
 
-    # ERROR: Basic search without search_field_general
-    parser = WOSParser(query_str="digital AND online", search_field_general="", mode="")
+    # ERROR: Basic search without field_general
+    parser = WOSParser(query_str="digital AND online", field_general="", mode="")
     parser.parse()
     assert len(parser.linter.messages) == 1
 
-    # ERROR: Advanced search with search_field_general
+    # ERROR: Advanced search with field_general
     parser = WOSParser(
-        query_str="ALL=(digital AND online)", search_field_general="All Fields", mode=""
+        query_str="ALL=(digital AND online)", field_general="All Fields", mode=""
     )
     parser.parse()
     assert len(parser.linter.messages) == 1
     print(parser.linter.messages)
 
-    # ERROR: Advanced search with search_field_general
+    # ERROR: Advanced search with field_general
     parser = WOSParser(query_str="TI=(digital AND online)", mode="")
     parser.parse()
     assert len(parser.linter.messages) == 0
@@ -910,9 +906,7 @@ def test_parser_wos(query_str: str, expected_translation: str) -> None:
 
 
 def test_query_in_quotes() -> None:
-    parser = WOSParser(
-        query_str='"TI=(digital AND online)"', search_field_general="", mode=""
-    )
+    parser = WOSParser(query_str='"TI=(digital AND online)"', field_general="", mode="")
     parser.parse()
 
     # Assertions using standard assert statement
@@ -923,7 +917,7 @@ def test_query_in_quotes() -> None:
 def test_artificial_parentheses() -> None:
     parser = WOSParser(
         query_str="remote OR online AND work",
-        search_field_general="All Fields",
+        field_general="All Fields",
         mode="",
     )
     query = parser.parse()
@@ -939,7 +933,7 @@ def test_artificial_parentheses() -> None:
     print(parser.linter.messages)
     assert parser.linter.messages == [
         {
-            "code": "W0007",
+            "code": "STRUCT_0001",
             "label": "implicit-precedence",
             "message": "Operator changed at the same level (explicit parentheses are recommended)",
             "is_fatal": False,
@@ -947,16 +941,16 @@ def test_artificial_parentheses() -> None:
             "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
         },
         {
-            "code": "W0002",
-            "label": "search-field-extracted",
+            "code": "FIELD_0003",
+            "label": "field-extracted",
             "message": "Recommend explicitly specifying the search field in the string",
             "is_fatal": False,
             "position": [],
             "details": "The search field is extracted and should be included in the query.",
         },
         {
-            "code": "E0001",
-            "label": "search-field-missing",
+            "code": "FIELD_0002",
+            "label": "field-missing",
             "message": "Expected search field is missing",
             "is_fatal": False,
             "position": [(0, 6)],
@@ -970,7 +964,7 @@ def test_artificial_parentheses() -> None:
 def test_list_parser_case_1() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Distributed leader*" OR "Distributive leader*" OR "Collaborate leader*" OR "Collaborative leader*" OR "Team leader*" OR "Peer-led" OR "Athlete leader*" OR "Team captain*" OR "Peer mentor*" OR "Peer Coach")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatic" OR "aikido" OR "aikidoists" OR "anetso" OR "archer" OR "archers" OR "archery" OR "airsoft" OR "angling" OR "aquatics" OR "aerobics" OR "athlete" OR "athletes" OR "athletic" OR "athletics" OR "ball game*" OR "ballooning" OR "basque pelota" OR "behcup" OR "bicycling" OR "BMX" OR "bodyboarding" OR "boule lyonnaise" OR "bridge" OR "badminton" OR "balle au tamis" OR "baseball" OR "basketball" OR "battle ball" OR "battleball" OR "biathlon" OR "billiards" OR "boating" OR "bobsledding" OR "bobsled" OR "bobsledder" OR "bobsledders" OR "bobsleigh" OR "boccia" OR "bocce" OR "buzkashi" OR "bodybuilding" OR "bodybuilder" OR "bodybuilders" OR "bowling" OR "bowler" OR "bowlers" OR "bowls" OR "boxing" OR "boxer" OR "boxers" OR "bandy" OR "breaking" OR "breakdanc*" OR "broomball" OR "budo" OR "bullfighting" OR "bullfights" OR "bullfight" OR "bullfighter" OR "bullfighters" OR "mountain biking" OR "mountain bike" OR "carom billiards" OR "camogie" OR "canoe slalom" OR "canoeing" OR "canoeist" OR "canoeists" OR "canoe" OR "climbing" OR "coasting" OR "cricket" OR "croquet" OR "crossfit" OR "curling" OR "curlers" OR "curler" OR "cyclist" OR "cyclists" OR "combat*" OR "casting" OR "cheerleading" OR "cheer" OR "cheerleader*" OR "chess" OR "charrerias" OR "cycling" OR "dancesport" OR "darts" OR "decathlon" OR "draughts" OR "dancing" OR "dance" OR "dancers" OR "dancer" OR "diving" OR "dodgeball" OR "e-sport" OR "dressage" OR "endurance" OR "equestrian" OR "eventing" OR "eskrima" OR "escrima" OR "fencer" OR "fencing" OR "fencers" OR "fishing" OR "finswimming" OR "fistball" OR "floorball" OR "flying disc" OR "foosball" OR "futsal" OR "flickerball" OR "football" OR "frisbee" OR "gliding" OR "go" OR "gongfu" OR "gong fu" OR "goalball" OR "golf" OR "golfer" OR "golfers" OR "gymnast" OR "gymnasts" OR "gymnastics" OR "gymnastic" OR "gymkhanas" OR "half rubber" OR "highland games" OR "hap ki do" OR "halfrubber" OR "handball" OR "handballers" OR "handballer" OR "hapkido" OR "hiking" OR "hockey" OR "hsing-I" OR "hurling" OR "Hwa rang do" OR "hwarangdo" OR "horsemanship" OR "horseshoes" OR "orienteer" OR "orienteers" OR "orienteering" OR "iaido" OR "iceboating" OR "icestock" OR "intercrosse" OR "jousting" OR "jai alai" OR "jeet kune do" OR "jianzi" OR "jiu-jitsu" OR "jujutsu" OR "ju-jitsu" OR "kung fu" OR "kungfu" OR "kenpo" OR "judo" OR "judoka" OR "judoists" OR "judoist" OR "jump" OR "jumping" OR "jumper" OR "jian zi" OR "kabaddi" OR "kajukenbo" OR "karate" OR "karateists" OR "karateist" OR "karateka" OR "kayaking" OR "kendo" OR "kenjutsu" OR "kickball" OR "kickbox*" OR "kneeboarding" OR "krav maga" OR "kuk sool won" OR "kun-tao" OR "kuntao" OR "kyudo" OR "korfball" OR "lacrosse" OR "life saving" OR "lapta" OR "lawn tempest" OR "bowling" OR "bowls" OR "logrolling" OR "luge" OR "marathon" OR "marathons" OR "marathoning" OR "martial art" OR "martial arts" OR "martial artist" OR "martial artists" OR "motorsports" OR "mountainboarding" OR "mountain boarding" OR "mountaineer" OR "mountaineering" OR "mountaineers" OR "muay thai" OR "mallakhamb" OR "motorcross" OR "modern arnis" OR "naginata do" OR "netball" OR "ninepins" OR "nine-pins" OR "nordic combined" OR "nunchaku" OR "olympic*" OR "pes\u00e4pallo" OR "pitch and putt" OR "pool" OR "pato" OR "paddleball" OR "paddleboarding" OR "pankration" OR "pancratium" OR "parachuting" OR "paragliding" OR "paramotoring" OR "paraski" OR "paraskiing" OR "paraskier" OR "paraskier" OR "parakour" OR "pelota" OR "pencak silat" OR "pentathlon" OR "p\u00e9tanque" OR "petanque" OR "pickleball" OR "pilota" OR "pole bending" OR "pole vault" OR "polo" OR "polocrosse" OR "powerlifting" OR "player*" OR "powerboating" OR "pegging" OR "parathletic" OR "parathletics" OR "parasport*" OR "paraathletes" OR "paraathlete" OR "pushball" OR "push ball" OR "quidditch" OR "races" OR "race" OR "racing" OR "racewalking" OR "racewalker" OR "racewalkers" OR "rackets" OR "racketlon" OR "racquetball" OR "racquet" OR "racquets" OR "rafting" OR "regattas" OR "riding" OR "ringette" OR "rock-it-ball" OR "rogaining" OR "rock climbing" OR "roll ball" OR "roller derby" OR "roping" OR "rodeos" OR "rodeo" OR "riding" OR "rider" OR "riders" OR "rounders" OR "rowing" OR "rower" OR "rowers" OR "rug ball" OR "running" OR "runner" OR "runners" OR "rugby" OR "sailing" OR "san shou" OR "sepaktakraw" OR "sepak takraw" OR "san-jitsu" OR "savate" OR "shinty" OR "shishimai" OR "shooting" OR "singlestick" OR "single stick" OR "skateboarding" OR "skateboarder" OR "skateboarders" OR "skater" OR "skaters" OR "skating" OR "skipping" OR "racket game*" OR "rollerskating" OR "skelton" OR "skibobbing" OR "ski" OR "skiing" OR "skier" OR "skiers" OR "skydive" OR "skydiving" OR "skydivers" OR "skydiver" OR "skysurfing" OR "sledding" OR "sledging" OR "sled dog" OR "sleddog" OR "snooker" OR "sleighing" OR "snowboarder" OR "snowboarding" OR "snowboarders" OR "snowshoeing" OR "soccer" OR "softball" OR "spear fighting" OR "speed-a-way" OR "speedball" OR "sprint" OR "sprinting" OR "sprints" OR "squash" OR "stick fighting" OR "stickball" OR "stoolball" OR "stunt flying" OR "sumo" OR "surfing" OR "surfer" OR "surfers" OR "swimnastics" OR "swimming" OR "snowmobiling" OR "swim" OR "swimmer" OR "swimmers" OR "shot-put" OR "shot-putters" OR "shot-putter" OR "sport" OR "sports" OR "tae kwon do" OR "taekwondo" OR "taekgyeon" OR "taekkyeon" OR "taekkyon" OR "taekyun" OR "tang soo do" OR "tchoukball" OR "tennis" OR "tetherball" OR "throwing" OR "thrower" OR "throwers" OR "tai ji" OR "tai chi" OR "taiji" OR "t ai chi" OR "throwball" OR "tug of war" OR "tobogganing" OR "track and field" OR "track & field" OR "trampoline" OR "trampolining" OR "trampolinists" OR "trampolinist" OR "trapball" OR "trapshooting" OR "triathlon" OR "triathlete" OR "triathletes" OR "tubing" OR "tumbling" OR "vaulting" OR "volleyball" OR "wakeboarding" OR "wallyball" OR "weightlifting" OR "weightlifter" OR "weightlifters" OR "wiffle ball" OR "windsurfing" OR "windsurfer" OR "windsurfers" OR "walking" OR "wingwalking" OR "woodchopping" OR "wood chopping" OR "woodball" OR "wushu" OR "weight lifter" OR "weight lift" OR "weight lifters" OR "wrestling" OR "wrestler" OR "wrestlers" OR "vovinam" OR "vx" OR "yoga")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     list_parser.parse()
 
 
@@ -978,13 +972,13 @@ def test_list_parser_case_1() -> None:
 def test_list_parser_case_2() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
         pass
     assert list_parser.linter.messages[GENERAL_ERROR_POSITION][0] == {
-        "code": "F3001",
+        "code": "PARSE_1001",
         "label": "list-query-missing-root-node",
         "message": "List format query without root node (typically containing operators)",
         "is_fatal": True,
@@ -997,7 +991,7 @@ def test_list_parser_case_2() -> None:
 def test_list_parser_case_3() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #4\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError as exc:
@@ -1005,7 +999,7 @@ def test_list_parser_case_3() -> None:
     assert list_parser.linter.messages == {
         2: [
             {
-                "code": "F3003",
+                "code": "PARSE_1003",
                 "label": "list-query-invalid-reference",
                 "message": "Invalid list reference in list query",
                 "is_fatal": True,
@@ -1020,7 +1014,7 @@ def test_list_parser_case_3() -> None:
 def test_list_parser_case_4() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     query = list_parser.parse()
     print(query.to_string())
     assert (
@@ -1032,7 +1026,7 @@ def test_list_parser_case_4() -> None:
         -1: [],
         "1": [
             {
-                "code": "W0004",
+                "code": "QUALITY_0001",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
@@ -1040,7 +1034,7 @@ def test_list_parser_case_4() -> None:
                 "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
             },
             {
-                "code": "W0004",
+                "code": "QUALITY_0001",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
@@ -1050,7 +1044,7 @@ def test_list_parser_case_4() -> None:
         ],
         "2": [
             {
-                "code": "W0004",
+                "code": "QUALITY_0001",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
@@ -1058,7 +1052,7 @@ def test_list_parser_case_4() -> None:
                 "details": 'Term "acrobatics" is contained multiple times i.e., redundantly.',
             },
             {
-                "code": "W0004",
+                "code": "QUALITY_0001",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
@@ -1066,7 +1060,7 @@ def test_list_parser_case_4() -> None:
                 "details": 'Term "acrobat" is contained multiple times i.e., redundantly.',
             },
             {
-                "code": "W0004",
+                "code": "QUALITY_0001",
                 "label": "query-structure-unnecessarily-complex",
                 "message": "Query structure is more complex than necessary",
                 "is_fatal": False,
@@ -1081,7 +1075,7 @@ def test_list_parser_case_4() -> None:
 def test_list_parser_case_5() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2 AND\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     try:
         list_parser.parse()
     except ListQuerySyntaxError as exc:
@@ -1091,7 +1085,7 @@ def test_list_parser_case_5() -> None:
         -1: [],
         "3": [
             {
-                "code": "F1004",
+                "code": "PARSE_0004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
@@ -1106,7 +1100,7 @@ def test_list_parser_case_5() -> None:
 def test_list_parser_case_6() -> None:
     query_list = "1. TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR (ulcer* colitis) OR crohn OR crohns OR ileitis or ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)\n2. TS=(prebiotic* OR synbiotic OR inulin OR galactan* or *oligosacc* OR pectin)\n3. TS=(interven* OR trial* or study)\n4. #3 AND #2 AND #1\n"
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     query = list_parser.parse()
     print(query.to_string())
     # Note: parentheses for inflamm* AND bowl* are missing?
@@ -1119,7 +1113,7 @@ def test_list_parser_case_6() -> None:
         -1: [],
         "3": [
             {
-                "code": "W0005",
+                "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
@@ -1129,7 +1123,7 @@ def test_list_parser_case_6() -> None:
         ],
         "2": [
             {
-                "code": "W0005",
+                "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
@@ -1139,7 +1133,7 @@ def test_list_parser_case_6() -> None:
         ],
         "1": [
             {
-                "code": "W0005",
+                "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
@@ -1154,7 +1148,7 @@ def test_list_parser_case_6() -> None:
 def test_list_parser_case_7() -> None:
     query_list = "1. TS=(inflammatory bowel diseases OR ileitis or ileocolitis)\n2. TS=(prebiotic* OR synbiotic)\n3. #1 AND #2 AND PY=2000\n"
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     query = list_parser.parse()
     print(query.to_string())
     # Note: parentheses for inflamm* AND bowl* are missing?
@@ -1168,7 +1162,7 @@ def test_list_parser_case_7() -> None:
 def test_list_parser_case_8() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     query = list_parser.parse()
     assert (
         query.to_string()
@@ -1177,7 +1171,7 @@ def test_list_parser_case_8() -> None:
 
     query_list = '1. "Peer leader*" OR "Shared leader*"\n2. "acrobatics" OR "acrobat"\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, search_field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
     query = list_parser.parse()
     print(query.to_structured_string())
     assert (
@@ -1193,12 +1187,12 @@ def test_wos_valid_query() -> None:
         children=[
             Term(
                 value="AI",
-                search_field=SearchField("TI="),
+                field=SearchField("TI="),
                 platform=PLATFORM.WOS.value,
             ),
             Term(
                 value="ethics",
-                search_field=SearchField("AB="),
+                field=SearchField("AB="),
                 platform=PLATFORM.WOS.value,
             ),
         ],
@@ -1207,22 +1201,22 @@ def test_wos_valid_query() -> None:
 
 
 def test_wos_invalid_nested_with_operator_field() -> None:
-    """Should raise: nested operator with search_field set."""
+    """Should raise: nested operator with field set."""
     with pytest.raises(Exception):
         AndQuery(
             [
                 Term(
                     value="DE12",
-                    search_field=SearchField("IS="),
+                    field=SearchField("IS="),
                     platform=PLATFORM.WOS.value,
                 ),
                 Term(
                     value="ethics",
-                    search_field=SearchField("AB"),
+                    field=SearchField("AB"),
                     platform=PLATFORM.WOS.value,
                 ),
             ],
-            search_field=SearchField("TI"),
+            field=SearchField("TI"),
             platform=PLATFORM.WOS.value,
         )
 
@@ -1234,22 +1228,22 @@ def test_wos_invalid_fields() -> None:
             [
                 Term(
                     value="DE12",
-                    search_field=SearchField("[ti]"),
+                    field=SearchField("[ti]"),
                     platform=PLATFORM.WOS.value,
                 ),
                 Term(
                     value="ethics",
-                    search_field=SearchField("AB="),
+                    field=SearchField("AB="),
                     platform=PLATFORM.WOS.value,
                 ),
             ],
-            search_field=SearchField("TI="),
+            field=SearchField("TI="),
             platform=PLATFORM.WOS.value,
         )
 
 
 @pytest.mark.parametrize(
-    "query_str, search_field_general, expected_parsed",
+    "query_str, field_general, expected_parsed",
     [
         (
             "eHealth AND Review",
@@ -1258,14 +1252,12 @@ def test_wos_invalid_fields() -> None:
         ),
     ],
 )
-def test_parser(
-    query_str: str, search_field_general: str, expected_parsed: str
-) -> None:
+def test_parser(query_str: str, field_general: str, expected_parsed: str) -> None:
     print(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = WOSParser(query_str, search_field_general=search_field_general)
+    parser = WOSParser(query_str, field_general=field_general)
     query = parser.parse()
 
     assert expected_parsed == query.to_generic_string(), print(

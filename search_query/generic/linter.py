@@ -24,12 +24,12 @@ class GenericLinter(QueryStringLinter):
         if not k.startswith("__") and isinstance(v, str)
     }
 
-    VALID_FIELDS_REGEX = re.compile(r"\b(?:" + "|".join(sorted(field_codes)) + r")\b")
+    VALID_fieldS_REGEX = re.compile(r"\b(?:" + "|".join(sorted(field_codes)) + r")\b")
 
     def __init__(self, query_str: str = "") -> None:
         super().__init__(query_str=query_str)
 
-    def syntax_str_to_generic_search_field_set(self, field_value: str) -> set:
+    def syntax_str_to_generic_field_set(self, field_value: str) -> set:
         """Translate a search field"""
         # Note: generic-to-generic translation is not needed
         return set()  # pragma: no cover
@@ -39,7 +39,7 @@ class GenericLinter(QueryStringLinter):
         *,
         tokens: typing.List[Token],
         query_str: str,
-        search_field_general: str = "",
+        field_general: str = "",
     ) -> typing.List[Token]:
         """Performs a pre-linting"""
 
@@ -53,4 +53,4 @@ class GenericLinter(QueryStringLinter):
         This method is called after the query tree has been built.
         """
 
-        self.check_unsupported_search_fields_in_query(query)
+        self.check_unsupported_fields_in_query(query)

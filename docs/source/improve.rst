@@ -44,9 +44,9 @@ Modification
 
 
    query = AndQuery([
-      OrQuery(["labour", "employment"], search_field="title"),
-      OrQuery(["robot", "algorith"], search_field="title")
-   ], search_field="title")
+      OrQuery(["labour", "employment"], field="title"),
+      OrQuery(["robot", "algorith"], field="title")
+   ], field="title")
 
    expand_spelling_variants(query)
    add_plural_wildcards(query)
@@ -82,9 +82,9 @@ See Cooper et al. 2018
    }
 
    query = AndQuery([
-      OrQuery(["microsourcing"], search_field="title"),
-      OrQuery(["online"], search_field="title")
-   ], search_field="title")
+      OrQuery(["microsourcing"], field="title"),
+      OrQuery(["online"], field="title")
+   ], field="title")
 
    # Evaluate the search
    results = query.evaluate(records_dict)

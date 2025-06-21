@@ -19,7 +19,7 @@ When working with `search-query`, we recommend copying the **Advanced search que
 
    Web of Science supports structured queries using field tags such as `TS=` (Topic), `TI=` (Title), `AB=` (Abstract), `AU=` (Author), etc.
 
-   You should include these tags explicitly in the `search_string`. Leave the `general_search_field` empty unless the entire query is uniformly scoped to a single field.
+   You should include these tags explicitly in the `search_string`. Leave the `general_field` empty unless the entire query is uniformly scoped to a single field.
 
 Store a Query
 -------------
@@ -27,7 +27,7 @@ Store a Query
 When storing a Web of Science query:
 
 - Use the **Advanced search query string** as the `search_string`.
-- Leave the `general_search_field` empty unless all terms share the same field tag.
+- Leave the `general_field` empty unless all terms share the same field tag.
 
 Example::
 
@@ -47,7 +47,7 @@ List queries should be formatted as follows:
 
    {
        "search_string": "1. TS=(digital health OR telemedicine)\n2. TS=(physical activity OR exercise)\n3. #1 AND #2",
-       "general_search_field": ""
+       "general_field": ""
    }
 
 Each numbered line represents an individual query component, and later lines can combine previous results using logical operators like ``AND``, ``OR``, or ``NOT``.
@@ -62,7 +62,7 @@ Best Practices and Recommendations
 Resources
 ---------
 
-- `Field Tags Reference <https://webofscience.help.clarivate.com/Content/wos-core-collection/woscc-search-field-tags.htm>`_
+- `Field Tags Reference <https://webofscience.help.clarivate.com/Content/wos-core-collection/woscc-field-tags.htm>`_
 - `Web of Science Errors <https://images.webofknowledge.com/WOKRS528R6/help/TCT/ht_errors.html>`_
 
 .. note::

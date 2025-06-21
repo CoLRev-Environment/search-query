@@ -16,14 +16,12 @@ if typing.TYPE_CHECKING:
 
 
 def _get_parser(
-    search_string: str, *, platform: str, search_field_general: str
+    search_string: str, *, platform: str, field_general: str
 ) -> QueryStringParser:
     """Run the linter on the search string"""
 
     parser_class = search_query.parser.PARSERS[platform]
-    parser = parser_class(
-        search_string, search_field_general=search_field_general
-    )  # type: ignore
+    parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:
         parser.parse()
@@ -46,7 +44,7 @@ def lint_file(search_file: SearchFile) -> dict:
     return lint_query_string(
         search_file.search_string,
         platform=search_file.platform,
-        search_field_general=search_file.search_field,
+        field_general=search_file.field,
     )
 
 
@@ -54,7 +52,7 @@ def lint_query_string(
     search_string: str,
     *,
     platform: str,
-    search_field_general: str = "",
+    field_general: str = "",
 ) -> dict:
     """Lint a query string and return the messages."""
     # pylint: disable=too-many-locals
@@ -66,9 +64,7 @@ def lint_query_string(
 
     print(f"Linting query string for platform {platform}")
 
-    parser = _get_parser(
-        search_string, platform=platform, search_field_general=search_field_general
-    )
+    parser = _get_parser(search_string, platform=platform, field_general=field_general)
 
     return parser.linter.messages  # type: ignore
 
@@ -96,7 +92,7 @@ def pre_commit_hook(file_path: str) -> int:
     parser = _get_parser(
         search_file.search_string,
         platform=search_file.platform,
-        search_field_general=search_file.search_field,
+        field_general=search_file.field,
     )
 
     if parser.linter.messages:

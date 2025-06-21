@@ -20,9 +20,14 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
     # f.write("Overview of query error messages grouped by type.\n\n")
 
     for group_title, filter_fn in [
-        ("Fatal Errors", lambda e: e.is_fatal()),
-        ("Errors", lambda e: e.is_error()),
-        ("Warnings", lambda e: e.is_warning()),
+        ("Parsing errors", lambda e: e.code.startswith("PARSE_")),
+        ("Query structure errors", lambda e: e.code.startswith("STRUCT_")),
+        ("Term errors", lambda e: e.code.startswith("TERM_")),
+        ("Field errors", lambda e: e.code.startswith("FIELD_")),
+        ("Database erros: Web of Science", lambda e: e.code.startswith("WOS_")),
+        ("Database erros: EBSCOHost", lambda e: e.code.startswith("EBSCO_")),
+        ("Database erros: PubMed", lambda e: e.code.startswith("PUBMED_")),
+        ("Best practice qualities", lambda e: e.code.startswith("QUALITY_")),
     ]:
         f.write(f"{group_title}\n{'-' * len(group_title)}\n\n")
         f.write(".. toctree::\n   :maxdepth: 1\n\n")
@@ -50,8 +55,6 @@ def generate_rst_file(error: QueryErrorCode) -> None:
         f"**Error Code**: {error.code}",
         "",
         f"**Message**: ``{error.message}``",
-        "",
-        f"**Scope**: {', '.join(str(e) for e in error.scope)}",
         "",
         error.docs.strip()
         if error.docs.strip()

@@ -12,7 +12,7 @@
         "data_entry": "2019.07.01",
         "search_conducted": "2019.07.01"
     },
-    "search_field": "",
+    "field": "",
     "database": [
         "SCI-EXPANDED",
         "SSCI",
