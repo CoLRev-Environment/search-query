@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 import typing
 
-from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
@@ -38,7 +37,6 @@ def parse(
     *,
     field_general: str = "",
     platform: str = PLATFORM.WOS.value,
-    mode: str = LinterMode.STRICT,
 ) -> Query:
     """Parse a query string."""
     platform = get_platform(platform)
@@ -51,7 +49,6 @@ def parse(
             query = LIST_PARSERS[platform](  # type: ignore
                 query_list=query_str,
                 field_general=field_general,
-                mode=mode,
             ).parse()
         except Exception:  # pylint: disable=broad-except
             sys.exit(1)
@@ -63,7 +60,7 @@ def parse(
     parser_class = PARSERS[platform]
     try:
         query = parser_class(
-            query_str, field_general=field_general, mode=mode
+            query_str, field_general=field_general
         ).parse()  # type: ignore
     except Exception:  # pylint: disable=broad-except
         sys.exit(1)

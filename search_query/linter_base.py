@@ -155,8 +155,6 @@ class QueryStringLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            # OR any (code.is_error() for code in messages)
-            # and self.parser.mode == "strict":
             raise QuerySyntaxError(self)
 
     def has_fatal_errors(self) -> bool:
@@ -413,7 +411,7 @@ class QueryStringLinter:
         for token in self.tokens:
             if token.type == TokenTypes.LOGIC_OPERATOR:
                 if token.value in faulty_operators:
-                    details = f"Please use AND, OR, NOT instead of {faulty_operators}"
+                    details = f"Use AND, OR, NOT instead of {faulty_operators}"
                     self.add_message(
                         QueryErrorCode.BOOLEAN_OPERATOR_READABILITY,
                         positions=[token.position],
@@ -956,10 +954,7 @@ class QueryStringLinter:
 
         generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.YEAR_PUBLICATION}:
-            details = (
-                "Please double-check whether date filters "
-                "should apply to the entire query."
-            )
+            details = "Check whether date filters should apply to the entire query."
             positions = [(-1, -1)]
             if query.position and query.position is not None:
                 positions = [query.position]
@@ -997,7 +992,7 @@ class QueryStringLinter:
         generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
         if generic_fields & {Fields.JOURNAL, Fields.PUBLICATION_NAME}:
             details = (
-                "Please double-check whether journal/publication-name filters "
+                "Check whether journal/publication-name filters "
                 f"({query.field.value}) should apply to the entire query."
             )
             self.add_message(
@@ -1285,8 +1280,6 @@ class QueryListLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            # OR any (code.is_error() for code in messages)
-            # and self.parser.mode == "strict":
             raise ListQuerySyntaxError(self)
 
 

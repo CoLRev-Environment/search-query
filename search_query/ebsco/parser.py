@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -53,7 +52,6 @@ class EBSCOParser(QueryStringParser):
         query_str: str,
         *,
         field_general: str = "",
-        mode: str = LinterMode.STRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
@@ -62,7 +60,6 @@ class EBSCOParser(QueryStringParser):
         super().__init__(
             query_str,
             field_general=field_general,
-            mode=mode,
             offset=offset,
             original_str=original_str,
         )
@@ -413,13 +410,11 @@ class EBSCOListParser(QueryListParser):
         self,
         query_list: str,
         field_general: str = "",
-        mode: str = LinterMode.NONSTRICT,
     ) -> None:
         super().__init__(
             query_list=query_list,
             parser_class=EBSCOParser,
             field_general=field_general,
-            mode=mode,
         )
         self.linter = EBSCOListLinter(parser=self, string_parser_class=EBSCOParser)
 
@@ -440,7 +435,6 @@ class EBSCOListParser(QueryListParser):
             query_str=query_str,
             original_str=self.query_list,
             field_general=self.field_general,
-            mode=self.mode,
             offset=offset,
             silent=True,
         )

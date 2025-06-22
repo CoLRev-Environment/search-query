@@ -601,7 +601,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Date filter in subquery",
                     "is_fatal": False,
                     "position": [(70, 91), (91, 109)],
-                    "details": "Please double-check whether date filters should apply to the entire query.",
+                    "details": "Check whether date filters should apply to the entire query.",
                 }
             ],
         ),
@@ -643,7 +643,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Date filter in subquery",
                     "is_fatal": False,
                     "position": [(32, 41), (41, 45)],
-                    "details": "Please double-check whether date filters should apply to the entire query.",
+                    "details": "Check whether date filters should apply to the entire query.",
                 }
             ],
         ),
@@ -657,7 +657,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Journal (or publication name) filter in subquery",
                     "is_fatal": False,
                     "position": [(61, 69)],
-                    "details": "Please double-check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
+                    "details": "Check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
                 }
             ],
         ),
@@ -809,7 +809,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Boolean operator readability",
                     "is_fatal": False,
                     "position": [(12, 13)],
-                    "details": "Please use AND, OR, NOT instead of |&",
+                    "details": "Use AND, OR, NOT instead of |&",
                 }
             ],
         ),
@@ -1037,7 +1037,7 @@ def test_list_parser_case_1() -> None:
 3. #1 OR #2
 """
 
-    list_parser = PubmedListParser(query_list=query_list)  # , field_general="", mode=""
+    list_parser = PubmedListParser(query_list=query_list)  #
     list_parser.parse()
 
 
@@ -1047,7 +1047,7 @@ def test_list_parser_case_2() -> None:
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 AND #2 AND #4
 """
-    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
+    list_parser = PubmedListParser(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1075,7 +1075,7 @@ def test_list_parser_case_3() -> None:
 """
     print(query_list)
 
-    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
+    list_parser = PubmedListParser(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1174,7 +1174,7 @@ def test_general_list_parser_1() -> None:
 3. #1 AND #2
 """
 
-    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
+    list_parser = PubmedListParser(query_list=query_list)
     list_parser.parse()
 
     print(list_parser.linter.messages)
@@ -1189,7 +1189,7 @@ def test_general_list_parser_2() -> None:
 4. #1 AND #2 OR #3
 """
 
-    list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
+    list_parser = PubmedListParser(query_list=query_list)
     query = list_parser.parse()
     assert (
         query.to_string()

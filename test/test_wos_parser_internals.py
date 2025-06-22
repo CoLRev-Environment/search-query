@@ -18,7 +18,7 @@ def test_combine_subsequent_terms_single_term() -> None:
     This test verifies that the `combine_subsequent_terms` method correctly handles
     a list of tokens with a single term and does not combine it with anything.
     """
-    parser = WOSParser(query_str="", field_general="", mode="")
+    parser = WOSParser(query_str="")
     parser.tokens = [Token(value="example", type=TokenTypes.TERM, position=(0, 7))]
     parser.combine_subsequent_terms()
 
@@ -34,7 +34,7 @@ def test_combine_subsequent_terms_multiple_terms() -> None:
     This test verifies that the `combine_subsequent_terms` method correctly combines
     subsequent terms into a single token.
     """
-    parser = WOSParser(query_str="", field_general="", mode="")
+    parser = WOSParser(query_str="")
     parser.tokens = [
         Token(value="example", type=TokenTypes.TERM, position=(0, 7)),
         Token(value="example2", type=TokenTypes.TERM, position=(8, 16)),
@@ -55,7 +55,7 @@ def test_combine_subsequent_terms_with_operators() -> None:
     This test verifies that the `combine_subsequent_terms` method correctly combines
     subsequent terms into a single token and does not combine terms with operators.
     """
-    parser = WOSParser(query_str="", field_general="", mode="")
+    parser = WOSParser(query_str="")
     parser.tokens = [
         Token(value="example", type=TokenTypes.TERM, position=(0, 7)),
         Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(8, 11)),
@@ -79,7 +79,7 @@ def test_combine_subsequent_terms_with_special_characters() -> None:
     This test verifies that the `combine_subsequent_terms` method correctly combines
     subsequent terms containing special characters into a single token.
     """
-    parser = WOSParser(query_str="", field_general="", mode="")
+    parser = WOSParser(query_str="")
     parser.tokens = [
         Token(value="ex$mple", type=TokenTypes.TERM, position=(0, 7)),
         Token(value="example2", type=TokenTypes.TERM, position=(8, 16)),
@@ -100,7 +100,7 @@ def test_combine_subsequent_terms_with_mixed_case() -> None:
     This test verifies that the `combine_subsequent_terms` method correctly combines
     subsequent terms in mixed case into a single token.
     """
-    parser = WOSParser(query_str="", field_general="", mode="")
+    parser = WOSParser(query_str="")
     parser.tokens = [
         Token(value="Example", type=TokenTypes.TERM, position=(0, 7)),
         Token(value="example2", type=TokenTypes.TERM, position=(8, 16)),
@@ -223,9 +223,7 @@ def test_check_fields_year() -> None:
 
 
 def test_query_parsing_1() -> None:
-    parser = WOSParser(
-        query_str="TI=example AND AU=John Doe", field_general="", mode=""
-    )
+    parser = WOSParser(query_str="TI=example AND AU=John Doe")
     query = parser.parse()
 
     # Assertions using standard assert statement
@@ -242,8 +240,6 @@ def test_query_parsing_1() -> None:
 def test_query_parsing_2() -> None:
     parser = WOSParser(
         query_str="TI=example AND (AU=John Doe OR AU=John Wayne)",
-        field_general="",
-        mode="",
     )
     query = parser.parse()
 

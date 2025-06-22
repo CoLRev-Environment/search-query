@@ -8,8 +8,8 @@ class CustomParser(QueryStringParser):
         [PARENTHESIS_REGEX, LOGIC_OPERATOR_REGEX, FIELD_REGEX, TERM_REGEX]
     )
 
-    def __init__(self, query_str, *, field_general="", mode=LinterMode.STRICT):
-        super().__init__(query_str, field_general=field_general, mode=mode)
+    def __init__(self, query_str, *, field_general=""):
+        super().__init__(query_str, field_general=field_general)
         self.linter = CustomLinter(self)
 
     def tokenize(self):

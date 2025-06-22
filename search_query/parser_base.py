@@ -8,7 +8,6 @@ from abc import ABC
 from abc import abstractmethod
 
 from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import LinterMode
 from search_query.constants import ListToken
 from search_query.constants import ListTokenTypes
 from search_query.constants import OperatorNodeTokenTypes
@@ -35,14 +34,12 @@ class QueryStringParser(ABC):
         query_str: str,
         *,
         field_general: str = "",
-        mode: str = LinterMode.STRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
-        self.mode = mode
         # The external fields (in the JSON file: "field")
         self.field_general = field_general
         self.silent = silent
@@ -213,14 +210,12 @@ class QueryListParser:
         *,
         parser_class: type[QueryStringParser],
         field_general: str,
-        mode: str = LinterMode.STRICT,
     ) -> None:
         # Remove leading whitespaces/newlines from the query_list
         # to ensure correct token positions
         self.query_list = query_list.lstrip()
         self.parser_class = parser_class
         self.field_general = field_general
-        self.mode = mode
         self.query_dict: dict = {}
 
     def tokenize_list(self) -> None:

@@ -32,11 +32,3 @@ Best Practices
 
 .. literalinclude:: linter_skeleton.py
    :language: python
-
-
-Strict vs. Non-Strict Mode
----------------------------
-
-In non-strict mode (`mode="lenient"`), linters report errors but do not raise exceptions.
-In strict mode (`mode="strict"`), any linter message will cause an exception to be raised,
-which can be used for automated pipelines or validation gates.

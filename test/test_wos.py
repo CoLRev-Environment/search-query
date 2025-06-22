@@ -6,7 +6,6 @@ import pytest
 
 from search_query.constants import Colors
 from search_query.constants import GENERAL_ERROR_POSITION
-from search_query.constants import LinterMode
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -89,7 +88,7 @@ from search_query.wos.parser import WOSParser
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
-    parser = WOSParser(query_str=query_str, field_general="", mode="")
+    parser = WOSParser(query_str=query_str)
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
 
@@ -688,7 +687,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Journal (or publication name) filter in subquery",
                     "is_fatal": False,
                     "position": [(39, 45)],
-                    "details": "Please double-check whether journal/publication-name filters (SO=) should apply to the entire query.",
+                    "details": "Check whether journal/publication-name filters (SO=) should apply to the entire query.",
                 }
             ],
         ),
@@ -762,7 +761,7 @@ def test_linter(
 )
 def test_implicit_precedence(query_str: str, expected_query: str) -> None:
     print(query_str)
-    parser = WOSParser(query_str, mode=LinterMode.NONSTRICT)
+    parser = WOSParser(query_str)
     query = parser.parse()
     parser.print_tokens()
 
@@ -780,7 +779,7 @@ def test_implicit_precedence(query_str: str, expected_query: str) -> None:
 
 def test_query_parsing_basic_vs_advanced() -> None:
     # Basic search
-    parser = WOSParser(query_str="digital AND online", mode="")
+    parser = WOSParser(query_str="digital AND online")
     parser.parse()
     assert parser.linter.messages == [
         {
@@ -796,37 +795,32 @@ def test_query_parsing_basic_vs_advanced() -> None:
     # Search field could be nested
     parser = WOSParser(
         query_str="(TI=digital AND AB=online)",
-        mode="",
     )
     parser.parse()
     assert len(parser.linter.messages) == 0
 
     # Advanced search
-    parser = WOSParser(query_str="ALL=(digital AND online)", field_general="", mode="")
+    parser = WOSParser(query_str="ALL=(digital AND online)")
     parser.parse()
     assert len(parser.linter.messages) == 0
 
-    parser = WOSParser(
-        query_str="(ALL=digital AND ALL=online)", field_general="", mode=""
-    )
+    parser = WOSParser(query_str="(ALL=digital AND ALL=online)")
     parser.parse()
     assert len(parser.linter.messages) == 0
 
     # ERROR: Basic search without field_general
-    parser = WOSParser(query_str="digital AND online", field_general="", mode="")
+    parser = WOSParser(query_str="digital AND online")
     parser.parse()
     assert len(parser.linter.messages) == 1
 
     # ERROR: Advanced search with field_general
-    parser = WOSParser(
-        query_str="ALL=(digital AND online)", field_general="All Fields", mode=""
-    )
+    parser = WOSParser(query_str="ALL=(digital AND online)", field_general="All Fields")
     parser.parse()
     assert len(parser.linter.messages) == 1
     print(parser.linter.messages)
 
     # ERROR: Advanced search with field_general
-    parser = WOSParser(query_str="TI=(digital AND online)", mode="")
+    parser = WOSParser(query_str="TI=(digital AND online)")
     parser.parse()
     assert len(parser.linter.messages) == 0
 
@@ -866,7 +860,7 @@ def test_parser_wos(query_str: str, expected_translation: str) -> None:
 
 
 def test_query_in_quotes() -> None:
-    parser = WOSParser(query_str='"TI=(digital AND online)"', field_general="", mode="")
+    parser = WOSParser(query_str='"TI=(digital AND online)"')
     parser.parse()
 
     # Assertions using standard assert statement
@@ -878,7 +872,6 @@ def test_artificial_parentheses() -> None:
     parser = WOSParser(
         query_str="remote OR online AND work",
         field_general="All Fields",
-        mode="",
     )
     query = parser.parse()
 
@@ -924,7 +917,7 @@ def test_artificial_parentheses() -> None:
 def test_list_parser_case_1() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Distributed leader*" OR "Distributive leader*" OR "Collaborate leader*" OR "Collaborative leader*" OR "Team leader*" OR "Peer-led" OR "Athlete leader*" OR "Team captain*" OR "Peer mentor*" OR "Peer Coach")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatic" OR "aikido" OR "aikidoists" OR "anetso" OR "archer" OR "archers" OR "archery" OR "airsoft" OR "angling" OR "aquatics" OR "aerobics" OR "athlete" OR "athletes" OR "athletic" OR "athletics" OR "ball game*" OR "ballooning" OR "basque pelota" OR "behcup" OR "bicycling" OR "BMX" OR "bodyboarding" OR "boule lyonnaise" OR "bridge" OR "badminton" OR "balle au tamis" OR "baseball" OR "basketball" OR "battle ball" OR "battleball" OR "biathlon" OR "billiards" OR "boating" OR "bobsledding" OR "bobsled" OR "bobsledder" OR "bobsledders" OR "bobsleigh" OR "boccia" OR "bocce" OR "buzkashi" OR "bodybuilding" OR "bodybuilder" OR "bodybuilders" OR "bowling" OR "bowler" OR "bowlers" OR "bowls" OR "boxing" OR "boxer" OR "boxers" OR "bandy" OR "breaking" OR "breakdanc*" OR "broomball" OR "budo" OR "bullfighting" OR "bullfights" OR "bullfight" OR "bullfighter" OR "bullfighters" OR "mountain biking" OR "mountain bike" OR "carom billiards" OR "camogie" OR "canoe slalom" OR "canoeing" OR "canoeist" OR "canoeists" OR "canoe" OR "climbing" OR "coasting" OR "cricket" OR "croquet" OR "crossfit" OR "curling" OR "curlers" OR "curler" OR "cyclist" OR "cyclists" OR "combat*" OR "casting" OR "cheerleading" OR "cheer" OR "cheerleader*" OR "chess" OR "charrerias" OR "cycling" OR "dancesport" OR "darts" OR "decathlon" OR "draughts" OR "dancing" OR "dance" OR "dancers" OR "dancer" OR "diving" OR "dodgeball" OR "e-sport" OR "dressage" OR "endurance" OR "equestrian" OR "eventing" OR "eskrima" OR "escrima" OR "fencer" OR "fencing" OR "fencers" OR "fishing" OR "finswimming" OR "fistball" OR "floorball" OR "flying disc" OR "foosball" OR "futsal" OR "flickerball" OR "football" OR "frisbee" OR "gliding" OR "go" OR "gongfu" OR "gong fu" OR "goalball" OR "golf" OR "golfer" OR "golfers" OR "gymnast" OR "gymnasts" OR "gymnastics" OR "gymnastic" OR "gymkhanas" OR "half rubber" OR "highland games" OR "hap ki do" OR "halfrubber" OR "handball" OR "handballers" OR "handballer" OR "hapkido" OR "hiking" OR "hockey" OR "hsing-I" OR "hurling" OR "Hwa rang do" OR "hwarangdo" OR "horsemanship" OR "horseshoes" OR "orienteer" OR "orienteers" OR "orienteering" OR "iaido" OR "iceboating" OR "icestock" OR "intercrosse" OR "jousting" OR "jai alai" OR "jeet kune do" OR "jianzi" OR "jiu-jitsu" OR "jujutsu" OR "ju-jitsu" OR "kung fu" OR "kungfu" OR "kenpo" OR "judo" OR "judoka" OR "judoists" OR "judoist" OR "jump" OR "jumping" OR "jumper" OR "jian zi" OR "kabaddi" OR "kajukenbo" OR "karate" OR "karateists" OR "karateist" OR "karateka" OR "kayaking" OR "kendo" OR "kenjutsu" OR "kickball" OR "kickbox*" OR "kneeboarding" OR "krav maga" OR "kuk sool won" OR "kun-tao" OR "kuntao" OR "kyudo" OR "korfball" OR "lacrosse" OR "life saving" OR "lapta" OR "lawn tempest" OR "bowling" OR "bowls" OR "logrolling" OR "luge" OR "marathon" OR "marathons" OR "marathoning" OR "martial art" OR "martial arts" OR "martial artist" OR "martial artists" OR "motorsports" OR "mountainboarding" OR "mountain boarding" OR "mountaineer" OR "mountaineering" OR "mountaineers" OR "muay thai" OR "mallakhamb" OR "motorcross" OR "modern arnis" OR "naginata do" OR "netball" OR "ninepins" OR "nine-pins" OR "nordic combined" OR "nunchaku" OR "olympic*" OR "pes\u00e4pallo" OR "pitch and putt" OR "pool" OR "pato" OR "paddleball" OR "paddleboarding" OR "pankration" OR "pancratium" OR "parachuting" OR "paragliding" OR "paramotoring" OR "paraski" OR "paraskiing" OR "paraskier" OR "paraskier" OR "parakour" OR "pelota" OR "pencak silat" OR "pentathlon" OR "p\u00e9tanque" OR "petanque" OR "pickleball" OR "pilota" OR "pole bending" OR "pole vault" OR "polo" OR "polocrosse" OR "powerlifting" OR "player*" OR "powerboating" OR "pegging" OR "parathletic" OR "parathletics" OR "parasport*" OR "paraathletes" OR "paraathlete" OR "pushball" OR "push ball" OR "quidditch" OR "races" OR "race" OR "racing" OR "racewalking" OR "racewalker" OR "racewalkers" OR "rackets" OR "racketlon" OR "racquetball" OR "racquet" OR "racquets" OR "rafting" OR "regattas" OR "riding" OR "ringette" OR "rock-it-ball" OR "rogaining" OR "rock climbing" OR "roll ball" OR "roller derby" OR "roping" OR "rodeos" OR "rodeo" OR "riding" OR "rider" OR "riders" OR "rounders" OR "rowing" OR "rower" OR "rowers" OR "rug ball" OR "running" OR "runner" OR "runners" OR "rugby" OR "sailing" OR "san shou" OR "sepaktakraw" OR "sepak takraw" OR "san-jitsu" OR "savate" OR "shinty" OR "shishimai" OR "shooting" OR "singlestick" OR "single stick" OR "skateboarding" OR "skateboarder" OR "skateboarders" OR "skater" OR "skaters" OR "skating" OR "skipping" OR "racket game*" OR "rollerskating" OR "skelton" OR "skibobbing" OR "ski" OR "skiing" OR "skier" OR "skiers" OR "skydive" OR "skydiving" OR "skydivers" OR "skydiver" OR "skysurfing" OR "sledding" OR "sledging" OR "sled dog" OR "sleddog" OR "snooker" OR "sleighing" OR "snowboarder" OR "snowboarding" OR "snowboarders" OR "snowshoeing" OR "soccer" OR "softball" OR "spear fighting" OR "speed-a-way" OR "speedball" OR "sprint" OR "sprinting" OR "sprints" OR "squash" OR "stick fighting" OR "stickball" OR "stoolball" OR "stunt flying" OR "sumo" OR "surfing" OR "surfer" OR "surfers" OR "swimnastics" OR "swimming" OR "snowmobiling" OR "swim" OR "swimmer" OR "swimmers" OR "shot-put" OR "shot-putters" OR "shot-putter" OR "sport" OR "sports" OR "tae kwon do" OR "taekwondo" OR "taekgyeon" OR "taekkyeon" OR "taekkyon" OR "taekyun" OR "tang soo do" OR "tchoukball" OR "tennis" OR "tetherball" OR "throwing" OR "thrower" OR "throwers" OR "tai ji" OR "tai chi" OR "taiji" OR "t ai chi" OR "throwball" OR "tug of war" OR "tobogganing" OR "track and field" OR "track & field" OR "trampoline" OR "trampolining" OR "trampolinists" OR "trampolinist" OR "trapball" OR "trapshooting" OR "triathlon" OR "triathlete" OR "triathletes" OR "tubing" OR "tumbling" OR "vaulting" OR "volleyball" OR "wakeboarding" OR "wallyball" OR "weightlifting" OR "weightlifter" OR "weightlifters" OR "wiffle ball" OR "windsurfing" OR "windsurfer" OR "windsurfers" OR "walking" OR "wingwalking" OR "woodchopping" OR "wood chopping" OR "woodball" OR "wushu" OR "weight lifter" OR "weight lift" OR "weight lifters" OR "wrestling" OR "wrestler" OR "wrestlers" OR "vovinam" OR "vx" OR "yoga")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     list_parser.parse()
 
 
@@ -932,7 +925,7 @@ def test_list_parser_case_1() -> None:
 def test_list_parser_case_2() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -951,7 +944,7 @@ def test_list_parser_case_2() -> None:
 def test_list_parser_case_3() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #4\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError as exc:
@@ -974,7 +967,7 @@ def test_list_parser_case_3() -> None:
 def test_list_parser_case_4() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     print(query.to_string())
     assert (
@@ -1035,7 +1028,7 @@ def test_list_parser_case_4() -> None:
 def test_list_parser_case_5() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2 AND\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError as exc:
@@ -1060,7 +1053,7 @@ def test_list_parser_case_5() -> None:
 def test_list_parser_case_6() -> None:
     query_list = "1. TS=(inflammatory bowel diseases OR (inflamm* AND bowel*) OR (ulcer* colitis) OR crohn OR crohns OR ileitis or ileocolitis OR granulomatous enteritis OR proctocolitis OR regional enteritis OR rectosigmoiditis)\n2. TS=(prebiotic* OR synbiotic OR inulin OR galactan* or *oligosacc* OR pectin)\n3. TS=(interven* OR trial* or study)\n4. #3 AND #2 AND #1\n"
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     print(query.to_string())
     # Note: parentheses for inflamm* AND bowl* are missing?
@@ -1108,7 +1101,7 @@ def test_list_parser_case_6() -> None:
 def test_list_parser_case_7() -> None:
     query_list = "1. TS=(inflammatory bowel diseases OR ileitis or ileocolitis)\n2. TS=(prebiotic* OR synbiotic)\n3. #1 AND #2 AND PY=2000\n"
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     print(query.to_string())
     # Note: parentheses for inflamm* AND bowl* are missing?
@@ -1122,7 +1115,7 @@ def test_list_parser_case_7() -> None:
 def test_list_parser_case_8() -> None:
     query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat")\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     assert (
         query.to_string()
@@ -1131,7 +1124,7 @@ def test_list_parser_case_8() -> None:
 
     query_list = '1. "Peer leader*" OR "Shared leader*"\n2. "acrobatics" OR "acrobat"\n3. #1 AND #2\n'
 
-    list_parser = WOSListParser(query_list=query_list, field_general="", mode="")
+    list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     print(query.to_structured_string())
     assert (

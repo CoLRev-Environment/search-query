@@ -20,7 +20,6 @@ search\_query.constants
       Colors
       ExitCodes
       Fields
-      LinterMode
       ListToken
       ListTokenTypes
       OperatorNodeTokenTypes

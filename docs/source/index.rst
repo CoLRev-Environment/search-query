@@ -17,10 +17,6 @@
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
    </div>
 
-..
-       <img src="https://mybinder.org/badge_logo.svg" alt="Binder"
-            onclick="window.open('https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb')">
-
 **Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
 It is extensible and currently supports PubMed, EBSCOHost, and Web of Science.
 The package can be used programmatically, through the command line, or as a pre-commit hook.
@@ -50,13 +46,6 @@ Creating a query programmatically is simple:
     digital_synonyms = OrQuery(["digital", "virtual", "online"], field="abstract")
     work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
     query = AndQuery([digital_synonyms, work_synonyms])
-
-..
-    Parameters:
-
-    - list of strings or queries: strings that you want to include in the search query,
-    - ``field``: search field to which the query should be applied (available options: TODO — provide examples and link to docs)
-   Search strings can be either in string or list format.
 
 We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
 
@@ -97,27 +86,6 @@ Note how the syntax is translated and how the search for :literal:`Title/Abstrac
    # Output:
    # ((AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy"))
 
-
-..
-   Beyond the instructive error message, additional information on the specific messages is available `here <messages/errors_index.html>`_.
-
-    Each query parser has a corresponding linter that checks for errors and warnings in the query.
-    To validate a JSON query file, run the linter:
-
-    .. code-block:: python
-
-        from search_query.linter import run_linter
-
-        messages = run_linter(search.search_string, platform=search.platform)
-        print(messages)
-
-    There are two modes:
-
-    - **Strict mode**: Forces the user to maintain clean, valid input but at the cost of convenience. This mode fails on fatal or error outcomes and prints warnings.
-    - **Non-strict mode**: Focuses on usability, automatically resolving common issues while maintaining transparency via warnings. This mode fails only on fatal outcomes. Auto-corrects errors as much as possible and prints a message (adds a fatal message if this is not possible). Prints warnings.
-
-    An additional "silent" option may be used to silence warnings.
-
 Demo
 ============
 
@@ -133,13 +101,6 @@ The search-query package is built to support researchers throughout the entire l
 Below is a high-level overview of the core functionalities:
 
 .. image:: presentation.png
-
-..
-   Parser development
-   -------------------------
-
-   To develop a parser, see `dev-parser <dev_docs/parser.html>`_ docs.
-
 
 .. toctree::
    :hidden:

@@ -6,7 +6,6 @@ from typing import Tuple
 import pytest
 
 from search_query.constants import Colors
-from search_query.constants import LinterMode
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
@@ -126,7 +125,7 @@ def test_tokenization(
 ) -> None:
     """Test EBSCO parser tokenization."""
     print(query_string)
-    parser = EBSCOParser(query_string, field_general="")
+    parser = EBSCOParser(query_string)
     parser.tokenize()
 
     actual_tokens = parser.tokens
@@ -387,7 +386,7 @@ def test_invalid_token_sequences(
 )
 def test_linter(query_string: str, messages: list) -> None:
     print(query_string)
-    parser = EBSCOParser(query_string, field_general="")
+    parser = EBSCOParser(query_string)
     try:
         parser.parse()
     except Exception:
@@ -511,9 +510,7 @@ def test_linter_general_field(
     query_string: str, field_general: str, messages: list
 ) -> None:
     print(query_string)
-    parser = EBSCOParser(
-        query_string, field_general=field_general, mode=LinterMode.STRICT
-    )
+    parser = EBSCOParser(query_string, field_general=field_general)
     try:
         parser.parse()
     except Exception:
@@ -581,8 +578,6 @@ def test_parser(query_str: str, expected_translation: str) -> None:
 
     parser = EBSCOParser(
         query_str=query_str,
-        field_general="",
-        mode="",
     )
     query_tree = parser.parse()
 

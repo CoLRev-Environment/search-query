@@ -3,7 +3,6 @@
 import re
 import typing
 
-from search_query.constants import LinterMode
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import Token
@@ -48,7 +47,6 @@ class PubmedParser(QueryStringParser):
         query_str: str,
         *,
         field_general: str = "",
-        mode: str = LinterMode.NONSTRICT,
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
@@ -57,7 +55,6 @@ class PubmedParser(QueryStringParser):
         super().__init__(
             query_str=query_str,
             field_general=field_general,
-            mode=mode,
             offset=offset,
             original_str=original_str,
         )
@@ -298,13 +295,11 @@ class PubmedListParser(QueryListParser):
         query_list: str,
         *,
         field_general: str = "",
-        mode: str = LinterMode.NONSTRICT,
     ) -> None:
         super().__init__(
             query_list,
             parser_class=PubmedParser,
             field_general=field_general,
-            mode=mode,
         )
         self.linter = PubmedQueryListLinter(self, PubmedParser)
 
@@ -321,7 +316,6 @@ class PubmedListParser(QueryListParser):
             query_str=query_str,
             original_str=self.query_list,
             field_general=self.field_general,
-            mode=self.mode,
             offset=offset,
             silent=True,
         )

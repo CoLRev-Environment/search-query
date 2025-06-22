@@ -195,13 +195,6 @@ class Colors:
     END = "\033[0m"
 
 
-class LinterMode:
-    """Linter mode"""
-
-    STRICT = "strict"
-    NONSTRICT = "non-strict"
-
-
 class QueryErrorCode(Enum):
     """Error codes for the query parser"""
 

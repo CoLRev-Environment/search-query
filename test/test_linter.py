@@ -143,7 +143,7 @@ def test_check_boolean_operator_readability() -> None:
             "message": "Boolean operator readability",
             "is_fatal": False,
             "position": [(16, 17)],
-            "details": "Please use AND, OR, NOT instead of |&",
+            "details": "Use AND, OR, NOT instead of |&",
         }
     ]
 
