@@ -2,6 +2,7 @@
 """Query parser."""
 from __future__ import annotations
 
+import sys
 import typing
 
 from search_query.constants import LinterMode
@@ -46,20 +47,26 @@ def parse(
         if platform not in LIST_PARSERS:  # pragma: no cover
             raise ValueError(f"Invalid platform: {platform}")
 
-        return LIST_PARSERS[platform](  # type: ignore
-            query_list=query_str,
-            field_general=field_general,
-            mode=mode,
-        ).parse()
+        try:
+            query = LIST_PARSERS[platform](  # type: ignore
+                query_list=query_str,
+                field_general=field_general,
+                mode=mode,
+            ).parse()
+        except Exception:  # pylint: disable=broad-except
+            sys.exit(1)
+        return query
 
     if platform not in PARSERS:  # pragma: no cover
         raise ValueError(f"Invalid platform: {platform}")
 
     parser_class = PARSERS[platform]
-
-    query = parser_class(
-        query_str, field_general=field_general, mode=mode
-    ).parse()  # type: ignore
+    try:
+        query = parser_class(
+            query_str, field_general=field_general, mode=mode
+        ).parse()  # type: ignore
+    except Exception:  # pylint: disable=broad-except
+        sys.exit(1)
 
     return query
 

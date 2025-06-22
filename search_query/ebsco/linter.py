@@ -91,6 +91,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_operator_capitalization()
         self.check_invalid_near_within_operators()
 
+        if self.has_fatal_errors():
+            return self.tokens
+
         self.check_general_field()
 
         return self.tokens
@@ -201,7 +204,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     details = "Invalid operator position"
                     if prev_type == TokenTypes.LOGIC_OPERATOR:
                         details = "Cannot have two consecutive operators"
-                    positions = [token.position]
+                    positions = [(self.tokens[i - 1].position[0], token.position[1])]
 
                 elif (
                     prev_type == TokenTypes.PARENTHESIS_OPEN
@@ -256,37 +259,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 details=f"Cannot end with {self.tokens[-1].type.value}",
                 fatal=True,
             )
-
-    def check_invalid_near_within_operators_query(self, query: Query) -> None:
-        """
-        Check for invalid NEAR and WITHIN operators in the query.
-        EBSCO does not support NEAR and WITHIN operators.
-        """
-        if query.operator:
-            if query.value.startswith("NEAR"):
-                details = (
-                    f"Operator {query.value} "
-                    "is not supported by EBSCO. Must be N/x instead."
-                )
-                self.add_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE,
-                    positions=[query.position or (-1, -1)],
-                    details=details,
-                )
-
-            if query.value.startswith("WITHIN"):
-                details = (
-                    f"Operator {query.value} "
-                    "is not supported by EBSCO. Must be W/x instead."
-                )
-                self.add_message(
-                    QueryErrorCode.INVALID_PROXIMITY_USE,
-                    positions=[query.position or (-1, -1)],
-                    details=details,
-                )
-
-        for child in query.children:
-            self.check_invalid_near_within_operators_query(child)
 
     def check_unsupported_wildcards(self, query: Query) -> None:
         """Check for unsupported characters in the search string."""

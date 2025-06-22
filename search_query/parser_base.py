@@ -126,20 +126,6 @@ class QueryStringParser(ABC):
             assert virtual_position == token.position[1]
             last_end = end
 
-    def _make_artificial_token(self, value: str) -> Token:
-        """Create a synthetic parenthesis token."""
-
-        assert value in ("(", ")"), "Value must be '(' or ')'"
-        token_type = TokenTypes.UNKNOWN
-        if value == "(":
-            token_type = TokenTypes.PARENTHESIS_OPEN
-        if value == ")":
-            token_type = TokenTypes.PARENTHESIS_CLOSED
-
-        return Token(
-            value=value, type=token_type, position=(-1, -1)
-        )  # Replace with your Token constructor
-
     def combine_subsequent_terms(self) -> None:
         """Combine all consecutive TERM tokens into one."""
         combined_tokens = []
@@ -254,7 +240,7 @@ class QueryListParser:
             pos_start += previous
             pos_end += previous
             query_type = ListTokenTypes.QUERY_NODE
-            if self.LIST_ITEM_REFERENCE.match(node_content):
+            if self.LIST_ITEM_REFERENCE.search(node_content):
                 query_type = ListTokenTypes.OPERATOR_NODE
 
             self.query_dict[str(node_nr)] = {
@@ -385,10 +371,8 @@ class QueryListParser:
             return "", {}
 
         # Entry point: find the top-level operator node and resolve it
-        for token_nr, node_content in self.query_dict.items():
-            if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
-                query_str, offset = resolve_reference(token_nr)
-                break  # Assuming only one top-level OPERATOR_NODE
+        for token_nr in self.query_dict:
+            query_str, offset = resolve_reference(token_nr)
 
         return query_str, offset
 

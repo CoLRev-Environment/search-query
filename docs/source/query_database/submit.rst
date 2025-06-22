@@ -42,8 +42,8 @@ Guidelines
 ---------------------------
 
 - Use `platform` to specify the query syntax (e.g., `"wos"`, `"pubmed"`).
-- The `search_string` should be a valid query string for that platform.
-- Ensure that your `title`, `description`, and `keywords` are concise and accurate.
+- The `search_string` must be a valid query string for that platform.
+- Provide accurate `title`, `description`, and `keywords`.
 - Use an appropriate open license (e.g., Creative Commons).
 
 Questions?

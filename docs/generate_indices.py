@@ -24,9 +24,9 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
         ("Query structure errors", lambda e: e.code.startswith("STRUCT_")),
         ("Term errors", lambda e: e.code.startswith("TERM_")),
         ("Field errors", lambda e: e.code.startswith("FIELD_")),
-        ("Database erros: Web of Science", lambda e: e.code.startswith("WOS_")),
-        ("Database erros: EBSCOHost", lambda e: e.code.startswith("EBSCO_")),
-        ("Database erros: PubMed", lambda e: e.code.startswith("PUBMED_")),
+        ("Database errors: Web of Science", lambda e: e.code.startswith("WOS_")),
+        ("Database errors: EBSCOHost", lambda e: e.code.startswith("EBSCO_")),
+        ("Database errors: PubMed", lambda e: e.code.startswith("PUBMED_")),
         ("Best practice qualities", lambda e: e.code.startswith("QUALITY_")),
     ]:
         f.write(f"{group_title}\n{'-' * len(group_title)}\n\n")

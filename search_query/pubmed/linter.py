@@ -6,9 +6,6 @@ import re
 import typing
 
 from search_query.constants import Colors
-from search_query.constants import ListToken
-from search_query.constants import ListTokenTypes
-from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -89,6 +86,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_parentheses()
         self.add_artificial_parentheses_for_operator_precedence()
         self.check_operator_capitalization()
+        if self.has_fatal_errors():
+            return self.tokens
 
         self.check_unsupported_pubmed_fields()
         self.check_general_field()
@@ -509,8 +508,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 self.add_message(
                     QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
-                    details=f"Search field {token.value} at position "
-                    f"{token.position} is not supported.",
+                    details=f"Search field {token.value} is not supported.",
                     fatal=True,
                 )
 
@@ -556,7 +554,6 @@ class PubmedQueryListLinter(QueryListLinter):
         """Validate token list"""
 
         self._check_list_query_invalid_reference()
-        # self.check_operator_node_token_sequence()
 
     def _check_list_query_invalid_reference(self) -> None:
         # check if all list-references exist
@@ -578,76 +575,3 @@ class PubmedQueryListLinter(QueryListLinter):
                         details=f"List reference {reference} not found.",
                         fatal=True,
                     )
-
-    def _get_operator_node_tokens(self, token_nr: int) -> list:
-        """Get operator node tokens"""
-        node_content = self.parser.query_dict[token_nr]["node_content"]
-        operator_node_tokens = []
-        for match in self.OPERATOR_NODE_REGEX.finditer(node_content):
-            value = match.group(0)
-            start, end = match.span()
-            if self.parser.LIST_ITEM_REFERENCE.match(value):
-                token_type = OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            else:
-                token_type = OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE
-            operator_node_tokens.append(
-                ListToken(
-                    value=value, type=token_type, level=token_nr, position=(start, end)
-                )
-            )
-        return operator_node_tokens
-
-    def check_operator_node_token_sequence(self) -> None:
-        """Check operator nodes"""
-
-        for level, query in self.parser.query_dict.items():
-            if query["type"] != ListTokenTypes.OPERATOR_NODE:
-                continue
-
-            operator_node_tokens = self._get_operator_node_tokens(level)
-
-            # check token sequences: operator + list_ref
-            if (
-                operator_node_tokens[0].type
-                != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE
-            ):
-                details = (
-                    "Operator node must start with a list reference "
-                    "(format: #1, #2, etc.)."
-                )
-                self.add_message(
-                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                    list_position=level,
-                    positions=[operator_node_tokens[0].position],
-                    details=details,
-                    fatal=True,
-                )
-
-            prev_token = operator_node_tokens[0]
-            for i, token in enumerate(operator_node_tokens):
-                if i == 0:
-                    continue
-                # token_type = token.type
-                if token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                    if prev_token.type == OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                        details = "Two list references in a row"
-                        self.add_message(
-                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                            list_position=level,
-                            positions=[(prev_token.position[0], token.position[1])],
-                            details=details,
-                            fatal=True,
-                        )
-                    prev_token = token
-
-                if token.type == OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE:
-                    if prev_token.type != OperatorNodeTokenTypes.LIST_ITEM_REFERENCE:
-                        details = "Invalid operator position"
-                        self.add_message(
-                            QueryErrorCode.INVALID_TOKEN_SEQUENCE,
-                            list_position=level,
-                            positions=[token.position],
-                            details=details,
-                            fatal=True,
-                        )
-                    prev_token = token

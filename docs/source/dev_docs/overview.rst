@@ -6,6 +6,7 @@ The parser is responsible for parsing the search string, while the linter checks
 The serializer converts the parsed query back into a search string.
 
 .. image:: documentation.png
+   :align: center
    :width: 800px
 
 Development setup

@@ -8,15 +8,12 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
-from search_query.exception import QuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser import parse
 from search_query.pubmed.linter import PubmedQueryStringLinter
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.pubmed.translator import PubmedTranslator
-from search_query.query_or import OrQuery
-from search_query.query_term import Term
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 
@@ -244,22 +241,6 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(47, 48)],
                     "details": "Unbalanced opening parenthesis",
                 },
-                {
-                    "code": "FIELD_0003",
-                    "label": "field-extracted",
-                    "message": "Recommend explicitly specifying the search field in the string",
-                    "is_fatal": False,
-                    "position": [],
-                    "details": "The search field is extracted and should be included in the query.",
-                },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 18), (22, 41), (49, 69), (73, 90)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
-                },
             ],
         ),
         (
@@ -329,22 +310,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": True,
                     "position": [(42, 43)],
                     "details": "Unbalanced closing parenthesis",
-                },
-                {
-                    "code": "FIELD_0003",
-                    "label": "field-extracted",
-                    "message": "Recommend explicitly specifying the search field in the string",
-                    "is_fatal": False,
-                    "position": [],
-                    "details": "The search field is extracted and should be included in the query.",
-                },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 18), (22, 41), (49, 69), (73, 90)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
             ],
         ),
@@ -451,14 +416,6 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(31, 37)],
                     "details": "Nested queries cannot have search fields",
                 },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 10), (14, 30)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
-                },
             ],
         ),
         (
@@ -473,14 +430,6 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(9, 32)],
                     "details": 'Missing operator between "[tiab] "digital health""',
                 },
-                {
-                    "code": "FIELD_0003",
-                    "label": "field-extracted",
-                    "message": "Recommend explicitly specifying the search field in the string",
-                    "is_fatal": False,
-                    "position": [],
-                    "details": "The search field is extracted and should be included in the query.",
-                },
             ],
         ),
         (
@@ -494,22 +443,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": True,
                     "position": [(41, 43)],
                     "details": 'Missing operator between ") ("',
-                },
-                {
-                    "code": "FIELD_0003",
-                    "label": "field-extracted",
-                    "message": "Recommend explicitly specifying the search field in the string",
-                    "is_fatal": False,
-                    "position": [],
-                    "details": "The search field is extracted and should be included in the query.",
-                },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 18), (22, 41), (43, 63), (67, 84)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
             ],
         ),
@@ -653,7 +586,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(9, 13)],
-                    "details": "Search field [ab] at position (9, 13) is not supported.",
+                    "details": "Search field [ab] is not supported.",
                 }
             ],
         ),
@@ -684,14 +617,6 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(0, 3)],
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
                 },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(0, 12)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
-                },
             ],
         ),
         (
@@ -705,14 +630,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": True,
                     "position": [(20, 26)],
                     "details": "Nested queries cannot have search fields",
-                },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 8), (12, 19)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
             ],
         ),
@@ -993,7 +910,7 @@ def test_linter(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(7, 13)],
-                    "details": "Search field [tldr] at position (7, 13) is not supported.",
+                    "details": "Search field [tldr] is not supported.",
                 }
             ],
         ),
@@ -1008,14 +925,6 @@ def test_linter(
                     "is_fatal": True,
                     "position": [(20, 24)],
                     "details": "Nested queries cannot have search fields",
-                },
-                {
-                    "code": "FIELD_0004",
-                    "label": "field-implicit",
-                    "message": "Search field is implicitly specified",
-                    "is_fatal": False,
-                    "position": [(1, 8), (12, 19)],
-                    "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
             ],
         ),
@@ -1258,29 +1167,6 @@ def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
     )
 
 
-def test_NESTED_QUERY_WITH_FIELD() -> None:
-    try:
-        OrQuery(
-            [
-                Term("health tracking"),
-                Term("remote monitoring"),
-            ],
-            field="[tiab]",
-            platform=PLATFORM.PUBMED.value,
-        )
-    except QuerySyntaxError as exc:
-        assert exc.linter.messages == [
-            {
-                "code": "PUBMED_0001",
-                "label": "nested-query-with-field",
-                "message": "A Nested query cannot have a search field.",
-                "is_fatal": True,
-                "position": [(-1, -1)],
-                "details": "Nested query (operator) with search field is not supported",
-            }
-        ]
-
-
 def test_general_list_parser_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract])
@@ -1289,10 +1175,7 @@ def test_general_list_parser_1() -> None:
 """
 
     list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
-    try:
-        list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
+    list_parser.parse()
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {-1: []}
@@ -1307,11 +1190,7 @@ def test_general_list_parser_2() -> None:
 """
 
     list_parser = PubmedListParser(query_list=query_list, field_general="", mode="")
-    try:
-        query = list_parser.parse()
-    except ListQuerySyntaxError:
-        pass
-
+    query = list_parser.parse()
     assert (
         query.to_string()
         == "((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])) OR (school[Title/Abstract] OR university[Title/Abstract])"

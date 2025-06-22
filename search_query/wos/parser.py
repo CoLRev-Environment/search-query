@@ -393,28 +393,6 @@ class WOSListParser(QueryListParser):
             original_query_str=query_list,
         )
 
-    def _build_query_from_operator_node(self, tokens: list) -> Query:
-        operator = ""
-        children = []
-        for token in tokens:
-            if "#" in token.value:
-                idx = token.value.replace("#", "")  # - 1
-                children.append(self.query_dict[idx]["query"])
-            else:
-                if not operator:
-                    operator = token.value
-                # checked in token-linter
-                assert operator == token.value
-
-        assert operator, "[ERROR] No operator found in combining query."
-
-        operator_query = Query.create(
-            value=operator,
-            children=children,
-            platform="deactivated",
-        )
-        return operator_query
-
     def parse(self) -> Query:
         """Parse the list of queries."""
 

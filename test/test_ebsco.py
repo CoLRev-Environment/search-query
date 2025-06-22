@@ -244,7 +244,7 @@ def test_invalid_token_sequences(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(3, 6)],
+                    "position": [(0, 6)],
                     "details": "Invalid operator position",
                 }
             ],
@@ -315,7 +315,7 @@ def test_invalid_token_sequences(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(8, 10)],
+                    "position": [(5, 10)],
                     "details": "Cannot have two consecutive operators",
                 }
             ],
@@ -567,6 +567,10 @@ def test_linter_general_field(
         (
             'TX ("digital transformation" W5 "organizational change")',
             'WITHIN/5[TX]["digital transformation"[TX], "organizational change"[TX]]',
+        ),
+        (
+            "(health* or medical) N2 (personnel or professional*)",
+            "NEAR/2[OR[health*, medical], OR[personnel, professional*]]",
         ),
     ],
 )

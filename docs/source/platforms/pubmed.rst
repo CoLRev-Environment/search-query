@@ -16,11 +16,9 @@ Queries can be entered using either:
 
 These interfaces are functionally equivalent for the purposes of `search-query`. We recommend users always **copy and store the full query string** from either interface.
 
-.. note::
+.. tip::
 
-   For parsing PubMed queries, we recommend using the queries entered in the basic or advanced box as the *search_string* and leave the *general_field* empty.
-
-   When running the same query with different serach fields, as in this `example <https://www.cabidigitallibrary.org/doi/10.1079/SEARCHRXIV.2023.00236>`_, *search-query* will assume that the queries are added with an "OR" operator.
+   Include field tags explicitly in the `search_string`. Leave the `general_field` empty.
 
 Store a Query
 -------------

@@ -209,15 +209,19 @@ class EBSCOParser(QueryStringParser):
             )
 
         if self._is_compound_query(tokens):
+            # print(f"Compound query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_compound_query(tokens, field_context)
         if self._is_near_query(tokens):
+            # print(f"Near query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_near_query(tokens, field_context)
         if self._is_nested_query(tokens):
+            # print(f"Nested query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_nested_query(tokens, field_context)
         if self._is_term_query(tokens):
+            # print(f"Term query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_term(tokens, field_context)
         raise ValueError(
-            f"Unrecognized query structure: {tokens}. "
+            f"Unrecognized query structure: \n{' '.join(t.value for t in tokens)}\n"
             "Expected a term, near query, nested query, or compound query."
         )
 
@@ -249,6 +253,8 @@ class EBSCOParser(QueryStringParser):
             return "OR"
         if val == "NOT":
             return "NOT"
+        if val.startswith("N") or val.startswith("W"):
+            return "NEAR" if val.startswith("N") else "WITHIN"
         raise ValueError(f"Unrecognized operator: {token.value}")
 
     def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
@@ -261,7 +267,10 @@ class EBSCOParser(QueryStringParser):
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            elif depth == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+            elif depth == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
                 op = self._get_operator_type(token)
                 if first_op is None:
                     first_op = op
@@ -278,6 +287,9 @@ class EBSCOParser(QueryStringParser):
             raise ValueError("No operator found for compound query.")
 
         operator_type = self._get_operator_type(tokens[op_indices[0]])
+        distance = 0
+        if operator_type in {"NEAR", "WITHIN"}:
+            distance = self._extract_proximity_distance(tokens[op_indices[0]])
         children = []
 
         start = 0
@@ -298,6 +310,7 @@ class EBSCOParser(QueryStringParser):
             children=children,  # type: ignore
             position=(tokens[0].position[0], tokens[-1].position[1]),
             platform="deactivated",
+            distance=distance,
         )
 
     def _parse_nested_query(
@@ -365,7 +378,7 @@ class EBSCOParser(QueryStringParser):
         self.linter.handle_suffix_in_query_str(self)
         self.linter.handle_prefix_in_query_str(
             self,
-            prefix_regex=re.compile(r"^EBSCOHost.*\:\s*", flags=re.IGNORECASE),
+            prefix_regex=re.compile(r"^EBSCOHost.*\:\s*|PsycInfo", flags=re.IGNORECASE),
         )
 
     def parse(self) -> Query:
@@ -394,7 +407,7 @@ class EBSCOParser(QueryStringParser):
 class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
-    LIST_ITEM_REFERENCE = re.compile(r"S\d+")
+    LIST_ITEM_REFERENCE = re.compile(r"S\d+|\#\d+")
 
     def __init__(
         self,

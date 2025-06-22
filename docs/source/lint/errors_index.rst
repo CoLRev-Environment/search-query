@@ -68,8 +68,8 @@ Field errors
 
    FIELD_0004
 
-Database erros: Web of Science
-------------------------------
+Database errors: Web of Science
+-------------------------------
 
 .. toctree::
    :maxdepth: 1
@@ -98,8 +98,8 @@ Database erros: Web of Science
 
    WOS_0012
 
-Database erros: EBSCOHost
--------------------------
+Database errors: EBSCOHost
+--------------------------
 
 .. toctree::
    :maxdepth: 1
@@ -108,8 +108,8 @@ Database erros: EBSCOHost
 
    EBSCO_0002
 
-Database erros: PubMed
-----------------------
+Database errors: PubMed
+-----------------------
 
 .. toctree::
    :maxdepth: 1

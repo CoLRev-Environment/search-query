@@ -76,12 +76,11 @@ A useful feature of parsers is the built-in **linter** functionality, which help
 
     query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
     query = parse(query_string, platform="pubmed")
-   # Output:
-   # ❌ Fatal: unbalanced-parentheses (PARSE_0002)
-   #    Unbalanced opening parenthesis
-   #    ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
-   #                                          ^^^
-
+    # Output:
+    # ❌ Fatal: unbalanced-parentheses (PARSE_0002)
+    #   - Unbalanced opening parenthesis
+    #   Query: ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+    #                                                ^^^
 
 Once we have created a :literal:`query` object, we can translate it for different databases.
 Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:

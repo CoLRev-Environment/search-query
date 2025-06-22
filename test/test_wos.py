@@ -103,7 +103,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 {
                     "code": "FIELD_0002",
                     "label": "field-missing",
-                    "message": "Expected search field is missing",
+                    "message": "Search field is missing",
                     "is_fatal": False,
                     "position": [(0, 10)],
                     "details": "",
@@ -116,7 +116,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 {
                     "code": "FIELD_0002",
                     "label": "field-missing",
-                    "message": "Expected search field is missing",
+                    "message": "Search field is missing",
                     "is_fatal": False,
                     "position": [(1, 11)],
                     "details": "",
@@ -137,7 +137,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 {
                     "code": "FIELD_0002",
                     "label": "field-missing",
-                    "message": "Expected search field is missing",
+                    "message": "Search field is missing",
                     "is_fatal": False,
                     "position": [(0, 12), (16, 26)],
                     "details": "",
@@ -155,14 +155,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(0, 1)],
                     "details": "Unbalanced opening parenthesis",
                 },
-                {
-                    "code": "FIELD_0002",
-                    "label": "field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(1, 11)],
-                    "details": "",
-                },
             ],
         ),
         (
@@ -176,14 +168,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(10, 11)],
                     "details": "Unbalanced closing parenthesis",
                 },
-                {
-                    "code": "FIELD_0002",
-                    "label": "field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(0, 10)],
-                    "details": "",
-                },
             ],
         ),
         (
@@ -196,14 +180,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "is_fatal": True,
                     "position": [(12, 13)],
                     "details": "Unbalanced closing parenthesis",
-                },
-                {
-                    "code": "FIELD_0002",
-                    "label": "field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(1, 11)],
-                    "details": "",
                 },
             ],
         ),
@@ -318,14 +294,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(0, 1)],
                     "details": "Unbalanced closing parenthesis",
                 },
-                {
-                    "code": "FIELD_0002",
-                    "label": "field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(0, 1)],
-                    "details": "",
-                },
             ],
         ),
         (
@@ -405,7 +373,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 {
                     "code": "FIELD_0002",
                     "label": "field-missing",
-                    "message": "Expected search field is missing",
+                    "message": "Search field is missing",
                     "is_fatal": False,
                     "position": [(13, 16)],
                     "details": "",
@@ -624,14 +592,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(9, 21)],
                     "details": "Unparsed segment: 'ehealth[ti]'",
                 },
-                {
-                    "code": "FIELD_0002",
-                    "label": "field-missing",
-                    "message": "Expected search field is missing",
-                    "is_fatal": False,
-                    "position": [(0, 5), (10, 20)],
-                    "details": "",
-                },
             ],
         ),
         (
@@ -826,7 +786,7 @@ def test_query_parsing_basic_vs_advanced() -> None:
         {
             "code": "FIELD_0002",
             "label": "field-missing",
-            "message": "Expected search field is missing",
+            "message": "Search field is missing",
             "is_fatal": False,
             "position": [(0, 7), (12, 18)],
             "details": "",
@@ -951,7 +911,7 @@ def test_artificial_parentheses() -> None:
         {
             "code": "FIELD_0002",
             "label": "field-missing",
-            "message": "Expected search field is missing",
+            "message": "Search field is missing",
             "is_fatal": False,
             "position": [(0, 6)],
             "details": "",

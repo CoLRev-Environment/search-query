@@ -269,7 +269,7 @@ class QueryErrorCode(Enum):
     FIELD_MISSING = (
         "FIELD_0002",
         "field-missing",
-        "Expected search field is missing",
+        "Search field is missing",
         """
 **Problematic query**:
 

@@ -15,11 +15,11 @@ Queries in Web of Science can be constructed using:
 
 When working with `search-query`, we recommend copying the **Advanced search query string** directly for use as the `search_string`.
 
-.. note::
+Web of Science supports structured queries using field tags such as `TS=` (Topic), `TI=` (Title), `AB=` (Abstract), `AU=` (Author), etc.
 
-   Web of Science supports structured queries using field tags such as `TS=` (Topic), `TI=` (Title), `AB=` (Abstract), `AU=` (Author), etc.
+.. tip::
 
-   You should include these tags explicitly in the `search_string`. Leave the `general_field` empty unless the entire query is uniformly scoped to a single field.
+   Include field tags explicitly in the `search_string`. Leave the `general_field` empty.
 
 Store a Query
 -------------
