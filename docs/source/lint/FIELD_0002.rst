@@ -5,7 +5,7 @@ FIELD_0002 — field-missing
 
 **Error Code**: FIELD_0002
 
-**Message**: ``Expected search field is missing``
+**Message**: ``Search field is missing``
 
 **Problematic query**:
 
