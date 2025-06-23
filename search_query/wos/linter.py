@@ -528,12 +528,10 @@ class WOSQueryListLinter(QueryListLinter):
     def validate_list_tokens(self) -> None:
         """Lint the list parser."""
 
-        missing_root = self._check_missing_root()
-        self._check_list_query_missing_operator_nodes(missing_root)
+        self._check_missing_root()
         self._check_list_query_invalid_reference()
 
-    def _check_missing_root(self) -> bool:
-        missing_root = False
+    def _check_missing_root(self) -> None:
         root_node_content: str = str(
             list(self.parser.query_dict.values())[-1]["node_content"]
         )
@@ -546,45 +544,24 @@ class WOSQueryListLinter(QueryListLinter):
                 details="The last item of the list must be a combining string.",
                 fatal=True,
             )
-            missing_root = True
-        return missing_root
-
-    def _check_list_query_missing_operator_nodes(self, missing_root: bool) -> None:
-        if missing_root:
-            return
-        # require combining list items
-        if not any(
-            "#" in str(query["node_content"])
-            for query in self.parser.query_dict.values()
-        ):
-            # If there is no combining list item, raise a linter exception
-            # Individual list items can not be connected
-            # raise ValueError("[ERROR] No combining list item found.")
-            self.add_message(
-                QueryErrorCode.LIST_QUERY_MISSING_OPERATOR_NODES,
-                list_position=GENERAL_ERROR_POSITION,
-                positions=[],
-                fatal=True,
-            )
 
     def _check_list_query_invalid_reference(self) -> None:
         # check if all list-references exist
         for ind, query_node in enumerate(self.parser.query_dict.values()):
-            if "#" in str(query_node["node_content"]):
-                # check if all list references exist
-                for match in re.finditer(
-                    self.parser.LIST_ITEM_REFERENCE,
-                    str(query_node["node_content"]),
-                ):
-                    reference = match.group()
-                    position = match.span()
-                    offset = query_node["content_pos"][0]
-                    position = (position[0] + offset, position[1] + offset)
-                    if reference.replace("#", "") not in self.parser.query_dict:
-                        self.add_message(
-                            QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
-                            list_position=ind,
-                            positions=[position],
-                            details=f"List reference {reference} not found.",
-                            fatal=True,
-                        )
+            # check if all list references exist
+            for match in re.finditer(
+                self.parser.LIST_ITEM_REFERENCE,
+                str(query_node["node_content"]),
+            ):
+                reference = match.group()
+                position = match.span()
+                offset = query_node["content_pos"][0]
+                position = (position[0] + offset, position[1] + offset)
+                if reference.replace("#", "") not in self.parser.query_dict:
+                    self.add_message(
+                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
+                        list_position=ind,
+                        positions=[position],
+                        details=f"List reference {reference} not found.",
+                        fatal=True,
+                    )
