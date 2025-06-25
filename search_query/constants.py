@@ -771,6 +771,24 @@ class QueryErrorCode(Enum):
 **Typical fix**: Remove redundant terms that do not add value to the query.""",
     )
 
+    POTENTIAL_WILDCARD_USE = (
+        "QUALITY_0006",
+        "potential-wildcard-use",
+        "Potential wildcard use",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    computation OR computational OR computer OR computer science
+
+**Recommended query**:
+
+.. code-block:: text
+
+    comput*""",
+    )
+
     # -------------------------------------------------------
     # Structural
     # -------------------------------------------------------

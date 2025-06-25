@@ -135,3 +135,5 @@ Best practice qualities
    QUALITY_0004
 
    QUALITY_0005
+
+   QUALITY_0006

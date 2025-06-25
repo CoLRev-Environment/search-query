@@ -1400,6 +1400,78 @@ class QueryStringLinter:
             for child in term_field_query.children:
                 self._check_for_opportunities_to_combine_subqueries(child)
 
+    def _check_for_wildcard_usage(self, term_field_query: Query) -> None:
+        """Check whether wildcards could be used for multiple OR-terms."""
+
+        if term_field_query.is_term():
+            return
+
+        if term_field_query.value == "OR" and term_field_query.operator:
+            # TODO : consider search-fields!
+            term_objects = [
+                child for child in term_field_query.children if child.is_term()
+            ]
+            terms = [
+                x.value.replace('"', "")
+                for x in term_field_query.children
+                if x.is_term()
+            ]
+            stemmed_all = [
+                _naive_stem(term.value.replace('"', ""))
+                for term in term_field_query.children
+                if term.is_term() and " " not in term.value
+            ]
+            stemmed_matching_multiple_terms = [
+                s for s in stemmed_all if stemmed_all.count(s) > 1
+            ]
+            if len(stemmed_matching_multiple_terms) > 1:
+                # assign terms and stemmed
+                terms = [
+                    t
+                    for t in terms
+                    if any(t.startswith(c) for c in stemmed_matching_multiple_terms)
+                ]
+                stemmeds = list(set(stemmed_matching_multiple_terms))
+                # drop longer stemmeds
+                i = 0
+                while i < len(stemmeds):
+                    if any(
+                        stemmeds[i].startswith(s) and s != stemmeds[i] for s in stemmeds
+                    ):
+                        stemmeds.pop(i)
+                    else:
+                        i += 1
+                for stemmed in stemmeds:
+                    matching_terms = [
+                        term.replace('"', "")
+                        for term in terms
+                        if term.startswith(stemmed)
+                    ]
+                    if not matching_terms:
+                        continue
+                    positions = [
+                        c.position
+                        for c in term_objects
+                        if c.value.replace('"', "") in matching_terms
+                    ]
+                    stemmed = stemmed.replace('"', "")
+                    # If all terms stem to the same word, we can use a wildcard
+                    # to replace the OR-terms with a single term.
+                    self.add_message(
+                        QueryErrorCode.POTENTIAL_WILDCARD_USE,
+                        positions=positions,  # type: ignore
+                        details=(
+                            "Multiple terms connected with OR stem to the same word. "
+                            "Use a wildcard instead.\n"
+                            f"Replace {Colors.RED}{' OR '.join(terms)}{Colors.END} with "
+                            f"{Colors.GREEN}{stemmed}*{Colors.END}"
+                        ),
+                        fatal=False,
+                    )
+
+        for child in term_field_query.children:
+            self._check_for_wildcard_usage(child)
+
 
 class QueryListLinter:
     """Class for Query List Validation"""
@@ -1527,3 +1599,26 @@ def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-") -> N
         lines.append(wrapper.fill(paragraph))
 
     print("\n".join(lines))
+
+
+def _naive_stem(word: str) -> str:
+    """A naive stemming function that removes common suffixes from a word."""
+    suffixes = [
+        "ing",
+        "ational",
+        "ation",
+        "tion",
+        "ional",
+        "ational",
+        "ment",
+        "al",
+        "ed",
+        "es",
+        "s",
+        "e",
+        "ic",
+    ]
+    for suffix in sorted(suffixes, key=len, reverse=True):  # Longest first
+        if word.endswith(suffix) and len(word) > len(suffix) + 2:
+            return word[: -len(suffix)]
+    return word

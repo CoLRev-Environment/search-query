@@ -717,6 +717,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 }
             ],
         ),
+        (
+            "TI=(compute OR computing OR computation OR computational)",
+            [
+                {
+                    "code": "QUALITY_0006",
+                    "label": "potential-wildcard-use",
+                    "message": "Potential wildcard use",
+                    "is_fatal": False,
+                    "position": [(4, 11), (15, 24), (28, 39), (43, 56)],
+                    "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
+                }
+            ],
+        ),
     ],
 )
 def test_linter(
@@ -965,14 +978,14 @@ def test_list_parser_case_3() -> None:
 
 # Test case 4
 def test_list_parser_case_4() -> None:
-    query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
-
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #2\n'
+    print(query_list)
     list_parser = WOSListParser(query_list=query_list)
     query = list_parser.parse()
     print(query.to_string())
     assert (
         query.to_string()
-        == 'TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats" OR "acrobatics" OR "acrobat" OR "acrobats")'
+        == 'TS=("Peer leader*" OR "Shared leader*" OR "Peer leader*" OR "Shared leader*") AND TS=("acrobatics" OR "acrobat" OR "acrobats")'
     )
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
@@ -997,29 +1010,13 @@ def test_list_parser_case_4() -> None:
         ],
         "2": [
             {
-                "code": "QUALITY_0005",
-                "label": "redundant-term",
-                "message": "Redundant term in the query",
+                "code": "QUALITY_0006",
+                "label": "potential-wildcard-use",
+                "message": "Potential wildcard use",
                 "is_fatal": False,
-                "position": [(88, 100), (131, 143)],
-                "details": 'Term "acrobatics" is contained multiple times i.e., redundantly.',
-            },
-            {
-                "code": "QUALITY_0005",
-                "label": "redundant-term",
-                "message": "Redundant term in the query",
-                "is_fatal": False,
-                "position": [(104, 113), (147, 156)],
-                "details": 'Term "acrobat" is contained multiple times i.e., redundantly.',
-            },
-            {
-                "code": "QUALITY_0005",
-                "label": "redundant-term",
-                "message": "Redundant term in the query",
-                "is_fatal": False,
-                "position": [(117, 127), (160, 170)],
-                "details": 'Term "acrobats" is contained multiple times i.e., redundantly.',
-            },
+                "position": [(88, 100), (104, 113), (117, 127)],
+                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m",
+            }
         ],
     }
 
@@ -1092,7 +1089,15 @@ def test_list_parser_case_6() -> None:
                 "is_fatal": False,
                 "position": [(110, 112)],
                 "details": "",
-            }
+            },
+            {
+                "code": "QUALITY_0006",
+                "label": "potential-wildcard-use",
+                "message": "Potential wildcard use",
+                "is_fatal": False,
+                "position": [(83, 88), (92, 98)],
+                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m",
+            },
         ],
     }
 

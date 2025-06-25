@@ -341,7 +341,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
-
+        self._check_for_wildcard_usage(term_field_query)
         self._check_redundant_terms(
             term_field_query, exact_fields=re.compile(r"^(ZY)$")
         )
