@@ -356,9 +356,10 @@ In comparison to related tools, *search-query* provides a Python library, releas
 It is extensible and currently supports three databases (Web of Science, PubMed, EBSCOHost) for query translation and query validation.
 The query parsers were tested with a comprehensive selection of peer-reviewed queries from [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv) [@White2024].
 Testing showed that a significant number of queries still contained errors after passing the peer-review process, further highlighting the need for syntax validation tools like *search-query*.
-Given that *search-query* is designed for programmatic access, it can serve as a basis for query improvement and can be integrated into existing tool pipelines [@BellerClarkTsafnatEtAl2018].
 
 <!-- 
+Given that *search-query* is designed for programmatic access, it can serve as a basis for query improvement and can be integrated into existing tool pipelines [@BellerClarkTsafnatEtAl2018].
+
 There is no tool supporting programmatic access (integration with other tools).
 Linting is only supported by one tool (Polyglot search) to a limited degree.
 Existing tools for search query translation have limited coverage (of databases), errors (**todo. examples**), and many are not actively maintained.
