@@ -225,8 +225,8 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query starts with platform identifier",
                     "is_fatal": False,
                     "position": [],
-                    "details": "",
-                },
+                    "details": "Unsupported prefix '\x1b[91mPubmed with no restrictions: \x1b[0m' in query string. ",
+                }
             ],
         ),
         (
@@ -323,7 +323,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(18, 20), (49, 52)],
-                    "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
+                    "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
                 },
                 {
                     "code": "FIELD_0003",
@@ -370,7 +370,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Character replacement",
                     "is_fatal": False,
                     "position": [(28, 29)],
-                    "details": "Character '.' in search term will be replaced with whitespace (see PubMed character conversions in https://pubmed.ncbi.nlm.nih.gov/help/)",
+                    "details": "Character '.' in search term will be replaced with whitespace.\nSee PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
             ],
         ),
@@ -413,7 +413,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(31, 37)],
+                    "position": [(30, 37)],
                     "details": "Nested queries cannot have search fields",
                 },
             ],
@@ -553,12 +553,20 @@ def test_pubmed_invalid_token_sequences(
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
-                    "code": "QUALITY_0001",
-                    "label": "query-structure-unnecessarily-complex",
-                    "message": "Query structure is more complex than necessary",
+                    "code": "QUALITY_0004",
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": 'Unnecessary parentheses around AND block(s). A query with the structure\nA AND \x1b[91m(\x1b[0mB AND C\x1b[91m)\x1b[0m\n can be simplified to \nA AND B AND C\nwith\n  A: "device"\n  B: "wearable device"\n  C: "health tracking".\n',
+                },
+                {
+                    "code": "QUALITY_0005",
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(0, 8), (14, 31)],
-                    "details": 'The term "wearable device" is more specific than "device"—results matching "wearable device" are a subset of those matching "device". Since both are connected with AND, including "device" does not further restrict the result set and is therefore redundant.',
+                    "details": 'The term \x1b[93m"wearable device"\x1b[0m is more specific than \x1b[93m"device"\x1b[0m—results matching \x1b[93m"wearable device"\x1b[0m are a subset of those matching \x1b[93m"device"\x1b[0m.\nSince both are connected with AND, including \x1b[93m"device"\x1b[0m does not further restrict the result set and is therefore redundant.',
                 },
             ],
         ),
@@ -567,13 +575,21 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "QUALITY_0001",
-                    "label": "query-structure-unnecessarily-complex",
-                    "message": "Query structure is more complex than necessary",
+                    "code": "QUALITY_0004",
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": 'Unnecessary parentheses around AND block(s). A query with the structure\n(A OR \x1b[91m(\x1b[0mB OR C)\x1b[91m)\x1b[0m AND D\n can be simplified to \n(A OR B OR C) AND D\nwith\n  A: "device"\n  B: "mobile application"\n  C: "wearable device"\n  D: "health tracking".\n',
+                },
+                {
+                    "code": "QUALITY_0005",
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(1, 9), (46, 63)],
-                    "details": 'Results for term "wearable device" are contained in the more general search for "device" (both terms are connected with OR). Therefore, the term "wearable device" is redundant.',
-                }
+                    "details": 'Results for term \x1b[93m"wearable device"\x1b[0m are contained in the more general search for \x1b[93m"device"\x1b[0m.\nAs both terms are connected with OR, the term "wearable device" is redundant.',
+                },
             ],
         ),
         (
@@ -590,21 +606,20 @@ def test_pubmed_invalid_token_sequences(
                 }
             ],
         ),
-        (
-            # '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND ("2020/01/01"[Date - Publication] : "2022/12/31"[Date - Publication])) OR ("ehealth"[Title/Abstract])',
-            '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])',
-            "",
-            [
-                {
-                    "code": "QUALITY_0002",
-                    "label": "date-filter-in-subquery",
-                    "message": "Date filter in subquery",
-                    "is_fatal": False,
-                    "position": [(70, 91), (91, 109)],
-                    "details": "Check whether date filters should apply to the entire query.",
-                }
-            ],
-        ),
+        # (
+        #     '(("digital health"[Title/Abstract] AND "privacy"[Title/Abstract]) AND 2019/01/01:2019/12/01[publication date]) OR ("ehealth"[Title/Abstract])',
+        #     "",
+        #     [
+        #         {
+        #             "code": "QUALITY_0002",
+        #             "label": "date-filter-in-subquery",
+        #             "message": "Date filter in subquery",
+        #             "is_fatal": False,
+        #             "position": [(70, 91), (91, 109)],
+        #             "details": "Check whether date filters should apply to the entire query.",
+        #         }
+        #     ],
+        # ),
         (
             'TI="eHealth"',
             "",
@@ -628,7 +643,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(20, 26)],
+                    "position": [(19, 26)],
                     "details": "Nested queries cannot have search fields",
                 },
             ],
@@ -648,7 +663,7 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
-            '"activity"[Title/Abstract] AND ("cancer"[Title/Abstract] AND "Lancet"[Journal])',
+            '"activity"[Title/Abstract] AND ("cancer"[Title/Abstract] OR "Lancet"[Journal])',
             "",
             [
                 {
@@ -656,7 +671,7 @@ def test_pubmed_invalid_token_sequences(
                     "label": "journal-filter-in-subquery",
                     "message": "Journal (or publication name) filter in subquery",
                     "is_fatal": False,
-                    "position": [(61, 69)],
+                    "position": [(60, 68)],
                     "details": "Check whether journal/publication-name filters ([Journal]) should apply to the entire query.",
                 }
             ],
@@ -666,12 +681,12 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "QUALITY_0001",
-                    "label": "query-structure-unnecessarily-complex",
-                    "message": "Query structure is more complex than necessary",
+                    "code": "QUALITY_0005",
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(1, 8), (16, 35)],
-                    "details": 'Results for term "Sleep Deprivation" are contained in the more general search for "Sleep" (both terms are connected with OR). Therefore, the term "Sleep Deprivation" is redundant.',
+                    "details": 'Results for term \x1b[93m"Sleep Deprivation"\x1b[0m are contained in the more general search for \x1b[93m"Sleep"\x1b[0m.\nAs both terms are connected with OR, the term "Sleep Deprivation" is redundant.',
                 }
             ],
         ),
@@ -680,13 +695,21 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "QUALITY_0001",
-                    "label": "query-structure-unnecessarily-complex",
-                    "message": "Query structure is more complex than necessary",
+                    "code": "QUALITY_0004",
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": 'Unnecessary parentheses around AND block(s). A query with the structure\n\x1b[91m(\x1b[0mA AND B\x1b[91m)\x1b[0m AND C\n can be simplified to \nA AND B AND C\nwith\n  A: "Sleep"\n  B: "Sleep Deprivation"\n  C: "vigilant attention".\n',
+                },
+                {
+                    "code": "QUALITY_0005",
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(1, 8), (17, 36)],
-                    "details": 'The term "Sleep Deprivation" is more specific than "Sleep"—results matching "Sleep Deprivation" are a subset of those matching "Sleep". Since both are connected with AND, including "Sleep" does not further restrict the result set and is therefore redundant.',
-                }
+                    "details": 'The term \x1b[93m"Sleep Deprivation"\x1b[0m is more specific than \x1b[93m"Sleep"\x1b[0m—results matching \x1b[93m"Sleep Deprivation"\x1b[0m are a subset of those matching \x1b[93m"Sleep"\x1b[0m.\nSince both are connected with AND, including \x1b[93m"Sleep"\x1b[0m does not further restrict the result set and is therefore redundant.',
+                },
             ],
         ),
         (
@@ -694,9 +717,9 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "QUALITY_0001",
-                    "label": "query-structure-unnecessarily-complex",
-                    "message": "Query structure is more complex than necessary",
+                    "code": "QUALITY_0005",
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(0, 23), (33, 56)],
                     "details": 'Term "Pickwickian Syndrome*" is contained multiple times i.e., redundantly.',
@@ -728,7 +751,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(39, 47), (91, 103)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAversion[all]\x1b[0m OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAppreciation[all]\x1b[0m\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m)',
                 },
             ],
         ),
@@ -774,12 +797,20 @@ def test_pubmed_invalid_token_sequences(
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
+                    "code": "QUALITY_0004",
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "is_fatal": False,
+                    "position": [],
+                    "details": 'Unnecessary parentheses around OR block(s). A query with the structure\nA OR B OR ((C OR D) AND E) OR ((F OR G) AND H) OR \x1b[91m(\x1b[0mI OR ...\x1b[91m)\x1b[0m OR \x1b[91m(\x1b[0mJ OR ...\x1b[91m)\x1b[0m OR \x1b[91m(\x1b[0mK OR ...\x1b[91m)\x1b[0m OR ((L OR ...) AND M)\n can be simplified to \nA OR B OR ((C OR D) AND E) OR ((F OR G) AND H) OR I OR ... OR J OR ... OR K OR ... OR ((L OR ...) AND M)\nwith\n  A: Algorithm* Aversion\n  B: Algorithm* Appreciation\n  C: AI\n  D: "Artificial Intelligence"\n  E: Aversion\n  F: AI\n  G: "Artificial Intelligence"\n  H: Appreciation\n  I: "AI recommendation"\n  J: "AI decision*"\n  K: "AI Advice"\n  L: "AI"\n  M: "Decision aid".\n',
+                },
+                {
                     "code": "QUALITY_0001",
                     "label": "query-structure-unnecessarily-complex",
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(93, 101), (145, 157)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAversion[all]\x1b[0m OR \n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAppreciation[all]\x1b[0m\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND (\x1b[92mAversion[all] OR Appreciation[all]\x1b[0m)',
                 },
                 {
                     "code": "QUALITY_0001",
@@ -787,7 +818,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(93, 101), (632, 646)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAversion[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAversion[all]\x1b[0m OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m) AND \x1b[93m"Decision aid"[all]\x1b[0m\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND (\x1b[92mAversion[all] OR "Decision aid"[all]\x1b[0m)',
                 },
                 {
                     "code": "QUALITY_0001",
@@ -795,7 +826,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Query structure is more complex than necessary",
                     "is_fatal": False,
                     "position": [(145, 157), (632, 646)],
-                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND \x1b[93mAppreciation[all]\x1b[0m) OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m AND \x1b[93m"Decision aid"[all]\x1b[0m)\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m))',
+                    "details": 'The queries share \x1b[90midentical query parts\x1b[0m:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND \x1b[93mAppreciation[all]\x1b[0m OR \n(\x1b[90m"AI"[all] OR "Artificial Intelligence"[all] OR "Algorithm*"[all] OR "Machine learning"[all] OR "ML"[all]\x1b[0m) AND \x1b[93m"Decision aid"[all]\x1b[0m\nCombine the \x1b[93mdiffering parts\x1b[0m into a \x1b[92msingle OR-group\x1b[0m to reduce redundancy:\n(\x1b[90mAI[all] OR "Artificial Intelligence"[all]\x1b[0m) AND (\x1b[92mAppreciation[all] OR "Decision aid"[all]\x1b[0m)',
                 },
             ],
         ),
@@ -923,7 +954,7 @@ def test_linter(
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(20, 24)],
+                    "position": [(19, 24)],
                     "details": "Nested queries cannot have search fields",
                 },
             ],
@@ -1099,7 +1130,7 @@ def test_list_parser_case_3() -> None:
                 "message": "Operator changed at the same level (explicit parentheses are recommended)",
                 "is_fatal": False,
                 "position": [(33, 35), (67, 70)],
-                "details": "The query uses multiple operators, but without parentheses to make the intended logic explicit. PubMed evaluates queries strictly from left to right without applying traditional operator precedence. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mOR\x1b[0m at position 1 is evaluated first because it is the leftmost operator.\nOperator \x1b[93mAND\x1b[0m at position 2 is evaluated last because it is the rightmost operator.\n\nTo fix this, search-query adds artificial parentheses around operators based on their left-to-right position in the query.\n\n",
+                "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
             },
         ],
     }

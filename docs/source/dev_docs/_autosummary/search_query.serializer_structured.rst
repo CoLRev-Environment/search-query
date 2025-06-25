@@ -14,3 +14,4 @@ search\_query.serializer\_structured
    .. autosummary::
 
       to_string_structured
+      to_string_structured_2

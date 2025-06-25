@@ -12,6 +12,7 @@ from search_query.ebsco.serializer import to_string_ebsco
 from search_query.generic.serializer import to_string_generic
 from search_query.pubmed.serializer import to_string_pubmed
 from search_query.serializer_structured import to_string_structured
+from search_query.serializer_structured import to_string_structured_2
 from search_query.wos.serializer import to_string_wos
 
 
@@ -456,6 +457,10 @@ class Query:
     def to_structured_string(self) -> str:
         """Prints the query in generic syntax"""
         return to_string_structured(self)
+
+    def to_string_structured_2(self) -> str:
+        """Prints the query in a structured expression format."""
+        return to_string_structured_2(self)
 
     def to_generic_string(self) -> str:
         """Prints the query in generic syntax"""

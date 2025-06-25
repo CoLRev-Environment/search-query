@@ -2,6 +2,7 @@
 """Validator for search queries."""
 from __future__ import annotations
 
+import difflib
 import re
 import sys
 import textwrap
@@ -26,7 +27,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.parser_base import QueryStringParser
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, import-outside-toplevel
 # pylint: disable=too-many-lines
 # pylint: disable=too-many-instance-attributes
 # ruff: noqa: E501
@@ -76,7 +77,7 @@ class QueryStringLinter:
         self,
         error: QueryErrorCode,
         *,
-        positions: typing.Sequence[tuple],
+        positions: typing.Optional[typing.Sequence[typing.Tuple[int, int]]] = None,
         details: str = "",
         fatal: bool = False,
     ) -> None:
@@ -315,12 +316,15 @@ class QueryStringLinter:
             # Case 1: Properly quoted (e.g., "AI")
             if quote_count == 2 and value.startswith('"') and value.endswith('"'):
                 return
+            positions = []
+            if query.position:
+                positions.append(query.position)
 
             # Case 2: unmatched opening quote
             if value.startswith('"') and not value.endswith('"'):
                 self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[query.position or (-1, -1)],
+                    positions=positions,
                     details="Unmatched opening quote",
                     fatal=True,
                 )
@@ -329,7 +333,7 @@ class QueryStringLinter:
             elif value.endswith('"') and not value.startswith('"'):
                 self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[query.position or (-1, -1)],
+                    positions=positions,
                     details="Unmatched closing quote",
                     fatal=True,
                 )
@@ -338,14 +342,14 @@ class QueryStringLinter:
             elif quote_count % 2 != 0:
                 self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[query.position or (-1, -1)],
+                    positions=positions,
                     details="Unbalanced quotes inside term",
                     fatal=True,
                 )
             elif quote_count % 2 == 0:
                 self.add_message(
                     QueryErrorCode.UNBALANCED_QUOTES,
-                    positions=[query.position or (-1, -1)],
+                    positions=positions,
                     details="Suspicious or excessive quote usage",
                     fatal=True,
                 )
@@ -520,6 +524,9 @@ class QueryStringLinter:
         self.add_message(
             QueryErrorCode.UNSUPPORTED_PREFIX_PLATFORM_IDENTIFIER,
             positions=[],
+            details=(
+                f"Unsupported prefix '{Colors.RED}{match}{Colors.END}' in query string. "
+            ),
         )
 
         self.query_str = self.query_str[len(match) :]
@@ -904,7 +911,7 @@ class QueryStringLinter:
                     )
                     self.add_message(
                         error,
-                        positions=[query.position or (-1, -1)],
+                        positions=[query.position] if query.position else [],
                         details=details,
                     )
 
@@ -919,7 +926,7 @@ class QueryStringLinter:
         if query.operator and query.field:
             self.add_message(
                 QueryErrorCode.NESTED_QUERY_WITH_FIELD,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
                 details="Nested query (operator) with search field is not supported",
             )
 
@@ -997,9 +1004,224 @@ class QueryStringLinter:
             )
             self.add_message(
                 QueryErrorCode.JOURNAL_FILTER_IN_SUBQUERY,
-                positions=[query.position or (-1, -1)],
+                positions=[query.position] if query.position else [],
                 details=details,
             )
+
+    def _flatten_same_operator(self, query: Query) -> Query:
+        """Return a copy of the query with same-operator nesting flattened."""
+        if not query.operator:
+            return query
+
+        flattened_children = []
+        for child in query.children:
+            if child.value == query.value:
+                flattened_children.extend(self._flatten_same_operator(child).children)
+            else:
+                flattened_children.append(self._flatten_same_operator(child))
+        from search_query.query import Query
+
+        return Query.create(
+            operator=query.operator,
+            value=query.value,
+            children=list(flattened_children),
+            position=query.position,
+            platform="deactivated",
+        )
+
+    def _simplify_to_letters(self, original: Query, abbreviation_dict: dict) -> Query:
+        from search_query.query import Query
+
+        if not original.operator or not original.children:
+            return original
+
+        new_children = []
+        letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        def next_letter() -> str:
+            for letter in letters:
+                if letter not in abbreviation_dict:
+                    return letter
+            # If all letters are used, use XN
+            idx = 0
+            while True:
+                candidate = f"X{idx}"
+                if candidate not in abbreviation_dict:
+                    return candidate
+                idx += 1
+
+        for child in original.children:
+            if not child.is_term():
+                new_children.append(self._simplify_to_letters(child, abbreviation_dict))
+                continue
+            letter = next_letter()
+            abbreviation_dict[letter] = child.value
+            abbrev_node = Query.create(
+                operator=False,
+                value=letter,
+                children=[],
+                position=(-1, -1),
+                platform="deactivated",
+            )
+            new_children.append(abbrev_node)
+        return Query.create(
+            operator=original.operator,
+            value=original.value,
+            children=list(new_children),
+            position=original.position,
+            platform="deactivated",
+        )
+
+    def _simplify_long_term_lists(self, query: Query) -> Query:
+        """Simplify long lists of successive terms
+        by replacing them with the first term and "..."."""
+        if not query.operator or not query.children:
+            return query
+
+        from search_query.query import Query
+
+        new_children = []
+        i = 0
+        n = len(query.children)
+        while i < n:
+            # Find runs of successive terms
+            if query.children[i].is_term():
+                start = i
+                while i < n and query.children[i].is_term():
+                    i += 1
+                term_run = query.children[start:i]
+                if len(term_run) > 3:
+                    first_term = term_run[0]
+                    ellipsis = Query.create(
+                        operator=False,
+                        value="...",
+                        children=[],
+                        position=(-1, -1),
+                        platform="deactivated",
+                    )
+                    new_children.extend([first_term, ellipsis])
+                else:
+                    new_children.extend(term_run)
+            else:
+                # Recursively simplify nested queries
+                new_children.append(self._simplify_long_term_lists(query.children[i]))
+                i += 1
+
+        return Query.create(
+            operator=query.operator,
+            value=query.value,
+            children=list(new_children),
+            position=query.position,
+            platform="deactivated",
+        )
+
+    def _assign_subsequent_letters(
+        self, query: Query, abbreviation_dict: dict
+    ) -> Query:
+        """
+        Assign subsequent letters (A, B, C, ...) to terms in the query,
+        replacing any existing keys like X0, X1, etc., and updating abbreviation_dict.
+        """
+        from search_query.query import Query
+
+        if not query.operator or not query.children:
+            return query
+
+        letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        letter_idx = [0]  # mutable index for recursion
+
+        # Helper to get next available letter (A, B, ..., Z, X0, X1, ...)
+        def next_letter() -> str:
+            idx = letter_idx[0]
+            if idx < len(letters):
+                letter = letters[idx]
+            else:
+                letter = f"X{idx - len(letters)}"
+            letter_idx[0] += 1
+            return letter
+
+        # Collect all unique term values in order of appearance
+        def collect_terms(q: Query, seen: typing.Optional[list] = None) -> list:
+            if seen is None:
+                seen = []
+            if q.is_term() and q.value and q.value != "...":  # not in seen:
+                seen.append(q.value)
+            for c in getattr(q, "children", []):
+                collect_terms(c, seen)
+            return seen
+
+        # Build mapping from old letter to new letter, and new abbreviation_dict
+        old_to_new = {}
+        new_abbrev = {}
+        all_term_values = collect_terms(query)
+        for term_value in all_term_values:
+            new_letter = next_letter()
+            old_to_new[term_value] = new_letter
+            new_abbrev[new_letter] = abbreviation_dict.get(term_value, term_value)
+
+        # Now recursively replace term values in the query tree
+        def replace_letters(q: Query) -> Query:
+            if q.is_term():
+                letter = old_to_new.get(q.value, q.value)
+                return Query.create(
+                    operator=False,
+                    value=letter,
+                    children=[],
+                    position=(-1, -1),
+                    platform="deactivated",
+                )
+            return Query.create(
+                operator=q.operator,
+                value=q.value,
+                children=[replace_letters(c) for c in q.children],
+                position=q.position,
+                platform="deactivated",
+            )
+
+        new_query = replace_letters(query)
+        abbreviation_dict.clear()
+        abbreviation_dict.update(new_abbrev)
+        return new_query
+
+    def _highlight_removed_chars(self, original: str, modified: str) -> str:
+        diff = difflib.ndiff(original, modified)
+        result = ""
+        for d in diff:
+            if d.startswith("-"):
+                result += f"{Colors.RED}{d[-1]}{Colors.END}"  # highlight removed chars
+            elif d.startswith(" "):
+                result += d[-1]  # unchanged chars
+            # skip added characters ('+')
+        return result
+
+    # TODO : 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
+    # 10.1079_SEARCHRXIV.2024.00457.json- position mismtach
+    def _check_unnecessary_nesting(self, query: Query) -> None:
+        """Check for unnecessary same-operator nesting and provide simplification advice."""
+
+        abbreviation_dict: typing.Dict[str, str] = {}
+        query = self._simplify_to_letters(query, abbreviation_dict)
+        query = self._simplify_long_term_lists(query)
+
+        query = self._assign_subsequent_letters(query, abbreviation_dict)
+
+        original = query.to_string_structured_2()
+        flattened = self._flatten_same_operator(query)
+        simplified = flattened.to_string_structured_2()
+        original = self._highlight_removed_chars(original, simplified)
+
+        if original == simplified:
+            return  # Skip if no actual simplification occurred
+        legend = "\n".join(f"  {k}: {v}" for k, v in abbreviation_dict.items())
+        self.add_message(
+            QueryErrorCode.UNNECESSARY_PARENTHESES,
+            positions=[],
+            details=(
+                f"Unnecessary parentheses around {query.value} block(s). A query with the structure"
+                f"\n{original}\n can be simplified to \n{simplified}\n"
+                f"with\n{legend}.\n"
+            ),
+        )
 
     def _extract_subqueries(
         self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
@@ -1085,7 +1307,7 @@ class QueryStringLinter:
                                 " i.e., redundantly."
                             )
                             self.add_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                QueryErrorCode.REDUNDANT_TERM,
                                 positions=[term_a.position, term_b.position],
                                 details=details,
                             )
@@ -1095,30 +1317,35 @@ class QueryStringLinter:
                         # than terms in OR queries
                         if operator == Operators.AND:
                             details = (
-                                f"The term {term_b.value} is more specific than"
-                                f" {term_a.value}—results matching {term_b.value} are "
-                                f"a subset of those matching {term_a.value}. "
+                                f"The term {Colors.ORANGE}{term_b.value}{Colors.END} is more "
+                                "specific than "
+                                f"{Colors.ORANGE}{term_a.value}{Colors.END}—results matching "
+                                f"{Colors.ORANGE}{term_b.value}{Colors.END} are a subset "
+                                f"of those matching {Colors.ORANGE}{term_a.value}{Colors.END}.\n"
                                 f"Since both are connected with AND, including "
-                                f"{term_a.value} does not further restrict the result "
-                                f"set and is therefore redundant."
+                                f"{Colors.ORANGE}{term_a.value}{Colors.END} does not further "
+                                f"restrict the result set and is therefore redundant."
                             )
                             self.add_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                QueryErrorCode.REDUNDANT_TERM,
                                 positions=[term_a.position, term_b.position],
                                 details=details,
                             )
                             redundant_terms.append(term_a)
                         elif operator == Operators.OR:
                             self.add_message(
-                                QueryErrorCode.QUERY_STRUCTURE_COMPLEX,
+                                QueryErrorCode.REDUNDANT_TERM,
                                 positions=[term_a.position, term_b.position],
-                                details=f"Results for term {term_b.value} are contained"
-                                f" in the more general search for {term_a.value} "
-                                "(both terms are connected with OR). "
-                                f"Therefore, the term {term_b.value} is redundant.",
+                                details="Results for term "
+                                f"{Colors.ORANGE}{term_b.value}{Colors.END} "
+                                "are contained in the more general search for "
+                                f"{Colors.ORANGE}{term_a.value}{Colors.END}.\n"
+                                "As both terms are connected with OR, "
+                                f"the term {term_b.value} is redundant.",
                             )
                             redundant_terms.append(term_b)
 
+    # 10.1079_SEARCHRXIV.2023.00269.json
     def _check_for_opportunities_to_combine_subqueries(
         self, term_field_query: Query
     ) -> None:
@@ -1149,15 +1376,15 @@ class QueryStringLinter:
 
                     details = (
                         f"The queries share {Colors.GREY}identical query parts{Colors.END}:"
-                        f"\n({Colors.GREY}{identical[0].to_string()}{Colors.END} AND "
-                        f"{Colors.ORANGE}{differing[0].to_string()}{Colors.END}) OR \n"
-                        f"({Colors.GREY}{identical[1].to_string()}{Colors.END} AND "
-                        f"{Colors.ORANGE}{differing[1].to_string()}{Colors.END})\n"
+                        f"\n({Colors.GREY}{identical[0].to_string()}{Colors.END}) AND "
+                        f"{Colors.ORANGE}{differing[0].to_string()}{Colors.END} OR \n"
+                        f"({Colors.GREY}{identical[1].to_string()}{Colors.END}) AND "
+                        f"{Colors.ORANGE}{differing[1].to_string()}{Colors.END}\n"
                         f"Combine the {Colors.ORANGE}differing parts{Colors.END} into a "
                         f"{Colors.GREEN}single OR-group{Colors.END} to reduce redundancy:\n"
-                        f"({Colors.GREY}{identical[0].to_string()}{Colors.END} AND "
+                        f"({Colors.GREY}{identical[0].to_string()}{Colors.END}) AND "
                         f"({Colors.GREEN}{differing[0].to_string()} OR "
-                        f"{differing[1].to_string()}{Colors.END}))"
+                        f"{differing[1].to_string()}{Colors.END})"
                     )
 
                     positions = [differing[0].position, differing[1].position]
@@ -1195,7 +1422,7 @@ class QueryListLinter:
         error: QueryErrorCode,
         *,
         list_position: int,
-        positions: typing.List[tuple[int, int]],
+        positions: typing.Optional[typing.List[tuple[int, int]]] = None,
         details: str = "",
         fatal: bool = False,
     ) -> None:

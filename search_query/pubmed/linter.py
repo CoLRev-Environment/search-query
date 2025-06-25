@@ -15,6 +15,7 @@ from search_query.linter_base import QueryStringLinter
 from search_query.pubmed.constants import map_to_standard
 from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
 from search_query.pubmed.constants import syntax_str_to_generic_field_set
+from search_query.pubmed.constants import YEAR_PUBLISHED_FIELD_REGEX
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -55,6 +56,19 @@ class PubmedQueryStringLinter(QueryStringLinter):
             TokenTypes.TERM,
         ],
     }
+
+    YEAR_VALUE_REGEX = re.compile(
+        r'^"?'
+        r"(?P<year>\d{4})"
+        r"(?P<month>\/(0[1-9]|1[0-2]))?"
+        r"(?P<day>\/(0[1-9]|[12]\d|3[01]))?"
+        r"(\:"
+        r"(?P<year2>(\d{4})"
+        r"(?P<month2>\/(0[1-9]|1[0-2]))?"
+        r"(?P<day2>\/(0[1-9]|[12]\d|3[01]))?))?"
+        r'"?$',
+        re.VERBOSE,
+    )
 
     def __init__(
         self,
@@ -126,8 +140,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 if char in invalid_characters:
                     details = (
                         f"Character '{char}' in search term "
-                        "will be replaced with whitespace "
-                        "(see PubMed character conversions in "
+                        "will be replaced with whitespace.\n"
+                        "See PubMed character conversions: "
                         "https://pubmed.ncbi.nlm.nih.gov/help/)"
                     )
                     positions = [(-1, -1)]
@@ -177,11 +191,21 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details = "Nested queries cannot have search fields"
                 else:
                     details = "Invalid search field position"
-                positions = [token.position]
+                positions = [
+                    (
+                        self.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
+                ]
 
             elif token_type == TokenTypes.LOGIC_OPERATOR:
                 details = "Invalid operator position"
-                positions = [token.position]
+                positions = [
+                    (
+                        self.tokens[i - 1].position[0],
+                        token.position[1],
+                    )
+                ]
 
             elif (
                 prev_type == TokenTypes.PARENTHESIS_OPEN
@@ -242,33 +266,32 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for idx, op in enumerate(precedence_list):
             if idx == 0:
                 precedence_lines.append(
-                    f"Operator {Colors.GREEN}{op}{Colors.END} "
-                    f"at position {idx + 1} is evaluated first "
-                    f"because it is the leftmost operator."
+                    f"- {Colors.ORANGE}{op}{Colors.END} "
+                    f"is evaluated first "
+                    f"because it is the leftmost operator"
                 )
             elif idx == len(precedence_list) - 1:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
-                    f"at position {idx + 1} is evaluated last "
-                    f"because it is the rightmost operator."
+                    f"- {Colors.ORANGE}{op}{Colors.END} "
+                    f"is evaluated last "
+                    f"because it is the rightmost operator"
                 )
             else:
                 precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
-                    f"at position {idx + 1} is evaluated next."
+                    f"- {Colors.ORANGE}{op}{Colors.END} " f"is evaluated next"
                 )
 
         precedence_info = "\n".join(precedence_lines)
 
         details = (
             "The query uses multiple operators, but without parentheses "
-            "to make the intended logic explicit. "
-            "PubMed evaluates queries strictly from left to right "
-            "without applying traditional operator precedence. "
-            "This can lead to unexpected interpretations of the query.\n\n"
+            "to make the\nintended logic explicit. PubMed evaluates queries "
+            "strictly from left to\nright without applying traditional "
+            "operator precedence. This can lead to\nunexpected "
+            "interpretations of the query.\n\n"
             "Specifically:\n"
             f"{precedence_info}\n\n"
-            "To fix this, search-query adds artificial parentheses around operators "
+            "To fix this, search-query adds artificial parentheses around\noperators "
             "based on their left-to-right position in the query.\n\n"
         )
 
@@ -395,7 +418,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 # when applied to terms with less than 4 characters
                 self.add_message(
                     QueryErrorCode.INVALID_WILDCARD_USE,
-                    positions=[query.position or (-1, -1)],
+                    positions=[query.position] if query.position else [],
                     details=details,
                 )
 
@@ -457,6 +480,27 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     details=details,
                 )
 
+    def check_year_format(self, query: Query) -> None:
+        """Check for the correct format of year."""
+
+        if query.is_term():
+            if not query.field:
+                return
+
+            if not YEAR_PUBLISHED_FIELD_REGEX.match(query.field.value):
+                return
+
+            if not self.YEAR_VALUE_REGEX.match(query.value):
+                self.add_message(
+                    QueryErrorCode.YEAR_FORMAT_INVALID,
+                    positions=[query.position] if query.position else [],
+                    fatal=True,
+                )
+                return
+
+        for child in query.children:
+            self.check_year_format(child)
+
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
         # Note: search fields are not yet translated.
@@ -467,6 +511,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_character_replacement_in_term(query)
 
         self.check_operators_with_fields(query)
+        self._check_unnecessary_nesting(query)
+        self.check_year_format(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self._check_date_filters_in_subquery(term_field_query)

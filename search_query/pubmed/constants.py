@@ -2,6 +2,7 @@
 """Constants for PubMed."""
 # pylint: disable=too-few-public-methods
 import re
+import typing
 from copy import deepcopy
 
 from search_query.constants import Fields
@@ -24,7 +25,11 @@ SYNTAX_GENERIC_MAP = {
     "[dp]": {Fields.YEAR_PUBLICATION},
 }
 
-_RAW_PREPROCESSING_MAP = {
+YEAR_PUBLISHED_FIELD_REGEX: re.Pattern = re.compile(
+    r"\[dp\]|\[publication date\]|\[pdat\]", re.IGNORECASE
+)
+
+_RAW_PREPROCESSING_MAP: typing.Dict[str, typing.Union[str, typing.Pattern[str]]] = {
     "[ad]": r"\[ad\]|\[affiliation\]",
     "[all]": r"\[all\]|\[all fields\]",
     "[aid]": r"\[aid\]|\[article identifier\]",
@@ -62,7 +67,7 @@ _RAW_PREPROCESSING_MAP = {
     "[ps]": r"\[ps\]|\[personal name as subject\]",
     "[pa]": r"\[pa\]|\[pharmacological action\]",
     "[pl]": r"\[pl\]|\[place of publication\]",
-    "[dp]": r"\[dp\]|\[publication date\]|\[pdat\]",
+    "[dp]": YEAR_PUBLISHED_FIELD_REGEX,
     "[pt]": r"\[pt\]|\[publication type\]",
     "[pubn]": r"\[pubn\]|\[publisher\]",
     "[si]": r"\[si\]|\[secondary source id\]",

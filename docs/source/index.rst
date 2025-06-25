@@ -80,11 +80,11 @@ Note how the syntax is translated and how the search for :literal:`Title/Abstrac
    from search_query.parser import parse
 
    query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
-   query = parse(query_string, platform="pubmed")
-   wos_query = query.translate(target_syntax="wos")
+   pubmed_query = parse(query_string, platform="pubmed")
+   wos_query = pubmed_query.translate(target_syntax="wos")
    print(wos_query.to_string())
    # Output:
-   # ((AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy"))
+   # (AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy")
 
 Demo
 ============

@@ -150,6 +150,21 @@ class EBSCOParser(QueryStringParser):
                 # Reclassify the second field token as a TERM
                 next_token.type = TokenTypes.TERM
 
+        # Operator followed by a field token followed by a closing parenthesis
+        for i in range(len(self.tokens) - 2):
+            current = self.tokens[i]
+            next_token = self.tokens[i + 1]
+            next_next_token = self.tokens[i + 2]
+
+            if (
+                current.type
+                in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                and next_token.type == TokenTypes.FIELD
+                and next_next_token.type == TokenTypes.PARENTHESIS_CLOSED
+            ):
+                # Reclassify the field token as a TERM
+                next_token.type = TokenTypes.TERM
+
     def tokenize(self) -> None:
         """Tokenize the query_str."""
 
@@ -375,7 +390,10 @@ class EBSCOParser(QueryStringParser):
         self.linter.handle_suffix_in_query_str(self)
         self.linter.handle_prefix_in_query_str(
             self,
-            prefix_regex=re.compile(r"^EBSCOHost.*\:\s*|PsycInfo", flags=re.IGNORECASE),
+            prefix_regex=re.compile(
+                r"^EBSCOHost.*\:\s*|PsycInfo|ERIC|CINAHL with Full Text",
+                flags=re.IGNORECASE,
+            ),
         )
 
     def parse(self) -> Query:

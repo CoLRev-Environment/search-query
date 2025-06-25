@@ -184,9 +184,15 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-        for i, token in enumerate(self.tokens):
+        i = -1
+        while i < len(self.tokens) - 1:
+            i += 1
             if i == 0:
                 continue
+
+            token = self.tokens[i]
+            token_type = token.type
+            prev_type = self.tokens[i - 1].type
 
             token_type = token.type
             prev_type = self.tokens[i - 1].type

@@ -377,7 +377,7 @@ class QueryListParser:
             linter.messages[GENERAL_ERROR_POSITION] = []
         for message in parser_messages:
             assigned = False
-            if message["position"] != [(-1, -1)]:
+            if message["position"] != [(-1, -1)] and message["position"] != []:
                 for level, node in self.query_dict.items():
                     if (
                         node["content_pos"][0]
