@@ -2,6 +2,31 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## Release 0.12.0
+
+- **Platform Support:**
+  - **PubMed:** [#26](https://github.com/CoLRev-Environment/search-query/pull/26)
+  - **Web of Science:** [#20](https://github.com/CoLRev-Environment/search-query/pull/20)
+  - **EBSCOHost:** [#19](https://github.com/CoLRev-Environment/search-query/pull/19)  
+    → Implemented full platform support including:
+    - Parsers (supporting query-string and list formats)
+    - Linters
+    - Serializers
+    - Translators  
+    → Enhanced parsing capabilities with artificial parentheses to correctly reflect operator precedence.  
+    → Linters now provide categorized messages across six dimensions: `parsing`, `structure`, `terms`, `fields`, `databases`, and `quality`.
+
+- **Refactoring and Internals:**
+  - Refactored core query classes and methods (`query_and`, `query_or`, `query_near`, etc.).
+  - Improved tokenization logic and consolidated linter messages into structured groups.
+  - Removed deprecated `linter-mode` and unreachable code paths.
+  - Migrated to `uv` for dependency management and streamlined environment setup.
+
+- **New Features and Improvements:**
+  - Introduced a **query database** for programmatic retrieval and sharing of query examples.
+  - Achieved **comprehensive unit test coverage**, exceeding 95% of the codebase.
+  - Expanded and improved **documentation**, including developer guidelines and platform-specific usage notes.
+
 ## Release 0.11.0
 
 - Refactoring (AND/OR/NOT-Queries, method signatures, public to private methods)

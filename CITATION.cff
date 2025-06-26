@@ -1,11 +1,19 @@
 cff-version: 0.1.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Wagner"
-  given-names: "Gerit"
+- family-names: "Eckhardt"
+  given-names: "Peter"
 - family-names: "Ernst"
   given-names: "Katharina Maria"
+- family-names: "Fleischmann"
+  given-names: "Thomas"
+- family-names: "Geßler"
+  given-names: "Anna"
+- family-names: "Schnickmann"
+  given-names: "Karl"
+- family-names: "Wagner"
+  given-names: "Gerit"
 title: "Search-query: A Python package for queries in academic literature searches."
-version: 0.11.0
-date-released: 2024-12-27
+version: 0.12.0
+date-released: 2025-06-26
 url: "https://github.com/ColRev-Environment/search-query"

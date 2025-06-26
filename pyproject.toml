@@ -1,11 +1,14 @@
 [project]
 name = "search-query"
-version = "0.11.0"
+version = "0.12.0"
 description = "Package for managing literature search queries."
 authors = [
-    { name = "Katharina Ernst", email = "katharina-maria.ernst@stud.uni-bamberg.de" },
+    { name = "Peter Eckhardt" },
+    { name = "Katharina Ernst" },
+    { name = "Thomas Fleischmann" },
+    { name = "Anna Geßler" },
+    { name = "Karl Schnickmann" },
     { name = "Gerit Wagner", email = "gerit.wagner@uni-bamberg.de" },
-
 ]
 license = {text = "MIT"}
 readme = "README.md"
