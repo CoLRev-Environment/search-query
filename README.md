@@ -1,6 +1,6 @@
 
 <p align="center">
-<img src="docs/source/_static/search_query_logo.svg" width="350">
+<img src="https://raw.githubusercontent.com/CoLRev-Ecosystem/search-query/main/docs/source/_static/search_query_logo.svg" width="350">
 </p>
 
 <div align="center">
