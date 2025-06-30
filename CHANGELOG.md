@@ -7,13 +7,13 @@ All notable changes to this project will be documented in this file.
 - **Platform Support:**
   - **PubMed:** [#26](https://github.com/CoLRev-Environment/search-query/pull/26)
   - **Web of Science:** [#20](https://github.com/CoLRev-Environment/search-query/pull/20)
-  - **EBSCOHost:** [#19](https://github.com/CoLRev-Environment/search-query/pull/19)  
+  - **EBSCOHost:** [#19](https://github.com/CoLRev-Environment/search-query/pull/19)
     → Implemented full platform support including:
     - Parsers (supporting query-string and list formats)
     - Linters
     - Serializers
-    - Translators  
-    → Enhanced parsing capabilities with artificial parentheses to correctly reflect operator precedence.  
+    - Translators
+    → Enhanced parsing capabilities with artificial parentheses to correctly reflect operator precedence.
     → Linters now provide categorized messages across six dimensions: `parsing`, `structure`, `terms`, `fields`, `databases`, and `quality`.
 
 - **Refactoring and Internals:**
