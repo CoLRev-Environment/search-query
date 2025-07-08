@@ -5,7 +5,7 @@ Translate
 
 ..
    TODO
-   also desribe how to translate to list format (flag/option for to-string methods)
+   also describe how to translate to list format (flag/option for to-string methods)
 
 .. code-block:: python
    :linenos:

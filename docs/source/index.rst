@@ -72,7 +72,7 @@ A useful feature of parsers is the built-in **linter** functionality, which help
     #                                                ^^^
 
 Once we have created a :literal:`query` object, we can translate it for different databases.
-Note how the syntax is translated and how the search for :literal:`Title/Abstract` is spit into two elements:
+Note how the syntax is translated and how the search for :literal:`Title/Abstract` is split into two elements:
 
 .. code-block:: python
    :linenos:
