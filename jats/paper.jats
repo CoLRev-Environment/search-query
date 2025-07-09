@@ -538,12 +538,7 @@ print(wos_query.to_string())
   2024</xref>). Testing showed that a significant number of queries
   still contained errors after passing the peer-review process, further
   highlighting the need for syntax validation tools like
-  <italic>search-query</italic>. Given that
-  <italic>search-query</italic> is designed for programmatic access, it
-  can serve as a basis for query improvement and can be integrated into
-  existing tool pipelines
-  (<xref alt="Beller et al., 2018" rid="ref-BellerClarkTsafnatEtAl2018" ref-type="bibr">Beller
-  et al., 2018</xref>).</p>
+  <italic>search-query</italic>.</p>
   <sec id="acknowledgments-and-outlook">
     <title>Acknowledgments and Outlook</title>
     <p>The development of <italic>search-query</italic> originated from
