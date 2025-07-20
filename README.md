@@ -10,6 +10,7 @@
 ![Coverage](https://raw.githubusercontent.com/CoLRev-Environment/search-query/main/test/coverage.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/search-query?color=blue)](https://pypi.org/project/search-query/)
 [![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
+[![status](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9/status.svg)](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
 
 </div>
