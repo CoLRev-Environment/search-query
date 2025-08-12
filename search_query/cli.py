@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """CLI for search-query."""
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -7,67 +9,117 @@ from pathlib import Path
 import search_query.linter
 import search_query.parser
 from search_query import load_search_file
+from search_query.exception import QuerySyntaxError
+
+def _cmd_translate(args: argparse.Namespace) -> int:
+    """Translate a query file from one platform/format to another."""
+
+    print(f"Reading query from {args.input_file}")
+    input_path = Path(args.input_file)
+    if input_path.suffix != ".json":
+        print("Only .json search files are supported at the moment.", file=sys.stderr)
+        return 2
+
+    search_file = load_search_file(args.input_file)
+    try:
+        query = search_query.parser.parse(
+            search_file.search_string,
+            platform=search_file.platform,
+            field_general=search_file.field,
+        )
+    except QuerySyntaxError as e:
+        print(f"Fatal error parsing query.")
+        return 1
+
+    print(f"Converting from {search_file.platform} to {args.target}")
+    try:
+        translated_query = query.translate(args.target)
+    except Exception as e:
+        print(f"Error translating query: {e}")
+        return 1
+
+    converted_query = translated_query.to_string()
+    search_file.search_string = converted_query
+    search_file.platform = args.target
+    
+    print(f"Writing converted query to {args.output_file}")
+    search_file.save(args.output_file)
+    return 0
 
 
-def translate() -> None:
-    """Main entrypoint for the query translation CLI"""
+def _lint(args: argparse.Namespace) -> int:
+    """Lint files."""
+    exit_code = 0
+    for file_path in args.files:
+        search_file = load_search_file(file_path)
+        try:
+            result = search_query.linter.lint_file(search_file)
+            if result:
+                exit_code = 1
+        except QuerySyntaxError as e:
+            print(f"Error linting file {file_path}: {e}")
+            exit_code = 1
 
+    return exit_code
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Convert search queries between formats"
+        prog="search-query",
+        description="Tools for working with search queries (linting, translation, etc.)",
     )
-    parser.add_argument(
-        "--from",
-        dest="source",
-        required=True,
-        help="Source query format (e.g., colrev_web_of_science)",
+    subparsers = parser.add_subparsers(dest="command", metavar="<command>", required=True)
+
+    # translate
+    p_tr = subparsers.add_parser(
+        "translate",
+        help="Convert search queries between formats",
+        description="Convert search queries between formats.",
     )
-    parser.add_argument(
+    p_tr.add_argument(
         "--input",
         dest="input_file",
         required=True,
-        help="Input file containing the query",
+        help="Input .json file containing the query",
     )
-    parser.add_argument(
+    p_tr.add_argument(
         "--to",
         dest="target",
         required=True,
         help="Target query format (e.g., colrev_pubmed)",
     )
-    parser.add_argument(
+    p_tr.add_argument(
         "--output",
         dest="output_file",
         required=True,
-        help="Output file for the converted query",
+        help="Output file path for the converted query",
     )
+    p_tr.set_defaults(func=_cmd_translate)
 
-    args = parser.parse_args()
+    # lint
+    p_li = subparsers.add_parser(
+        "lint",
+        help="Lint query files",
+        description="Lint one or more query files. Intended for standalone use or pre-commit.",
+    )
+    p_li.add_argument(
+        "files",
+        nargs="+",
+        help="File(s) to lint",
+    )
+    p_li.set_defaults(func=_lint)
 
-    # Placeholder: Print what would happen
-    print(f"Converting from {args.source} to {args.target}")
-    print(f"Reading query from {args.input_file}")
-    print(f"Writing converted query to {args.output_file}")
-    print(f"Convert from {args.source} to {args.target}")
-
-    if Path(args.input_file).suffix == ".json":
-        search_file = load_search_file(args.input_file)
-        query = search_query.parser.parse(
-            search_file.search_string,
-            platform=args.source,
-            field_general=search_file.field,
-        )
-
-        translated_query = query.translate(args.target)
-        converted_query = translated_query.to_string()
-        search_file.search_string = converted_query
-        search_file.save(args.output_file)
-
-    else:
-        raise NotImplementedError
+    return parser
 
 
-def lint() -> None:
-    """Main entrypoint for the query linter hook"""
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        return 130
 
-    file_path = sys.argv[1]
 
-    raise SystemExit(search_query.linter.pre_commit_hook(file_path))
+if __name__ == "__main__":
+    raise SystemExit(main())
