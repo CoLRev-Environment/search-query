@@ -2,12 +2,12 @@
 """Query parser."""
 from __future__ import annotations
 
-import sys
 import typing
 
 from search_query.constants import PLATFORM
 from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
+from search_query.exception import QuerySyntaxError
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
 from search_query.query import Query
@@ -50,8 +50,8 @@ def parse(
                 query_list=query_str,
                 field_general=field_general,
             ).parse()
-        except Exception:  # pylint: disable=broad-except
-            sys.exit(1)
+        except QuerySyntaxError as exc:
+            raise exc
         return query
 
     if platform not in PARSERS:  # pragma: no cover
@@ -62,8 +62,8 @@ def parse(
         query = parser_class(
             query_str, field_general=field_general
         ).parse()  # type: ignore
-    except Exception:  # pylint: disable=broad-except
-        sys.exit(1)
+    except QuerySyntaxError as exc:
+        raise exc
 
     return query
 
