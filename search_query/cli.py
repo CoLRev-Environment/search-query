@@ -35,7 +35,7 @@ def _cmd_translate(args: argparse.Namespace) -> int:
     print(f"Converting from {search_file.platform} to {args.target}")
     try:
         translated_query = query.translate(args.target)
-    except Exception as e:  # pylint: disble=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error translating query: {e}")
         return 1
 
@@ -60,6 +60,9 @@ def _lint(args: argparse.Namespace) -> int:
         except QuerySyntaxError as e:
             print(f"Error linting file {file_path}: {e}")
             exit_code = 1
+
+        if exit_code == 0:
+            print(f"File {file_path} linted successfully.")
 
     return exit_code
 
