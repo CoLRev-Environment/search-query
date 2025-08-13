@@ -26,7 +26,7 @@ def _get_parser(
 
     try:
         parser.parse()
-    except Exception as exc:
+    except Exception:
         assert parser.linter.messages  # type: ignore
     return parser
 

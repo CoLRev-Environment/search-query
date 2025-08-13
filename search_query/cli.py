@@ -11,6 +11,7 @@ import search_query.parser
 from search_query import load_search_file
 from search_query.exception import QuerySyntaxError
 
+
 def _cmd_translate(args: argparse.Namespace) -> int:
     """Translate a query file from one platform/format to another."""
 
@@ -27,21 +28,21 @@ def _cmd_translate(args: argparse.Namespace) -> int:
             platform=search_file.platform,
             field_general=search_file.field,
         )
-    except QuerySyntaxError as e:
-        print(f"Fatal error parsing query.")
+    except QuerySyntaxError:
+        print("Fatal error parsing query.")
         return 1
 
     print(f"Converting from {search_file.platform} to {args.target}")
     try:
         translated_query = query.translate(args.target)
-    except Exception as e:
+    except Exception as e:  # pylint: disble=broad-exception-caught
         print(f"Error translating query: {e}")
         return 1
 
     converted_query = translated_query.to_string()
     search_file.search_string = converted_query
     search_file.platform = args.target
-    
+
     print(f"Writing converted query to {args.output_file}")
     search_file.save(args.output_file)
     return 0
@@ -63,12 +64,15 @@ def _lint(args: argparse.Namespace) -> int:
     return exit_code
 
 
-def build_parser() -> argparse.ArgumentParser:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="search-query",
-        description="Tools for working with search queries (linting, translation, etc.)",
+        description="Tools for working with search queries "
+        + "(linting, translation, etc.)",
     )
-    subparsers = parser.add_subparsers(dest="command", metavar="<command>", required=True)
+    subparsers = parser.add_subparsers(
+        dest="command", metavar="<command>", required=True
+    )
 
     # translate
     p_tr = subparsers.add_parser(
@@ -100,7 +104,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_li = subparsers.add_parser(
         "lint",
         help="Lint query files",
-        description="Lint one or more query files. Intended for standalone use or pre-commit.",
+        description="Lint one or more query files. "
+        + "Intended for standalone use or pre-commit.",
     )
     p_li.add_argument(
         "files",
@@ -113,7 +118,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
+    """Main entry point for the CLI."""
+    parser = _build_parser()
     args = parser.parse_args(argv)
     try:
         return args.func(args)
