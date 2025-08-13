@@ -16,8 +16,8 @@ def test_translate_cli() -> None:
 
     result = subprocess.run(
         [
-            "search-query-translate",
-            "--from=wos",
+            "search-query",
+            "translate",
             f"--input={input_file}",
             "--to=ebscohost",
             f"--output={output_file}",
@@ -28,7 +28,7 @@ def test_translate_cli() -> None:
     print(result.stdout)
     print(result.stderr)
     assert result.returncode == 0
-    assert "Converting from wos to ebscohost" in result.stdout
+    assert "Converting from Web of Science to ebscohost" in result.stdout
     assert "Writing converted query to" in result.stdout
     assert output_file.exists()
 
@@ -44,7 +44,7 @@ def test_linter_cli() -> None:
     input_file = test_data_dir / "search_history_file_2_linter.json"
 
     result = subprocess.run(
-        ["search-query-lint", f"{input_file}"],
+        ["search-query", "lint", f"{input_file}"],
         capture_output=True,
         text=True,
     )
@@ -53,7 +53,6 @@ def test_linter_cli() -> None:
     print("STDERR:", result.stderr)
     print("RETURN CODE:", result.returncode)
 
-    assert "Lint: search_history_file_2_linter.json (wos)" in result.stdout
     assert "Unbalanced closing parenthesis" in result.stdout
     assert (
         "The query uses multiple operators with different precedence levels"

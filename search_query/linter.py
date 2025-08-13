@@ -20,20 +20,19 @@ def _get_parser(
 ) -> QueryStringParser:
     """Run the linter on the search string"""
 
+    platform = search_query.parser.get_platform(platform)
     parser_class = search_query.parser.PARSERS[platform]
     parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:
         parser.parse()
     except Exception as exc:
-        print(f"Error parsing query: {exc}")
         assert parser.linter.messages  # type: ignore
     return parser
 
 
 def lint_file(search_file: SearchFile) -> dict:
     """Lint a search file and return the messages."""
-    # pylint: disable=too-many-locals
     platform = search_query.parser.get_platform(search_file.platform)
     if platform not in search_query.parser.PARSERS:
         raise ValueError(
@@ -43,7 +42,7 @@ def lint_file(search_file: SearchFile) -> dict:
 
     return lint_query_string(
         search_file.search_string,
-        platform=search_file.platform,
+        platform=platform,
         field_general=search_file.field,
     )
 
