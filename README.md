@@ -21,7 +21,65 @@ The package can be used programmatically, through the command line, or as a pre-
 It has zero dependencies and integrates in a variety of environments.
 The parsers and linters are battle-tested on peer-reviewed [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv) queries.
 
-For more information, see the [documentation](https://colrev-environment.github.io/search-query/).
+## Installation
+
+To install *search-query*, run:
+```commandline
+pip install search-query
+```
+
+## Quickstart
+
+Creating a query programmatically is simple:
+```python
+from search_query import OrQuery, AndQuery
+
+# Typical building-blocks approach
+digital_synonyms = OrQuery(["digital", "virtual", "online"], field="abstract")
+work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
+query = AndQuery([digital_synonyms, work_synonyms])
+```
+We can also parse a query from a string or a JSON search file (see the [overview of platform identifiers](https://colrev-environment.github.io/search-query/platforms/platform_index.html))
+```python
+from search_query.parser import parse
+
+query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
+query = parse(query_string, platform="pubmed")
+```
+A useful feature of parsers is the built-in **linter** functionality, which helps us to validate the query by identifying syntactical errors:
+```python
+from search_query.parser import parse
+
+query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
+query = parse(query_string, platform="pubmed")
+# Output:
+# ❌ Fatal: unbalanced-parentheses (PARSE_0002)
+#   - Unbalanced opening parenthesis
+#   Query: ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
+#                                                ^^^
+```
+Once we have created a `query` object, we can translate it for different databases.
+Note how the syntax is translated and how the search for `Title/Abstract` is split into two elements:
+```python
+from search_query.parser import parse
+
+query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
+pubmed_query = parse(query_string, platform="pubmed")
+wos_query = pubmed_query.translate(target_syntax="wos")
+print(wos_query.to_string())
+# Output:
+# (AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy")
+```
+For a more detailed overview of the package’s functionality, see the [documentation](https://colrev-environment.github.io/search-query/).
+
+## Demo
+
+A Jupyter Notebook demo (hosted on Binder) is available here:
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
+
+## Encounter a problem?
+
+If you find a bug or run into any issues while using the package, please [open an issue](https://github.com/CoLRev-Environment/search-query/issues) or contact one of the developers.
 
 ## How to cite
 
