@@ -10,16 +10,11 @@ To translate a search query on the command line, run
 
 .. code-block:: bash
 
-    search-query-translate --from wos \
-                            --input input_query.txt \
+    search-query translate --input input_query.json \
                             --to pubmed \
-                            --output output_query.txt
+                            --output output_query.json
 
 **Arguments**
-
-- ``--from`` (required):
-  The source query format.
-  Example: ``wos``
 
 - ``--input`` (required):
   Path to the input file containing the original query.
@@ -31,22 +26,10 @@ To translate a search query on the command line, run
 - ``--output`` (required):
   Path to the file where the converted query will be written.
 
-
-**Example**
-
-Suppose you have a Web of Science search query saved in ``input_query.txt`` and you want to convert it to a PubMed-compatible format. Run:
-
-.. code-block:: bash
-
-    search-query-translate --from wos \
-                            --input input_query.txt \
-                            --to pubmed \
-                            --output output_query.txt
-
-The converted query will be saved in ``output_query.txt``.
+The format of the ``input_query.json`` is stored in the ``platform`` field of the JSON file.
 
 Linters can be run on the CLI:
 
 .. code-block:: bash
 
-    search-query-lint search-file.json
+    search-query lint search-file.json
