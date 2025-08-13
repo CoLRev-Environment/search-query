@@ -50,7 +50,7 @@ def parse(
                 query_list=query_str,
                 field_general=field_general,
             ).parse()
-        except QuerySyntaxError as exc:  # pylint: disable=broad-except
+        except QuerySyntaxError as exc:
             raise exc
         return query
 
@@ -62,7 +62,7 @@ def parse(
         query = parser_class(
             query_str, field_general=field_general
         ).parse()  # type: ignore
-    except QuerySyntaxError as exc:  # pylint: disable=broad-except
+    except QuerySyntaxError as exc:
         raise exc
 
     return query
