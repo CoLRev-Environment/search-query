@@ -18,6 +18,42 @@ Our [development documentation](https://colrev-environment.github.io/search-quer
 If you found a bug or encountered any issues while using the package, you can contribute by [opening an issue](https://github.com/CoLRev-Environment/search-query/issues/new).
 When possible, include a minimal code example and describe the expected behavior.
 
+**Running and extending the test suite**
+
+We use [`pytest`](https://docs.pytest.org/) for testing.  
+Tests are located in the `tests/` directory and are organized by functionality (e.g., linting, parsing, platform-specific implementations).
+
+To run all tests locally:
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run the complete test suite
+pytest test
+````
+
+To run a specific test file or function:
+
+```bash
+pytest test/test_parser.py
+pytest test/test_parser.py::test_get_platform
+```
+
+To see detailed output (helpful for debugging):
+
+```bash
+pytest -vv
+```
+
+Adding new tests
+
+* Place new test files in the `test/` directory, following the `test_*.py` naming convention.
+* Group related tests into logical classes or functions.
+* Use clear and descriptive test names (`test_what_it_does`).
+* Prefer [pytest parameterization](https://docs.pytest.org/en/stable/how-to/parametrize.html) when testing multiple input–output pairs.
+* If you implement a new search platform, include tests for end-to-end search-query functionality
+
 **Other ways to contribute**
 
 Of course, we also welcome smaller contributions, such as bug fixes or improvements to the package documentation.
