@@ -3,10 +3,10 @@
 Pre-commit hooks
 ==========================================================
 
-The ``search-query-lint`` hook is a linter that automatically checks your 
-search query files (e.g., JSON queries) for errors and formatting issues.
+The ``search-query lint`` hook is a linter that automatically checks 
+search query files (JSON) for errors and formatting issues.
 It is based on the ``search-query`` package and ensures that only valid,
-well-structured queries are committed to your repository. This helps catch
+well-structured queries are committed to the repository. This helps catch
 mistakes early and keeps your project consistent without extra manual work.
 
 Linters can be included as pre-commit hooks by adding the following to the ``.pre-commit-config.yaml``:
@@ -54,7 +54,7 @@ missing closing parenthesis). The linter will catch it before you commit:
       "query": "(\"digital health\"[Title/Abstract]) AND (\"privacy\"[Title/Abstract]"
     }
 
-When you try to commit, ``search-query-lint`` outputs an error:
+When you try to commit, ``search-query lint`` outputs an error:
 
 .. code-block:: text
 
@@ -69,7 +69,7 @@ When you try to commit, ``search-query-lint`` outputs an error:
 **2. Unsupported field (FIELD_0001 — field-unsupported)**
 
 Some databases do not support certain fields. For example, using an
-unsupported field like ``IY`` (year) will trigger a lint error.
+unsupported field like ``IY`` will trigger a linter error.
 
 .. code-block:: json
 
@@ -93,7 +93,7 @@ field syntax.
 **3. Implicit operator precedence (STRUCT_0001 — implicit-precedence)**
 
 Mixing ``AND`` and ``OR`` at the same level can be ambiguous. Add explicit
-parentheses to make precedence clear.
+parentheses to make the precedence of operators explicit.
 
 .. code-block:: text
 
