@@ -37,7 +37,7 @@ To activate and run:
 .. code-block:: bash
 
     pre-commit install
-    pre-commit run --
+    pre-commit run --all
     
 
 Examples
