@@ -4,8 +4,8 @@ Translate
 ==========================================================
 
 The ``translate`` functionality converts a search query written
-for one database platform into the correct
-syntax for another platform. This is useful when running the same query
+for one platform into the correct syntax for another platform
+This is useful when running the same query
 across multiple literature databases (e.g., PubMed, Web of Science, or
 EBSCO) without rewriting it manually.
 
