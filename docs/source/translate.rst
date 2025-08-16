@@ -16,10 +16,6 @@ query_string variable. This string now needs to be parsed by calling the
 format. The ``to_string()`` method then outputs the query in the proper
 syntax for that platform.
 
-..
-   TODO
-   also describe how to translate to list format (flag/option for to-string methods)
-
 .. code-block:: python
    :linenos:
 
