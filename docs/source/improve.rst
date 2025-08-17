@@ -46,16 +46,17 @@ Modification
                ae = BE_AE_MAP[be]
                query.value = f'({be} OR {ae})'
 
+   if __name__ == "__main__":
 
-   query = AndQuery([
-      OrQuery(["labour", "employment"], field="title"),
-      OrQuery(["robot", "algorith"], field="title")
-   ], field="title")
+      query = AndQuery([
+         OrQuery(["labour", "employment"], field="title"),
+         OrQuery(["robot", "algorith"], field="title")
+      ], field="title")
 
-   expand_spelling_variants(query)
-   add_plural_wildcards(query)
+      expand_spelling_variants(query)
+      add_plural_wildcards(query)
 
-   print(query.to_string(platform="pubmed"))
+      print(query.to_string(platform="pubmed"))
 
 Evaluation
 ---------------------
