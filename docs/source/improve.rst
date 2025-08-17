@@ -5,7 +5,7 @@ Improve
 
 The improve functionality of search-query depicts the query refinement step of a literature search.
 This includes modification of the query.
-The search space can be expanded to include plural forms and spelling variants by including wildcard operators and nested OR queries .
+The search space can be expanded to include plural forms and spelling variants by including wildcard operators and nested OR queries, as shown in the following examples.
 
 Modification
 ---------------------
