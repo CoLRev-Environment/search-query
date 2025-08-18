@@ -13,5 +13,4 @@ search\_query.cli
 
    .. autosummary::
 
-      lint
-      translate
+      main

@@ -15,7 +15,7 @@
             onclick="window.open('https://pypi.org/project/search-query/')">
        <img src="https://img.shields.io/github/license/CoLRev-Environment/search-query" alt="License"
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
-   </div>
+   </div><br>
 
 **Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
 It is extensible and currently supports PubMed, EBSCOHost, and Web of Science.
