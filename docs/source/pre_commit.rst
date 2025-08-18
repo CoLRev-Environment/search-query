@@ -3,7 +3,7 @@
 Pre-commit hooks
 ==========================================================
 
-The ``search-query lint`` hook is a linter that automatically checks 
+The ``search-query lint`` hook is a linter that automatically checks
 search query files (JSON) for errors and formatting issues.
 It is based on the ``search-query`` package and ensures that only valid,
 well-structured queries are committed to the repository. This helps catch
@@ -38,7 +38,7 @@ To activate and run:
 
     pre-commit install
     pre-commit run --all
-    
+
 
 Examples
 ----------------------------------------------------------

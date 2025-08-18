@@ -20,7 +20,7 @@ When possible, include a minimal code example and describe the expected behavior
 
 **Running and extending the test suite**
 
-We use [`pytest`](https://docs.pytest.org/) for testing.  
+We use [`pytest`](https://docs.pytest.org/) for testing.
 Tests are located in the `tests/` directory and are organized by functionality (e.g., linting, parsing, platform-specific implementations).
 
 To run all tests locally:
