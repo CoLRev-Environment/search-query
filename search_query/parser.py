@@ -72,13 +72,40 @@ def get_platform(platform_str: str) -> str:
     """Get the platform from the platform string"""
 
     platform_str = platform_str.lower().rstrip().lstrip()
-    if platform_str in ["web of science", "wos"]:
+    if platform_str in [
+        "web of science",
+        "wos",
+        "clarivate - web of science",
+    ] or platform_str.startswith("web of science"):
         return PLATFORM.WOS.value
 
-    if platform_str in ["ebscohost", "ebsco"]:
+    if platform_str.startswith("ebsco"):
         return PLATFORM.EBSCO.value
 
-    if platform_str in ["pubmed"]:
+    if platform_str.startswith("pubmed"):
         return PLATFORM.PUBMED.value
+
+    if platform_str in ["embase.com", "embase"]:
+        return "embase"
+    if platform_str in ["medline"]:
+        return "medline"
+    if platform_str.startswith("ovid"):
+        return "ovid"
+    if platform_str.startswith("scopus"):
+        return "scopus"
+    if platform_str in ["scholar.google.com", "google scholar"]:
+        return "google scholar"
+
+    if platform_str.startswith("publish or perish"):
+        return "publish or perish"
+
+    if any(x in platform_str for x in ["psycinfo", "psychinfo"]):
+        return "psycinfo"
+    if platform_str in [
+        "nlm",
+        "national library of medicine",
+        "u.s. national library of medicine",
+    ]:
+        return "nlm"
 
     raise ValueError(f"Invalid platform: {platform_str}")
