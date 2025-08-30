@@ -21,7 +21,8 @@ def _get_parser(
     """Run the linter on the search string"""
 
     platform = search_query.parser.get_platform(platform)
-    parser_class = search_query.parser.PARSERS[platform]
+    version = search_query.parser.LATEST_VERSIONS[platform]
+    parser_class = search_query.parser.PARSERS[platform][version]
     parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:

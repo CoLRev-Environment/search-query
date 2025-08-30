@@ -9,6 +9,7 @@ from pathlib import Path
 import search_query.linter
 import search_query.parser
 from search_query import load_search_file
+from search_query.upgrade import upgrade_query
 from search_query.exception import QuerySyntaxError
 
 
@@ -67,6 +68,28 @@ def _lint(args: argparse.Namespace) -> int:
     return exit_code
 
 
+def _cmd_upgrade(args: argparse.Namespace) -> int:
+    """Upgrade a search query file."""
+
+    search_file = load_search_file(args.file)
+    platform = search_query.parser.get_platform(search_file.platform)
+    version_current = (
+        getattr(search_file, "parser_version", None)
+        or getattr(search_file, "version", None)
+        or search_query.parser.LATEST_VERSIONS[platform]
+    )
+    version_target = args.to or search_query.parser.LATEST_VERSIONS[platform]
+
+    upgraded = upgrade_query(
+        search_file.search_string,
+        platform=platform,
+        version_current=version_current,
+        version_target=version_target,
+    )
+    print(upgraded)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="search-query",
@@ -116,6 +139,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="File(s) to lint",
     )
     p_li.set_defaults(func=_lint)
+
+    # upgrade
+    p_up = subparsers.add_parser(
+        "upgrade",
+        help="Upgrade a search file to another parser/serializer version",
+        description="Upgrade a search query file to a different syntax version.",
+    )
+    p_up.add_argument("file", help="Search file (.json) to upgrade")
+    p_up.add_argument("--to", dest="to", required=False, help="Target version")
+    p_up.set_defaults(func=_cmd_upgrade)
 
     return parser
 

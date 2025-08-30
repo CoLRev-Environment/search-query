@@ -1,8 +1,10 @@
 # pylint: disable=missing-module-docstring
 try:
-    from importlib.metadata import version
+    from importlib.metadata import PackageNotFoundError, version
 except ImportError:  # pragma: no cover
-    # For Python < 3.8
-    from importlib_metadata import version  # type: ignore
+    from importlib_metadata import PackageNotFoundError, version  # type: ignore
 
-__version__ = version("search_query")
+try:  # pragma: no cover - fallback if package metadata is missing
+    __version__ = version("search_query")
+except PackageNotFoundError:
+    __version__ = "0.0.0"

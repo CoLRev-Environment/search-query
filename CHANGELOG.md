@@ -2,6 +2,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Introduced versioned parser, serializer, and translator dispatchers.
+- Added upgrade pipeline and CLI command.
+- Added `deprecated-syntax` linter warning (`LINT_2001`).
+
 ## Release 0.12.0
 
 - **Platform Support:**
