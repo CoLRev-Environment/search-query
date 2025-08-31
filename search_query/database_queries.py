@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Database and filters."""
+from __future__ import annotations
+
 from search_query.database import load_query
 
 FT50 = load_query("journals_FT50")

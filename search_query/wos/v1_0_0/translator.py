@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WOS query translator."""
+"""Web of Science translator for version 1.0.0."""
 from __future__ import annotations
 
 import re
@@ -14,8 +14,10 @@ from search_query.wos.constants import generic_field_to_syntax_field
 from search_query.wos.constants import syntax_str_to_generic_field_set
 
 
-class WOSTranslator(QueryTranslator):
+class WOSTranslator_v1_0_0(QueryTranslator):
     """Translator for WOS queries."""
+
+    VERSION = "1.0.0"
 
     # pylint: disable=duplicate-code
     @classmethod

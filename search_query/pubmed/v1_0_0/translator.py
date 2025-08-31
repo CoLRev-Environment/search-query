@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pubmed query translator."""
+"""PubMed translator for version 1.0.0."""
 from __future__ import annotations
 
 import typing
@@ -18,8 +18,10 @@ from search_query.query_term import Term
 from search_query.translator_base import QueryTranslator
 
 
-class PubmedTranslator(QueryTranslator):
+class PubMedTranslator_v1_0_0(QueryTranslator):
     """Translator for Pubmed queries."""
+
+    VERSION = "1.0.0"
 
     @classmethod
     def _expand_flat_or_chains(cls, query: Query) -> bool:

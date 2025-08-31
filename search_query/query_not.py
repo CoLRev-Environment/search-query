@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """NOT Query"""
+from __future__ import annotations
+
 import typing
 from typing import cast
 from typing import List

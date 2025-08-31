@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Constants for Web-of-Science."""
+from __future__ import annotations
+
 import re
 from copy import deepcopy
 

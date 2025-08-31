@@ -12,7 +12,7 @@ from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
 from search_query.ebsco.parser import EBSCOListParser
 from search_query.ebsco.parser import EBSCOParser
-from search_query.ebsco.serializer import to_string_ebsco
+from search_query.ebsco.v1_0_0.serializer import EBCOSerializer_v1_0_0
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
@@ -596,12 +596,12 @@ def test_leaf_node_with_field() -> None:
         field=SearchField("TI"),
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "TI diabetes"
+    assert EBCOSerializer_v1_0_0().to_string(query) == "TI diabetes"
 
 
 def test_leaf_node_without_field() -> None:
     query = Term(value="diabetes")
-    assert to_string_ebsco(query) == "diabetes"
+    assert EBCOSerializer_v1_0_0().to_string(query) == "diabetes"
 
 
 def test_boolean_query_with_two_terms() -> None:
@@ -620,7 +620,7 @@ def test_boolean_query_with_two_terms() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "TI diabetes AND TI insulin"
+    assert EBCOSerializer_v1_0_0().to_string(query) == "TI diabetes AND TI insulin"
 
 
 def test_nested_boolean_with_field() -> None:
@@ -637,7 +637,10 @@ def test_nested_boolean_with_field() -> None:
         platform="ebscohost",
     )
     # Test search field propagation and parentheses
-    assert to_string_ebsco(outer) == "AB ((diabetes AND insulin) OR therapy)"
+    assert (
+        EBCOSerializer_v1_0_0().to_string(outer)
+        == "AB ((diabetes AND insulin) OR therapy)"
+    )
 
 
 def test_proximity_near_operator() -> None:
@@ -650,7 +653,7 @@ def test_proximity_near_operator() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "diabetes N5 therapy"
+    assert EBCOSerializer_v1_0_0().to_string(query) == "diabetes N5 therapy"
 
 
 def test_proximity_within_operator_with_field() -> None:
@@ -664,7 +667,7 @@ def test_proximity_within_operator_with_field() -> None:
         ],
         platform="ebscohost",
     )
-    assert to_string_ebsco(query) == "AB (insulin W3 resistance)"
+    assert EBCOSerializer_v1_0_0().to_string(query) == "AB (insulin W3 resistance)"
 
 
 def test_proximity_missing_distance_raises() -> None:

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Web-of-Science query linter."""
+from __future__ import annotations
+
 import re
 import typing
 
@@ -406,7 +408,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def check_issn_isbn_format(self, query: "Query") -> None:
+    def check_issn_isbn_format(self, query: Query) -> None:
         """Check for the correct format of ISSN and ISBN."""
 
         if query.is_term():
@@ -429,7 +431,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_issn_isbn_format(child)
 
-    def check_doi_format(self, query: "Query") -> None:
+    def check_doi_format(self, query: Query) -> None:
         """Check for the correct format of DOI."""
 
         if query.is_term():
@@ -484,7 +486,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def validate_query_tree(self, query: "Query") -> None:
+    def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
         This method is called after the query tree has been built.
@@ -511,12 +513,12 @@ class WOSQueryStringLinter(QueryStringLinter):
 class WOSQueryListLinter(QueryListLinter):
     """WOSQueryListLinter"""
 
-    parser: "search_query.wos.parser.WOSListParser"
+    parser: search_query.wos.parser.WOSListParser
 
     def __init__(
         self,
-        parser: "search_query.wos.parser.WOSListParser",
-        string_parser_class: typing.Type["search_query.wos.parser.WOSParser"],
+        parser: search_query.wos.parser.WOSListParser,
+        string_parser_class: typing.Type[search_query.wos.parser.WOSParser],
         original_query_str: str = "",
     ):
         super().__init__(

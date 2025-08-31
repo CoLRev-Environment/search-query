@@ -1,75 +1,82 @@
 #!/usr/bin/env python3
-"""Query parser."""
+"""Version-aware parser dispatch."""
 from __future__ import annotations
 
-import typing
+import typing as _t
+
+from packaging.version import Version
 
 from search_query.constants import PLATFORM
-from search_query.ebsco.parser import EBSCOListParser
-from search_query.ebsco.parser import EBSCOParser
-from search_query.exception import QuerySyntaxError
-from search_query.pubmed.parser import PubmedListParser
-from search_query.pubmed.parser import PubmedParser
+from search_query.ebsco.v1_0_0.parser import EBSCOListParser_v1_0_0
+from search_query.ebsco.v1_0_0.parser import EBSCOParser_v1_0_0
+from search_query.pubmed.v1_0_0.parser import PubMedListParser_v1_0_0
+from search_query.pubmed.v1_0_0.parser import PubMedParser_v1_0_0
 from search_query.query import Query
-from search_query.wos.parser import WOSListParser
-from search_query.wos.parser import WOSParser
+from search_query.wos.v1_0_0.parser import WOSListParser_v1_0_0
+from search_query.wos.v1_0_0.parser import WOSParser_v1_0_0
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from search_query.parser_base import QueryListParser
-    from search_query.parser_base import QueryStringParser
+if _t.TYPE_CHECKING:  # pragma: no cover
+    from search_query.parser_base import QueryListParser, QueryStringParser
 
-PARSERS: typing.Dict[str, type[QueryStringParser]] = {
-    PLATFORM.WOS.value: WOSParser,
-    PLATFORM.PUBMED.value: PubmedParser,
-    PLATFORM.EBSCO.value: EBSCOParser,
+
+PARSERS: dict[str, dict[str, type[QueryStringParser]]] = {
+    PLATFORM.PUBMED.value: {"1.0.0": PubMedParser_v1_0_0},
+    PLATFORM.WOS.value: {"1.0.0": WOSParser_v1_0_0},
+    PLATFORM.EBSCO.value: {"1.0.0": EBSCOParser_v1_0_0},
 }
 
-LIST_PARSERS: typing.Dict[str, type[QueryListParser]] = {
-    PLATFORM.WOS.value: WOSListParser,
-    PLATFORM.PUBMED.value: PubmedListParser,
-    PLATFORM.EBSCO.value: EBSCOListParser,
+LIST_PARSERS: dict[str, dict[str, type[QueryListParser]]] = {
+    PLATFORM.PUBMED.value: {"1.0.0": PubMedListParser_v1_0_0},
+    PLATFORM.WOS.value: {"1.0.0": WOSListParser_v1_0_0},
+    PLATFORM.EBSCO.value: {"1.0.0": EBSCOListParser_v1_0_0},
+}
+
+LATEST_VERSIONS = {k: max(v.keys()) for k, v in PARSERS.items()}
+LATEST_PARSERS = {k: v[max(v.keys(), key=Version)] for k, v in PARSERS.items()}
+LATEST_LIST_PARSERS = {
+    k: v[max(v.keys(), key=Version)] for k, v in LIST_PARSERS.items()
 }
 
 
-# pylint: disable=too-many-return-statements
+def _resolve_version(platform: str, version: str | None) -> str:
+    if not version or version.lower() == "latest":
+        return LATEST_VERSIONS[platform]
+    return version
+
+
+def _detect_is_list(query_str: str) -> bool:
+    """Heuristic detection for list-style queries."""
+    return "1." in query_str[:10]
+
+
 def parse(
     query_str: str,
     *,
     field_general: str = "",
     platform: str = PLATFORM.WOS.value,
+    parser_version: str | None = None,
+    is_list: bool | None = None,
 ) -> Query:
-    """Parse a query string."""
+    """Parse a query string using the versioned parsers."""
+
     platform = get_platform(platform)
-
-    if "1." in query_str[:10]:
-        if platform not in LIST_PARSERS:  # pragma: no cover
-            raise ValueError(f"Invalid platform: {platform}")
-
-        try:
-            query = LIST_PARSERS[platform](  # type: ignore
-                query_list=query_str,
-                field_general=field_general,
-            ).parse()
-        except QuerySyntaxError as exc:
-            raise exc
-        return query
-
-    if platform not in PARSERS:  # pragma: no cover
-        raise ValueError(f"Invalid platform: {platform}")
-
-    parser_class = PARSERS[platform]
-    try:
-        query = parser_class(
-            query_str, field_general=field_general
-        ).parse()  # type: ignore
-    except QuerySyntaxError as exc:
-        raise exc
-
-    return query
+    version = _resolve_version(platform, parser_version)
+    is_list = _detect_is_list(query_str) if is_list is None else is_list
+    if is_list:
+        parser_list_cls = LIST_PARSERS[platform][version]
+        parser = parser_list_cls(
+            query_list=query_str, field_general=field_general
+        )  # type: ignore
+    else:
+        parser_cls = PARSERS[platform][version]
+        parser = parser_cls(query_str, field_general=field_general)  # type: ignore
+    return parser.parse()
 
 
 def get_platform(platform_str: str) -> str:
-    """Get the platform from the platform string"""
+    """Get canonical platform identifier from a string."""
+
+    # pylint: disable=too-many-return-statements
 
     platform_str = platform_str.lower().rstrip().lstrip()
     if platform_str in [

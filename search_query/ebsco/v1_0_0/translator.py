@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EBSCO query translator."""
+"""EBSCO translator for version 1.0.0."""
 from __future__ import annotations
 
 from search_query.constants import Fields
@@ -9,8 +9,10 @@ from search_query.query import Query
 from search_query.translator_base import QueryTranslator
 
 
-class EBSCOTranslator(QueryTranslator):
+class EBCOTranslator_v1_0_0(QueryTranslator):
     """Translator for EBSCO queries."""
+
+    VERSION = "1.0.0"
 
     @classmethod
     def translate_fields_to_generic(cls, query: Query) -> None:

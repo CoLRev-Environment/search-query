@@ -16,11 +16,14 @@ from search_query.pubmed.constants import map_to_standard
 from search_query.pubmed.constants import PROXIMITY_SEARCH_REGEX
 from search_query.pubmed.constants import syntax_str_to_generic_field_set
 from search_query.pubmed.constants import YEAR_PUBLISHED_FIELD_REGEX
-from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.pubmed.parser import PubmedListParser
     from search_query.parser_base import QueryStringParser
+    from search_query.query import Query
+
+
+# pylint: disable=duplicate-code
 
 
 class PubmedQueryStringLinter(QueryStringLinter):
