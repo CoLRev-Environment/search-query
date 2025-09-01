@@ -14,9 +14,7 @@ class EBSCOParser_v1_0_0(EBSCOParser):
 
     VERSION = "1.0.0"
 
-    # TODO : check whether this is valid! -
-    # generally move functionality to the modules one directory up?!
-    # TODO : switch tests to the verisoned parser!
+    # TODO : switch tests to the versioned parser!
 
 
 class EBSCOListParser_v1_0_0(EBSCOListParser):
