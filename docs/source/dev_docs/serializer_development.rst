@@ -1,6 +1,25 @@
 Serializer
 ===========
 
+Versioned serializers
+---------------------
+
+Serializer implementations live under versioned namespaces such as
+``search_query/pubmed/v1_0_0/serializer.py``. They are registered in the
+central ``search_query.serializer`` module via the ``SERIALIZERS``
+mapping. ``LATEST_SERIALIZERS`` resolves the highest semantic version at
+runtime when no explicit ``serializer_version`` is provided.
+
+Example stored query with version information:
+
+.. code-block:: json
+
+   {
+       "platform": "wos",
+       "search_string": "TS=(quantum dot)",
+       "version": "1.0.0"
+   }
+
 Serializers convert a query object into a string representation.
 This enables the query to be rendered for human inspection, logging, or submission to search engines.
 

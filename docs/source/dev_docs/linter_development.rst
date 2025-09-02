@@ -30,5 +30,19 @@ Best Practices
   - etc.
 - For **search field validation**, use a corresponding field mapping and helper functions like `map_to_standard()`.
 
+Deprecated syntax diagnostics
+-----------------------------
+
+Linters also warn about constructs that are deprecated in newer
+versions. Use the ``LINT_DEPRECATED_SYNTAX`` message to flag such
+patterns, for example:
+
+.. code-block:: text
+
+   LINT_2001: Operator "SAME" is deprecated. Use NEAR/0.
+
+These messages surface to users during parsing and encourage upgrades
+via translation of the query to the latest intermediate representation.
+
 .. literalinclude:: linter_skeleton.py
    :language: python
