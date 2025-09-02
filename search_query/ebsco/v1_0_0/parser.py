@@ -14,8 +14,6 @@ class EBSCOParser_v1_0_0(EBSCOParser):
 
     VERSION = "1.0.0"
 
-    # TODO : switch tests to the versioned parser!
-
 
 class EBSCOListParser_v1_0_0(EBSCOListParser):
     """EBSCO list parser for version 1.0.0."""

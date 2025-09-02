@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for search query translation."""
+"""Tests for EBSCOHostParser_v1_0_0"""
 from typing import List
 from typing import Tuple
 
@@ -10,8 +10,8 @@ from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.ebsco.linter import EBSCOQueryStringLinter
-from search_query.ebsco.parser import EBSCOListParser
-from search_query.ebsco.parser import EBSCOParser
+from search_query.ebsco.v1_0_0.parser import EBSCOListParser_v1_0_0
+from search_query.ebsco.v1_0_0.parser import EBSCOParser_v1_0_0
 from search_query.ebsco.v1_0_0.serializer import EBCOSerializer_v1_0_0
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
@@ -125,7 +125,7 @@ def test_tokenization(
 ) -> None:
     """Test EBSCO parser tokenization."""
     print(query_string)
-    parser = EBSCOParser(query_string)
+    parser = EBSCOParser_v1_0_0(query_string)
     parser.tokenize()
 
     actual_tokens = parser.tokens
@@ -386,7 +386,7 @@ def test_invalid_token_sequences(
 )
 def test_linter(query_string: str, messages: list) -> None:
     print(query_string)
-    parser = EBSCOParser(query_string)
+    parser = EBSCOParser_v1_0_0(query_string)
     try:
         parser.parse()
     except Exception:
@@ -510,7 +510,7 @@ def test_linter_general_field(
     query_string: str, field_general: str, messages: list
 ) -> None:
     print(query_string)
-    parser = EBSCOParser(query_string, field_general=field_general)
+    parser = EBSCOParser_v1_0_0(query_string, field_general=field_general)
     try:
         parser.parse()
     except Exception:
@@ -576,7 +576,7 @@ def test_parser(query_str: str, expected_translation: str) -> None:
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = EBSCOParser(
+    parser = EBSCOParser_v1_0_0(
         query_str=query_str,
     )
     query_tree = parser.parse()
@@ -683,7 +683,7 @@ def test_list_parser_case_1() -> None:
 3. S1 AND S2
 """
 
-    list_parser = EBSCOListParser(query_list=query_list)
+    list_parser = EBSCOListParser_v1_0_0(query_list=query_list)
     q = list_parser.parse()
 
     assert (

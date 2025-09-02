@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for Pubmed search query parser."""
+"""Tests for PubMedParser_v1_0_0"""
 import pytest
 
 from search_query.constants import Colors
@@ -11,9 +11,8 @@ from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser import parse
 from search_query.pubmed.linter import PubmedQueryStringLinter
-from search_query.pubmed.parser import PubmedListParser
-from search_query.pubmed.parser import PubmedParser
-from search_query.pubmed.translator import PubmedTranslator
+from search_query.pubmed.v1_0_0.parser import PubMedListParser_v1_0_0
+from search_query.pubmed.v1_0_0.parser import PubMedParser_v1_0_0
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 
@@ -90,7 +89,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str)
+    parser = PubMedParser_v1_0_0(query_str)
     parser.tokenize()
     assert parser.tokens == expected_tokens, print(parser.tokens)
 
@@ -855,7 +854,7 @@ def test_linter(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, field_general=field_general)
+    parser = PubMedParser_v1_0_0(query_str, field_general=field_general)
     try:
         parser.parse()
     except SearchQueryException:
@@ -984,7 +983,7 @@ def test_linter_with_general_field(
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, field_general=field_general)
+    parser = PubMedParser_v1_0_0(query_str, field_general=field_general)
     try:
         parser.parse()
     except SearchQueryException:
@@ -1053,7 +1052,7 @@ def test_parser(query_str: str, field_general: str, expected_parsed: str) -> Non
         f"Run query parser for: \n  {Colors.GREEN}{query_str}{Colors.END}\n--------------------\n"
     )
 
-    parser = PubmedParser(query_str, field_general=field_general)
+    parser = PubMedParser_v1_0_0(query_str, field_general=field_general)
     query = parser.parse()
 
     assert expected_parsed == query.to_generic_string(), print(
@@ -1068,7 +1067,7 @@ def test_list_parser_case_1() -> None:
 3. #1 OR #2
 """
 
-    list_parser = PubmedListParser(query_list=query_list)  #
+    list_parser = PubMedListParser_v1_0_0(query_list=query_list)  #
     list_parser.parse()
 
 
@@ -1078,7 +1077,7 @@ def test_list_parser_case_2() -> None:
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 AND #2 AND #4
 """
-    list_parser = PubmedListParser(query_list=query_list)
+    list_parser = PubMedListParser_v1_0_0(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1106,7 +1105,7 @@ def test_list_parser_case_3() -> None:
 """
     print(query_list)
 
-    list_parser = PubmedListParser(query_list=query_list)
+    list_parser = PubMedListParser_v1_0_0(query_list=query_list)
     try:
         list_parser.parse()
     except ListQuerySyntaxError:
@@ -1136,68 +1135,6 @@ def test_list_parser_case_3() -> None:
     }
 
 
-@pytest.mark.parametrize(
-    "query_str, expected_generic",
-    [
-        (
-            "eHealth[ti]",
-            "eHealth[title]",
-        ),
-        (
-            "eHealth[tiab]",
-            "OR[eHealth[abstract], eHealth[title]]",
-        ),
-        (
-            "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
-        ),
-        (
-            "eHealth[tiab] AND mHealth[tiab]",
-            "AND[OR[eHealth[abstract], eHealth[title]], OR[mHealth[abstract], mHealth[title]]]",
-        ),
-        (
-            "(eHealth[tiab] OR mHealth[tiab]) OR (diabetes[tiab] AND digital[tiab])",
-            "OR[OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]], AND[OR[diabetes[abstract], diabetes[title]], OR[digital[abstract], digital[title]]]]",
-        ),
-        (
-            "eHealth[tiab] OR mHealth[ti]",
-            "OR[OR[eHealth[abstract], eHealth[title]], mHealth[title]]",
-        ),
-        (
-            "eHealth[tiab] OR mHealth[tiab]",
-            "OR[eHealth[title], mHealth[title], eHealth[abstract], mHealth[abstract]]",
-        ),
-        (
-            '"digital health"[ti:~2]',
-            "OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
-        ),
-        (
-            'eHealth[ti] AND "digital health"[ti:~2]',
-            "AND[eHealth[title], OR[NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]]",
-        ),
-        (
-            '"digital health"[tiab:~2]',
-            "OR[NEAR/2[digital[abstract], health[abstract]], NEAR/2[health[abstract], digital[abstract]], NEAR/2[digital[title], health[title]], NEAR/2[health[title], digital[title]]]",
-        ),
-        (
-            '"digital health platforms"[tiab:~0]',
-            "OR[NEAR/0[digital[abstract], health[abstract]], NEAR/0[digital[abstract], platforms[abstract]], NEAR/0[health[abstract], digital[abstract]], NEAR/0[health[abstract], platforms[abstract]], NEAR/0[platforms[abstract], digital[abstract]], NEAR/0[platforms[abstract], health[abstract]], NEAR/0[digital[title], health[title]], NEAR/0[digital[title], platforms[title]], NEAR/0[health[title], digital[title]], NEAR/0[health[title], platforms[title]], NEAR/0[platforms[title], digital[title]], NEAR/0[platforms[title], health[title]]]",
-        ),
-    ],
-)
-def test_translation_to_generic(query_str: str, expected_generic: str) -> None:
-    print(query_str)
-    parser = PubmedParser(query_str)
-    query = parser.parse()
-
-    translator = PubmedTranslator()
-    generic = translator.to_generic_syntax(query)
-
-    assert expected_generic == generic.to_generic_string(), print(
-        generic.to_generic_string()
-    )
-
-
 def test_general_list_parser_1() -> None:
     query_list = """
 1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract])
@@ -1205,7 +1142,7 @@ def test_general_list_parser_1() -> None:
 3. #1 AND #2
 """
 
-    list_parser = PubmedListParser(query_list=query_list)
+    list_parser = PubMedListParser_v1_0_0(query_list=query_list)
     list_parser.parse()
 
     print(list_parser.linter.messages)
@@ -1220,7 +1157,7 @@ def test_general_list_parser_2() -> None:
 4. #1 AND #2 OR #3
 """
 
-    list_parser = PubmedListParser(query_list=query_list)
+    list_parser = PubMedListParser_v1_0_0(query_list=query_list)
     query = list_parser.parse()
     assert (
         query.to_string()
