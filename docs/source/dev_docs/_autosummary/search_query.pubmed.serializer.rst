@@ -9,8 +9,12 @@ search\_query.pubmed.serializer
 
 
 
-   .. rubric:: Functions
+
+
+
+
+   .. rubric:: Classes
 
    .. autosummary::
 
-      to_string_pubmed
+      PUBMEDQuerySerializer

@@ -108,7 +108,7 @@ class PubmedTranslator(QueryTranslator):
                     new_children.append(child)
             query.children = new_children
 
-        # Recursively apply to child querys
+        # Recursively apply to child queries
         for child in query.children:
             cls._combine_tiab(child)
 

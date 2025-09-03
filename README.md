@@ -70,25 +70,21 @@ print(wos_query.to_string())
 # Output:
 # (AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy")
 ```
-
-## Versioned Parsers & Serializers
-
-Parsers and serializers are versioned. The initial release starts with
-version `1.0.0` for every platform. You can explicitly pin a parser version
-when parsing a query:
-
+The translated query can be saved as follows:
 ```python
-from search_query.parser import parse
+from search_query import SearchFile
 
-query = parse("TS=(quantum)", platform="wos", version="1.0.0")
-```
+search_file = SearchFile(
+    filename="search-file.json",
+    query_str=wos_query.to_string(platform="wos"),
+    platform="wos",
+    version="1.0.0",
+    authors=[{"name": "Tom Brady"}],
+    record_info={},
+    date={}
+)
 
-Queries stored on disk may also record their `version`.
-The `search-query upgrade` CLI command upgrades a search
-file to a target version via the intermediate representation:
-
-```bash
-search-query upgrade query.json --to 2.0.0
+search_file.save()
 ```
 
 For a more detailed overview of the package’s functionality, see the [documentation](https://colrev-environment.github.io/search-query/).

@@ -730,6 +730,27 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 }
             ],
         ),
+        (
+            "DI=10.1000/xyz123",
+            [
+                {
+                    "code": "FIELD_0001",
+                    "label": "field-unsupported",
+                    "message": "Search field is not supported for this database",
+                    "is_fatal": True,
+                    "position": [(0, 3)],
+                    "details": "Search field DI= at position (0, 3) is not supported. Supported fields for PLATFORM.WOS: ab=|abstract=|la=|language=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
+                },
+                {
+                    "code": "LINT_2001",
+                    "label": "deprecated-syntax",
+                    "message": "deprecated-syntax",
+                    "is_fatal": True,
+                    "position": [(0, 3)],
+                    "details": "The 'DI=' field is deprecated. Use 'DO=' instead. Use search-query upgrade XY to upgrade the search query",
+                },
+            ],
+        ),
     ],
 )
 def test_linter(

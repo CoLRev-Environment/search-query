@@ -20,6 +20,8 @@ from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 if typing.TYPE_CHECKING:  # pragma: no cover
     import search_query.wos.parser
 
+# TODO : should linters also be versioned?!
+
 
 class WOSQueryStringLinter(QueryStringLinter):
     """Linter for WOS Query Strings"""
@@ -427,9 +429,101 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             return
 
-        # Recursively call the function on the child querys
+        # Recursively call the function on the child queries
         for child in query.children:
             self.check_issn_isbn_format(child)
+
+    def check_deprecated_field_tags(self, query: Query) -> None:
+        """Check for deprecated field tags."""
+
+        if query.is_term():
+            if not query.field:
+                return
+
+            # TODO: clarify advice... + context (called via CI / with filename?)
+
+            # use of the following field tags in the search interface prints
+            # Search Error: Invalid field tag.
+            if query.field.value in [
+                "FN=",
+                "VR=",
+                "PT=",
+                "AF=",
+                "BA=",
+                "BF=",
+                "CA=",
+                "BE=",
+                "BS=",
+                "CL=",
+                "SP=",
+                "HO=",
+                "DE=",
+                "ID=",
+                "C1=",
+                "RP=",
+                "EM=",
+                "RI=",
+                "OI=",
+                "FU=",
+                "CR=",
+                "NR=",
+                "TC=",
+                "Z9=",
+                "U1=",
+                "U2=",
+                "PI=",
+                "PU=",
+                "SN=",
+                "EI=",
+                "BN=",
+                "J9=",
+                "JI=",
+                "PD=",
+                "SI=",
+                "PN=",
+                "MA=",
+                "BP=",
+                "EP=",
+                "AR=",
+            ]:
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details=f"The '{query.field.value}' field is deprecated.",
+                )
+            elif query.field.value == "DI=":
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details="The 'DI=' field is deprecated. Use 'DO=' instead. "
+                    + "Use search-query upgrade XY to upgrade the search query",
+                )
+            elif query.field.value in [
+                "D2=",
+                "EY=",
+                "P2=",
+                "SC=",
+                "GA=",
+                "HP=",
+                "HC=",
+                "DA=",
+                "ER=",
+                "EF=",
+            ]:
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details=f"The '{query.field.value}' field is deprecated.",
+                )
+
+            return
+
+        # Recursively call the function on the child queries
+        for child in query.children:
+            self.check_deprecated_field_tags(child)
 
     def check_doi_format(self, query: Query) -> None:
         """Check for the correct format of DOI."""
@@ -447,7 +541,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     )
             return
 
-        # Recursively call the function on the child querys
+        # Recursively call the function on the child queries
         for child in query.children:
             self.check_doi_format(child)
 
@@ -508,6 +602,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_redundant_terms(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
+        self.check_deprecated_field_tags(term_field_query)
 
 
 class WOSQueryListLinter(QueryListLinter):

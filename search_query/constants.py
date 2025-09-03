@@ -337,7 +337,13 @@ class QueryErrorCode(Enum):
         "LINT_2001",
         "deprecated-syntax",
         "deprecated-syntax",
-        "",
+        """This message indicates that the query uses deprecated syntax.
+
+**Typical fix**: Update the query to use the latest syntax by running
+
+```bash
+search-query upgrade search_query.json --to 2.0.0
+```""",
     )
 
     # -------------------------------------------------------
