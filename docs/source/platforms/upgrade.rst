@@ -1,7 +1,7 @@
 .. _upgrade:
 
-Upgrade Queries Between Syntax Versions
-=======================================
+Syntax Upgrades
+===============
 
 The ``search-query`` package allows you to **upgrade database-specific queries**
 from one syntax version to another.
