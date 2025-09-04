@@ -9,3 +9,7 @@ class WOSTranslator_v1_0_0(WOSTranslator):
     """Translator for WOS queries."""
 
     VERSION = "1.0.0"
+
+
+def register(registry, *, platform: str, version: str) -> None:
+    registry.register_translator(platform, version, WOSTranslator_v1_0_0)

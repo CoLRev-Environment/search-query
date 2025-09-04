@@ -153,7 +153,7 @@ class Query:
                 gen_linter.check_status()
 
         elif self.platform == PLATFORM.EBSCO.value:
-            from search_query.ebsco.linter import EBSCOQueryStringLinter
+            from search_query.ebscohost.linter import EBSCOQueryStringLinter
 
             ebsco_linter = EBSCOQueryStringLinter()
             ebsco_linter.validate_query_tree(self)
@@ -468,7 +468,7 @@ class Query:
 
         assert self.platform != ""
         # pylint: disable=import-outside-toplevel
-        from search_query.serializer import LATEST_SERIALIZERS
+        from search_query.registry import LATEST_SERIALIZERS
 
         serializer = LATEST_SERIALIZERS[self.platform]
 
@@ -484,7 +484,7 @@ class Query:
             return self
 
         # pylint: disable=import-outside-toplevel
-        from search_query.translator import LATEST_TRANSLATORS
+        from search_query.registry import LATEST_TRANSLATORS
 
         if self.platform == "generic":
             generic_query = self.copy()

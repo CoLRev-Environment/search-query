@@ -11,8 +11,8 @@ from search_query.exception import ListQuerySyntaxError
 from search_query.exception import SearchQueryException
 from search_query.parser import parse
 from search_query.pubmed.linter import PubmedQueryStringLinter
-from search_query.pubmed.v1_0_0.parser import PubMedListParser_v1_0_0
-from search_query.pubmed.v1_0_0.parser import PubMedParser_v1_0_0
+from search_query.pubmed.v_1_0_0.parser import PubMedListParser_v1_0_0
+from search_query.pubmed.v_1_0_0.parser import PubMedParser_v1_0_0
 
 # to run (from top-level dir): pytest test/test_parser_pubmed.py
 

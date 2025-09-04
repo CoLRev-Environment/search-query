@@ -91,4 +91,3 @@ By pivoting through the **generic query object**, the upgrade avoids the need fo
 - **Parser** – to read queries,
 - **Translator** – to/from the IR,
 - **Serializer** – to output queries.
-

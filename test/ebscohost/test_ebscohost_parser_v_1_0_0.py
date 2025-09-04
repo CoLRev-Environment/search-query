@@ -9,10 +9,10 @@ from search_query.constants import Colors
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebsco.linter import EBSCOQueryStringLinter
-from search_query.ebsco.v1_0_0.parser import EBSCOListParser_v1_0_0
-from search_query.ebsco.v1_0_0.parser import EBSCOParser_v1_0_0
-from search_query.ebsco.v1_0_0.serializer import EBCOSerializer_v1_0_0
+from search_query.ebscohost.linter import EBSCOQueryStringLinter
+from search_query.ebscohost.v_1_0_0.parser import EBSCOListParser_v1_0_0
+from search_query.ebscohost.v_1_0_0.parser import EBSCOParser_v1_0_0
+from search_query.ebscohost.v_1_0_0.serializer import EBCOSerializer_v1_0_0
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
