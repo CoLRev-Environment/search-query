@@ -29,7 +29,10 @@ Versioned serializers
 ---------------------
 
 Serializers live in versioned modules such as
-``search_query/pubmed/v1_0_0/serializer.py``. They are registered in the
+``search_query/pubmed/v1_0_0/serializer.py``. See
+`versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
+
+They are registered in the
 central ``search_query.serializer`` module via the ``SERIALIZERS``
 mapping. ``LATEST_SERIALIZERS`` resolves the latest version at
 runtime when no explicit ``serializer_version`` is provided.

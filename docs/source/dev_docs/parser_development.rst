@@ -6,18 +6,13 @@ Versioned parsers
 
 Parsers live in versioned modules such as
 ``search_query/pubmed/v1_0_0/parser.py``. Keeping previous versions
-allows reproducible parsing and backward compatibility.
+allows reproducible parsing and backward compatibility. See
+`versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
 
 The central registry in ``search_query.parser`` exposes a ``PARSERS``
 mapping and resolves the appropriate version at runtime. Calling
 ``parse(..., parser_version="latest")`` loads the highest available
 version for the chosen platform.
-
-Version policy follows ``MAJOR.MINOR.PATCH`` (semantic versioning):
-
-* **MAJOR** – breaking changes in syntax.
-* **MINOR** – backward compatible features.
-* **PATCH** – bug fixes or minor improvements.
 
 When introducing a new parser version, copy the previous versioned
 directory, adjust the implementation, and register the version in the

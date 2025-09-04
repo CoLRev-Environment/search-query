@@ -27,6 +27,18 @@ the latest supported version for the specified platform.
    The upgraded query will be written back to the file (or another location if
    specified with ``--output``).
 
+Versioning Policy
+----------------------------
+
+Version policy follows ``MAJOR.MINOR.PATCH`` (semantic versioning):
+
+* **MAJOR** – breaking changes in syntax.
+* **MINOR** – backward compatible features.
+* **PATCH** – bug fixes or minor improvements.
+
+..
+   This structure allows for limited observability of syntax changes, focusing on current and future versions.
+
 How It Works Internally
 -----------------------
 
@@ -35,7 +47,7 @@ Even though you only call the CLI, the following procedure happens under the hoo
 1. **Parse**
    The query string (platform + current version) is parsed into a query object.
 
-2. **Translate to Generic Syntax (IR)**
+2. **Translate to Generic Query Object**
    The query is converted into a generic query object, i.e., a platform-agnostic intermediate representation.
 
 3. **Translate to Target Syntax**
@@ -73,9 +85,10 @@ This will:
 Design Note
 -----------
 
-By pivoting through the **generic query IR**, the upgrade avoids the need for
+By pivoting through the **generic query object**, the upgrade avoids the need for
 ``O(N^2)`` pairwise converters. Each platform/version only needs:
 
 - **Parser** – to read queries,
 - **Translator** – to/from the IR,
 - **Serializer** – to output queries.
+

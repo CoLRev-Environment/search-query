@@ -22,19 +22,15 @@ Versioned translators
 -------------------------
 
 Translators are organized in versioned modules such as
-``search_query/pubmed/v1_0_0/translator.py``. This structure preserves older versions,
+``search_query/pubmed/v1_0_0/translator.py``. See
+`versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
+This structure preserves older versions,
 enabling reproducible translations and ensuring backward compatibility.
 
 A central registry in ``search_query.translator`` provides a ``TRANSLATORS`` mapping,
 which dynamically selects the appropriate translator version at runtime. Invoking
 ``translate(..., translator_version="latest")`` loads the most recent version for the
 specified platform.
-
-Translator versioning adheres to the ``MAJOR.MINOR.PATCH`` (semantic versioning) scheme:
-
-* **MAJOR** – incompatible changes to translation logic or output.
-* **MINOR** – new features that maintain backward compatibility.
-* **PATCH** – bug fixes or minor improvements.
 
 To introduce a new translator version, duplicate the previous versioned directory,
 update the implementation as needed, and register the new version in the ``TRANSLATORS`` dictionary.
