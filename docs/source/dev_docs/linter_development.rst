@@ -30,6 +30,11 @@ Best Practices
   - etc.
 - For **search field validation**, use a corresponding field mapping and helper functions like `map_to_standard()`.
 
+Versioning
+-----------
+
+Linters are not versioned and should be compatible with the latest query syntax. However, they may include deprecated messages for older syntax.
+
 Deprecated syntax diagnostics
 -----------------------------
 

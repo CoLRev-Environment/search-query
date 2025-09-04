@@ -144,6 +144,7 @@ Below is a high-level overview of the core functionalities:
    :caption: Platforms
 
    platforms/platform_index
+   platforms/upgrade
 
 .. toctree::
    :hidden:
