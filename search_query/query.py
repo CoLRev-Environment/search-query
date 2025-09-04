@@ -153,7 +153,7 @@ class Query:
                 gen_linter.check_status()
 
         elif self.platform == PLATFORM.EBSCO.value:
-            from search_query.ebsco.linter import EBSCOQueryStringLinter
+            from search_query.ebscohost.linter import EBSCOQueryStringLinter
 
             ebsco_linter = EBSCOQueryStringLinter()
             ebsco_linter.validate_query_tree(self)

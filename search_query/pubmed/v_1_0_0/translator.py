@@ -9,3 +9,7 @@ class PubMedTranslator_v1_0_0(PubmedTranslator):
     """Translator for Pubmed queries."""
 
     VERSION = "1.0.0"
+
+
+def register(registry, *, platform: str, version: str) -> None:
+    registry.register_translator(platform, version, PubMedTranslator_v1_0_0)

@@ -15,8 +15,8 @@ from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_or import OrQuery
 from search_query.query_term import Term
-from search_query.wos.v1_0_0.parser import WOSListParser_v1_0_0
-from search_query.wos.v1_0_0.parser import WOSParser_v1_0_0
+from search_query.wos.v_1_0_0.parser import WOSListParser_v1_0_0
+from search_query.wos.v_1_0_0.parser import WOSParser_v1_0_0
 
 # ruff: noqa: E501
 # flake8: noqa: E501

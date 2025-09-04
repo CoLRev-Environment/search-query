@@ -23,3 +23,8 @@ class PubMedListParser_v1_0_0(PubmedListParser):
         # Ensure versioned parser and linter are used
         self.parser_class = PubMedParser_v1_0_0
         self.linter = PubmedQueryListLinter(self, PubMedParser_v1_0_0)
+
+
+def register(registry, *, platform: str, version: str) -> None:
+    registry.register_parser_string(platform, version, PubMedParser_v1_0_0)
+    registry.register_parser_list(platform, version, PubMedListParser_v1_0_0)

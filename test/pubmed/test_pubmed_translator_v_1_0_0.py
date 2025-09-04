@@ -2,8 +2,8 @@
 """Tests for PubMedTranslator_v1_0_0"""
 import pytest
 
-from search_query.pubmed.v1_0_0.parser import PubMedParser_v1_0_0
-from search_query.pubmed.v1_0_0.translator import PubMedTranslator_v1_0_0
+from search_query.pubmed.v_1_0_0.parser import PubMedParser_v1_0_0
+from search_query.pubmed.v_1_0_0.translator import PubMedTranslator_v1_0_0
 
 # flake8: noqa: E501
 

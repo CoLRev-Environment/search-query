@@ -2,9 +2,9 @@
 """Versioned EBSCO parser wrappers."""
 from __future__ import annotations
 
-from search_query.ebsco.linter import EBSCOListLinter
-from search_query.ebsco.parser import EBSCOListParser
-from search_query.ebsco.parser import EBSCOParser
+from search_query.ebscohost.linter import EBSCOListLinter
+from search_query.ebscohost.parser import EBSCOListParser
+from search_query.ebscohost.parser import EBSCOParser
 
 # pylint: disable=too-few-public-methods
 
@@ -24,3 +24,8 @@ class EBSCOListParser_v1_0_0(EBSCOListParser):
         super().__init__(query_list=query_list, field_general=field_general)
         self.parser_class = EBSCOParser_v1_0_0
         self.linter = EBSCOListLinter(self, EBSCOParser_v1_0_0)
+
+
+def register(registry, *, platform: str, version: str) -> None:
+    registry.register_parser_string(platform, version, EBSCOParser_v1_0_0)
+    registry.register_parser_list(platform, version, EBSCOListParser_v1_0_0)

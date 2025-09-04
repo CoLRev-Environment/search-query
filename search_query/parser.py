@@ -4,38 +4,18 @@ from __future__ import annotations
 
 import typing as _t
 
-from packaging.version import Version
-
 from search_query.constants import PLATFORM
-from search_query.ebsco.v1_0_0.parser import EBSCOListParser_v1_0_0
-from search_query.ebsco.v1_0_0.parser import EBSCOParser_v1_0_0
-from search_query.pubmed.v1_0_0.parser import PubMedListParser_v1_0_0
-from search_query.pubmed.v1_0_0.parser import PubMedParser_v1_0_0
 from search_query.query import Query
-from search_query.wos.v1_0_0.parser import WOSListParser_v1_0_0
-from search_query.wos.v1_0_0.parser import WOSParser_v1_0_0
+from search_query.registry import (
+    PARSERS,
+    LIST_PARSERS,
+    LATEST_PARSERS,
+    LATEST_LIST_PARSERS,
+    LATEST_VERSIONS_PARSERS as LATEST_VERSIONS,
+)
 
 if _t.TYPE_CHECKING:  # pragma: no cover
     from search_query.parser_base import QueryListParser, QueryStringParser
-
-
-PARSERS: dict[str, dict[str, type[QueryStringParser]]] = {
-    PLATFORM.PUBMED.value: {"1.0.0": PubMedParser_v1_0_0},
-    PLATFORM.WOS.value: {"1.0.0": WOSParser_v1_0_0},
-    PLATFORM.EBSCO.value: {"1.0.0": EBSCOParser_v1_0_0},
-}
-
-LIST_PARSERS: dict[str, dict[str, type[QueryListParser]]] = {
-    PLATFORM.PUBMED.value: {"1.0.0": PubMedListParser_v1_0_0},
-    PLATFORM.WOS.value: {"1.0.0": WOSListParser_v1_0_0},
-    PLATFORM.EBSCO.value: {"1.0.0": EBSCOListParser_v1_0_0},
-}
-
-LATEST_VERSIONS = {k: max(v.keys()) for k, v in PARSERS.items()}
-LATEST_PARSERS = {k: v[max(v.keys(), key=Version)] for k, v in PARSERS.items()}
-LATEST_LIST_PARSERS = {
-    k: v[max(v.keys(), key=Version)] for k, v in LIST_PARSERS.items()
-}
 
 
 def _resolve_version(platform: str, version: str | None) -> str:
