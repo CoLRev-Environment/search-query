@@ -2,9 +2,13 @@
 """Versioned Web of Science parser wrappers."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from search_query.wos.linter import WOSQueryListLinter
-from search_query.wos.parser import WOSListParser
-from search_query.wos.parser import WOSParser
+from search_query.wos.parser import WOSListParser, WOSParser
+
+if TYPE_CHECKING:  # pragma: no cover
+    from search_query.registry import Registry
 
 
 class WOSParser_v1_0_0(WOSParser):
@@ -24,6 +28,8 @@ class WOSListParser_v1_0_0(WOSListParser):
         self.linter = WOSQueryListLinter(self, WOSParser_v1_0_0)
 
 
-def register(registry, *, platform: str, version: str) -> None:
+def register(registry: Registry, *, platform: str, version: str) -> None:
+    """Register these parsers with the ``registry``."""
+
     registry.register_parser_string(platform, version, WOSParser_v1_0_0)
     registry.register_parser_list(platform, version, WOSListParser_v1_0_0)

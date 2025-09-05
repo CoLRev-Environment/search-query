@@ -4,23 +4,24 @@ from __future__ import annotations
 
 import importlib
 import re
-import typing as _t
-from dataclasses import dataclass
-from dataclasses import field
+from dataclasses import dataclass, field
 from pathlib import Path
-
-if _t.TYPE_CHECKING:  # pragma: no cover
-    from typing import Dict
-    from typing import Type
+import typing as _t
 
 from packaging.version import Version
 
 from search_query.constants import PLATFORM
-from search_query.parser_base import QueryListParser
-from search_query.parser_base import QueryStringParser
-from search_query.serializer_base import StringSerializer as QueryListSerializer
-from search_query.serializer_base import StringSerializer as QueryStringSerializer
+from search_query.parser_base import QueryListParser, QueryStringParser
+from search_query.serializer_base import StringSerializer
 from search_query.translator_base import QueryTranslator
+
+if _t.TYPE_CHECKING:  # pragma: no cover
+    from typing import Dict, Type
+
+from typing import TypeAlias
+
+QueryListSerializer: TypeAlias = StringSerializer
+QueryStringSerializer: TypeAlias = StringSerializer
 
 _VERSION_DIR_RE = re.compile(r"^v_(\d+)_(\d+)_(\d+)$")
 _MODULE_FILES = ("parser", "serializer", "translator")
@@ -34,13 +35,17 @@ def _to_version_str(dir_name: str) -> str:
 
 
 def _platform_pkg_path(platform: str) -> Path:
+    """Return the filesystem path for the given platform package."""
+
     pkg = f"search_query.{platform}"
-    mod = importlib.import_module(pkg)
-    return Path(next(iter(getattr(mod, "__path__"))))
+    module = importlib.import_module(pkg)
+    return Path(next(iter(getattr(module, "__path__"))))
 
 
 @dataclass
-class _Registry:
+class Registry:
+    """Registry of parsers, serializers and translators."""
+
     # Parsers
     parsers: Dict[str, Dict[str, Type[QueryStringParser]]] = field(default_factory=dict)
     list_parsers: Dict[str, Dict[str, Type[QueryListParser]]] = field(
@@ -62,55 +67,70 @@ class _Registry:
     def register_parser_string(
         self, platform: str, version: str, cls: Type[QueryStringParser]
     ) -> None:
+        """Register a string parser for ``platform`` and ``version``."""
+
         self.parsers.setdefault(platform, {})
         if version in self.parsers[platform]:
             prev = self.parsers[platform][version]
             raise RuntimeError(
-                f"Duplicate string parser for {platform} {version}: {prev.__name__} vs {cls.__name__}"
+                "Duplicate string parser for "
+                f"{platform} {version}: {prev.__name__} vs {cls.__name__}"
             )
         self.parsers[platform][version] = cls  # type: ignore[assignment]
 
     def register_parser_list(
         self, platform: str, version: str, cls: Type[QueryListParser]
     ) -> None:
+        """Register a list parser for ``platform`` and ``version``."""
+
         self.list_parsers.setdefault(platform, {})
         if version in self.list_parsers[platform]:
             prev = self.list_parsers[platform][version]
             raise RuntimeError(
-                f"Duplicate list parser for {platform} {version}: {prev.__name__} vs {cls.__name__}"
+                "Duplicate list parser for "
+                f"{platform} {version}: {prev.__name__} vs {cls.__name__}"
             )
         self.list_parsers[platform][version] = cls  # type: ignore[assignment]
 
     def register_serializer_string(
         self, platform: str, version: str, cls: Type[QueryStringSerializer]
     ) -> None:
+        """Register a string serializer for ``platform`` and ``version``."""
+
         self.serializers.setdefault(platform, {})
         if version in self.serializers[platform]:
             prev = self.serializers[platform][version]
             raise RuntimeError(
-                f"Duplicate string serializer for {platform} {version}: {prev.__name__} vs {cls.__name__}"
+                "Duplicate string serializer for "
+                f"{platform} {version}: {prev.__name__} vs {cls.__name__}"
             )
         self.serializers[platform][version] = cls  # type: ignore[assignment]
 
     def register_serializer_list(
         self, platform: str, version: str, cls: Type[QueryListSerializer]
     ) -> None:
+        """Register a list serializer for ``platform`` and ``version``."""
+
         self.list_serializers.setdefault(platform, {})
         if version in self.list_serializers[platform]:
             prev = self.list_serializers[platform][version]
             raise RuntimeError(
-                f"Duplicate list serializer for {platform} {version}: {prev.__name__} vs {cls.__name__}"
+                "Duplicate list serializer for "
+                f"{platform} {version}: {prev.__name__} vs {cls.__name__}"
             )
         self.list_serializers[platform][version] = cls  # type: ignore[assignment]
 
     def register_translator(
         self, platform: str, version: str, cls: Type[QueryTranslator]
     ) -> None:
+        """Register a translator for ``platform`` and ``version``."""
+
         self.translators.setdefault(platform, {})
         if version in self.translators[platform]:
             prev = self.translators[platform][version]
             raise RuntimeError(
-                f"Duplicate translator for {platform} {version}: {prev.__name__} vs {cls.__name__}"
+                "Duplicate translator for "
+                f"{platform} {version}: {prev.__name__} vs {cls.__name__}"
             )
         self.translators[platform][version] = cls  # type: ignore[assignment]
 
@@ -127,7 +147,7 @@ TRANSLATORS: dict[str, dict[str, type[QueryTranslator]]] = {}
 
 # Discovery -------------------------------------------------------------------
 
-_reg = _Registry(
+_reg = Registry(
     parsers=PARSERS,
     list_parsers=LIST_PARSERS,
     serializers=SERIALIZERS,
@@ -135,51 +155,61 @@ _reg = _Registry(
     translators=TRANSLATORS,
 )
 
-for plat in PLATFORM:
-    plat_key = plat.value
-    # ensure keys exist
-    PARSERS.setdefault(plat_key, {})
-    LIST_PARSERS.setdefault(plat_key, {})
-    SERIALIZERS.setdefault(plat_key, {})
-    LIST_SERIALIZERS.setdefault(plat_key, {})
-    TRANSLATORS.setdefault(plat_key, {})
 
-    pkg_path = _platform_pkg_path(plat_key)
-    for child in pkg_path.iterdir():
-        if not child.is_dir():
-            continue
-        if not _VERSION_DIR_RE.match(child.name):
-            continue
-        version_str = _to_version_str(child.name)
+def _discover() -> None:
+    """Discover and register all platform/version modules."""
 
-        for modstub in _MODULE_FILES:
-            pyfile = child / f"{modstub}.py"
-            if not pyfile.is_file():
+    for plat in PLATFORM:
+        plat_key = plat.value
+        # ensure keys exist
+        PARSERS.setdefault(plat_key, {})
+        LIST_PARSERS.setdefault(plat_key, {})
+        SERIALIZERS.setdefault(plat_key, {})
+        LIST_SERIALIZERS.setdefault(plat_key, {})
+        TRANSLATORS.setdefault(plat_key, {})
+
+        pkg_path = _platform_pkg_path(plat_key)
+        for child in pkg_path.iterdir():
+            if not child.is_dir() or not _VERSION_DIR_RE.match(child.name):
                 continue
-            mod_name = f"search_query.{plat_key}.{child.name}.{modstub}"
-            mod = importlib.import_module(mod_name)
+            version_str = _to_version_str(child.name)
 
-            register = getattr(mod, "register", None)
-            if register is None or not callable(register):
-                raise RuntimeError(
-                    f"{mod_name} must define a callable register(registry, *, platform: str, version: str)"
+            for modstub in _MODULE_FILES:
+                pyfile = child / f"{modstub}.py"
+                if not pyfile.is_file():
+                    continue
+                mod_name = (
+                    f"search_query.{plat_key}.{child.name}.{modstub}"
                 )
+                module = importlib.import_module(mod_name)
 
-            register(_reg, platform=plat_key, version=version_str)
+                register = getattr(module, "register", None)
+                if register is None or not callable(register):
+                    raise RuntimeError(
+                        f"{mod_name} must define a callable register(registry, *, platform: str, version: str)"
+                    )
+
+                register(_reg, platform=plat_key, version=version_str)
+
+
+_discover()
 
 # Sanity checks ---------------------------------------------------------------
 
 
 def _check_pair(
     name_a: str,
-    m_a: dict[str, dict[str, object]],
+    m_a: _t.Mapping[str, _t.Mapping[str, _t.Any]],
     name_b: str,
-    m_b: dict[str, dict[str, object]],
+    m_b: _t.Mapping[str, _t.Mapping[str, _t.Any]],
     platform: str,
 ) -> None:
+    """Ensure that both mappings contain the same versions for ``platform``."""
+
     if set(m_a[platform].keys()) != set(m_b[platform].keys()):
         raise RuntimeError(
-            f"Mismatched versions for platform '{platform}' between {name_a} and {name_b}: "
+            "Mismatched versions for platform "
+            f"'{platform}' between {name_a} and {name_b}: "
             f"{sorted(m_a[platform].keys())} vs {sorted(m_b[platform].keys())}"
         )
 
@@ -196,7 +226,9 @@ for plat in PLATFORM:
 # Latest helpers --------------------------------------------------------------
 
 
-def _latest_map(m: dict[str, dict[str, object]]) -> dict[str, str]:
+def _latest_map(m: _t.Mapping[str, _t.Mapping[str, _t.Any]]) -> dict[str, str]:
+    """Return mapping of platforms to their latest version string."""
+
     return {k: max(v.keys(), key=Version) for k, v in m.items() if v}
 
 
