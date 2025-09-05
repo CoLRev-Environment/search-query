@@ -8,6 +8,7 @@ from copy import deepcopy
 from search_query.constants import Fields
 
 # pylint: disable=too-few-public-methods
+# pylint: disable=duplicate-code
 
 # fields from
 # https://connect.ebsco.com/s/article/Searching-with-Field-Codes

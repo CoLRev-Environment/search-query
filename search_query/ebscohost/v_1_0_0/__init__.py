@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """EBSCOHost v1.0.0."""
 
 __author__ = """Gerit Wagner"""

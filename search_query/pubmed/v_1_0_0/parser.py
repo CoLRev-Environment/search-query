@@ -2,9 +2,14 @@
 """Versioned PubMed parser wrappers."""
 from __future__ import annotations
 
+import typing
+
 from search_query.pubmed.linter import PubmedQueryListLinter
 from search_query.pubmed.parser import PubmedListParser
 from search_query.pubmed.parser import PubmedParser
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from search_query.registry import Registry
 
 
 class PubMedParser_v1_0_0(PubmedParser):
@@ -25,6 +30,8 @@ class PubMedListParser_v1_0_0(PubmedListParser):
         self.linter = PubmedQueryListLinter(self, PubMedParser_v1_0_0)
 
 
-def register(registry, *, platform: str, version: str) -> None:
+def register(registry: Registry, *, platform: str, version: str) -> None:
+    """Register these parsers with the ``registry``."""
+
     registry.register_parser_string(platform, version, PubMedParser_v1_0_0)
     registry.register_parser_list(platform, version, PubMedListParser_v1_0_0)

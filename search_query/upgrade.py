@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from search_query.registry import LATEST_PARSERS
+from search_query.registry import LATEST_VERSIONS_PARSERS
 from search_query.registry import PARSERS
 from search_query.registry import SERIALIZERS
 from search_query.registry import TRANSLATORS
@@ -36,8 +36,9 @@ def upgrade_query(
       Where unavoidable, translators should emit warnings about lossy conversions.
     """
 
-    if not version_target or version_target.lower() == "latest":
-        version_target = LATEST_PARSERS[platform]
+    if version_target is None or version_target.lower() == "latest":
+        version_target = LATEST_VERSIONS_PARSERS[platform]
+    assert version_target is not None
 
     # 1) Parse source query string into a query object.
     parser_cls = PARSERS[platform][version_current]
