@@ -77,6 +77,7 @@ class Query:
         distance: int = 0,
     ) -> Query:
         """Factory method for query creation."""
+        # pylint: disable=cyclic-import
         if not operator:
             # pylint: disable=import-outside-toplevel
             from search_query.query_term import Term
