@@ -9,8 +9,12 @@ search\_query.wos.serializer
 
 
 
-   .. rubric:: Functions
+
+
+
+
+   .. rubric:: Classes
 
    .. autosummary::
 
-      to_string_wos
+      WOSQuerySerializer

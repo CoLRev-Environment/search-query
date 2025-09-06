@@ -47,8 +47,11 @@
    search_query.query_range
    search_query.query_term
    search_query.search_file
+   search_query.serializer
    search_query.serializer_base
    search_query.serializer_structured
+   search_query.translator
    search_query.translator_base
+   search_query.upgrade
    search_query.utils
    search_query.wos

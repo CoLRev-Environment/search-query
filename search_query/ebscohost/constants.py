@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Constants for EBSCO."""
-# pylint: disable=too-few-public-methods
+from __future__ import annotations
+
 import re
 from copy import deepcopy
 
 from search_query.constants import Fields
 
+# pylint: disable=too-few-public-methods
+# pylint: disable=duplicate-code
 
 # fields from
 # https://connect.ebsco.com/s/article/Searching-with-Field-Codes

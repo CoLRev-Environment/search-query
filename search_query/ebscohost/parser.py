@@ -8,8 +8,8 @@ import typing
 from search_query.constants import PLATFORM
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebsco.linter import EBSCOListLinter
-from search_query.ebsco.linter import EBSCOQueryStringLinter
+from search_query.ebscohost.linter import EBSCOListLinter
+from search_query.ebscohost.linter import EBSCOQueryStringLinter
 from search_query.exception import QuerySyntaxError
 from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser

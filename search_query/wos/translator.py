@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """WOS query translator."""
+from __future__ import annotations
+
 import re
 
 from search_query.constants import Fields

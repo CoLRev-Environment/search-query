@@ -33,7 +33,7 @@ class QueryTranslator:
             query.field = None
 
         for child in query.children:
-            # Recursively call the function on the child querys
+            # Recursively call the function on the child queries
             cls.move_fields_to_terms(child)
 
     @classmethod

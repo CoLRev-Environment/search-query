@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Pubmed query translator."""
+from __future__ import annotations
+
 import typing
 from collections import defaultdict
 from itertools import permutations
@@ -20,7 +22,7 @@ class PubmedTranslator(QueryTranslator):
     """Translator for Pubmed queries."""
 
     @classmethod
-    def _expand_flat_or_chains(cls, query: "Query") -> bool:
+    def _expand_flat_or_chains(cls, query: Query) -> bool:
         """Expand flat OR chains into a single OR query."""
 
         if not (query.operator and query.value == Operators.OR):
@@ -53,7 +55,7 @@ class PubmedTranslator(QueryTranslator):
         return False  # pragma: no cover
 
     @classmethod
-    def _translate_fields(cls, query: "Query") -> None:
+    def _translate_fields(cls, query: Query) -> None:
         if query.operator:
             for child in query.children:
                 cls._translate_fields(child)
@@ -63,7 +65,7 @@ class PubmedTranslator(QueryTranslator):
                 query.field.value = generic_field_to_syntax_field(query.field.value)
 
     @classmethod
-    def _combine_tiab(cls, query: "Query") -> None:
+    def _combine_tiab(cls, query: Query) -> None:
         """Recursively combine identical terms from TI and AB into TIAB."""
 
         if query.operator and query.value == "OR":
@@ -106,7 +108,7 @@ class PubmedTranslator(QueryTranslator):
                     new_children.append(child)
             query.children = new_children
 
-        # Recursively apply to child querys
+        # Recursively apply to child queries
         for child in query.children:
             cls._combine_tiab(child)
 
@@ -292,7 +294,7 @@ class PubmedTranslator(QueryTranslator):
         )
 
     @classmethod
-    def to_generic_syntax(cls, query: "Query") -> "Query":
+    def to_generic_syntax(cls, query: Query) -> Query:
         """Convert the query to a generic syntax."""
 
         query = query.copy()
@@ -300,7 +302,7 @@ class PubmedTranslator(QueryTranslator):
         return query
 
     @classmethod
-    def to_specific_syntax(cls, query: "Query") -> "Query":
+    def to_specific_syntax(cls, query: Query) -> Query:
         """Convert the query to a specific syntax."""
 
         query = query.copy()

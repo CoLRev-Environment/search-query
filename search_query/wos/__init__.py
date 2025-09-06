@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Top-level package for WoS."""
 
 __author__ = """Gerit Wagner"""

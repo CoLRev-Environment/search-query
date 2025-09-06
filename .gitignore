@@ -1,11 +1,5 @@
-docs/__pycache__/
-search_query/__pycache__/*
-test/__pycache__/*
 docs/build
-search_query/ebsco/__pycache__/*
-search_query/pubmed/__pycache__/*
-search_query/wos/__pycache__/*
-search_query/generic/__pycache__/*
+*__pycache__*
 
 # Unit test / coverage reports
 htmlcov/

@@ -32,3 +32,4 @@ search\_query.ebsco
    search_query.ebsco.parser
    search_query.ebsco.serializer
    search_query.ebsco.translator
+   search_query.ebsco.v1_0_0

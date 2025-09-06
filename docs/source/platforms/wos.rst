@@ -66,4 +66,4 @@ Resources
 - `Web of Science Errors <https://images.webofknowledge.com/WOKRS528R6/help/TCT/ht_errors.html>`_
 
 .. note::
-    Field tags on `this page <https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html>`_ are outdated (e.g., "DI" no longer works).
+    Field tags on `this page <https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html>`_ are outdated (e.g., "DI" no longer works). The page is no longer available, but can be accessed through the waybackmachine.

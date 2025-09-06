@@ -9,8 +9,8 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebsco.constants import syntax_str_to_generic_field_set
-from search_query.ebsco.constants import VALID_fieldS_REGEX
+from search_query.ebscohost.constants import syntax_str_to_generic_field_set
+from search_query.ebscohost.constants import VALID_fieldS_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 
@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.query import Query
     from search_query.parser_base import QueryStringParser
 
-    from search_query.ebsco.parser import EBSCOListParser
+    from search_query.ebscohost.parser import EBSCOListParser
 
 
 class EBSCOQueryStringLinter(QueryStringLinter):

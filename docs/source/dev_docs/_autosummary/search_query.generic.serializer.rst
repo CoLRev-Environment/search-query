@@ -9,8 +9,12 @@ search\_query.generic.serializer
 
 
 
-   .. rubric:: Functions
+
+
+
+
+   .. rubric:: Classes
 
    .. autosummary::
 
-      to_string_generic
+      GenericSerializer

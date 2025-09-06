@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """EBSCO query translator."""
+from __future__ import annotations
+
 from search_query.constants import Fields
-from search_query.ebsco.constants import generic_field_to_syntax_field
-from search_query.ebsco.constants import syntax_str_to_generic_field_set
+from search_query.ebscohost.constants import generic_field_to_syntax_field
+from search_query.ebscohost.constants import syntax_str_to_generic_field_set
 from search_query.query import Query
 from search_query.translator_base import QueryTranslator
 

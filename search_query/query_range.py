@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Range Query"""
+from __future__ import annotations
+
 import typing
 
 from search_query.constants import Operators

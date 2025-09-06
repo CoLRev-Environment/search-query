@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Constants for search-query"""
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from enum import Enum
@@ -94,7 +96,7 @@ class SearchField:
     def __str__(self) -> str:
         return self.value
 
-    def copy(self) -> "SearchField":
+    def copy(self) -> SearchField:
         """Return a copy of the SearchField instance."""
         return SearchField(self.value, position=self.position)
 
@@ -326,6 +328,22 @@ class QueryErrorCode(Enum):
 
 **Typical fix**: Explicitly specify the search field in the query string instead of relying on a general search field setting.
 """,
+    )
+
+    # -------------------------------------------------------
+    # Linter
+    # -------------------------------------------------------
+    LINT_DEPRECATED_SYNTAX = (
+        "LINT_2001",
+        "deprecated-syntax",
+        "deprecated-syntax",
+        """This message indicates that the query uses deprecated syntax.
+
+**Typical fix**: Update the query to use the latest syntax by running
+
+```bash
+search-query upgrade search_query.json --to 2.0.0
+```""",
     )
 
     # -------------------------------------------------------

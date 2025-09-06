@@ -126,3 +126,20 @@ Example:
 
    - Use helper functions like `parser.print_tokens()` to ease debugging.
    - Use `assert ... == ...` with fallbacks for `print(...)` for inspection.
+
+4. **Golden File Tests**
+    - Purpose: Ensure that parsing and serialization remain stable across
+      versions. Store expected outputs as versioned "golden" files and
+      compare test results against them.
+
+5. **Deprecated Syntax Tests**
+    - Purpose: Verify that linters flag outdated constructs using
+      the deprecated syntax message (``LINT_2001``).
+    - Example:
+
+   .. code-block:: python
+
+      def test_deprecated_operator():
+         parser = XYParser('term1 SAME term2')
+         parser.parse()
+         assert any(m['code'] == 'LINT_2001' for m in parser.linter.messages)
