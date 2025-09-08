@@ -59,6 +59,12 @@ Best Practices and Recommendations
 - Use **explicit field tags** (`TS=`, `TI=`, `AB=`, etc.) instead of relying on default fields.
 
 
+Deprecated versions
+-------------------
+
+- **0.0.0**: Initial version with basic support for Web of Science queries.
+# TODO : add links/explanations
+
 Resources
 ---------
 
