@@ -32,4 +32,4 @@ search\_query.pubmed
    search_query.pubmed.parser
    search_query.pubmed.serializer
    search_query.pubmed.translator
-   search_query.pubmed.v1_0_0
+   search_query.pubmed.v_1_0_0

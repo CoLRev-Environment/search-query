@@ -1,7 +1,7 @@
-search\_query.ebsco.linter
-==========================
+search\_query.ebscohost.linter
+==============================
 
-.. automodule:: search_query.ebsco.linter
+.. automodule:: search_query.ebscohost.linter
 
 
 

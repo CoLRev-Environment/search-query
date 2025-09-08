@@ -1,7 +1,7 @@
-search\_query.ebsco.constants
-=============================
+search\_query.ebscohost.constants
+=================================
 
-.. automodule:: search_query.ebsco.constants
+.. automodule:: search_query.ebscohost.constants
 
 
 
