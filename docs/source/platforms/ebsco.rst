@@ -10,7 +10,7 @@ Run a Query
 
 EBSCOHost queries can be constructed using the standard `EBSCOHost advanced search interface <https://search.ebscohost.com/>`_ (requires institutional access).
 
-When working with `search-query`, we recommend extracting the **Search terms** from the **Search History** panel or persistent URL for use as the `search_string`.
+When working with `search-query`, extract the **Search terms** from the **Search History** panel or persistent URL for use as the `search_string`.
 
 EBSCOHost query syntax includes field tags such as `AB`, `TI`, `SU`, etc. These should be included directly in the `search_string`.
 

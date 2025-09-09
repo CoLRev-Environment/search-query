@@ -3,10 +3,9 @@
 Syntax Upgrades
 ===============
 
-The ``search-query`` package allows you to **upgrade database-specific queries**
-from one *database syntax version* to another.
+The ``search-query`` package upgrades **database-specific queries** from one *database syntax version* to another.
 
-Most users will interact with this feature via the **command-line interface (CLI)**.
+Interaction typically occurs via the **command-line interface (CLI)**.
 Behind the scenes, the upgrade follows a structured procedure using a generic query
 as an intermediate representation (IR).
 
@@ -16,10 +15,8 @@ To upgrade a query stored in ``query.json`` to the latest version of a given dat
 
    search-query upgrade query.json
 
-By default, if you omit the ``--to`` option or set it to ``latest``,
-the tool upgrades the query to the latest supported syntax version for the specified database.
-You can also specify a particular target version explicitly using ``--to <version>``,
-but in most cases, upgrading to the latest version (by omitting ``--to``) is recommended.
+By default, omission of the ``--to`` option or setting it to ``latest`` upgrades the query to the latest supported syntax version for the specified database.
+A particular target version can also be specified using ``--to <version>``, but upgrading to the latest version (by omitting ``--to``) is generally recommended.
 The upgraded query will be written back to the file (or another location if specified with ``--output``).
 
 Versioning Policy
@@ -78,7 +75,7 @@ As a result:
 How Upgrades Work Internally
 -----------------------------
 
-Even though you only call the CLI, the following procedure happens under the hood:
+Even though only the CLI is called, the following procedure happens under the hood:
 
 1. **Parse**
    The query string (including platform and its current syntax version) is parsed into a query object.

@@ -25,6 +25,6 @@ PARSE_1002 — list-query-invalid-reference
     2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #2
 
-**Typical fix**: Reference only existing list items in your query.
+**Typical fix**: Reference only existing list items.
 
 **Back to**: :ref:`lint`

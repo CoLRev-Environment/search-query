@@ -302,7 +302,7 @@ class QueryErrorCode(Enum):
 
 **Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
 
-**Rationale**: Researchers may copy the search_string and miss the general_field, incorrectly reproducing the query.
+**Rationale**: The search_string may be copied and the general_field missed, leading to incorrect reproduction of the query.
 """,
     )
     FIELD_IMPLICIT = (
@@ -573,7 +573,7 @@ search-query upgrade search_query.json --to 2.0.0
     2. TS=("acrobatics" OR "acrobat")
     3. #1 AND #2
 
-**Typical fix**: Reference only existing list items in your query.
+**Typical fix**: Reference only existing list items.
 """,
     )
 

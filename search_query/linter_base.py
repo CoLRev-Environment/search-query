@@ -149,7 +149,7 @@ class QueryStringLinter:
         self.last_read_index = len(self.messages)
 
     def check_status(self) -> None:
-        """Check the output of the linter and report errors to the user"""
+        """Check the output of the linter and report errors"""
 
         # Collecting messages instead of printing them immediately
         # allows us to consolidate messages with the same code or even replace messages
@@ -1584,7 +1584,7 @@ class QueryListLinter:
             self.last_read_index[list_position] += len(messages)
 
     def check_status(self) -> None:
-        """Check the output of the linter and report errors to the user"""
+        """Check the output of the linter and report errors"""
 
         self.print_messages()
 

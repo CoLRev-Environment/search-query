@@ -38,7 +38,7 @@ update the implementation as needed, and register the new version in the ``TRANS
 Utility Methods Provided
 ------------------------
 
-From the base class (`QueryTranslator`), you can use:
+The base class (`QueryTranslator`) provides the following utilities:
 
 - ``move_field_from_operator_to_terms(query)``:
   Moves a shared search field from the operator level to each child query.

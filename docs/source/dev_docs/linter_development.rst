@@ -19,7 +19,7 @@ Each linter must override the `validate_tokens()` method and the `validate_query
 Best Practices
 --------------
 - **Use standardized linter messages** defined in `constants.QueryErrorCode`.
-- **Add details** in messages for user guidance (e.g., invalid format, missing logic).
+- **Add details** in messages for guidance (e.g., invalid format, missing logic).
 - Ensure **valid token sequences** using the `VALID_TOKEN_SEQUENCES` dictionary.
 - Consider using **utility methods** provided by `linter_base.py`:
   - `check_unbalanced_parentheses()`
@@ -46,7 +46,7 @@ such patterns, for example:
 
    LINT_2001: Operator "SAME" is deprecated. Use NEAR/0.
 
-These messages surface to users during parsing and encourage upgrades.
+These messages appear during parsing and encourage upgrades.
 
 .. literalinclude:: linter_skeleton.py
    :language: python

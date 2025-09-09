@@ -7,7 +7,7 @@ The ``search-query lint`` hook is a linter that automatically checks
 search query files (JSON) for errors and formatting issues.
 It is based on the ``search-query`` package and ensures that only valid,
 well-structured queries are committed to the repository. This helps catch
-mistakes early and keeps your project consistent without extra manual work.
+mistakes early and keeps the project consistent without extra manual work.
 
 Linters can be included as pre-commit hooks by adding the following to the ``.pre-commit-config.yaml``:
 
@@ -45,8 +45,8 @@ Examples
 
 **1. Catching unbalanced-parentheses (PARSE_0002 — unbalanced-parentheses)**
 
-Suppose you have a JSON search query file with a syntax error (e.g., a
-missing closing parenthesis). The linter will catch it before you commit:
+Suppose a JSON search query file has a syntax error (e.g., a
+missing closing parenthesis). The linter catches it before commit:
 
 .. code-block:: json
 
@@ -54,7 +54,7 @@ missing closing parenthesis). The linter will catch it before you commit:
       "query": "(\"digital health\"[Title/Abstract]) AND (\"privacy\"[Title/Abstract]"
     }
 
-When you try to commit, ``search-query lint`` outputs an error:
+When a commit is attempted, ``search-query lint`` outputs an error:
 
 .. code-block:: text
 

@@ -39,14 +39,14 @@ digital_synonyms = OrQuery(["digital", "virtual", "online"], field="abstract")
 work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
 query = AndQuery([digital_synonyms, work_synonyms])
 ```
-We can also parse a query from a string or a JSON search file (see the [overview of platform identifiers](https://colrev-environment.github.io/search-query/platforms/platform_index.html))
+A query can also be parsed from a string or a JSON search file (see the [overview of platform identifiers](https://colrev-environment.github.io/search-query/platforms/platform_index.html))
 ```python
 from search_query.parser import parse
 
 query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
 query = parse(query_string, platform="pubmed")
 ```
-A useful feature of parsers is the built-in **linter** functionality, which helps us to validate the query by identifying syntactical errors:
+The built-in **linter** functionality validates queries by identifying syntactical errors:
 ```python
 from search_query.parser import parse
 
@@ -58,8 +58,8 @@ query = parse(query_string, platform="pubmed")
 #   Query: ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
 #                                                ^^^
 ```
-Once we have created a `query` object, we can translate it for different databases.
-Note how the syntax is translated and how the search for `Title/Abstract` is split into two elements:
+Once a `query` object is created, it can be translated for different databases.
+The translation illustrates how the search for `Title/Abstract` is split into two elements:
 ```python
 from search_query.parser import parse
 
@@ -96,7 +96,7 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 
 ## Encounter a problem?
 
-If you find a bug or run into any issues while using the package, please [open an issue](https://github.com/CoLRev-Environment/search-query/issues) or contact one of the developers.
+Bug reports or issues can be submitted via [the issue tracker](https://github.com/CoLRev-Environment/search-query/issues) or by contacting the developers.
 
 ## How to cite
 
@@ -110,9 +110,9 @@ The package was developed as part of Bachelor's theses:
 - Eckhardt, P. (2025). Advances in literature searches: Evaluation, analysis, and improvement of Web of Science queries. Otto-Friedrich-University of Bamberg.
 - Ernst, K. (2024). Towards more efficient literature search: Design of an open source query translator. Otto-Friedrich-University of Bamberg.
 
-## Not what you are looking for?
+## Alternative tools
 
-This Python package was developed with the purpose of integrating it into other literature management tools. If that isn't your use case, it might be useful for you to look at these related tools:
+This Python package is designed for programmatic and CLI-based use, as well as for integration into other literature management tools. For different scenarios, the following related tools may be helpful:
 
 - [LitSonar](https://litsonar.com/)
 - [Polyglot](https://sr-accelerator.com/#/polyglot)
