@@ -57,19 +57,21 @@ Best Practices and Recommendations
 
 - Prefer **Advanced Search** for reproducible and structured queries.
 - Use **explicit field tags** (`TS=`, `TI=`, `AB=`, etc.) instead of relying on default fields.
+ 
+Versions
+--------
 
+Latest version: **1**
 
-Deprecated versions
--------------------
+Deprecated versions:
 
-- **0**: Initial version with basic support for Web of Science queries.
-# TODO : add links/explanations
+- **0**: Initial version with basic support for Web of Science queries. Field tags on
+  `this page <https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html>`_
+  are outdated (e.g., "DI" no longer works). The page is no longer available, but can be
+  accessed through the Wayback Machine.
 
 Resources
 ---------
 
 - `Field Tags Reference <https://webofscience.help.clarivate.com/Content/wos-core-collection/woscc-field-tags.htm>`_
 - `Web of Science Errors <https://images.webofknowledge.com/WOKRS528R6/help/TCT/ht_errors.html>`_
-
-.. note::
-    Field tags on `this page <https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html>`_ are outdated (e.g., "DI" no longer works). The page is no longer available, but can be accessed through the waybackmachine.
