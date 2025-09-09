@@ -34,36 +34,32 @@ Versioning Policy
    The latest package version (of ``search-query``) evolves independently and
    contains the most up-to-date parser/translator/serializer for the syntax versions it supports
    across databases.
-   New package releases can improve or extend support for *existing* syntax versions
+   New package releases can improve or extend support for a syntax version
    without implying that the database syntax itself changed.
 
-Version identifiers follow a pragmatic schema aligned with semantic versioning,
-with emphasis on **MAJOR** and **MINOR** to reflect database syntax evolution:
+For database syntax, only **MAJOR** versions are tracked:
 
 * **MAJOR** – *Breaking* syntax changes in the **database**
   (e.g., operators changed/removed, search fields renamed/removed, precedence rules altered).
   Older queries may need migration.
 
-* **MINOR** – *Backward-compatible* syntax extensions
-  (e.g., new search fields, additional operators, increased limits on terms or clauses).
-  Older queries still parse and run.
-
-..
-   * **PATCH** – Non-semantic tweaks in this package’s handling of a DSV
-   (bug fixes, robustness, diagnostics). Patch bumps do **not** imply a database syntax change.
+Minor or backward-compatible changes in a database’s query language
+(e.g., additional operators, new search fields, relaxed limits) are
+**covered transparently by the evolving ``search-query`` package**.
+They do **not** require an upgrade of stored queries and therefore do not result in a new syntax version.
 
 .. important::
 
    The **primary use cases** are to
 
    1. store queries in the **current syntax version**,
-   2. **upgrade** them to a newer syntax version when available, and
-   3. **anticipate** that the database syntax may evolve (occasionally via new MAJOR versions).
+   2. **upgrade** them when a new MAJOR syntax version is introduced, and
+   3. **anticipate** that the database syntax may evolve.
 
    Full support for arbitrarily many **historic** syntax versions
    (including fine-grained distinctions and *backward* translation) is **not** a primary goal.
    Syntax versions start with 1.0 as of 2025-09-01. Previous versions will not be
-   explored systematically and version 0.0 may be used as a placeholder for all previous syntax versions.
+   explored systematically and version 0.0 may be used as a placeholder for all earlier syntax.
 
 Observability of Syntax Versions
 --------------------------------
@@ -76,7 +72,7 @@ As a result:
 
 - Old syntax versions may be only partially reconstructable.
 - The focus is ensuring the **latest/current syntax** is well covered and testable.
-- When a significant change is detected, the package encodes it as a new syntax version and
+- When a significant breaking change is detected, the package encodes it as a new MAJOR version and
   provides **upgrade** paths via the IR.
 
 How Upgrades Work Internally
