@@ -86,6 +86,25 @@ Note how the syntax is translated and how the search for :literal:`Title/Abstrac
    # Output:
    # (AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy")
 
+The translated query can be saved as follows:
+
+.. code-block:: python
+   :linenos:
+
+   from search_query import SearchFile
+
+   search_file = SearchFile(
+      filename="search-file.json",
+      query_str=wos_query.to_string(platform="wos"),
+      platform="wos",
+      version="1",
+      authors=[{"name": "Tom Brady"}],
+      record_info={},
+      date={}
+   )
+
+   search_file.save()
+
 Demo
 ============
 
@@ -125,6 +144,7 @@ Below is a high-level overview of the core functionalities:
    :caption: Platforms
 
    platforms/platform_index
+   platforms/syntax_upgrade
 
 .. toctree::
    :hidden:

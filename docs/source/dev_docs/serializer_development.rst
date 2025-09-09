@@ -14,7 +14,6 @@ Serializers are typically implemented as standalone functions. The core interfac
 .. literalinclude:: serializer_skeleton.py
    :language: python
 
-
 Serializers follow a shared conceptual pattern:
 
 - Accept a `Query` object.
@@ -25,3 +24,25 @@ Serializers follow a shared conceptual pattern:
 .. note::
 
   Avoid embedding platform-specific validation logic (use linters for that).
+
+Versioned serializers
+---------------------
+
+Serializers live in versioned modules such as
+``search_query/pubmed/v1/serializer.py``. See
+`versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
+
+They are registered in the
+central ``search_query.serializer`` module via the ``SERIALIZERS``
+mapping. ``LATEST_SERIALIZERS`` resolves the latest version at
+runtime when no explicit ``serializer_version`` is provided.
+
+Example stored query with version information:
+
+.. code-block:: json
+
+   {
+       "platform": "wos",
+       "search_string": "TS=(quantum dot)",
+       "version": "1"
+   }

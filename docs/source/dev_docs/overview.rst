@@ -17,4 +17,27 @@ Development setup
 
    pip install -e ".[dev]"
 
+Repository layout
+-----------------
+
+Versioned implementations live inside
+``search_query/<platform>/vX_Y_Z/`` directories:
+
+.. code-block:: text
+
+   search_query/
+       pubmed/
+           v1/
+               parser.py
+               serializer.py
+               translator.py
+
+To add a new parser or serializer version:
+
+1. copy the latest versioned directory (e.g. ``v1`` → ``v2``),
+2. apply your changes,
+3. register the new version in ``search_query.parser.PARSERS``,
+   ``search_query.serializers.SERIALIZERS`` or
+   ``search_query.translators.TRANSLATORS`` so it becomes discoverable.
+
 A code skeleton is available for the parser, linter, translator, and tests.

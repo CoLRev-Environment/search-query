@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Constants for Web-of-Science."""
+from __future__ import annotations
+
 import re
 from copy import deepcopy
 
@@ -151,8 +153,8 @@ field_GENERAL_TO_SYNTAX_MAP = {
     "Year Published": "PY=",
     "Affiliation": "AD=",
     "Funding Agency": "FO=",
-    "Publisher": "PU=",
-    "Publiation Date": "PD=",
+    # "Publisher": "PU=", # deprecated ?
+    # "Publiation Date": "PY=", # deprecated ?
     "Abstract": "AB=",
     "Accession Number": "UT=",
     "Address": "AD=",

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Pubmed query parser."""
+from __future__ import annotations
+
 import re
 import typing
 
@@ -16,6 +18,8 @@ from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_near import NEARQuery
 from search_query.query_term import Term
+
+# pylint: disable=duplicate-code
 
 
 class PubmedParser(QueryStringParser):
@@ -50,6 +54,7 @@ class PubmedParser(QueryStringParser):
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
@@ -57,9 +62,14 @@ class PubmedParser(QueryStringParser):
             field_general=field_general,
             offset=offset,
             original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.linter = PubmedQueryStringLinter(
-            query_str=query_str, original_str=original_str, silent=silent
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
 
     def tokenize(self) -> None:
@@ -295,13 +305,19 @@ class PubmedListParser(QueryListParser):
         query_list: str,
         *,
         field_general: str = "",
+        ignore_failing_linter: bool = False,
     ) -> None:
         super().__init__(
             query_list,
             parser_class=PubmedParser,
             field_general=field_general,
+            ignore_failing_linter=ignore_failing_linter,
         )
-        self.linter = PubmedQueryListLinter(self, PubmedParser)
+        self.linter = PubmedQueryListLinter(
+            self,
+            PubmedParser,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
     def parse(self) -> Query:
         """Parse the query in list format."""
@@ -318,6 +334,7 @@ class PubmedListParser(QueryListParser):
             field_general=self.field_general,
             offset=offset,
             silent=True,
+            ignore_failing_linter=self.ignore_failing_linter,
         )
         try:
             query = query_parser.parse()

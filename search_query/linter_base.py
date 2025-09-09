@@ -57,6 +57,7 @@ class QueryStringLinter:
         *,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
         self.tokens: typing.List[Token] = []
 
@@ -72,6 +73,7 @@ class QueryStringLinter:
         self.original_str = original_str or query_str
         # silent: primarily for ListParsers
         self.silent = silent
+        self.ignore_failing_linter = ignore_failing_linter
 
     def add_message(
         self,
@@ -156,7 +158,13 @@ class QueryStringLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            raise QuerySyntaxError(self)
+            if self.ignore_failing_linter:
+                print(
+                    f"{Colors.ORANGE}Warning{Colors.END}: "
+                    "Ignoring fatal linter errors."
+                )
+            else:
+                raise QuerySyntaxError(self)
 
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""
@@ -1481,12 +1489,14 @@ class QueryListLinter:
         parser: search_query.parser_base.QueryListParser,
         string_parser_class: typing.Type[search_query.parser_base.QueryStringParser],
         original_query_str: str = "",
-    ):
+        ignore_failing_linter: bool = False,
+    ) -> None:
         self.parser = parser
         self.messages: dict = {}
         self.string_parser_class = string_parser_class
         self.last_read_index: typing.Dict[int, int] = {}
         self.original_query_str = original_query_str
+        self.ignore_failing_linter = ignore_failing_linter
 
     # pylint: disable=too-many-arguments
     def add_message(
@@ -1579,7 +1589,13 @@ class QueryListLinter:
         self.print_messages()
 
         if self.has_fatal_errors():
-            raise ListQuerySyntaxError(self)
+            if self.ignore_failing_linter:
+                print(
+                    f"{Colors.ORANGE}Warning{Colors.END}: "
+                    "Ignoring fatal linter errors."
+                )
+            else:
+                raise ListQuerySyntaxError(self)
 
 
 def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-") -> None:

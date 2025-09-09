@@ -18,6 +18,23 @@ A translator must implement the following two class methods:
 
 Each method receives a `Query` object (the internal AST) and must return a new `Query` object with appropriately translated search fields and structure.
 
+Versioned translators
+-------------------------
+
+Translators are organized in versioned modules such as
+``search_query/pubmed/v1/translator.py``. See
+`versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
+This structure preserves older versions,
+enabling reproducible translations and ensuring backward compatibility.
+
+A central registry in ``search_query.translator`` provides a ``TRANSLATORS`` mapping,
+which dynamically selects the appropriate translator version at runtime. Invoking
+``translate(..., translator_version="latest")`` loads the most recent version for the
+specified platform.
+
+To introduce a new translator version, duplicate the previous versioned directory,
+update the implementation as needed, and register the new version in the ``TRANSLATORS`` dictionary.
+
 Utility Methods Provided
 ------------------------
 

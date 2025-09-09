@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Database and filters."""
+from __future__ import annotations
+
 import typing
 
 try:
@@ -21,7 +23,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 # This decision may change in the future if the number of queries increases.
 
 
-def load_query(name: str) -> "Query":
+def load_query(name: str) -> Query:
     """Load a query object from JSON by name."""
     try:
         name = name.replace(".json", "")

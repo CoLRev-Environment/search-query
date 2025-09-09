@@ -8,12 +8,9 @@ import typing
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import SearchField
-from search_query.ebsco.serializer import to_string_ebsco
-from search_query.generic.serializer import to_string_generic
-from search_query.pubmed.serializer import to_string_pubmed
+from search_query.generic.serializer import GenericSerializer
 from search_query.serializer_structured import to_string_structured
 from search_query.serializer_structured import to_string_structured_2
-from search_query.wos.serializer import to_string_wos
 
 
 # pylint: disable=too-many-public-methods
@@ -80,6 +77,7 @@ class Query:
         distance: int = 0,
     ) -> Query:
         """Factory method for query creation."""
+        # pylint: disable=cyclic-import
         if not operator:
             # pylint: disable=import-outside-toplevel
             from search_query.query_term import Term
@@ -156,7 +154,7 @@ class Query:
                 gen_linter.check_status()
 
         elif self.platform == PLATFORM.EBSCO.value:
-            from search_query.ebsco.linter import EBSCOQueryStringLinter
+            from search_query.ebscohost.linter import EBSCOQueryStringLinter
 
             ebsco_linter = EBSCOQueryStringLinter()
             ebsco_linter.validate_query_tree(self)
@@ -464,69 +462,50 @@ class Query:
 
     def to_generic_string(self) -> str:
         """Prints the query in generic syntax"""
-        return to_string_generic(self)
+        return GenericSerializer().to_string(self)
 
     def to_string(self) -> str:
         """Prints the query as a string"""
 
         assert self.platform != ""
+        # pylint: disable=import-outside-toplevel
+        from search_query.registry import LATEST_SERIALIZERS
 
-        if self.platform == PLATFORM.WOS.value:
-            return to_string_wos(self)
-        if self.platform == PLATFORM.PUBMED.value:
-            return to_string_pubmed(self)
-        if self.platform == PLATFORM.EBSCO.value:
-            return to_string_ebsco(self)
+        serializer = LATEST_SERIALIZERS[self.platform]
 
-        raise ValueError(f"Syntax not supported ({self.platform})")  # pragma: no cover
+        return serializer().to_string(self)
 
     def translate(self, target_syntax: str) -> Query:
         """Translate the query to the target syntax using the provided translator."""
         # possible extension: inject custom parser:
         # parser: QueryStringParser | None = None
 
-        # pylint: disable=import-outside-toplevel
-        from search_query.pubmed.translator import PubmedTranslator
-        from search_query.ebsco.translator import EBSCOTranslator
-        from search_query.wos.translator import WOSTranslator
-
         # If the target syntax is the same as the origin, no translation is needed
         if target_syntax == self.platform:
             return self
 
+        # pylint: disable=import-outside-toplevel
+        from search_query.registry import LATEST_TRANSLATORS
+
         if self.platform == "generic":
             generic_query = self.copy()
         else:
-            if self.platform == PLATFORM.PUBMED.value:
-                pubmed_translator = PubmedTranslator()
-                generic_query = pubmed_translator.to_generic_syntax(self)
-            elif self.platform == PLATFORM.EBSCO.value:
-                ebsco_translator = EBSCOTranslator()
-                generic_query = ebsco_translator.to_generic_syntax(self)
-            elif self.platform == PLATFORM.WOS.value:
-                wos_translator = WOSTranslator()
-                generic_query = wos_translator.to_generic_syntax(self)
-            else:  # pragma: no cover
+            if self.platform not in LATEST_TRANSLATORS:  # pragma: no cover
                 raise NotImplementedError(
                     f"Translation from {self.platform} " "to generic is not implemented"
                 )
+            translator = LATEST_TRANSLATORS[self.platform]
+            generic_query = translator.to_generic_syntax(self)
 
         if target_syntax == "generic":
             generic_query.platform = target_syntax
             return generic_query
-        if target_syntax == PLATFORM.PUBMED.value:
-            target_query = PubmedTranslator.to_specific_syntax(generic_query)
-            target_query.platform = target_syntax
-            return target_query
-        if target_syntax == PLATFORM.EBSCO.value:
-            target_query = EBSCOTranslator.to_specific_syntax(generic_query)
-            target_query.platform = target_syntax
-            return target_query
-        if target_syntax == PLATFORM.WOS.value:
-            target_query = WOSTranslator.to_specific_syntax(generic_query)
-            target_query.platform = target_syntax
-            return target_query
-
-        raise NotImplementedError(
-            f"Translation to {target_syntax} is not implemented"
-        )  # pragma: no cover
+        if target_syntax not in LATEST_TRANSLATORS:
+            raise NotImplementedError(
+                f"Translation from {self.platform} to "
+                f"{target_syntax} is not implemented"
+            )
+        translator = LATEST_TRANSLATORS[target_syntax]
+        target_query = translator.to_specific_syntax(generic_query)
+        target_query.platform = target_syntax
+        return target_query

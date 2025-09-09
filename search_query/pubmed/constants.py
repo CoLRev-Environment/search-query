@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Constants for PubMed."""
-# pylint: disable=too-few-public-methods
+from __future__ import annotations
+
 import re
 import typing
 from copy import deepcopy
@@ -9,6 +10,8 @@ from search_query.constants import Fields
 
 # fields from https://pubmed.ncbi.nlm.nih.gov/help/
 # Note : abstract [ab] is not supported by PubMed
+
+# pylint: disable=too-few-public-methods
 
 SYNTAX_GENERIC_MAP = {
     "[tiab]": {Fields.TITLE, Fields.ABSTRACT},

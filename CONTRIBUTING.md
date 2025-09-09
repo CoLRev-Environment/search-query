@@ -62,6 +62,18 @@ Of course, we also welcome smaller contributions, such as bug fixes or improveme
 If you’ve made changes to the source code or documentation, fork the repository and open a [pull request](https://github.com/CoLRev-Environment/search-query/compare).
 Please include a clear description of your changes.
 
+### Adding a new parser/serializer version
+
+When evolving a platform syntax, add a new version directory and keep older
+versions intact:
+
+1. Copy the previous version directory (e.g., `pubmed/v1` → `pubmed/v2`).
+2. Implement the required changes in parser, serializer, and translator files.
+3. Register the new classes in `search_query/parser.py`,
+   `search_query/serializer.py`, and `search_query/translator.py`.
+4. Add tests and golden files covering the new version.
+
+
 Thanks,
 
 The *search-query* team

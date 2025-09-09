@@ -64,6 +64,7 @@ class WOSParser(QueryStringParser):
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
         """Initialize the parser."""
         super().__init__(
@@ -71,9 +72,14 @@ class WOSParser(QueryStringParser):
             field_general=field_general,
             offset=offset,
             original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.linter = WOSQueryStringLinter(
-            query_str=query_str, original_str=original_str, silent=silent
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
 
     def tokenize(self) -> None:
@@ -377,16 +383,23 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
-    def __init__(self, query_list: str, field_general: str = "") -> None:
+    def __init__(
+        self,
+        query_list: str,
+        field_general: str = "",
+        ignore_failing_linter: bool = False,
+    ) -> None:
         super().__init__(
             query_list=query_list,
             parser_class=WOSParser,
             field_general=field_general,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.linter = WOSQueryListLinter(
             parser=self,
             string_parser_class=WOSParser,
             original_query_str=query_list,
+            ignore_failing_linter=ignore_failing_linter,
         )
 
     def parse(self) -> Query:
@@ -405,6 +418,7 @@ class WOSListParser(QueryListParser):
             field_general=self.field_general,
             offset=offset,
             silent=True,
+            ignore_failing_linter=self.ignore_failing_linter,
         )
         try:
             query = query_parser.parse()

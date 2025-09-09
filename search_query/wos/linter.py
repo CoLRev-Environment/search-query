@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Web-of-Science query linter."""
+from __future__ import annotations
+
 import re
 import typing
 
@@ -75,8 +77,14 @@ class WOSQueryStringLinter(QueryStringLinter):
         *,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
-        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
+        super().__init__(
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
     def validate_tokens(
         self,
@@ -406,7 +414,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def check_issn_isbn_format(self, query: "Query") -> None:
+    def check_issn_isbn_format(self, query: Query) -> None:
         """Check for the correct format of ISSN and ISBN."""
 
         if query.is_term():
@@ -425,11 +433,103 @@ class WOSQueryStringLinter(QueryStringLinter):
 
             return
 
-        # Recursively call the function on the child querys
+        # Recursively call the function on the child queries
         for child in query.children:
             self.check_issn_isbn_format(child)
 
-    def check_doi_format(self, query: "Query") -> None:
+    def check_deprecated_field_tags(self, query: Query) -> None:
+        """Check for deprecated field tags."""
+
+        if query.is_term():
+            if not query.field:
+                return
+
+            # TODO: clarify advice... + context (called via CI / with filename?)
+
+            # use of the following field tags in the search interface prints
+            # Search Error: Invalid field tag.
+            if query.field.value in [
+                "FN=",
+                "VR=",
+                "PT=",
+                "AF=",
+                "BA=",
+                "BF=",
+                "CA=",
+                "BE=",
+                "BS=",
+                "CL=",
+                "SP=",
+                "HO=",
+                "DE=",
+                "ID=",
+                "C1=",
+                "RP=",
+                "EM=",
+                "RI=",
+                "OI=",
+                "FU=",
+                "CR=",
+                "NR=",
+                "TC=",
+                "Z9=",
+                "U1=",
+                "U2=",
+                "PI=",
+                "PU=",
+                "SN=",
+                "EI=",
+                "BN=",
+                "J9=",
+                "JI=",
+                "PD=",
+                "SI=",
+                "PN=",
+                "MA=",
+                "BP=",
+                "EP=",
+                "AR=",
+            ]:
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details=f"The '{query.field.value}' field is deprecated.",
+                )
+            elif query.field.value == "DI=":
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details="The 'DI=' field is deprecated. Use 'DO=' instead. "
+                    + "Use search-query upgrade XY to upgrade the search query",
+                )
+            elif query.field.value in [
+                "D2=",
+                "EY=",
+                "P2=",
+                "SC=",
+                "GA=",
+                "HP=",
+                "HC=",
+                "DA=",
+                "ER=",
+                "EF=",
+            ]:
+                self.add_message(
+                    QueryErrorCode.LINT_DEPRECATED_SYNTAX,
+                    positions=[query.field.position] if query.field.position else [],
+                    fatal=True,
+                    details=f"The '{query.field.value}' field is deprecated.",
+                )
+
+            return
+
+        # Recursively call the function on the child queries
+        for child in query.children:
+            self.check_deprecated_field_tags(child)
+
+    def check_doi_format(self, query: Query) -> None:
         """Check for the correct format of DOI."""
 
         if query.is_term():
@@ -445,7 +545,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     )
             return
 
-        # Recursively call the function on the child querys
+        # Recursively call the function on the child queries
         for child in query.children:
             self.check_doi_format(child)
 
@@ -484,7 +584,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def validate_query_tree(self, query: "Query") -> None:
+    def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
         This method is called after the query tree has been built.
@@ -506,23 +606,26 @@ class WOSQueryStringLinter(QueryStringLinter):
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_redundant_terms(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
+        self.check_deprecated_field_tags(term_field_query)
 
 
 class WOSQueryListLinter(QueryListLinter):
     """WOSQueryListLinter"""
 
-    parser: "search_query.wos.parser.WOSListParser"
+    parser: search_query.wos.parser.WOSListParser
 
     def __init__(
         self,
-        parser: "search_query.wos.parser.WOSListParser",
-        string_parser_class: typing.Type["search_query.wos.parser.WOSParser"],
+        parser: search_query.wos.parser.WOSListParser,
+        string_parser_class: typing.Type[search_query.wos.parser.WOSParser],
         original_query_str: str = "",
-    ):
+        ignore_failing_linter: bool = False,
+    ) -> None:
         super().__init__(
             parser=parser,
             string_parser_class=string_parser_class,
             original_query_str=original_query_str,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.messages: dict = {}
 

@@ -32,3 +32,5 @@ search\_query.wos
    search_query.wos.parser
    search_query.wos.serializer
    search_query.wos.translator
+   search_query.wos.v_0
+   search_query.wos.v_1

@@ -29,6 +29,7 @@ JSON files in the standard format (Haddaway et al. 2022). Example:
       "authors": [{"name": "Wagner, G.", "ORCID": "0000-0000-0000-1111"}],
       "date": {"data_entry": "2019.07.01", "search_conducted": "2019.07.01"},
       "platform": "Web of Science",
+      "version": "1",
       "database": ["SCI-EXPANDED", "SSCI", "A&HCI"],
       "search_string": "TS=(quantum AND dot AND spin)"
    }

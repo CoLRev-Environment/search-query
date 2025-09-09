@@ -70,6 +70,23 @@ print(wos_query.to_string())
 # Output:
 # (AB="digital health" OR TI="digital health") AND (AB="privacy" OR TI="privacy")
 ```
+The translated query can be saved as follows:
+```python
+from search_query import SearchFile
+
+search_file = SearchFile(
+    filename="search-file.json",
+    query_str=wos_query.to_string(platform="wos"),
+    platform="wos",
+    version="1",
+    authors=[{"name": "Tom Brady"}],
+    record_info={},
+    date={}
+)
+
+search_file.save()
+```
+
 For a more detailed overview of the package’s functionality, see the [documentation](https://colrev-environment.github.io/search-query/).
 
 ## Demo

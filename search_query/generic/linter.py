@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Linter for generic queries."""
+from __future__ import annotations
+
 import re
 import typing
 
@@ -26,8 +28,15 @@ class GenericLinter(QueryStringLinter):
 
     VALID_fieldS_REGEX = re.compile(r"\b(?:" + "|".join(sorted(field_codes)) + r")\b")
 
-    def __init__(self, query_str: str = "") -> None:
-        super().__init__(query_str=query_str)
+    def __init__(
+        self,
+        query_str: str = "",
+        *,
+        ignore_failing_linter: bool = False,
+    ) -> None:
+        super().__init__(
+            query_str=query_str, ignore_failing_linter=ignore_failing_linter
+        )
 
     def syntax_str_to_generic_field_set(self, field_value: str) -> set:
         """Translate a search field"""
@@ -47,7 +56,7 @@ class GenericLinter(QueryStringLinter):
 
         return []  # pragma: no cover
 
-    def validate_query_tree(self, query: "Query") -> None:
+    def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
         This method is called after the query tree has been built.

@@ -52,7 +52,14 @@ The advanced PubMed interface offers a dropdown for search fields such as `[Titl
 
 .. note::
 
-   PubMed performs **automatic term mapping** when queries are entered in the basic or advanced search boxes. For instance, a search for *eHealth* will also match related terms such as *telemedicine* and *electronic health*. This behavior should be kept in mind when reviewing search results or translating queries to other platforms, as the expanded concepts may not always be explicit in the query string.
+    PubMed performs **automatic term mapping** when queries are entered in the basic or advanced search boxes. For instance, a search for *eHealth* will also match related terms such as *telemedicine* and *electronic health*. This behavior should be kept in mind when reviewing search results or translating queries to other platforms, as the expanded concepts may not always be explicit in the query string.
+
+Versions
+--------
+
+Latest version: **1**
+
+No previous versions are documented.
 
 Resources
 ---------
