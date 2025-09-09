@@ -10,9 +10,6 @@ Most users will interact with this feature via the **command-line interface (CLI
 Behind the scenes, the upgrade follows a structured procedure using a generic query
 as an intermediate representation (IR).
 
-Quick Start (CLI)
------------------
-
 To upgrade a query stored in ``query.json`` to the latest version of a given database syntax:
 
 .. code-block:: console
@@ -82,8 +79,8 @@ As a result:
 - When a significant change is detected, the package encodes it as a new syntax version and
   provides **upgrade** paths via the IR.
 
-How It Works Internally
------------------------
+How Upgrades Work Internally
+-----------------------------
 
 Even though you only call the CLI, the following procedure happens under the hood:
 
