@@ -79,8 +79,14 @@ class WOSQueryStringLinter(QueryStringLinter):
         *,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
-        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
+        super().__init__(
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
     def validate_tokens(
         self,
@@ -615,11 +621,13 @@ class WOSQueryListLinter(QueryListLinter):
         parser: search_query.wos.parser.WOSListParser,
         string_parser_class: typing.Type[search_query.wos.parser.WOSParser],
         original_query_str: str = "",
-    ):
+        ignore_failing_linter: bool = False,
+    ) -> None:
         super().__init__(
             parser=parser,
             string_parser_class=string_parser_class,
             original_query_str=original_query_str,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.messages: dict = {}
 

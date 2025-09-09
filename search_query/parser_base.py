@@ -37,12 +37,14 @@ class QueryStringParser(ABC):
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
         self.query_str = query_str
         self.tokens: list = []
         # The external fields (in the JSON file: "field")
         self.field_general = field_general
         self.silent = silent
+        self.ignore_failing_linter = ignore_failing_linter
         self.offset = offset or {}
         self.original_str = original_str or query_str
 
@@ -210,12 +212,14 @@ class QueryListParser:
         *,
         parser_class: type[QueryStringParser],
         field_general: str,
+        ignore_failing_linter: bool = False,
     ) -> None:
         # Remove leading whitespaces/newlines from the query_list
         # to ensure correct token positions
         self.query_list = query_list.lstrip()
         self.parser_class = parser_class
         self.field_general = field_general
+        self.ignore_failing_linter = ignore_failing_linter
         self.query_dict: dict = {}
 
     def tokenize_list(self) -> None:

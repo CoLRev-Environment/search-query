@@ -79,8 +79,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
         *,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
-        super().__init__(query_str=query_str, original_str=original_str, silent=silent)
+        super().__init__(
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
     def validate_tokens(
         self,
@@ -595,10 +601,15 @@ class PubmedQueryListLinter(QueryListLinter):
         self,
         parser: PubmedListParser,
         string_parser_class: typing.Type[QueryStringParser],
-    ):
+        ignore_failing_linter: bool = False,
+    ) -> None:
         self.parser: PubmedListParser = parser
         self.string_parser_class = string_parser_class
-        super().__init__(parser, string_parser_class)
+        super().__init__(
+            parser,
+            string_parser_class,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
     def validate_tokens(self) -> None:
         """Validate token list"""
