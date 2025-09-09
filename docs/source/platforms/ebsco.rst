@@ -52,6 +52,13 @@ Best Practices and Recommendations
 - **Use field tags** (e.g., `AB`, `TI`) explicitly in the query string.
 - **Group nested queries** using parentheses to preserve logic.
 
+Versions
+--------
+
+Latest version: **1**
+
+No previous versions are documented.
+
 Resources
 ---------
 
