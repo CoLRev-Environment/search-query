@@ -47,7 +47,7 @@ Creating a query programmatically is simple:
     work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
     query = AndQuery([digital_synonyms, work_synonyms])
 
-We can also parse a query from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
+A query can also be parsed from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
 
 .. code-block:: python
 
@@ -57,7 +57,7 @@ We can also parse a query from a string or a `JSON search file <#json-search-fil
     query = parse(query_string, platform="pubmed")
 
 
-A useful feature of parsers is the built-in **linter** functionality, which helps us to validate the query by identifying syntactical errors:
+The built-in **linter** functionality validates queries by identifying syntactical errors:
 
 .. code-block:: python
 
@@ -71,8 +71,8 @@ A useful feature of parsers is the built-in **linter** functionality, which help
     #   Query: ("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]
     #                                                ^^^
 
-Once we have created a :literal:`query` object, we can translate it for different databases.
-Note how the syntax is translated and how the search for :literal:`Title/Abstract` is split into two elements:
+Once a :literal:`query` object is created, it can be translated for different databases.
+The translation illustrates how the search for :literal:`Title/Abstract` is split into two elements:
 
 .. code-block:: python
    :linenos:
@@ -116,7 +116,7 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 Functional Overview
 =======================
 
-The search-query package is built to support researchers throughout the entire lifecycle of academic search query management.
+The search-query package supports the entire lifecycle of academic search query management.
 Below is a high-level overview of the core functionalities:
 
 .. image:: presentation.png

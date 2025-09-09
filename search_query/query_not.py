@@ -28,7 +28,7 @@ class NotQuery(Query):
         platform: str = "generic",
     ) -> None:
         """init method
-        search terms: strings which you want to include in the search query
+        search terms: strings to include in the search query
         nested queries: queries whose roots are appended to the query
         search field: search field to which the query should be applied
         """

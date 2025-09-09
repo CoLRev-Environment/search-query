@@ -3,7 +3,7 @@
 Lint
 ====================
 
-Search-query implements various syntax validation checks (aka. linters) and prints instructive messages to inform users about potential issues.
+Search-query implements various syntax validation checks (aka. linters) and prints instructive messages about potential issues.
 These checks help to prevent errors—an important step given that previous studies have found high error rates in search queries (Li & Rainer, 2023; Salvador-Oliván et al., 2019; Sampson & McGowan, 2006).
 
 .. code-block:: python

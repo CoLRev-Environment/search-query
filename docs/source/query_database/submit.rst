@@ -1,26 +1,26 @@
 Submit a Query
 ===========================
 
-We welcome contributions of queries and predefined query filters to the `search-query` database.
+Contributions of queries and predefined query filters to the `search-query` database are welcome.
 
 To submit a query:
 
 1. **Fork and clone** the repository:
    https://github.com/CoLRev-Environment/search-query
 
-2. **Create a JSON file** describing your query with the standard structure (see below).
+2. **Create a JSON file** describing the query with the standard structure (see below).
 
-3. **Save your file** in the directory:
+3. **Save the file** in the directory:
    `search_query/json_db/`
 
-4. **Open a Pull Request** with a short description of your query and its purpose.
+4. **Open a Pull Request** with a short description of the query and its purpose.
 
-Once your PR is merged, your query will be **automatically included and rendered** in the documentation.
+Once the PR is merged, the query will be **automatically included and rendered** in the documentation.
 
 JSON Structure
 ---------------------------
 
-Your `.json` file should follow this structure:
+The `.json` file should follow this structure:
 
 .. code-block:: json
 
@@ -49,5 +49,5 @@ Guidelines
 Questions?
 ---------------------------
 
-Feel free to open an issue if you are unsure about formatting, structure, or syntax:
+An issue may be opened for questions about formatting, structure, or syntax:
 https://github.com/CoLRev-Environment/search-query/issues

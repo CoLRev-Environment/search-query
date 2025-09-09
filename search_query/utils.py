@@ -68,7 +68,7 @@ def format_query_string_positions(
     if len(positions) == 1 and len(query_str) > 200:
         start, end = merged[0]
 
-        # Define how much context you want (in words, not characters)
+        # Define the amount of context (in words, not characters)
         word_context = 8
 
         # Find words before
