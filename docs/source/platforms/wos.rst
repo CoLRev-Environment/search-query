@@ -57,7 +57,7 @@ Best Practices and Recommendations
 
 - Prefer **Advanced Search** for reproducible and structured queries.
 - Use **explicit field tags** (`TS=`, `TI=`, `AB=`, etc.) instead of relying on default fields.
- 
+
 Versions
 --------
 

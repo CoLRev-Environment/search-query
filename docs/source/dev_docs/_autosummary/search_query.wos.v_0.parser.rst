@@ -1,5 +1,5 @@
 search\_query.wos.v\_0.parser
-==============================
+=============================
 
 .. automodule:: search_query.wos.v_0.parser
 
