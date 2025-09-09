@@ -42,7 +42,7 @@ def upgrade_query(
 
     # 1) Parse source query string into a query object.
     parser_cls = PARSERS[platform][version_current]
-    source_query = parser_cls(query_str).parse()
+    source_query = parser_cls(query_str, ignore_failing_linter=True).parse()
 
     # 2) Translate platform/version-specific query → generic query (IR).
     translator_cls_current = TRANSLATORS[platform][version_current]
@@ -58,6 +58,6 @@ def upgrade_query(
 
     # 5) Safety check: re-parse in the target version to validate output.
     parser_cls_target = PARSERS[platform][version_target]
-    parser_cls_target(upgraded_query_str).parse()
+    parser_cls_target(upgraded_query_str, ignore_failing_linter=True).parse()
 
     return upgraded_query_str

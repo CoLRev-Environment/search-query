@@ -23,10 +23,25 @@ class WOSListParser_v1_0_0(WOSListParser):
 
     VERSION = "1.0.0"
 
-    def __init__(self, query_list: str, *, field_general: str = "") -> None:
-        super().__init__(query_list=query_list, field_general=field_general)
+    def __init__(
+        self,
+        query_list: str,
+        *,
+        field_general: str = "",
+        ignore_failing_linter: bool = False,
+    ) -> None:
+        super().__init__(
+            query_list=query_list,
+            field_general=field_general,
+            ignore_failing_linter=ignore_failing_linter,
+        )
         self.parser_class = WOSParser_v1_0_0
-        self.linter = WOSQueryListLinter(self, WOSParser_v1_0_0)
+        self.linter = WOSQueryListLinter(
+            parser=self,
+            string_parser_class=WOSParser_v1_0_0,
+            original_query_str=query_list,
+            ignore_failing_linter=ignore_failing_linter,
+        )
 
 
 def register(registry: Registry, *, platform: str, version: str) -> None:

@@ -41,6 +41,7 @@ class WOSParser_v0_0_0(WOSParser):
         offset: typing.Optional[dict] = None,
         original_str: typing.Optional[str] = None,
         silent: bool = False,
+        ignore_failing_linter: bool = False,
     ) -> None:
         super().__init__(
             query_str,
@@ -48,9 +49,13 @@ class WOSParser_v0_0_0(WOSParser):
             offset=offset,
             original_str=original_str,
             silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
         self.linter = WOSQueryStringLinter_v0_0_0(
-            query_str=query_str, original_str=original_str, silent=silent
+            query_str=query_str,
+            original_str=original_str,
+            silent=silent,
+            ignore_failing_linter=ignore_failing_linter,
         )
 
 
@@ -59,13 +64,24 @@ class WOSListParser_v0_0_0(WOSListParser):
 
     VERSION = "0.0.0"
 
-    def __init__(self, query_list: str, *, field_general: str = "") -> None:
-        super().__init__(query_list=query_list, field_general=field_general)
+    def __init__(
+        self,
+        query_list: str,
+        *,
+        field_general: str = "",
+        ignore_failing_linter: bool = False,
+    ) -> None:
+        super().__init__(
+            query_list=query_list,
+            field_general=field_general,
+            ignore_failing_linter=ignore_failing_linter,
+        )
         self.parser_class = WOSParser_v0_0_0
         self.linter = WOSQueryListLinter(
             parser=self,
             string_parser_class=WOSParser_v0_0_0,
             original_query_str=query_list,
+            ignore_failing_linter=ignore_failing_linter,
         )
 
 
