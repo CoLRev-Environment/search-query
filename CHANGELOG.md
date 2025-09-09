@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 - Introduced versioned parser, serializer, and translator dispatchers.
 - Added upgrade pipeline and CLI command.
 - Added `deprecated-syntax` linter warning (`LINT_2001`).
-- Added Web of Science parser version `0.0.0` with support for field tags later
+- Added Web of Science parser version `0` with support for field tags later
   marked as deprecated.
 
 ## Release 0.12.0

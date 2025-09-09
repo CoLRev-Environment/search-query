@@ -29,7 +29,7 @@ Versioned serializers
 ---------------------
 
 Serializers live in versioned modules such as
-``search_query/pubmed/v1_0_0/serializer.py``. See
+``search_query/pubmed/v1/serializer.py``. See
 `versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
 
 They are registered in the
@@ -44,5 +44,5 @@ Example stored query with version information:
    {
        "platform": "wos",
        "search_string": "TS=(quantum dot)",
-       "version": "1.0.0"
+       "version": "1"
    }

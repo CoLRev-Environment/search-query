@@ -78,7 +78,7 @@ search_file = SearchFile(
     filename="search-file.json",
     query_str=wos_query.to_string(platform="wos"),
     platform="wos",
-    version="1.0.0",
+    version="1",
     authors=[{"name": "Tom Brady"}],
     record_info={},
     date={}

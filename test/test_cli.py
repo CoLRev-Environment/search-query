@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Tests for search query cli"""
 import subprocess
+import sys
 from pathlib import Path
 
 from search_query import load_search_file
@@ -16,7 +17,9 @@ def test_translate_cli() -> None:
 
     result = subprocess.run(
         [
-            "search-query",
+            sys.executable,
+            "-m",
+            "search_query.cli",
             "translate",
             f"--input={input_file}",
             "--to=ebscohost",
@@ -44,7 +47,13 @@ def test_linter_cli() -> None:
     input_file = test_data_dir / "search_history_file_2_linter.json"
 
     result = subprocess.run(
-        ["search-query", "lint", f"{input_file}"],
+        [
+            sys.executable,
+            "-m",
+            "search_query.cli",
+            "lint",
+            f"{input_file}",
+        ],
         capture_output=True,
         text=True,
     )

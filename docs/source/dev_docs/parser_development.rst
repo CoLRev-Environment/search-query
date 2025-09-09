@@ -5,7 +5,7 @@ Versioned parsers
 -----------------
 
 Parsers live in versioned modules such as
-``search_query/pubmed/v1_0_0/parser.py``. Keeping previous versions
+``search_query/pubmed/v1/parser.py``. Keeping previous versions
 allows reproducible parsing and backward compatibility. See
 `versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
 

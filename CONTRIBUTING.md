@@ -67,7 +67,7 @@ Please include a clear description of your changes.
 When evolving a platform syntax, add a new version directory and keep older
 versions intact:
 
-1. Copy the previous version directory (e.g., `pubmed/v1_0_0` → `pubmed/v1_1_0`).
+1. Copy the previous version directory (e.g., `pubmed/v1` → `pubmed/v1_1`).
 2. Implement the required changes in parser, serializer, and translator files.
 3. Register the new classes in `search_query/parser.py`,
    `search_query/serializer.py`, and `search_query/translator.py`.
