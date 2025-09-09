@@ -6,7 +6,7 @@ They analyze token sequences, syntax, search fields, and operator use to identif
 errors or ambiguities and print meaningful messages (documented in the `messages <../messages/errors_index.html>`_ section).
 Each platform implements its own linter, which interhits from the base class `linter_base.py`. Linters are used in the parser methods.
 
-Base Classes
+Base classes
 ------------
 Use the appropriate base class when developing a new linter:
 
@@ -16,7 +16,7 @@ Use the appropriate base class when developing a new linter:
 Each linter must override the `validate_tokens()` method and the `validate_query_tree()`.
 `validate_tokens()` is called when the query is parsed, and `validate_query_tree()` is called when the query tree is built (i.e., at the end of the parsing process **and** when the query is constructed programmatically).
 
-Best Practices
+Best practices
 --------------
 - **Use standardized linter messages** defined in `constants.QueryErrorCode`.
 - **Add details** in messages for guidance (e.g., invalid format, missing logic).

@@ -1,4 +1,4 @@
-Filter: AIS Senior Scholars Basket
+Filter: AIS senior scholars basket
 ==================================
 
 **Identifier**: ``ais_senior_scholars_basket``
@@ -26,7 +26,7 @@ Load
     # SO=("European Journal of Information Systems" OR "Information Systems Journal" O...
 
 
-Search String
+Search string
 -------------
 
 .. raw:: html

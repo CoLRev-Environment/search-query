@@ -5,7 +5,7 @@ Web of Science
 
 Web of Science (WoS) is a multidisciplinary citation database that supports structured search queries with field tags and Boolean operators.
 
-Run a Query
+Run a query
 -----------
 
 Queries in Web of Science can be constructed using:
@@ -21,7 +21,7 @@ Web of Science supports structured queries using field tags such as `TS=` (Topic
 
    Include field tags explicitly in the `search_string`. Leave the `general_field` empty.
 
-Store a Query
+Store a query
 -------------
 
 When storing a Web of Science query:
@@ -34,8 +34,8 @@ Example::
    (TS="digital health") AND (TS="privacy")
 
 
-List Query Format
----------------------
+List query format
+-----------------
 
 Web of Science allows the construction of **complex queries** by combining previously defined search sets using numbered references (e.g., ``#1 AND #2``). This list-based approach is commonly used in systematic searches where multiple search lines are logically combined.
 
@@ -52,7 +52,7 @@ List queries should be formatted as follows:
 
 Each numbered line represents an individual query component, and later lines can combine previous results using logical operators like ``AND``, ``OR``, or ``NOT``.
 
-Best Practices and Recommendations
+Best practices and recommendations
 ----------------------------------
 
 - Prefer **Advanced Search** for reproducible and structured queries.

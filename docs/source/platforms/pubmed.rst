@@ -6,7 +6,7 @@ PubMed
 
 PubMed is a free resource supporting the search and retrieval of biomedical and life sciences literature.
 
-Run a Query
+Run a query
 -----------
 
 Queries can be entered using either:
@@ -20,7 +20,7 @@ These interfaces are functionally equivalent for the purposes of `search-query`.
 
    Include field tags explicitly in the `search_string`. Leave the `general_field` empty.
 
-Store a Query
+Store a query
 -------------
 
 When storing a PubMed query in a `.json` file or as a string:
@@ -28,8 +28,8 @@ When storing a PubMed query in a `.json` file or as a string:
 - Use the content of the **Query box** or **Search details** section as the `search_string`.
 - Leave the `general_field` empty.
 
-List Query Format
---------------------
+List query format
+-----------------
 
 PubMed allows combining previous searches using the search history panel. These list-based queries can reference earlier searches using numbered identifiers (e.g., `#1 OR #2`). In the advanced search interface, such combinations can also be created via the **“Add”** button. List queries are supported by `search-query` parsers.
 
@@ -42,7 +42,7 @@ List queries should be formatted as follows:
        "general_field": ""
    }
 
-Best Practices and Recommendations
+Best practices and recommendations
 ----------------------------------
 
 The advanced PubMed interface offers a dropdown for search fields such as `[Title/Abstract]`, `[Author]`, etc. When using this feature:

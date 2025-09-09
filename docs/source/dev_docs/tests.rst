@@ -10,7 +10,7 @@ To run all tests:
 
     pytest test
 
-Test Types
+Test types
 ----------
 
 1. **Tokenization Tests**

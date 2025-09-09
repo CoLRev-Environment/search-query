@@ -113,8 +113,8 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
 
-Functional Overview
-=======================
+Functional overview
+======================
 
 The search-query package supports the entire lifecycle of academic search query management.
 Below is a high-level overview of the core functionalities:

@@ -26,7 +26,7 @@ Load
     # SO=("Academy of Management Journal" OR "Academy of Management Review" OR "Accoun...
 
 
-Search String
+Search string
 -------------
 
 .. raw:: html

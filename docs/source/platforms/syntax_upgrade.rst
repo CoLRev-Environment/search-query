@@ -1,6 +1,6 @@
 .. _upgrade:
 
-Syntax Upgrades
+Syntax upgrades
 ===============
 
 The ``search-query`` package upgrades **database-specific queries** from one *database syntax version* to another.
@@ -19,7 +19,7 @@ By default, omission of the ``--to`` option or setting it to ``latest`` upgrades
 A particular target version can also be specified using ``--to <version>``, but upgrading to the latest version (by omitting ``--to``) is generally recommended.
 The upgraded query will be written back to the file (or another location if specified with ``--output``).
 
-Versioning Policy
+Versioning policy
 -----------------
 
 .. note::
@@ -58,8 +58,8 @@ They do **not** require an upgrade of stored queries and therefore do not result
    Syntax versions start with 1.0 as of 2025-09-01. Previous versions will not be
    explored systematically and version 0.0 may be used as a placeholder for all earlier syntax.
 
-Observability of Syntax Versions
---------------------------------
+Observability of syntax versions
+---------------------------------
 
 Observability of *historic* versions is often limited because providers rarely
 publish precise, comprehensive changelogs of syntax rules.
@@ -72,8 +72,8 @@ As a result:
 - When a significant breaking change is detected, the package encodes it as a new MAJOR version and
   provides **upgrade** paths via the IR.
 
-How Upgrades Work Internally
------------------------------
+How upgrades work internally
+----------------------------
 
 Even though only the CLI is called, the following procedure happens under the hood:
 

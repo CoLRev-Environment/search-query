@@ -9,7 +9,7 @@ Query database
          ("Title", "title"),
          ("Keywords", "keywords")],
         data,
-        title='Available Predefined Queries',
+        title='Available predefined queries',
         columns=[20, 6, 20, 20]
     ) }}
 

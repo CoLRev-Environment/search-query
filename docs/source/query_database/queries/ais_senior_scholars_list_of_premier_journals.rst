@@ -1,4 +1,4 @@
-Filter: AIS Senior Scholars List of Premier Journals
+Filter: AIS senior scholars list of premier journals
 ====================================================
 
 **Identifier**: ``ais_senior_scholars_list_of_premier_journals``
@@ -26,7 +26,7 @@ Load
     # SO=("European Journal of Information Systems" OR "Information Systems Journal" O...
 
 
-Search String
+Search string
 -------------
 
 .. raw:: html

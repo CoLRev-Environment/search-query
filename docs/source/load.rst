@@ -5,7 +5,7 @@ Load
 
 Queries can be loaded from strings/files, defined as objects, or retrieved from the internal database.
 
-String/File
+String/file
 -------------------------
 
 Search-query can parse queries from strings and JSON query files.
