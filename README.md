@@ -75,8 +75,8 @@ The translated query can be saved as follows:
 from search_query import SearchFile
 
 search_file = SearchFile(
-    filename="search-file.json",
-    query_str=wos_query.to_string(platform="wos"),
+    filepath="search-file.json",
+    search_string=wos_query.to_string(),
     platform="wos",
     version="1",
     authors=[{"name": "Tom Brady"}],

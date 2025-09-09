@@ -1,4 +1,4 @@
-Block: Treatment as usual
+Block: treatment as usual
 =========================
 
 **Identifier**: ``blocks_bmi_343``
@@ -26,7 +26,7 @@ Load
     # (treatment*[tiab] AND usual[tiab]) OR (standard[tiab] AND care[tiab]) OR (standa...
 
 
-Search String
+Search string
 -------------
 
 .. raw:: html

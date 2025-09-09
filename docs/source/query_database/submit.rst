@@ -1,5 +1,5 @@
-Submit a Query
-===========================
+Submit a query
+==========================
 
 Contributions of queries and predefined query filters to the `search-query` database are welcome.
 
@@ -17,7 +17,7 @@ To submit a query:
 
 Once the PR is merged, the query will be **automatically included and rendered** in the documentation.
 
-JSON Structure
+JSON structure
 ---------------------------
 
 The `.json` file should follow this structure:

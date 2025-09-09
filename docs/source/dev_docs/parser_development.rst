@@ -18,7 +18,7 @@ When introducing a new parser version, copy the previous versioned
 directory, adjust the implementation, and register the version in the
 ``PARSERS`` dictionary.
 
-1. Inherit from Base Classes
+1. Inherit from base classes
 -----------------------------------
 
 Use the provided base classes, which provide a number of utility methods:
@@ -107,8 +107,8 @@ Check whether ``SearchFields`` can be created for nested queries (e.g., ``TI=(eH
    :language: python
 
 
-List Format Support
------------------------------------
+List format support
+----------------------------------
 
 Implement  ``QueryListParser`` to handle numbered sub-queries and references like ``#1 AND #2``.
 

@@ -8,8 +8,8 @@ Translators convert between:
 
 Each translator implements `QueryTranslator`, the abstract base class from ``translator_base.py``.
 
-Translator Responsibilities
----------------------------
+Translator responsibilities
+--------------------------
 
 A translator must implement the following two class methods:
 
@@ -35,8 +35,8 @@ specified platform.
 To introduce a new translator version, duplicate the previous versioned directory,
 update the implementation as needed, and register the new version in the ``TRANSLATORS`` dictionary.
 
-Utility Methods Provided
-------------------------
+Utility methods provided
+-----------------------
 
 The base class (`QueryTranslator`) provides the following utilities:
 
@@ -47,8 +47,8 @@ The base class (`QueryTranslator`) provides the following utilities:
 - ``move_fields_to_operator(query)``:
   If all children have the same field, moves it to the parent node.
 
-Search Field Mapping
---------------------
+Search field mapping
+-------------------
 
 Field mapping is expected to be defined in a `constants_<source>.py` file and typically includes:
 
@@ -61,15 +61,15 @@ Each translator should:
 2. Handle combined fields (e.g., `[tiab]` in PubMed)
 3. Optionally restructure the query for consistency
 
-Code Skeleton
--------------
+Code skeleton
+------------
 
 .. literalinclude:: translator_skeleton.py
    :language: python
 
 
-Advanced Features
------------------
+Advanced features
+----------------
 
 Some translators include advanced restructuring logic:
 

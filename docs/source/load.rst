@@ -5,7 +5,7 @@ Load
 
 Queries can be loaded from strings/files, defined as objects, or retrieved from the internal database.
 
-String/File
+String/file
 -------------------------
 
 Search-query can parse queries from strings and JSON query files.
@@ -59,30 +59,13 @@ Queries can be loaded from the internal database directly:
    from search_query.database_queries import AIS_8
 
    print(AIS_8.to_string())
-   # Output:
-   # (SO=("European Journal of Information Systems" OR
-   #      "Information Systems Journal" OR
-   #      "Information Systems Research" OR
-   #      "Journal of the Association for Information Systems" OR
-   #      "Journal of Information Technology" OR
-   #      "Journal of Management Information Systems" OR
-   #      "Journal of Strategic Information Systems" OR
-   #      "MIS Quarterly") OR
-   # IS=(0960-085X OR
-   #     1476-9344 OR
-   #     1350-1917 OR
-   #     1365-2575 OR
-   #     1047-7047 OR
-   #     1526-5536 OR
-   #     1536-9323 OR
-   #     0268-3962 OR
-   #     1466-4437 OR
-   #     0742-1222 OR
-   #     1557-928X OR
-   #     0963-8687 OR
-   #     1873-1198 OR
-   #     0276-7783 OR
-   #     2162-9730))
+   # SO=("European Journal of Information Systems" OR "Information Systems Journal"
+   # OR "Information Systems Research" OR "Journal of the Association for Information Systems"
+   # OR "Journal of Information Technology" OR "Journal of Management Information Systems"
+   # OR "Journal of Strategic Information Systems" OR "MIS Quarterly")
+   # OR IS=(0960-085X OR 1476-9344 OR 1350-1917 OR 1365-2575 OR 1047-7047 OR 1526-5536
+   # OR 1536-9323 OR 0268-3962 OR 1466-4437 OR 0742-1222 OR 1557-928X OR 0963-8687 
+   # OR 1873-1198 OR 0276-7783 OR 2162-9730)
 
 
 It is also possible to load queries from the database using the `database` module:

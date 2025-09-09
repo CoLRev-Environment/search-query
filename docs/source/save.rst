@@ -8,14 +8,14 @@ To write a query to a JSON file, run the serializer:
 .. code-block:: python
 
     from search_query import SearchFile
-    from search_query.and_query import AndQuery
+    from search_query.query_and import AndQuery
 
     query = AndQuery(["digital", "work"], field="title")
     query.translate("wos")
 
     search_file = SearchFile(
-        filename="search-file.json",
-        query_str=query.to_string(),
+        filepath="search-file.json",
+        search_string=query.to_string(),
         platform="wos",
         version="1",
         authors=[{"name": "Tom Brady"}],
@@ -25,19 +25,24 @@ To write a query to a JSON file, run the serializer:
 
     search_file.save()
 
-Backward compatibility
-----------------------
-
 Saved search strings include a ``version`` field so they can be
 re-parsed with the exact syntax they were created with:
 
 .. code-block:: json
 
-   {
-       "platform": "wos",
-       "search_string": "TS=(digital AND work)",
-       "version": "1"
-   }
+    {
+        "search_string": "AND[title][digital[title], work[title]]",
+        "platform": "wos",
+        "authors": [
+            {
+                "name": "Tom Brady"
+            }
+        ],
+        "record_info": {},
+        "date": {},
+        "field": "",
+        "version": "1"
+    }
 
 Queries may optionally be stored in a generic form:
 
@@ -53,18 +58,23 @@ Queries may optionally be stored in a generic form:
     # AND[digital[title], work[title]]
 
     search_file = SearchFile(
-        filename="search-file.json",
-        query_str=pubmed_query.to_string(),
+        filepath="search-file.json",
+        search_string=pubmed_query.to_string(),
         platform="pubmed",
         version="1",
         generic_query=generic_query_str
     )
+    search_file.save()
 
 .. code-block:: json
 
-   {
-       "platform": "wos",
-       "search_string": "TS=(digital AND work)",
-       "version": "1",
-       "generic_query": "AND[digital[title], work[title]]"
-   }
+    {
+        "search_string": "digital[ti] AND work[ti]",
+        "platform": "pubmed",
+        "authors": [],
+        "record_info": {},
+        "date": {},
+        "field": "",
+        "version": "1",
+        "generic_query": "AND[digital[title], work[title]]"
+    }
