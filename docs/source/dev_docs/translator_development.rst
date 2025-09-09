@@ -22,7 +22,7 @@ Versioned translators
 -------------------------
 
 Translators are organized in versioned modules such as
-``search_query/pubmed/v1_0_0/translator.py``. See
+``search_query/pubmed/v1/translator.py``. See
 `versioning policy <../platforms/syntax_upgrade.html#versioning-policy>`_ for details.
 This structure preserves older versions,
 enabling reproducible translations and ensuring backward compatibility.

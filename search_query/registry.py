@@ -23,7 +23,7 @@ if _t.TYPE_CHECKING:  # pragma: no cover
     from search_query.translator_base import QueryTranslator
 
 
-_VERSION_DIR_RE = re.compile(r"^v_(\d+)_(\d+)_(\d+)$")
+_VERSION_DIR_RE = re.compile(r"^v_(\d+)$")
 _MODULE_FILES = ("parser", "serializer", "translator")
 
 
@@ -31,7 +31,7 @@ def _to_version_str(dir_name: str) -> str:
     m = _VERSION_DIR_RE.match(dir_name)
     if not m:
         raise ValueError(f"Invalid version directory name: {dir_name!r}")
-    return ".".join(m.groups())
+    return m.group(1)
 
 
 def _platform_pkg_path(platform: str) -> Path:
