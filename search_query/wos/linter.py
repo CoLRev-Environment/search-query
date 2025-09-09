@@ -20,8 +20,6 @@ from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 if typing.TYPE_CHECKING:  # pragma: no cover
     import search_query.wos.parser
 
-# TODO : should linters also be versioned?!
-
 
 class WOSQueryStringLinter(QueryStringLinter):
     """Linter for WOS Query Strings"""

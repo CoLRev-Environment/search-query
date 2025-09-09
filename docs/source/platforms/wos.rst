@@ -62,7 +62,7 @@ Best Practices and Recommendations
 Deprecated versions
 -------------------
 
-- **0.0.0**: Initial version with basic support for Web of Science queries.
+- **0**: Initial version with basic support for Web of Science queries.
 # TODO : add links/explanations
 
 Resources

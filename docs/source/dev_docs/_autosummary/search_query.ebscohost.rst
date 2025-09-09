@@ -32,4 +32,4 @@ search\_query.ebscohost
    search_query.ebscohost.parser
    search_query.ebscohost.serializer
    search_query.ebscohost.translator
-   search_query.ebscohost.v_1_0_0
+   search_query.ebscohost.v_1

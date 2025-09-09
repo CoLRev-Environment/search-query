@@ -19,6 +19,8 @@ from search_query.query import SearchField
 from search_query.query_near import NEARQuery
 from search_query.query_term import Term
 
+# pylint: disable=duplicate-code
+
 
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""

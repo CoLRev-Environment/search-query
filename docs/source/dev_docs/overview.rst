@@ -27,14 +27,14 @@ Versioned implementations live inside
 
    search_query/
        pubmed/
-           v1_0_0/
+           v1/
                parser.py
                serializer.py
                translator.py
 
 To add a new parser or serializer version:
 
-1. copy the latest versioned directory (e.g. ``v1_0_0`` → ``v1_1_0``),
+1. copy the latest versioned directory (e.g. ``v1`` → ``v2``),
 2. apply your changes,
 3. register the new version in ``search_query.parser.PARSERS``,
    ``search_query.serializers.SERIALIZERS`` or

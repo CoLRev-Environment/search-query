@@ -16,7 +16,7 @@ To write a query to a JSON file, run the serializer:
         filename="search-file.json",
         query_str=query.to_string(platform="wos"),
         platform="wos",
-        version="1.0.0",
+        version="1",
         authors=[{"name": "Tom Brady"}],
         record_info={},
         date={}
@@ -35,7 +35,7 @@ re-parsed with the exact syntax they were created with:
    {
        "platform": "wos",
        "search_string": "TS=(quantum dot)",
-       "version": "1.0.0"
+       "version": "1"
    }
 
 Queries may optionally be stored in a generic or structured form:
@@ -45,6 +45,6 @@ Queries may optionally be stored in a generic or structured form:
    {
        "platform": "wos",
        "search_string": "TS=(quantum dot)",
-       "version": "1.0.0",
+       "version": "1",
        "generic_query": "AND[quantum[TS=], dot[TS=]]"
    }
