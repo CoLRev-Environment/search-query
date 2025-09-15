@@ -1,0 +1,18 @@
+.. _LINT_2001:
+
+LINT_2001 — deprecated-syntax
+=============================
+
+**Error Code**: LINT_2001
+
+**Message**: ``deprecated-syntax``
+
+This message indicates that the query uses deprecated syntax.
+
+**Typical fix**: Update the query to use the latest syntax by running
+
+```bash
+search-query upgrade search_query.json --to 2.0.0
+```
+
+**Back to**: :ref:`lint`

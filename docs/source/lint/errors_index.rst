@@ -98,7 +98,7 @@ Database errors: Web of Science
 
    WOS_0012
 
-Database errors: EBSCOhost
+Database errors: EBSCOHost
 --------------------------
 
 .. toctree::

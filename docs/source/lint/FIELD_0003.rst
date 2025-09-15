@@ -23,6 +23,6 @@ FIELD_0003 — field-extracted
 
 **Typical fix**: Explicitly specify the search fields in the query string rather than relying on a general search field setting. (EBSCO)
 
-**Rationale**: The search_string may be copied and the general_field omitted, leading to incorrect reproduction of the query.
+**Rationale**: The search_string may be copied and the general_field missed, leading to incorrect reproduction of the query.
 
 **Back to**: :ref:`lint`

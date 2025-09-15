@@ -26,7 +26,7 @@ Load
     # SO=("European Journal of Information Systems" OR "Information Systems Journal" O...
 
 
-Search string
+Search String
 -------------
 
 .. raw:: html
