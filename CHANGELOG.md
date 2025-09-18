@@ -1,23 +1,17 @@
-
 # Changelog
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-- Introduced versioned parser, serializer, and translator dispatchers.
-- Added upgrade pipeline and CLI command.
-- Added `deprecated-syntax` linter warning (`LINT_2001`).
-- Added Web of Science parser version `0` with support for field tags later
-  marked as deprecated.
+- No changes yet.
 
 ## Release 0.13.0
 
-- **Refactor `search_file`:
-  - Replace `filepath` with `search_results_path`; loader arg now `search_history_path`.
-  - History path is derived from results (`<stem>_search_history.json`) with optional private override.
-  - Stop persisting `search_history_path` to avoid contradictions; validations raises `ValueError`.
-  - `save()` resolves history path and creates parent dir automatically.
-  - `to_dict()` includes `search_results_path`; internal/private attrs excluded.
+- **Versioned platform architecture & upgrades**: Introduced version-aware parser registry that selects list or string parsers per platform version and defaults to the latest registered release. Auto-discovery for parser, serializer, and translator implementations. Added an upgrade pipeline that routes through the generic query as an intermediate representation, exposed through a new `upgrade` CLI subcommand.
+- **CLI improvements**: Rebuilt the CLI around explicit `translate`, `lint`, and `upgrade` sub-commands with improved error handling and user feedback, including success messages emitted by the linter workflow.
+- **Search file handling**: Refactored `SearchFile` to replace `filepath` with `search_results_path`, derive the default history path, ensure directories exist when saving, and exclude private attributes from serialization output.
+- **Linter updates**: Added the `deprecated-syntax` warning (`LINT_2001`) to guide users toward upgrading queries that rely on legacy syntax.
+- **Documentation**: Documented the syntax upgrade workflow and versioning policy for database-specific queries, including CLI examples.
 
 ## Release 0.12.0
 

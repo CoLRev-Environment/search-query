@@ -15,5 +15,5 @@ authors:
   given-names: "Gerit"
 title: "Search-query: A Python package for queries in academic literature searches."
 version: 0.12.0
-date-released: 2025-06-26
+date-released: 2025-09-18
 url: "https://github.com/ColRev-Environment/search-query"
