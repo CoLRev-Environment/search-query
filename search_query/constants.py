@@ -1249,7 +1249,6 @@ Proximity operators must have a non-negative integer as the distance.
     )
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-positional-arguments
     def __init__(self, code: str, label: str, message: str, docs: str) -> None:
         self.code = code
         self.label = label
