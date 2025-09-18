@@ -14,7 +14,6 @@ To write a query to a JSON file, run the serializer:
     query.translate("wos")
 
     search_file = SearchFile(
-        filepath="search-file.json",
         search_string=query.to_string(),
         platform="wos",
         version="1",
@@ -23,7 +22,7 @@ To write a query to a JSON file, run the serializer:
         date={}
     )
 
-    search_file.save()
+    search_file.save("search-file.json")
 
 Saved search strings include a ``version`` field so they can be
 re-parsed with the exact syntax they were created with:
@@ -58,13 +57,12 @@ Queries may optionally be stored in a generic form:
     # AND[digital[title], work[title]]
 
     search_file = SearchFile(
-        filepath="search-file.json",
         search_string=pubmed_query.to_string(),
         platform="pubmed",
         version="1",
         generic_query=generic_query_str
     )
-    search_file.save()
+    search_file.save("search-file.json")
 
 .. code-block:: json
 

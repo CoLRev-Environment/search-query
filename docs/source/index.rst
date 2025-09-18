@@ -94,7 +94,6 @@ The translated query can be saved as follows:
    from search_query import SearchFile
 
    search_file = SearchFile(
-      filepath="search-file.json",
       search_string=wos_query.to_string(),
       platform="wos",
       version="1",
@@ -103,7 +102,7 @@ The translated query can be saved as follows:
       date={}
    )
 
-   search_file.save()
+   search_file.save("search-file.json")
 
 Demo
 ============
