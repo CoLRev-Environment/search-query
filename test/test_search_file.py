@@ -54,7 +54,10 @@ def test_search_file_to_dict_and_save(tmp_path: Path) -> None:
 
 def test_save_without_filepath_raises() -> None:
     sf = SearchFile(search_string="AI", platform="pubmed")
-    with pytest.raises(ValueError, match="No filepath provided"):
+    with pytest.raises(
+        ValueError,
+        match="No search_history_path provided and no search_results_path stored.",
+    ):
         sf.save()
 
 

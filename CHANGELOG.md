@@ -10,6 +10,15 @@ All notable changes to this project will be documented in this file.
 - Added Web of Science parser version `0` with support for field tags later
   marked as deprecated.
 
+## Release 0.13.0
+
+- **Refactor `search_file`:
+  - Replace `filepath` with `search_results_path`; loader arg now `search_history_path`.
+  - History path is derived from results (`<stem>_search_history.json`) with optional private override.
+  - Stop persisting `search_history_path` to avoid contradictions; validations raises `ValueError`.
+  - `save()` resolves history path and creates parent dir automatically.
+  - `to_dict()` includes `search_results_path`; internal/private attrs excluded.
+
 ## Release 0.12.0
 
 - **Platform Support:**
