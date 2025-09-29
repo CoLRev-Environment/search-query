@@ -8,12 +8,12 @@
     "keywords": "AIS, journals, information systems"
   },
   {
-    "identifier": "`blocks_bmi_343 <queries/blocks_bmi_343.html>`_",
-    "platform": "PubMed",
-    "search_string_snippet": "(treatment*[tiab] AND usual[tiab]) OR (standard[tiab] AND care[tiab]) OR (standa...",
-    "title": "Block: Treatment as usual",
-    "description": "original drafts by Sarah Dawson, Cochrane CCDAN group, 21 Jun 2016. TAU-filters may retrieve other comparative studies than RCTs, the comparison here being 'treatment as usual', in stead of placebo or gold standard therapy. See also 'no treatment'. For CINAHL the 'Treatment as usual'-filter is integrated in the RCT-filter.",
-    "keywords": "EBSCO/CINAHL; EBSCO/PsycInfo (PI); EMbase.com (EM); PubMed (PM); Study types; Therapy"
+    "identifier": "`ais_senior_scholars_list_of_premier_journals <queries/ais_senior_scholars_list_of_premier_journals.html>`_",
+    "platform": "wos",
+    "search_string_snippet": "SO=(\"European Journal of Information Systems\" OR \"Information Systems Journal\" O...",
+    "title": "Filter: AIS Senior Scholars List of Premier Journals",
+    "description": "Search filter for the AIS Senior Scholars List of Premier Journals (eleven), see https://aisnet.org/page/SeniorScholarListofPremierJournals",
+    "keywords": "AIS, journals, information systems"
   },
   {
     "identifier": "`journals_FT50 <queries/journals_ft50.html>`_",
@@ -24,11 +24,11 @@
     "keywords": "FT50, journals, business, management"
   },
   {
-    "identifier": "`ais_senior_scholars_list_of_premier_journals <queries/ais_senior_scholars_list_of_premier_journals.html>`_",
-    "platform": "wos",
-    "search_string_snippet": "SO=(\"European Journal of Information Systems\" OR \"Information Systems Journal\" O...",
-    "title": "Filter: AIS Senior Scholars List of Premier Journals",
-    "description": "Search filter for the AIS Senior Scholars List of Premier Journals (eleven), see https://aisnet.org/page/SeniorScholarListofPremierJournals",
-    "keywords": "AIS, journals, information systems"
+    "identifier": "`blocks_bmi_343 <queries/blocks_bmi_343.html>`_",
+    "platform": "PubMed",
+    "search_string_snippet": "(treatment*[tiab] AND usual[tiab]) OR (standard[tiab] AND care[tiab]) OR (standa...",
+    "title": "Block: Treatment as usual",
+    "description": "original drafts by Sarah Dawson, Cochrane CCDAN group, 21 Jun 2016. TAU-filters may retrieve other comparative studies than RCTs, the comparison here being 'treatment as usual', in stead of placebo or gold standard therapy. See also 'no treatment'. For CINAHL the 'Treatment as usual'-filter is integrated in the RCT-filter.",
+    "keywords": "EBSCO/CINAHL; EBSCO/PsycInfo (PI); EMbase.com (EM); PubMed (PM); Study types; Therapy"
   }
 ]
