@@ -85,6 +85,19 @@ from search_query.wos.v_1.parser import WOSParser_v1
                 Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(28, 29)),
             ],
         ),
+        (
+            '(TI=(platform* OR "digital work))',
+            [
+                Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(0, 1)),
+                Token(value="TI=", type=TokenTypes.FIELD, position=(1, 4)),
+                Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(4, 5)),
+                Token(value="platform*", type=TokenTypes.TERM, position=(5, 14)),
+                Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(15, 17)),
+                Token(value="digital work", type=TokenTypes.TERM, position=(19, 31)),
+                Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(31, 32)),
+                Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(32, 33)),
+            ],
+        ),
     ],
 )
 def test_tokenization(query_str: str, expected_tokens: list) -> None:
@@ -591,6 +604,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(9, 21)],
                     "details": "Unparsed segment: 'ehealth[ti]'",
                 },
+            ],
+        ),
+        (
+            '(TI=(platform* OR "digital work))',
+            [
+                {
+                    "code": "PARSE_0003",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": [(18, 19)],
+                    "details": "",
+                }
             ],
         ),
         (
