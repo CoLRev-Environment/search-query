@@ -11,6 +11,7 @@ import search_query.parser
 from search_query import load_search_file
 from search_query.exception import QuerySyntaxError
 from search_query.upgrade import upgrade_query
+from search_query.constants import Colors
 
 
 def _cmd_translate(args: argparse.Namespace) -> int:
@@ -63,8 +64,7 @@ def _lint(args: argparse.Namespace) -> int:
             exit_code = 1
 
         if exit_code == 0:
-            print(f"File {file_path} linted successfully.")
-
+            print(f"{Colors.GREEN}File {file_path} linted successfully.{Colors.END}")
     return exit_code
 
 
