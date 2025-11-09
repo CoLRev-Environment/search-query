@@ -15,20 +15,27 @@ if typing.TYPE_CHECKING:
 # pylint: disable=broad-except
 
 
-def _get_parser(
+def _run_parser(
     search_string: str, *, platform: str, field_general: str
 ) -> QueryStringParser:
     """Run the linter on the search string"""
 
     platform = search_query.parser.get_platform(platform)
     version = search_query.parser.LATEST_VERSIONS[platform]
-    parser_class = search_query.parser.PARSERS[platform][version]
+    if "1." in search_string:
+        parser_class = search_query.parser.LIST_PARSERS[platform][version]
+
+    else:
+        parser_class = search_query.parser.PARSERS[platform][version]
     parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:
         parser.parse()
     except Exception:
         assert parser.linter.messages  # type: ignore
+
+    if parser.linter.messages == {-1: []}:
+        parser.linter.messages = {}
     return parser
 
 
@@ -64,7 +71,7 @@ def lint_query_string(
 
     print(f"Linting query string for platform {platform}")
 
-    parser = _get_parser(search_string, platform=platform, field_general=field_general)
+    parser = _run_parser(search_string, platform=platform, field_general=field_general)
 
     return parser.linter.messages  # type: ignore
 
@@ -89,7 +96,7 @@ def pre_commit_hook(file_path: str) -> int:
 
     print(f"Lint: {Path(file_path).name} ({platform})")
 
-    parser = _get_parser(
+    parser = _run_parser(
         search_file.search_string,
         platform=search_file.platform,
         field_general=search_file.field,
