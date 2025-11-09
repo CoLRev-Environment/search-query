@@ -203,7 +203,7 @@ class QueryStringParser(ABC):
 class QueryListParser:
     """QueryListParser"""
 
-    LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^(\d+).\s+(.*)$")
+    LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^\s*(\d+).\s+(.*)$")
     LIST_ITEM_REFERENCE = re.compile(r"#\d+")
 
     def __init__(
