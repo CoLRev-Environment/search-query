@@ -118,6 +118,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_boolean_operator_readability()
 
         self.check_invalid_proximity_operator()
+        self.check_unicode_escape_sequences_in_terms()
         return self.tokens
 
     def check_invalid_syntax(self) -> None:
