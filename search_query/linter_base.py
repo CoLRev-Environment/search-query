@@ -74,6 +74,7 @@ class QueryStringLinter:
         # silent: primarily for ListParsers
         self.silent = silent
         self.ignore_failing_linter = ignore_failing_linter
+        self._reported_unbalanced_quotes = False
 
     def add_message(
         self,
@@ -211,26 +212,58 @@ class QueryStringLinter:
         last_end = 0
         for start, end in merged:
             if last_end < start:
-                segment = self.query_str[last_end:start]
-                if segment.strip():  # non-whitespace segment
-                    self.add_message(
-                        QueryErrorCode.TOKENIZING_FAILED,
-                        positions=[(last_end, start)],
-                        details=f"Unparsed segment: '{segment.strip()}'",
-                        fatal=True,
-                    )
+                self._handle_unparsed_segment(start=last_end, end=start)
             last_end = end
 
         # Handle trailing unparsed text
         if last_end < len(self.query_str):
-            segment = self.query_str[last_end:]
-            if segment.strip():
-                self.add_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    positions=[(last_end, len(self.query_str))],
-                    details=f"Unparsed segment: '{segment.strip()}'",
-                    fatal=True,
-                )
+            self._handle_unparsed_segment(start=last_end, end=len(self.query_str))
+
+    def _handle_unparsed_segment(self, *, start: int, end: int) -> None:
+        segment = self.query_str[start:end]
+        if not segment.strip():
+            return
+
+        if self._maybe_report_unbalanced_quotes(start=start, end=end):
+            return
+
+        self.add_message(
+            QueryErrorCode.TOKENIZING_FAILED,
+            positions=[(start, end)],
+            details=f"Unparsed segment: '{segment.strip()}'",
+            fatal=True,
+        )
+
+    def _maybe_report_unbalanced_quotes(self, *, start: int, end: int) -> bool:
+        if self._reported_unbalanced_quotes:
+            return False
+
+        total_quote_count = self.query_str.count('"')
+        if total_quote_count % 2 == 0:
+            return False
+
+        segment = self.query_str[start:end]
+        if segment.count('"') % 2 == 0:
+            prefix = self.query_str[:end]
+            if prefix.count('"') % 2 == 0:
+                return False
+
+        quote_position = self.query_str.rfind('"', 0, end)
+        if quote_position == -1:
+            quote_position = self.query_str.find('"', start, end)
+
+        if quote_position != -1:
+            positions = [(quote_position, quote_position + 1)]
+        else:
+            positions = [(start, end)]
+
+        self.add_message(
+            QueryErrorCode.UNBALANCED_QUOTES,
+            positions=positions,
+            fatal=True,
+        )
+        self._reported_unbalanced_quotes = True
+        return True
 
     def check_general_field(self) -> None:
         """Check the general search field"""
