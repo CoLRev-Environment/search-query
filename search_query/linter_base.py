@@ -39,6 +39,7 @@ class QueryStringLinter:
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
+    UNICODE_ESCAPE_PATTERN = re.compile(r"\\u[0-9a-fA-F]{4}")
 
     # Higher number=higher precedence
     OPERATOR_PRECEDENCE = {
@@ -430,6 +431,41 @@ class QueryStringLinter:
                         positions=[token.position],
                         details=f"Invalid character '{char}' in search term '{value}'",
                     )
+
+    def check_unicode_escape_sequences_in_terms(self) -> None:
+        """Warn when search terms contain escaped Unicode sequences."""
+
+        for token in self.tokens:
+            if token.type != TokenTypes.TERM:
+                continue
+
+            for match in self.UNICODE_ESCAPE_PATTERN.finditer(token.value):
+                raw_sequence = match.group(0)
+                replacement_hint = ""
+                try:
+                    unicode_char = chr(int(raw_sequence[2:], 16))
+                except ValueError:  # pragma: no cover - guarded by regex
+                    unicode_char = ""
+                if unicode_char:
+                    replacement_hint = f" '{unicode_char}'"
+
+                if token.position and token.position != (-1, -1):
+                    start = token.position[0] + match.start()
+                    end = token.position[0] + match.end()
+                    positions = [(start, end)]
+                else:
+                    positions = []
+
+                details = (
+                    f"Escaped Unicode sequence '{raw_sequence}' in search term "
+                    f"'{token.value}'. Use the UTF-8 character{replacement_hint} instead."
+                )
+
+                self.add_message(
+                    QueryErrorCode.UNICODE_ESCAPE_SEQUENCE,
+                    positions=positions,
+                    details=details,
+                )
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""

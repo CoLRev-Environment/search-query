@@ -807,6 +807,27 @@ search-query upgrade search_query.json --to 2.0.0
     comput*""",
     )
 
+    UNICODE_ESCAPE_SEQUENCE = (
+        "QUALITY_0007",
+        "unicode-escape-sequence",
+        "Search term contains escaped Unicode sequence",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    "p\\u00e9tanque"[tiab]
+
+**Recommended query**:
+
+.. code-block:: text
+
+    "pétanque"[tiab]
+
+**Typical fix**: Replace escaped Unicode sequences with their UTF-8 characters before executing the query.
+""",
+    )
+
     # -------------------------------------------------------
     # Structural
     # -------------------------------------------------------

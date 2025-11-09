@@ -101,6 +101,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             return self.tokens
 
         self.check_general_field()
+        self.check_unicode_escape_sequences_in_terms()
 
         return self.tokens
 

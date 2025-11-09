@@ -177,3 +177,33 @@ def test_check_invalid_characters_in_term_query() -> None:
             "details": "Invalid character '#' in search term 'digitalizat#ion'",
         }
     ]
+
+
+def test_check_unicode_escape_sequences_in_terms() -> None:
+    linter = QueryStringLinter('"p\\u00e9tanque"[tiab]')  # type: ignore
+    linter.tokens = [
+        Token(
+            type=TokenTypes.TERM,
+            value='"p\\u00e9tanque"',
+            position=(0, 15),
+        )
+    ]
+
+    linter.check_unicode_escape_sequences_in_terms()
+
+    term = '"p\\u00e9tanque"'
+    expected_details = (
+        "Escaped Unicode sequence '\\u00e9' in search term '{term}'. "
+        "Use the UTF-8 character 'é' instead."
+    ).format(term=term)
+
+    assert linter.messages == [
+        {
+            "code": "QUALITY_0007",
+            "label": "unicode-escape-sequence",
+            "message": "Search term contains escaped Unicode sequence",
+            "is_fatal": False,
+            "position": [(2, 8)],
+            "details": expected_details,
+        }
+    ]
