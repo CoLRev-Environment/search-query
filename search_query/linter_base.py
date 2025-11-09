@@ -211,26 +211,24 @@ class QueryStringLinter:
         last_end = 0
         for start, end in merged:
             if last_end < start:
-                segment = self.query_str[last_end:start]
-                if segment.strip():  # non-whitespace segment
-                    self.add_message(
-                        QueryErrorCode.TOKENIZING_FAILED,
-                        positions=[(last_end, start)],
-                        details=f"Unparsed segment: '{segment.strip()}'",
-                        fatal=True,
-                    )
+                self._handle_unparsed_segment(start=last_end, end=start)
             last_end = end
 
         # Handle trailing unparsed text
         if last_end < len(self.query_str):
-            segment = self.query_str[last_end:]
-            if segment.strip():
-                self.add_message(
-                    QueryErrorCode.TOKENIZING_FAILED,
-                    positions=[(last_end, len(self.query_str))],
-                    details=f"Unparsed segment: '{segment.strip()}'",
-                    fatal=True,
-                )
+            self._handle_unparsed_segment(start=last_end, end=len(self.query_str))
+
+    def _handle_unparsed_segment(self, *, start: int, end: int) -> None:
+        segment = self.query_str[start:end]
+        if not segment.strip():
+            return
+
+        self.add_message(
+            QueryErrorCode.TOKENIZING_FAILED,
+            positions=[(start, end)],
+            details=f"Unparsed segment: '{segment.strip()}'",
+            fatal=True,
+        )
 
     def check_general_field(self) -> None:
         """Check the general search field"""
