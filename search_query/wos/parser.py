@@ -26,33 +26,36 @@ from search_query.wos.linter import WOSQueryStringLinter
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
-    TERM_REGEX = re.compile(
-        r'\*?[\w\-/\.\!\*,&\\]+(?:[\*\$\?][\w\-/\.\!\*,&\\]*)*|"[^"]+"'
-    )
+    # 1) structured parts
+    FIELD_REGEX = re.compile(r"\b\w{2,3}=")
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
     PROXIMITY_OPERATOR_REGEX = re.compile(
         r"\b(NEAR/\d{1,2}|NEAR)\b", flags=re.IGNORECASE
     )
-    FIELD_REGEX = re.compile(r"\b\w{2}=|\b\w{3}=")
     PARENTHESIS_REGEX = re.compile(r"[\(\)]")
-    fieldS_REGEX = re.compile(r"\b(?!and\b)[a-zA-Z]+(?:\s(?!and\b)[a-zA-Z]+)*")
 
-    OPERATOR_REGEX = re.compile(
-        "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
-    )
+    # 2) quoted term — this matches only if quotes are balanced.
+    QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
 
-    # Combine all regex patterns into a single pattern
+    # 3) fallback term:
+    # make this permissive enough to also swallow a stray `"`,
+    # but still exclude structural WOS characters (space, parens, equals).
+    PERMISSIVE_TERM_REGEX = re.compile(r"[^\s\(\)=]+")
+
+    # build the combined pattern:
+    # fields → logic/proximity → parens → quoted term → term
     pattern = re.compile(
-        r"|".join(
+        "|".join(
             [
                 FIELD_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
-                TERM_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
-                # self.fieldS_REGEX.pattern,
+                QUOTED_TERM_REGEX.pattern,
+                PERMISSIVE_TERM_REGEX.pattern,
             ]
-        )
+        ),
+        flags=re.IGNORECASE,
     )
 
     # pylint: disable=too-many-arguments
@@ -102,7 +105,10 @@ class WOSParser(QueryStringParser):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
             elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.TERM_REGEX.fullmatch(value):
+            elif self.QUOTED_TERM_REGEX.fullmatch(value):
+                # fully quoted term
+                token_type = TokenTypes.TERM
+            elif self.PERMISSIVE_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.TERM
             else:  # pragma: no cover
                 token_type = TokenTypes.UNKNOWN
@@ -116,9 +122,6 @@ class WOSParser(QueryStringParser):
 
     def combine_subsequent_terms(self) -> None:
         """Combine subsequent terms in the list of tokens."""
-        # Combine subsequent terms (without quotes)
-        # This would be more challenging in the regex
-        # Changed the implementation to combine multiple terms
         combined_tokens: typing.List[Token] = []
         i = 0
         j = 0

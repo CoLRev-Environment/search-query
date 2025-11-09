@@ -83,6 +83,7 @@ from search_query.wos.v_1.parser import WOSParser_v1
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(20, 23)),
                 Token(value="test", type=TokenTypes.TERM, position=(24, 28)),
                 Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(28, 29)),
+                Token(value='"', type=TokenTypes.TERM, position=(29, 30)),
             ],
         ),
         (
@@ -93,7 +94,7 @@ from search_query.wos.v_1.parser import WOSParser_v1
                 Token(value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(4, 5)),
                 Token(value="platform*", type=TokenTypes.TERM, position=(5, 14)),
                 Token(value="OR", type=TokenTypes.LOGIC_OPERATOR, position=(15, 17)),
-                Token(value="digital work", type=TokenTypes.TERM, position=(19, 31)),
+                Token(value='"digital work', type=TokenTypes.TERM, position=(18, 31)),
                 Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(31, 32)),
                 Token(value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(32, 33)),
             ],
@@ -235,6 +236,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(9, 12), (13, 15)],
                     "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
                 },
+            ],
+        ),
+        (
+            '(TI=(platform* OR "digital work))',
+            [
+                {
+                    "code": "PARSE_0003",
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "is_fatal": True,
+                    "position": [(18, 31)],
+                    "details": "Unmatched opening quote",
+                }
             ],
         ),
         (
@@ -596,14 +610,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(17, 21)],
                     "details": "WOS fields must be before search terms and without brackets, e.g. AB=robot or TI=monitor. '[ti]' is invalid.",
                 },
-                {
-                    "code": "PARSE_0001",
-                    "label": "tokenizing-failed",
-                    "message": "Fatal error during tokenization",
-                    "is_fatal": True,
-                    "position": [(9, 21)],
-                    "details": "Unparsed segment: 'ehealth[ti]'",
-                },
             ],
         ),
         (
@@ -614,8 +620,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "unbalanced-quotes",
                     "message": "Quotes are unbalanced in the query",
                     "is_fatal": True,
-                    "position": [(18, 19)],
-                    "details": "",
+                    "position": [(18, 31)],
+                    "details": "Unmatched opening quote",
                 }
             ],
         ),
