@@ -9,9 +9,9 @@ from pathlib import Path
 import search_query.linter
 import search_query.parser
 from search_query import load_search_file
+from search_query.constants import Colors
 from search_query.exception import QuerySyntaxError
 from search_query.upgrade import upgrade_query
-from search_query.constants import Colors
 
 
 def _cmd_translate(args: argparse.Namespace) -> int:

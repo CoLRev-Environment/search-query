@@ -68,7 +68,7 @@ class WOSParser(QueryStringParser):
     ) -> None:
         """Initialize the parser."""
         super().__init__(
-            query_str,
+            query_str=query_str,
             field_general=field_general,
             offset=offset,
             original_str=original_str,
@@ -87,7 +87,7 @@ class WOSParser(QueryStringParser):
 
         self.tokens = []
         for match in self.pattern.finditer(self.query_str):
-            value = match.group()
+            value = match.group(0)
             position = match.span()
 
             # Determine token type
@@ -207,6 +207,7 @@ class WOSParser(QueryStringParser):
             tokens[0].type == TokenTypes.PARENTHESIS_OPEN
             or (
                 tokens[0].type == TokenTypes.FIELD
+                and len(tokens) > 1
                 and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
             )
         ) and tokens[-1].type == TokenTypes.PARENTHESIS_CLOSED
@@ -222,7 +223,7 @@ class WOSParser(QueryStringParser):
         raise ValueError(f"Unrecognized operator: {token.value}")
 
     def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
-        indices = []
+        indices: list[int] = []
         depth = 0
         first_op = None
 
@@ -268,6 +269,7 @@ class WOSParser(QueryStringParser):
             nested_query = self.parse_query_tree(tokens[1:-1])
         elif (
             tokens[0].type == TokenTypes.FIELD
+            and len(tokens) > 1
             and tokens[1].type == TokenTypes.PARENTHESIS_OPEN
         ):
             nested_query = self.parse_query_tree(tokens[2:-1])
@@ -294,7 +296,7 @@ class WOSParser(QueryStringParser):
                 Term(
                     value=left_token.value,
                     position=left_token.position,
-                    field=None,  # ← clear to avoid double nesting
+                    field=None,
                     platform="deactivated",
                 ),
                 Term(
@@ -318,6 +320,7 @@ class WOSParser(QueryStringParser):
         )
 
     def _parse_term(self, tokens: list[Token]) -> Query:
+        # term or field + term
         if len(tokens) == 1:
             return Term(
                 value=tokens[0].value,
@@ -336,7 +339,7 @@ class WOSParser(QueryStringParser):
         )
 
     def _extract_proximity_distance(self, token: Token) -> int:
-        """Extract distance from proximity operator like NEAR/5 or WITHIN/3"""
+        """Extract distance from proximity operator like NEAR/5."""
         match = re.search(r"/(\d+)", token.value)
         if not match:
             raise ValueError(f"Invalid proximity operator: {token.value}")
@@ -390,7 +393,7 @@ class WOSListParser(QueryListParser):
         ignore_failing_linter: bool = False,
     ) -> None:
         super().__init__(
-            query_list=query_list,
+            query_list,
             parser_class=WOSParser,
             field_general=field_general,
             ignore_failing_linter=ignore_failing_linter,
@@ -406,7 +409,6 @@ class WOSListParser(QueryListParser):
         """Parse the list of queries."""
 
         self.tokenize_list()
-        # note: messages printed in linter
         self.linter.validate_list_tokens()
         self.linter.check_status()
 
@@ -426,7 +428,6 @@ class WOSListParser(QueryListParser):
             raise exc
         finally:
             self.assign_linter_messages(query_parser.linter.messages, self.linter)
-
             self.linter.check_status()
 
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
