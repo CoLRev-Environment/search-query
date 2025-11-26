@@ -10,28 +10,30 @@ authors = [
     { name = "Karl Schnickmann" },
     { name = "Gerit Wagner", email = "gerit.wagner@uni-bamberg.de" },
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 readme = "README.md"
-packages = [{include = "search_query"}]
 keywords = ["search query", "literature search", "query translation", "research", "reproducible research", "open science", "literature", "literature review", "systematic review", "systematic literature review"]
 classifiers = [
    "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Scientific/Engineering",
-    "Operating System :: OS Independent",
-    "Typing :: Typed",
+   "License :: OSI Approved :: MIT License",
+   "Natural Language :: English",
+   "Programming Language :: Python :: 3",
+   "Programming Language :: Python :: 3.8",
+   "Programming Language :: Python :: 3.9",
+   "Programming Language :: Python :: 3.10",
+   "Programming Language :: Python :: 3.11",
+   "Topic :: Scientific/Engineering",
+   "Operating System :: OS Independent",
+   "Typing :: Typed",
 ]
-include = ["LICENSE", "README.md"]
 requires-python = ">=3.8"
 dependencies = [
   'importlib-resources>=5.1; python_version < "3.9"'
 ]
+
+[project.urls]
+Homepage = "https://github.com/CoLRev-Environment/search-query"
+Documentation = "https://colrev-environment.github.io/search-query/"
 
 [project.optional-dependencies]
 docs = [
@@ -48,6 +50,12 @@ dev = [
 
 [project.scripts]
 search-query = "search_query.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["search_query"]
+
+[tool.hatch.build.targets.sdist]
+include = ["LICENSE", "README.md"]
 
 [tool.pylint.MAIN]
 extension-pkg-whitelist = "lxml.etree"
