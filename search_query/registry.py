@@ -9,8 +9,6 @@ from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
 
-from packaging.version import Version
-
 from search_query.constants import PLATFORM
 
 if _t.TYPE_CHECKING:  # pragma: no cover
@@ -225,10 +223,16 @@ for plat in PLATFORM:
 # Latest helpers --------------------------------------------------------------
 
 
+def _version_key(v: str) -> int:
+    """Key function for comparing version strings like '1', '2', '10'."""
+
+    return int(v)
+
+
 def _latest_map(m: _t.Mapping[str, _t.Mapping[str, _t.Any]]) -> dict[str, str]:
     """Return mapping of platforms to their latest version string."""
 
-    return {k: max(v.keys(), key=Version) for k, v in m.items() if v}
+    return {k: max(v.keys(), key=_version_key) for k, v in m.items() if v}
 
 
 LATEST_VERSIONS_PARSERS: dict[str, str] = _latest_map(PARSERS)
