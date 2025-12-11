@@ -21,4 +21,13 @@ WOS_0005 — year-span-violation
 
 **Typical fix**: The parser automatically adjusts the year span to 5 years.
 
+.. note::
+   **Deprecation Notice**: This linting rule is scheduled for deprecation.
+   Recent evaluations show that the Web of Science (WOS) search interface
+   does **not** enforce a 5-year publication range limit. Queries with
+   broader year spans execute successfully, and applying the publication
+   year filter manually yields identical results. Since no official WOS
+   documentation supports the restriction, this rule will be removed in a
+   future release.
+
 **Back to**: :ref:`lint`
