@@ -63,12 +63,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
     YEAR_VALUE_REGEX = re.compile(
         r'^"?'
         r"(?P<year>\d{4})"
-        r"(?P<month>\/(0[1-9]|1[0-2]))?"
-        r"(?P<day>\/(0[1-9]|[12]\d|3[01]))?"
+        r"(?P<month>\/(0?[1-9]|1[0-2]))?"
+        r"(?P<day>\/(0?[1-9]|[12]\d|3[01]))?"
         r"(\:"
         r"(?P<year2>(\d{4})"
-        r"(?P<month2>\/(0[1-9]|1[0-2]))?"
-        r"(?P<day2>\/(0[1-9]|[12]\d|3[01]))?))?"
+        r"(?P<month2>\/(0?[1-9]|1[0-2]))?"
+        r"(?P<day2>\/(0?[1-9]|[12]\d|3[01]))?))?"
         r'"?$',
         re.VERBOSE,
     )
