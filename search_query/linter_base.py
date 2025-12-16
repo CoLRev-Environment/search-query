@@ -1038,7 +1038,13 @@ class QueryStringLinter:
             return
 
         generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
-        if generic_fields & {Fields.JOURNAL, Fields.PUBLICATION_NAME}:
+        if generic_fields & {
+            Fields.JOURNAL,
+            Fields.PUBLICATION_NAME,
+            Fields.ISSN,
+            Fields.ISBN,
+            Fields.ISSN_ISBN,
+        }:
             details = (
                 "Check whether journal/publication-name filters "
                 f"({query.field.value}) should apply to the entire query."
