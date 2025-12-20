@@ -143,40 +143,28 @@ class PubmedParser(QueryStringParser):
             return Operators.RANGE
         raise ValueError()  # pragma: no cover
 
-    def _get_operator_indices(self, tokens: list) -> list:
+    def _get_operator_indices(self, tokens: list) -> list[int]:
         """Get indices of top-level operators in the token list"""
-        operator_indices = []
-
-        i = 0
-        first_operator_found = False
-        first_operator = ""
+        indices: list[int] = []
+        depth = 0
+        first_op = None
         # Iterate over tokens in reverse
         # to find and save positions of consecutive top-level operators
         # matching the first encountered until a different type is found.
         for token in reversed(tokens):
-            token_index = tokens.index(token)
-
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                i = i + 1
+                depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                i = i - 1
-
-            if i == 0 and token.type in [
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.RANGE_OPERATOR,
-            ]:
-                operator = self._get_operator_type(token)
-                if not first_operator_found:
-                    first_operator = operator
-                    first_operator_found = True
-                if operator == first_operator:
-                    operator_indices.append(token_index)
-                else:  # pragma: no cover
-                    # Note: this should not happen because the linter calls
-                    # add_artificial_parentheses_for_operator_precedence()
-                    raise ValueError
-
-        return operator_indices
+                depth -= 1
+            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR]:
+                op = self._get_operator_type(token)
+                if first_op is None:
+                    first_op = op
+                if op == first_op:
+                    indices.append(tokens.index(token))
+                else:
+                    break
+        return indices
 
     def _parse_compound_query(self, tokens: list) -> Query:
         """Parse a compound query

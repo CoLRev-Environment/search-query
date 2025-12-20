@@ -234,7 +234,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(9, 12), (13, 15)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
                 },
             ],
         ),
@@ -936,7 +936,7 @@ def test_query_in_quotes() -> None:
     assert parser.tokens[0].value == "TI="
 
 
-def test_artificial_parentheses() -> None:
+def test_missing_field_query() -> None:
     parser = WOSParser_v1(
         query_str="remote OR online AND work",
         field_general="All Fields",
@@ -959,7 +959,7 @@ def test_artificial_parentheses() -> None:
             "message": "Operator changed at the same level (explicit parentheses are recommended)",
             "is_fatal": False,
             "position": [(7, 9), (17, 20)],
-            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
         },
         {
             "code": "FIELD_0003",
@@ -974,7 +974,7 @@ def test_artificial_parentheses() -> None:
             "label": "field-missing",
             "message": "Search field is missing",
             "is_fatal": False,
-            "position": [(0, 6)],
+            "position": [(0, 6), (10, 16), (21, 25)],
             "details": "",
         },
     ]

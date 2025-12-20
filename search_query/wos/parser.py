@@ -13,8 +13,6 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.query_near import NEARQuery
-from search_query.query_not import NotQuery
 from search_query.query_term import Term
 from search_query.wos.constants import field_general_to_syntax
 from search_query.wos.linter import WOSQueryListLinter
@@ -171,12 +169,8 @@ class WOSParser(QueryStringParser):
     def parse_query_tree(self, tokens: list[Token]) -> Query:
         """Top-down predictive parser for query tree."""
 
-        if self._is_not_query(tokens):
-            return self._parse_not_query(tokens)
         if self._is_compound_query(tokens):
             return self._parse_compound_query(tokens)
-        if self._is_near_query(tokens):
-            return self._parse_near_query(tokens)
         if self._is_nested_query(tokens):
             return self._parse_nested_query(tokens)
         if self._is_term_query(tokens):
@@ -186,21 +180,6 @@ class WOSParser(QueryStringParser):
 
     def _is_term_query(self, tokens: list[Token]) -> bool:
         return bool(tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.TERM)
-
-    def _is_near_query(self, tokens: list[Token]) -> bool:
-        return (
-            len(tokens) == 3
-            and tokens[0].type == TokenTypes.TERM
-            and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
-            and tokens[2].type == TokenTypes.TERM
-        )
-
-    def _is_not_query(self, tokens: list[Token]) -> bool:
-        return (
-            len(tokens) >= 2
-            and tokens[0].type == TokenTypes.LOGIC_OPERATOR
-            and tokens[0].value.upper() == "NOT"
-        )
 
     def _is_compound_query(self, tokens: list[Token]) -> bool:
         return bool(self._get_operator_indices(tokens))
@@ -223,25 +202,30 @@ class WOSParser(QueryStringParser):
             return "OR"
         if val == "NOT":
             return "NOT"
+        if val.startswith("NEAR"):
+            return "NEAR"
         raise ValueError(f"Unrecognized operator: {token.value}")
 
     def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
+        """Get indices of top-level operators with the lowest precedence value."""
         indices: list[int] = []
         depth = 0
-        first_op = None
+        prev_op = None
 
         for i, token in enumerate(tokens):
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            elif depth == 0 and token.type == TokenTypes.LOGIC_OPERATOR:
+            elif depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
                 op = self._get_operator_type(token)
-                if first_op is None:
-                    first_op = op
-                elif op != first_op:
-                    raise ValueError("Mixed operators without parentheses.")
-                indices.append(i)
+                if prev_op is None:
+                    prev_op = op
+                    indices.append(i)
+                elif op == prev_op:
+                    indices.append(i)
+                elif self.linter.get_precedence(op) < self.linter.get_precedence(prev_op):
+                    indices = [i]
         return indices
 
     def _parse_compound_query(self, tokens: list[Token]) -> Query:
@@ -249,7 +233,13 @@ class WOSParser(QueryStringParser):
         if not op_indices:
             raise ValueError("No operator found for compound query.")
 
-        operator_type = self._get_operator_type(tokens[op_indices[0]])
+        op_token = tokens[op_indices[0]]
+        op_type = self._get_operator_type(op_token)
+        distance = 0
+        if op_type == "NEAR":
+            distance = self._extract_proximity_distance(op_token)
+            op_type = op_token.value.upper().split("/")[0]
+
         children = []
 
         start = 0
@@ -261,10 +251,11 @@ class WOSParser(QueryStringParser):
         children.append(self.parse_query_tree(tokens[start:]))
 
         return Query.create(
-            value=operator_type,
+            value=op_type,
             children=children,  # type: ignore
             position=(tokens[0].position[0], tokens[-1].position[1]),
             platform="deactivated",
+            distance=distance,
         )
 
     def _parse_nested_query(self, tokens: list[Token]) -> Query:
@@ -283,44 +274,6 @@ class WOSParser(QueryStringParser):
             raise ValueError("Invalid nested query structure.")
 
         return nested_query
-
-    def _parse_near_query(self, tokens: list[Token]) -> Query:
-        left_token = tokens[0]
-        operator_token = tokens[1]
-        right_token = tokens[2]
-
-        distance = self._extract_proximity_distance(operator_token)
-
-        return NEARQuery(
-            value=operator_token.value.upper().split("/")[0],
-            distance=distance,
-            position=(left_token.position[0], right_token.position[1]),
-            children=[
-                Term(
-                    value=left_token.value,
-                    position=left_token.position,
-                    field=None,
-                    platform="deactivated",
-                ),
-                Term(
-                    value=right_token.value,
-                    position=right_token.position,
-                    field=None,
-                    platform="deactivated",
-                ),
-            ],
-            platform="deactivated",
-        )
-
-    def _parse_not_query(self, tokens: list[Token]) -> Query:
-        # NOT must be followed by a single query (term or nested)
-        assert tokens[0].value.upper() == "NOT"
-        child = self.parse_query_tree(tokens[1:])
-
-        return NotQuery(
-            children=[child],
-            platform="deactivated",
-        )
 
     def _parse_term(self, tokens: list[Token]) -> Query:
         # term or field + term

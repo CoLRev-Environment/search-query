@@ -104,7 +104,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unknown_token_types()
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
-        self.add_artificial_parentheses_for_operator_precedence()
+        self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens

@@ -322,7 +322,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(18, 20), (49, 52)],
-                    "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
+                    "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\n",
                 },
                 {
                     "code": "FIELD_0003",
@@ -1129,7 +1129,7 @@ def test_list_parser_case_3() -> None:
                 "message": "Operator changed at the same level (explicit parentheses are recommended)",
                 "is_fatal": False,
                 "position": [(33, 35), (67, 70)],
-                "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
+                "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\n",
             },
         ],
     }
