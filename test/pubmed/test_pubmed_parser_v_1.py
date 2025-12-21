@@ -1045,6 +1045,7 @@ def test_linter_with_general_field(
             'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
         ),
         ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
+        ('(2019/1/1:2024/2/22[Date - Publication])', "", '2019/1/1:2024/2/22[[Date - Publication]]')
     ],
 )
 def test_parser(query_str: str, field_general: str, expected_parsed: str) -> None:
