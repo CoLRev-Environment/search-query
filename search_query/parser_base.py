@@ -369,7 +369,7 @@ class QueryListParser:
             return "", {}
 
         # Entry point: find the top-level operator node and resolve it
-        top_level_node = max(self.query_dict.keys())
+        top_level_node = max(self.query_dict.keys(), key=int)
         query_str, offset = resolve_reference(top_level_node)
 
         return query_str, offset
