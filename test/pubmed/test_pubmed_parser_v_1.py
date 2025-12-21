@@ -1113,16 +1113,17 @@ def test_list_parser_case_3() -> None:
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        -1: [],
-        "1": [
+        -1: [
             {
                 "code": "PARSE_0004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
-                "position": [(106, 112)],
+                "position": [(-1, -1)],
                 "details": 'Missing operator between ") ("',
             },
+        ],
+        "1": [
             {
                 "code": "STRUCT_0001",
                 "label": "implicit-precedence",

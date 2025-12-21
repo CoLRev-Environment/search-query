@@ -329,10 +329,6 @@ class QueryListParser:
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
                 query = node_content["node_content"]
                 pos = node_content["content_pos"][0]
-                if query[-1] != ")":
-                    query = f"({query})"
-                    offset = {0: -1, 1: pos, len(query) - 1: -1}
-                    return query, offset
                 return query, {0: pos}
 
             if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
@@ -351,10 +347,13 @@ class QueryListParser:
                         resolved_query, nested_pos_dict = resolve_reference(
                             nested_ref_nr
                         )
-                        parts.append(resolved_query)
+                        parts.append(f"({resolved_query})")
+                        local_pos_dict[current_pos] = -1
+                        current_pos += 1
                         for rel_pos, orig_pos in nested_pos_dict.items():
                             local_pos_dict[current_pos + rel_pos] = orig_pos
-                        current_pos += len(resolved_query)
+                        local_pos_dict[current_pos + len(resolved_query)] = -1
+                        current_pos += len(resolved_query) + 1
                     else:
                         parts.append(token.value)
                         token_pos = operator_base_offset + token.position[0]
@@ -370,8 +369,8 @@ class QueryListParser:
             return "", {}
 
         # Entry point: find the top-level operator node and resolve it
-        for token_nr in self.query_dict:
-            query_str, offset = resolve_reference(token_nr)
+        top_level_node = max(self.query_dict.keys())
+        query_str, offset = resolve_reference(top_level_node)
 
         return query_str, offset
 

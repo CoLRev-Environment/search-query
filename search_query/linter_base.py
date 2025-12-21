@@ -807,17 +807,36 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def _flatten_same_operator(self, query: Query) -> Query:
+    def _can_flatten_artificial_nesting(self, query: Query) -> bool:
+        """Check whether query is enclosed in artificial parentheses."""
+        token_index_before_query = query.position[0] - 1
+        token_index_after_query = query.position[1] + 1
+        if (
+                token_index_before_query > 0
+                and token_index_after_query < len(self.tokens)
+                and self.tokens[token_index_before_query] == TokenTypes.PARENTHESIS_OPEN
+                and self.tokens[token_index_before_query].position == (-1, -1)
+                and self.tokens[token_index_after_query] == TokenTypes.PARENTHESIS_CLOSED
+                and self.tokens[token_index_after_query].position == (-1, -1)
+        ):
+            return True
+        return False
+
+    def _flatten_same_operator(self, query: Query, flatten_artificial_nesting_only: bool = False) -> Query:
         """Return a copy of the query with same-operator nesting flattened."""
         if not query.operator:
             return query
 
         flattened_children = []
         for child in query.children:
-            if child.value == query.value:
-                flattened_children.extend(self._flatten_same_operator(child).children)
+            if child.value == query.value and (not flatten_artificial_nesting_only or self._can_flatten_artificial_nesting(child)):
+                flattened_children.extend(
+                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only).children
+                )
             else:
-                flattened_children.append(self._flatten_same_operator(child))
+                flattened_children.append(
+                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only)
+                )
         from search_query.query import Query
 
         return Query.create(
@@ -1004,9 +1023,12 @@ class QueryStringLinter:
 
         query = self._assign_subsequent_letters(query, abbreviation_dict)
 
-        original = query.to_string_structured_2()
+        original = self._flatten_same_operator(query, flatten_artificial_nesting_only=True)
+        original = original.to_string_structured_2()
+
         flattened = self._flatten_same_operator(query)
         simplified = flattened.to_string_structured_2()
+
         original = self._highlight_removed_chars(original, simplified)
 
         if original == simplified:
