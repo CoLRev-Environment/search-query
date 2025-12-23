@@ -249,53 +249,55 @@ class QueryListParser:
             }
             previous += len(line) + 1
 
+
     def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
-        """Tokenize the query string into list-references and logic operator tokens."""
-
+        """Tokenize the query string into list-references and non-list-reference contents."""
         tokens = []
-        pos = 0
-        length = len(query_str)
+        last_end = 0
 
-        while pos < length:
-            # Skip any whitespace
-            while pos < length and query_str[pos].isspace():
-                pos += 1
+        for match in re.finditer(self.LIST_ITEM_REFERENCE, query_str):
+            gap = query_str[last_end:match.start()]
+            gap_l = gap.lstrip()
+            gap_r = gap.rstrip()
 
-            if pos >= length:
-                break
-
-            match = self.LIST_ITEM_REFERENCE.match(query_str, pos)
-            if match:
-                start, end = match.span()
+            if gap_l:
+                start = last_end + (len(gap) - len(gap_l))
+                end = last_end + len(gap_r)
                 tokens.append(
                     ListToken(
-                        value=match.group(),
-                        type=OperatorNodeTokenTypes.LIST_ITEM_REFERENCE,
+                        value=gap_l.rstrip(),
+                        type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
                         level=node_nr,
                         position=(start, end),
                     )
                 )
-                pos = end
-            else:
-                # Collect non-space, non-list-ref characters
-                start = pos
-                while (
-                    pos < length
-                    and not query_str[pos].isspace()
-                    and not self.LIST_ITEM_REFERENCE.match(query_str, pos)
-                ):
-                    pos += 1
 
-                if start != pos:
-                    value = query_str[start:pos]
-                    tokens.append(
-                        ListToken(
-                            value=value,
-                            type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
-                            level=node_nr,
-                            position=(start, pos),
-                        )
-                    )
+            tokens.append(
+                ListToken(
+                    value=match.group(),
+                    type=OperatorNodeTokenTypes.LIST_ITEM_REFERENCE,
+                    level=node_nr,
+                    position=(match.start(), match.end()),
+                )
+            )
+
+            last_end = match.end()
+
+        tail = query_str[last_end:]
+        tail_l = tail.lstrip()
+        tail_r = tail.rstrip()
+
+        if tail_l:
+            start = last_end + (len(tail) - len(tail_l))
+            end = last_end + len(tail_r)
+            tokens.append(
+                ListToken(
+                    value=tail_l.rstrip(),
+                    type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
+                    level=node_nr,
+                    position=(start, end),
+                )
+            )
 
         return tokens
 
