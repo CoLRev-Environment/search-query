@@ -1195,3 +1195,18 @@ def test_general_list_parser_4() -> None:
         query.to_string()
         == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
     )
+
+
+def test_general_list_parser_5() -> None:
+    query_list = """
+1. Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]
+2. #1 AND "english"[Language]
+3. #2 NOT ("comment"[Publication Type] OR "news"[Publication Type])
+"""
+
+    query = parse(query_list, platform=PLATFORM.PUBMED.value)
+
+    assert (
+        query.to_string()
+        == '((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND "english"[Language]) NOT ("comment"[Publication Type] OR "news"[Publication Type])'
+    )
