@@ -1248,6 +1248,28 @@ Proximity operators must have a non-negative integer as the distance.
 """,
     )
 
+    WOS_INVALID_NEAR_QUERY = (
+        "WOS_0013",
+        "invalid-near-query",
+        "NEAR operator applied to AND query.",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A AND B) NEAR/3 C)"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A NEAR/3 C) AND (B NEAR/3 C))"
+
+""",
+    )
+
     # pylint: disable=too-many-arguments
     def __init__(self, code: str, label: str, message: str, docs: str) -> None:
         self.code = code

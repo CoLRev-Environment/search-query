@@ -583,6 +583,24 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def _check_invalid_near_query(self, query: Query) -> None:
+        """Check if NEAR operator is applied to an AND query."""
+        if not query.operator:
+            return
+
+        if query.value == "NEAR":
+            for child in query.children:
+                if child.operator and child.value == "AND":
+                    self.add_message(
+                        QueryErrorCode.WOS_INVALID_NEAR_QUERY,
+                        positions=[child.position] if child.position else [],
+                        fatal=True
+                    )
+
+        for child in query.children:
+            self._check_invalid_near_query(child)
+
+
     def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
@@ -595,6 +613,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unsupported_wildcards(query)
         self.check_unsupported_fields_in_query(query)
         self.check_unbalanced_quotes_in_terms(query)
+        self._check_invalid_near_query(query)
 
         term_field_query = self.get_query_with_fields_at_terms(query)
         self.check_year_format(term_field_query)

@@ -368,6 +368,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         #     ],
         # ),
         (
+            "TS=(diversity NEAR/3 (speci* OR population*))",
+            []
+        ),
+        (
+            "TS=(diversity NEAR/3 (speci* AND population*))",
+            [
+                {
+                    "code": "WOS_0013",
+                    "label": "invalid-near-query",
+                    "message": "NEAR operator applied to AND query.",
+                    "is_fatal": True,
+                    "position": [(22, 44)],
+                    "details": ''
+                },
+            ]
+        ),
+        (
             "TI=term1 !term2",
             [
                 {
