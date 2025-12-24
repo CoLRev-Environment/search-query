@@ -343,19 +343,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 },
             ],
         ),
-        (
-            "TI=term1 NEAR/20 TI=term2",
-            [
-                {
-                    "code": "WOS_0002",
-                    "label": "near-distance-too-large",
-                    "message": "NEAR distance is too large (max: 15).",
-                    "is_fatal": True,
-                    "position": [(9, 16)],
-                    "details": "NEAR distance 20 is larger than the maximum allowed value of 15.",
-                }
-            ],
-        ),
         # TODO: should be implemented properly.
         # (
         #     "TI=term1 NEAR/10 term2",

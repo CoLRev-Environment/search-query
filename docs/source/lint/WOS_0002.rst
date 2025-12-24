@@ -21,4 +21,7 @@ WOS_0002 — near-distance-too-large
 
 **Typical fix**: Reduce the NEAR distance to 15 or less.
 
+.. note::
+    **Deprecation Notice**: This linting rule is scheduled for deprecation. Recent evaluations show that the Web of Science (WOS) search interface does **not** enforce an upper range of 15 for the NEAR operator. Queries with broader NEAR distance execute successfully, and applying a NEAR operator with a range > 15 returns more records than 15. Since no official WOS documentation supports the restriction, this rule will be removed in a future release.
+
 **Back to**: :ref:`lint`

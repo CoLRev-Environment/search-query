@@ -114,7 +114,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         )
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
-        self.check_near_distance_in_range(max_value=15)
 
         self.check_general_field()
         self.check_missing_fields()
