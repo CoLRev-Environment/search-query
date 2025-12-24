@@ -623,7 +623,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_redundant_terms(term_field_query)
-        #self._check_for_wildcard_usage(term_field_query)
+        self._check_for_wildcard_usage(term_field_query)
         self.check_deprecated_field_tags(term_field_query)
 
 

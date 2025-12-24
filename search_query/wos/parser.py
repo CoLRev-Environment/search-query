@@ -118,54 +118,6 @@ class WOSParser(QueryStringParser):
         self.combine_subsequent_terms()
         self.split_operators_with_missing_whitespace()
 
-    def combine_subsequent_terms(self) -> None:
-        """Combine subsequent terms in the list of tokens."""
-        combined_tokens: typing.List[Token] = []
-        i = 0
-        j = 0
-
-        while i < len(self.tokens):
-            if len(combined_tokens) > 0:
-                if (
-                    self.tokens[i].type == TokenTypes.TERM
-                    and combined_tokens[j - 1].type == TokenTypes.TERM
-                ):
-                    combined_token = Token(
-                        value=combined_tokens[j - 1].value + " " + self.tokens[i].value,
-                        type=TokenTypes.TERM,
-                        position=(
-                            combined_tokens[j - 1].position[0],
-                            self.tokens[i].position[1],
-                        ),
-                    )
-                    combined_tokens.pop()
-                    combined_tokens.append(combined_token)
-                    i += 1
-                    continue
-
-            if (
-                i + 1 < len(self.tokens)
-                and self.tokens[i].type == TokenTypes.TERM
-                and self.tokens[i + 1].type == TokenTypes.TERM
-            ):
-                combined_token = Token(
-                    value=self.tokens[i].value + " " + self.tokens[i + 1].value,
-                    type=TokenTypes.TERM,
-                    position=(
-                        self.tokens[i].position[0],
-                        self.tokens[i + 1].position[1],
-                    ),
-                )
-                combined_tokens.append(combined_token)
-                i += 2
-                j += 1
-            else:
-                combined_tokens.append(self.tokens[i])
-                i += 1
-                j += 1
-
-        self.tokens = combined_tokens
-
     def parse_query_tree(self, tokens: list[Token]) -> Query:
         """Top-down predictive parser for query tree."""
 
