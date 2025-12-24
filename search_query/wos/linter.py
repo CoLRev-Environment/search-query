@@ -567,7 +567,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_nr_terms(self, query: Query) -> None:
         """Check the number of search terms in the query."""
         nr_terms = query.get_nr_leaves()
-        if nr_terms > 1600:  # pragma: no cover
+        if nr_terms > 16000:  # pragma: no cover
             self.add_message(
                 QueryErrorCode.TOO_MANY_TERMS,
                 positions=[query.position] if query.position else [],
@@ -623,7 +623,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_redundant_terms(term_field_query)
-        self._check_for_wildcard_usage(term_field_query)
+        #self._check_for_wildcard_usage(term_field_query)
         self.check_deprecated_field_tags(term_field_query)
 
 
