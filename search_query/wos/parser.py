@@ -30,7 +30,7 @@ class WOSParser(QueryStringParser):
     PROXIMITY_OPERATOR_REGEX = re.compile(
         r"\b(NEAR/\d{1,2}|NEAR)\b", flags=re.IGNORECASE
     )
-    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    PARENTHESIS_REGEX = re.compile(r"[()]")
 
     # 2) quoted term — this matches only if quotes are balanced.
     QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
@@ -38,7 +38,7 @@ class WOSParser(QueryStringParser):
     # 3) fallback term:
     # make this permissive enough to also swallow a stray `"`,
     # but still exclude structural WOS characters (space, parens, equals).
-    PERMISSIVE_TERM_REGEX = re.compile(r"[^\s\(\)=]+")
+    PERMISSIVE_TERM_REGEX = re.compile(r"[^\s()=]+")
 
     # build the combined pattern:
     # fields → logic/proximity → parens → quoted term → term

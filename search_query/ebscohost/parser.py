@@ -23,13 +23,14 @@ from search_query.query_term import Term
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
 
-    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    PARENTHESIS_REGEX = re.compile(r"[()]")
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
     PROXIMITY_OPERATOR_REGEX = re.compile(
-        r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
+        r"[NW]\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
+    QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
+    TERM_REGEX = re.compile(r"[^\s()]+")
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -42,6 +43,7 @@ class EBSCOParser(QueryStringParser):
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
                 FIELD_REGEX.pattern,
+                QUOTED_TERM_REGEX.pattern,
                 TERM_REGEX.pattern,
             ]
         )
@@ -194,6 +196,8 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
             elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
+            elif self.QUOTED_TERM_REGEX.fullmatch(value):
+                token_type = TokenTypes.TERM
             elif self.TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.TERM
             else:  # pragma: no cover
@@ -406,10 +410,6 @@ class EBSCOListParser(QueryListParser):
 
     def parse(self) -> Query:
         """Parse EBSCO list query."""
-
-        self.tokenize_list()
-        self.linter.validate_tokens()
-        self.linter.check_status()
 
         self.tokenize_list()
         self.linter.validate_tokens()

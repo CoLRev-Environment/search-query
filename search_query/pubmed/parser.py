@@ -25,12 +25,12 @@ from search_query.query_term import Term
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
-    LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?\])")
-    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
+    FIELD_REGEX = re.compile(r"\[[^\[]*?]")
+    LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?])")
+    PARENTHESIS_REGEX = re.compile(r"[()]")
     SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
-    TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
-    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
+    TERM_REGEX = re.compile(r"[^\s\[\]()|&]+")
+    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)]$")
 
     pattern = re.compile(
         "|".join(
