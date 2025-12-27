@@ -287,19 +287,18 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         query.position[0] + match.end(),
                     )
 
-                is_term_start = index == 0 or query.value[index - 1] in ' "'
-                is_term_end = index == len(query.value) - 1 or query.value[index + 1] in ' "'
+                is_term_start = index == 0 or query.value[:index].strip('"').isspace()
+                is_term_end = index == len(query.value) - 1 or query.value[index:].strip('"').isspace()
 
                 if wildcard_value == '*':
                     if is_term_start:
-                        if not is_term_end:
-                            self.add_message(
-                                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                                positions=[position],
-                                details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
-                                fatal=False,
-                            )
-                    else:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            fatal=False,
+                        )
+                    elif not query.value[index - 1] == ' ':
                         leading_char_count = 0
                         prev = wildcard_value
                         for c in reversed(query.value[:index]):
