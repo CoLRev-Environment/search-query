@@ -159,6 +159,19 @@ class EBSCOParser(QueryStringParser):
                 # Reclassify the second field token as a TERM
                 next_token.type = TokenTypes.TERM
 
+        # Term followed by operator is misclassified as a field token
+        for i in range(len(self.tokens) - 1):
+            current = self.tokens[i]
+            next_token = self.tokens[i + 1]
+
+            if (
+                current.type == TokenTypes.FIELD
+                and next_token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                and is_potential_term(current.value)
+            ):
+                # Reclassify the second field token as a TERM
+                current.type = TokenTypes.TERM
+
         # Operator followed by a field token followed by a closing parenthesis
         for i in range(len(self.tokens) - 2):
             current = self.tokens[i]
