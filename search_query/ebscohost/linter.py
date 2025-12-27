@@ -276,57 +276,72 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """Check for unsupported characters in the search string."""
 
         if query.is_term():
-            val = query.value
-            # Check for leading wildcard
-            match = re.search(r"^(\*|\?|\#)", val)
-            if match:
+            pattern = re.compile(r"[*?#]")
+            for match in pattern.finditer(query.value):
+                wildcard_value = match.group()
+                index = match.start()
                 position = (-1, -1)
                 if query.position:
                     position = (
-                        query.position[0] + match.start(),
+                        query.position[0] + index,
                         query.position[0] + match.end(),
                     )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details="Wildcard not allowed at the beginning of a term.",
-                    fatal=True,
-                )
 
-            # Count each wildcard
-            char_count = sum(c not in "*?#" for c in val[:4])
-            if re.search(r"^[^\*\?\#](\?|\#)", val) and char_count < 2:
-                # Star in second position followed by more letters (e.g., "f*tal")
-                position = (-1, -1)
-                if query.position:
-                    position = (query.position[0], query.position[0] + len(val))
-                details = (
-                    "Invalid wildcard use: only one leading literal character found. "
-                    "When a wildcard appears within the first four characters, "
-                    "at least two literal (non-wildcard) characters "
-                    "must be present in that span."
-                )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details=details,
-                    fatal=True,
-                )
+                is_term_start = index == 0 or query.value[index - 1] in ' "'
+                is_term_end = index == len(query.value) - 1 or query.value[index + 1] in ' "'
 
-            if re.search(r"^[^\*\?\#](\*)", val):
-                position = (-1, -1)
-                if query.position:
-                    position = (query.position[0], query.position[0] + len(val))
-                details = (
-                    "Do not use * in the second position followed by "
-                    "additional letters. Use ? or # instead (e.g., f?tal)."
-                )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details=details,
-                    fatal=True,
-                )
+                if wildcard_value == '*':
+                    if is_term_start:
+                        if not is_term_end:
+                            self.add_message(
+                                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                                positions=[position],
+                                details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                                fatal=False,
+                            )
+                    else:
+                        leading_char_count = 0
+                        prev = wildcard_value
+                        for c in reversed(query.value[:index]):
+                            if c in ' "' or leading_char_count >= 3:
+                                break
+                            if c == '*' or (c in '#?' and prev in '#?'):
+                                # Count multiple # or ? wildcards in a row as one char, skip * wildcards.
+                                continue
+                            leading_char_count += 1
+                            prev = c
+                        if leading_char_count < 3:
+                            self.add_message(
+                                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                                positions=[position],
+                                details="The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it.",
+                                fatal=False,
+                            )
+
+                if wildcard_value == '?':
+                    if is_term_start:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            fatal=False,
+                        )
+                    if is_term_end and query.value[index - 1] != "#":
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="EBSCOHost interprets a trailing ? as a literal question mark, not a wildcard. Use #? to force wildcard behavior.",
+                            fatal=False,
+                        )
+
+                if wildcard_value == '#':
+                    if is_term_start:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            fatal=False,
+                        )
 
         for child in query.children:
             self.check_unsupported_wildcards(child)

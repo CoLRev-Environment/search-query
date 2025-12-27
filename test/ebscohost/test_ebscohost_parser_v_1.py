@@ -326,9 +326,9 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
+                    "is_fatal": False,
                     "position": [(0, 1)],
-                    "details": "Wildcard not allowed at the beginning of a term.",
+                    "details": "Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
                 }
             ],
         ),
@@ -339,9 +339,9 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 4)],
-                    "details": "Invalid wildcard use: only one leading literal character found. When a wildcard appears within the first four characters, at least two literal (non-wildcard) characters must be present in that span.",
+                    "is_fatal": False,
+                    "position": [(3, 4)],
+                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it."
                 }
             ],
         ),
@@ -352,11 +352,15 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 5)],
-                    "details": "Do not use * in the second position followed by additional letters. Use ? or # instead (e.g., f?tal).",
+                    "is_fatal": False,
+                    "position": [(1, 2)],
+                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it.",
                 }
             ],
+        ),
+        (
+            "midsummer * dream",
+            [],
         ),
         (
             "colo#r",
