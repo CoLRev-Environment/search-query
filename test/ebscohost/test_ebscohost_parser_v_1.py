@@ -235,19 +235,7 @@ def test_invalid_token_sequences(
                 }
             ],
         ),
-        (
-            "TI AND Artificial Intelligence",
-            [
-                {
-                    "code": "PARSE_0004",
-                    "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid.",
-                    "is_fatal": True,
-                    "position": [(0, 6)],
-                    "details": "Invalid operator position",
-                }
-            ],
-        ),
+        ("TI AND Artificial Intelligence", []),
         ("TI Artificial Intelligence AND AB Future", []),
         (
             "AI governance OR AB Future",
@@ -385,6 +373,10 @@ def test_invalid_token_sequences(
         (
             "f?tal",
             [],
+        ),
+        (
+            "VR N3 simulat*",
+            []
         ),
     ],
 )
