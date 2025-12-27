@@ -224,8 +224,8 @@ class EBSCOParser(QueryStringParser):
         self.adjust_token_positions()
 
         # Combine subsequent terms in case of no quotation marks
-        self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
+        self.combine_subsequent_tokens()
 
     def parse_query_tree(
         self, tokens: list[Token], field_context: SearchField | None = None
