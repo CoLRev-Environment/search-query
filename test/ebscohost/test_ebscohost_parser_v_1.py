@@ -295,6 +295,25 @@ def test_invalid_token_sequences(
             [],
         ),
         (
+            '"person centred care"or" patient-centered care"',
+            [
+                {
+                    'code': 'STRUCT_0002',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'operator-capitalization',
+                    'message': 'Operators should be capitalized',
+                    'position': [
+                        (
+                                21,
+                                23,
+                        ),
+                    ],
+                },
+            ]
+
+        ),
+        (
             "bias OR OR politics",
             [
                 {
