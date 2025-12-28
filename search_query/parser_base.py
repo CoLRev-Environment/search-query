@@ -16,10 +16,24 @@ from search_query.constants import TokenTypes
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from search_query.linter_base import QueryStringLinter
+    from search_query.linter_base import QueryStringLinter, QueryListLinter
 
 
-class QueryStringParser(ABC):
+# pylint: disable=too-few-public-methods
+class QueryParserBase(ABC):
+    """
+    QueryParserBase class
+    """
+
+    linter: QueryStringLinter | QueryListLinter
+
+    @abstractmethod
+    def parse(self) -> Query:
+        """parser method"""
+        raise NotImplementedError
+
+
+class QueryStringParser(QueryParserBase, ABC):
     """Abstract base class for query string parsers"""
 
     # Note: override the following:
@@ -200,11 +214,13 @@ class QueryStringParser(ABC):
         """Parse the query."""
 
 
-class QueryListParser:
+class QueryListParser(QueryParserBase):
     """QueryListParser"""
 
     LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^\s*(\d+).\s+(.*)$")
     LIST_ITEM_REFERENCE = re.compile(r"#\d+")
+
+    linter: QueryListLinter
 
     def __init__(
         self,

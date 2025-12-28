@@ -300,6 +300,8 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
+    linter: PubmedQueryListLinter
+
     def __init__(
         self,
         query_list: str,

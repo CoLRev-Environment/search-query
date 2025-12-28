@@ -431,6 +431,7 @@ class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
     LIST_ITEM_REFERENCE = re.compile(r"S\d+|\#\d+")
+    linter: EBSCOListLinter
 
     def __init__(
         self,

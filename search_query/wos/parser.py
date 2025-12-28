@@ -389,6 +389,8 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
+    linter: WOSQueryListLinter
+
     def __init__(
         self,
         query_list: str,
