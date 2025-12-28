@@ -391,10 +391,10 @@ class QueryListParser(QueryParserBase):
 
         return query_str, offset
 
-    def assign_linter_messages(self, parser_messages, linter) -> None:  # type: ignore
+    def assign_linter_messages(self, parser_messages) -> None:  # type: ignore
         """Assign linter messages to the appropriate query nodes."""
-        if GENERAL_ERROR_POSITION not in linter.messages:
-            linter.messages[GENERAL_ERROR_POSITION] = []
+        if GENERAL_ERROR_POSITION not in self.linter.messages:
+            self.linter.messages[GENERAL_ERROR_POSITION] = []
         for message in parser_messages:
             assigned = False
             if message["position"] != [(-1, -1)] and message["position"] != []:
@@ -404,14 +404,14 @@ class QueryListParser(QueryParserBase):
                         <= message["position"][0][0]
                         <= node["content_pos"][1]
                     ):
-                        if level not in linter.messages:
-                            linter.messages[level] = []
-                        linter.messages[level].append(message)
+                        if level not in self.linter.messages:
+                            self.linter.messages[level] = []
+                        self.linter.messages[level].append(message)
                         assigned = True
                         break
 
             if not assigned:
-                linter.messages[GENERAL_ERROR_POSITION].append(message)
+                self.linter.messages[GENERAL_ERROR_POSITION].append(message)
 
     @abstractmethod
     def parse(self) -> Query:
