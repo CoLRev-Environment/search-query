@@ -458,10 +458,6 @@ class EBSCOListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        self.tokenize_list()
-        self.linter.validate_tokens()
-        self.linter.check_status()
-
         query_str, offset = self.build_query_str()
 
         query_parser = EBSCOParser(
