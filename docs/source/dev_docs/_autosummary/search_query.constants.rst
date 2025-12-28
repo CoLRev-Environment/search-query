@@ -4,15 +4,6 @@ search\_query.constants
 .. automodule:: search_query.constants
 
 
-
-
-
-
-
-
-
-
-
    .. rubric:: Classes
 
    .. autosummary::

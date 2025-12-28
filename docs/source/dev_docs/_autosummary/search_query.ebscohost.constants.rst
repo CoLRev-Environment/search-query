@@ -4,11 +4,6 @@ search\_query.ebscohost.constants
 .. automodule:: search_query.ebscohost.constants
 
 
-
-
-
-
-
    .. rubric:: Functions
 
    .. autosummary::

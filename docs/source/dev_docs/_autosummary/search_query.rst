@@ -4,55 +4,38 @@
 .. automodule:: search_query
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .. rubric:: Modules
 
 .. autosummary::
    :toctree:
    :recursive:
 
-   search_query.cli
-   search_query.constants
-   search_query.database
-   search_query.database_queries
-   search_query.ebscohost
-   search_query.exception
-   search_query.generic
-   search_query.linter
-   search_query.linter_base
-   search_query.parser
-   search_query.parser_base
-   search_query.pre_notation
-   search_query.pubmed
-   search_query.query
-   search_query.query_and
-   search_query.query_near
-   search_query.query_not
-   search_query.query_or
-   search_query.query_range
-   search_query.query_term
-   search_query.registry
-   search_query.search_file
-   search_query.serializer_base
-   search_query.serializer_structured
-   search_query.structured
-   search_query.translator_base
-   search_query.upgrade
-   search_query.utils
-   search_query.wos
+   cli
+   constants
+   database
+   database_queries
+   ebscohost
+   exception
+   generic
+   linter
+   linter_base
+   parser
+   parser_base
+   pre_notation
+   pubmed
+   query
+   query_and
+   query_near
+   query_not
+   query_or
+   query_range
+   query_term
+   registry
+   search_file
+   serializer_base
+   serializer_structured
+   structured
+   translator_base
+   upgrade
+   utils
+   wos

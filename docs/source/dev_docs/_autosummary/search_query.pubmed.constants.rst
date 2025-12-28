@@ -4,11 +4,6 @@ search\_query.pubmed.constants
 .. automodule:: search_query.pubmed.constants
 
 
-
-
-
-
-
    .. rubric:: Functions
 
    .. autosummary::

@@ -4,11 +4,6 @@ search\_query.utils
 .. automodule:: search_query.utils
 
 
-
-
-
-
-
    .. rubric:: Functions
 
    .. autosummary::
