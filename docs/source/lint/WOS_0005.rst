@@ -26,8 +26,8 @@ WOS_0005 — year-span-violation
    Recent evaluations show that the Web of Science (WOS) search interface
    does **not** enforce a 5-year publication range limit. Queries with
    broader year spans execute successfully, and applying the publication
-   year filter manually yields identical results. Since no official WOS
-   documentation supports the restriction, this rule will be removed in a
-   future release.
+   year filter manually yields identical results. The `WOS documentation <https://webofscience.zendesk.com/hc/en-us/articles/26916347018257-Web-of-Science-Core-Collection-Advanced-Search-Field-Tags>`_
+   mentions the five year limit, but it seems to be a recommendation rather
+   than a strict limit.
 
 **Back to**: :ref:`lint`
