@@ -76,52 +76,6 @@ class EBSCOParser(QueryStringParser):
             ignore_failing_linter=ignore_failing_linter,
         )
 
-    def combine_subsequent_tokens(self) -> None:
-        """Combine subsequent tokens based on specific conditions."""
-
-        combined_tokens = []
-        i = 0
-
-        while i < len(self.tokens):
-            # Iterate through token list
-            # current_token, current_token_type, position = self.tokens[i]
-
-            if self.tokens[i].type == TokenTypes.TERM:
-                # Filter out TERM
-                start_pos = self.tokens[i].position[0]
-                end_position = self.tokens[i].position[1]
-                combined_value = self.tokens[i].value
-
-                while (
-                    i + 1 < len(self.tokens)
-                    and self.tokens[i + 1].type == TokenTypes.TERM
-                ):
-                    # Iterate over subsequent terms and combine
-                    combined_value += f" {self.tokens[i + 1].value}"
-                    end_position = self.tokens[i + 1].position[1]
-                    i += 1
-
-                combined_tokens.append(
-                    Token(
-                        value=combined_value,
-                        type=self.tokens[i].type,
-                        position=(start_pos, end_position),
-                    )
-                )
-
-            else:
-                combined_tokens.append(
-                    Token(
-                        value=self.tokens[i].value,
-                        type=self.tokens[i].type,
-                        position=self.tokens[i].position,
-                    )
-                )
-
-            i += 1
-
-        self.tokens = combined_tokens
-
     def _extract_proximity_distance(self, token: Token) -> int:
         """Convert proximity operator token into operator and distance components"""
 
@@ -225,7 +179,7 @@ class EBSCOParser(QueryStringParser):
 
         # Combine subsequent terms in case of no quotation marks
         self.fix_ambiguous_tokens()
-        self.combine_subsequent_tokens()
+        self.combine_subsequent_terms()
 
     def parse_query_tree(
         self, tokens: list[Token], field_context: SearchField | None = None
