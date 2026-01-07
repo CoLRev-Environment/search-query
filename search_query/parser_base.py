@@ -130,17 +130,18 @@ class QueryStringParser(ABC):
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
-            if self.tokens[i].type == TokenTypes.TERM:
+            if self.tokens[i].type == TokenTypes.TERM and not self.tokens[i].value.endswith('"'): # Do not combine search phrases
                 start = self.tokens[i].position[0]
-                value_parts = [self.tokens[i].value]
+                value = self.tokens[i].value
                 end = self.tokens[i].position[1]
                 i += 1
-                while i < len(self.tokens) and self.tokens[i].type == TokenTypes.TERM:
-                    value_parts.append(self.tokens[i].value)
+                while i < len(self.tokens) and self.tokens[i].type == TokenTypes.TERM and not self.tokens[i].value.startswith('"'):
+                    value += " " * (self.tokens[i].position[0] - end) # Preserve original whitespace amount between terms
+                    value += self.tokens[i].value
                     end = self.tokens[i].position[1]
                     i += 1
                 combined_token = Token(
-                    value=" ".join(value_parts),
+                    value=value,
                     type=TokenTypes.TERM,
                     position=(start, end),
                 )
