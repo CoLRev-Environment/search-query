@@ -327,6 +327,24 @@ def test_invalid_token_sequences(
             ],
         ),
         (
+            'higher N1 level? "of education"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between terms',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [
+                        (
+                            10,
+                            31,
+                        ),
+                    ],
+                }
+            ]
+        ),
+        (
             "*ology",
             [
                 {
