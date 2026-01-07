@@ -304,6 +304,19 @@ class WOSQueryStringLinter(QueryStringLinter):
                 )
                 continue
 
+            # Missing operator
+            if (
+                    token.type in [TokenTypes.TERM, TokenTypes.PARENTHESIS_CLOSED]
+                    and next_token.type in [TokenTypes.TERM, TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]
+            ):
+                self.add_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    positions=[(token.position[0], next_token.position[1])],
+                    fatal=True,
+                    details="Missing operator between terms",
+                )
+                continue
+
             # Check transition
             allowed_next_types = self.VALID_TOKEN_SEQUENCES.get(token.type, [])
             if next_token.type not in allowed_next_types:
