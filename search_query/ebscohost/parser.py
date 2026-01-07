@@ -30,7 +30,7 @@ class EBSCOParser(QueryStringParser):
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
     QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
-    TERM_REGEX = re.compile(r"[^\s()]+")
+    TERM_REGEX = re.compile(r'[^\s()"]+')
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
