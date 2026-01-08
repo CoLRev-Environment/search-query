@@ -110,7 +110,7 @@ def test_check_invalid_characters_in_term() -> None:
             "message": "Search term contains invalid character",
             "is_fatal": False,
             "position": [(0, 15)],
-            "details": "Invalid character '#' in search term 'digital#ization'",
+            "details": "Invalid character '#' in search term 'digital#ization' will be replaced with whitespace.",
         }
     ]
 

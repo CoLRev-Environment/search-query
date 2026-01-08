@@ -36,6 +36,8 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
+    INVALID_CHARACTERS = "@%^~\\<>{}()[]#"
+
     PLATFORM: PLATFORM = PLATFORM.WOS
 
     VALID_TOKEN_SEQUENCES = {
@@ -110,7 +112,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             return self.tokens
 
         self.check_invalid_characters_in_term(
-            "@%^~\\<>{}()[]#", QueryErrorCode.WOS_INVALID_CHARACTER
+            self.INVALID_CHARACTERS, QueryErrorCode.WOS_INVALID_CHARACTER
         )
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"

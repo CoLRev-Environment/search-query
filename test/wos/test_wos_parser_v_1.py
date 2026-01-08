@@ -145,7 +145,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search term contains invalid character",
                     "is_fatal": False,
                     "position": [(0, 12)],
-                    "details": "Invalid character '\\' in search term 'collaborat\\*'",
+                    "details": "Invalid character '\\' in search term 'collaborat\\*' will be replaced with whitespace.",
                 },
                 {
                     "code": "FIELD_0002",

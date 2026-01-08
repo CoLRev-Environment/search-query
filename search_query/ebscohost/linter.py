@@ -29,6 +29,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
     PLATFORM: PLATFORM = PLATFORM.EBSCO
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
+    INVALID_CHARACTERS = "@%$^~\\<>{}[]"
+
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
             TokenTypes.TERM,
@@ -91,6 +93,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
+        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.EBSCO_INVALID_CHARACTER)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self._print_unequal_precedence_warning()
@@ -352,9 +355,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_invalid_characters_in_term_query(
-            query, "@%$^~\\<>{}[]", QueryErrorCode.EBSCO_INVALID_CHARACTER
-        )
         self.check_unsupported_fields_in_query(query)
         self.check_unsupported_wildcards(query)
 

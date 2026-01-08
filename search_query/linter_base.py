@@ -411,25 +411,46 @@ class QueryStringLinter:
                     fatal=True,
                 )
 
+    def _format_invalid_char_details(self, char, value: str) -> str:
+        return f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace."
+
     def check_invalid_characters_in_term(
         self, invalid_characters: str, error: QueryErrorCode
     ) -> None:
-        """Check a search term for invalid characters"""
+        """Check search term tokens for invalid characters"""
+
+        refined_tokens = []
 
         for token in self.tokens:
             if token.type != TokenTypes.TERM:
+                refined_tokens.append(token)
                 continue
+
             value = token.value
+            value_new = ''
 
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
-            for char in token.value:
+            for i, char in enumerate(token.value):
                 if char in invalid_characters:
                     self.add_message(
                         error,
                         positions=[token.position],
-                        details=f"Invalid character '{char}' in search term '{value}'",
+                        details=self._format_invalid_char_details(char, value),
                     )
+                    value_new += ' '
+                else:
+                    value_new += token.value[i]
+
+            if not value_new.strip():
+                # Drop tokens consisting of only invalid characters
+                continue
+
+            token.value = value_new
+            refined_tokens.append(token)
+
+        self.tokens = refined_tokens
+
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""

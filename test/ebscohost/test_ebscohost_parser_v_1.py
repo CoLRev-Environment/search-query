@@ -462,7 +462,15 @@ def test_linter(query_string: str, messages: list) -> None:
                     "is_fatal": True,
                     "position": [(10, 16)],
                     "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
-                }
+                },
+                {
+                    'code': 'EBSCO_0002',
+                    'details': "Invalid character '[' in search term 'governance[tiab]' will be replaced with whitespace.",
+                    'is_fatal': False,
+                    'label': 'invalid-character',
+                    'message': 'Search term contains invalid character',
+                    'position': [(0, 16)],
+                },
             ],
         ),
         (

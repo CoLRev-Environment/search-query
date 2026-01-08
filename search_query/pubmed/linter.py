@@ -32,6 +32,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
     PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
     PLATFORM: PLATFORM = PLATFORM.PUBMED
 
+    INVALID_CHARACTERS = "!#$%+.;<>=?\\^_{}~'()[]"
+
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.TERM,
@@ -105,6 +107,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_missing_tokens()
 
         # No tokens marked as unknown token-type
+        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.CHARACTER_REPLACEMENT)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self._print_unequal_precedence_warning()
@@ -135,12 +138,18 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def _format_invalid_char_details(self, char, value: str) -> str:
+        return (
+            f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace.\n"
+            "See PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/"
+        )
+
     def check_character_replacement_in_term(self, query: Query) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
         # pylint: disable=duplicate-code
-        invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
+        invalid_characters = self.INVALID_CHARACTERS
 
         if query.is_term():
             # Iterate over term to identify invalid characters
@@ -441,7 +450,6 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_character_replacement_in_term(query)
 
         self.check_operators_with_fields(query)
         self._check_unnecessary_nesting(query)

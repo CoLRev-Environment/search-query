@@ -348,6 +348,17 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
+                    'code': 'PUBMED_0002',
+                    'details': 'Invalid character \'.\' in search term \'"Industry 4.0"\' will be '
+                    'replaced with whitespace.\n'
+                    'See PubMed character conversions: '
+                    'https://pubmed.ncbi.nlm.nih.gov/help/',
+                    'is_fatal': False,
+                    'label': 'character-replacement',
+                    'message': 'Character replacement',
+                    'position': [(17, 31),],
+                },
+                {
                     "code": "FIELD_0003",
                     "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
@@ -362,14 +373,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": False,
                     "position": [(0, 12), (17, 31)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
-                },
-                {
-                    "code": "PUBMED_0002",
-                    "label": "character-replacement",
-                    "message": "Character replacement",
-                    "is_fatal": False,
-                    "position": [(28, 29)],
-                    "details": "Character '.' in search term will be replaced with whitespace.\nSee PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
             ],
         ),
@@ -631,7 +634,35 @@ def test_pubmed_invalid_token_sequences(
                     "position": [(0, 3)],
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
                 },
+                {
+                    'code': 'PUBMED_0002',
+                    'details': 'Invalid character \'=\' in search term \'TI="eHealth"\' will be '
+                    'replaced with whitespace.\n'
+                    'See PubMed character conversions: '
+                    'https://pubmed.ncbi.nlm.nih.gov/help/',
+                    'is_fatal': False,
+                    'label': 'character-replacement',
+                    'message': 'Character replacement',
+                    'position': [(0, 12)],
+                },
             ],
+        ),
+        (
+            "'(eHealth[tiab] OR mHealth[tiab])",
+            "",
+            [
+                {
+                    'code': 'PUBMED_0002',
+                    'details': "Invalid character \''\' in search term \''\' will be "
+                    'replaced with whitespace.\n'
+                    'See PubMed character conversions: '
+                    'https://pubmed.ncbi.nlm.nih.gov/help/',
+                    'is_fatal': False,
+                    'label': 'character-replacement',
+                    'message': 'Character replacement',
+                    'position': [(0, 1)],
+                },
+            ]
         ),
         (
             "(eHealth OR mHealth)[tiab]",
