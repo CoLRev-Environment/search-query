@@ -29,7 +29,12 @@ class EBSCOParser(QueryStringParser):
         r"(?i:[NW]\d+|(NEAR|WITHIN)/\d+)"
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
+
+    STOP = r'(?:[()]|\b(?:AND|OR|NOT)\b|(?:[NW]\d+|(?:NEAR|WITHIN)/\d+))'
+    QUOTED_TERM_REGEX = re.compile(
+        rf'"(?:(?!{STOP}|").)*"?'
+    )
+    # QUOTED_TERM_REGEX = re.compile(f'".*?"')
     TERM_REGEX = re.compile(r'[^\s()"]+')
 
     OPERATOR_REGEX = re.compile(

@@ -415,6 +415,45 @@ def test_invalid_token_sequences(
             "VR N3 simulat*",
             []
         ),
+        (
+          '"hearing difficult*" OR language barrier*" OR "digital literacy"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(24, 43)]
+                }
+            ]
+        ),
+        (
+            '"information synthesi* OR "synthesis writ*"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 23)]
+                },
+            ]
+        ),
+        (
+            '(DE "Graduate Medical Education) OR (DE "Nursing Education")',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(4, 31)]
+                }
+            ]
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
