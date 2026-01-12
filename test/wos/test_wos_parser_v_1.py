@@ -606,14 +606,16 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         (
             "TI=term1 AND PY=1900-2000",
             [
-                {
-                    "code": "WOS_0005",
-                    "label": "year-span-violation",
-                    "message": "Year span must be five or less.",
-                    "is_fatal": True,
-                    "position": [(16, 25)],
-                    "details": "",
-                },
+                # Note: web of science actually runs the query.
+                # The 5-year rule is a recommendation, not a restriction.
+                # {
+                #     "code": "WOS_0005",
+                #     "label": "year-span-violation",
+                #     "message": "Year span must be five or less.",
+                #     "is_fatal": True,
+                #     "position": [(16, 25)],
+                #     "details": "",
+                # },
             ],
         ),
         (

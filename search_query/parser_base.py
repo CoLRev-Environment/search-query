@@ -16,10 +16,24 @@ from search_query.constants import TokenTypes
 from search_query.query import Query
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from search_query.linter_base import QueryStringLinter
+    from search_query.linter_base import QueryStringLinter, QueryListLinter
 
 
-class QueryStringParser(ABC):
+# pylint: disable=too-few-public-methods
+class QueryParserBase(ABC):
+    """
+    QueryParserBase class
+    """
+
+    linter: QueryStringLinter | QueryListLinter
+
+    @abstractmethod
+    def parse(self) -> Query:
+        """parser method"""
+        raise NotImplementedError
+
+
+class QueryStringParser(QueryParserBase, ABC):
     """Abstract base class for query string parsers"""
 
     # Note: override the following:
@@ -210,11 +224,13 @@ class QueryStringParser(ABC):
         """Parse the query."""
 
 
-class QueryListParser:
+class QueryListParser(QueryParserBase):
     """QueryListParser"""
 
     LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^\s*(\d+).\s+(.*)$")
     LIST_ITEM_REFERENCE = re.compile(r"#\d+")
+
+    linter: QueryListLinter
 
     def __init__(
         self,
@@ -386,10 +402,10 @@ class QueryListParser:
 
         return query_str, offset
 
-    def assign_linter_messages(self, parser_messages, linter) -> None:  # type: ignore
+    def assign_linter_messages(self, parser_messages) -> None:  # type: ignore
         """Assign linter messages to the appropriate query nodes."""
-        if GENERAL_ERROR_POSITION not in linter.messages:
-            linter.messages[GENERAL_ERROR_POSITION] = []
+        if GENERAL_ERROR_POSITION not in self.linter.messages:
+            self.linter.messages[GENERAL_ERROR_POSITION] = []
         for message in parser_messages:
             assigned = False
             if message["position"] != [(-1, -1)] and message["position"] != []:
@@ -399,14 +415,14 @@ class QueryListParser:
                         <= message["position"][0][0]
                         <= node["content_pos"][1]
                     ):
-                        if level not in linter.messages:
-                            linter.messages[level] = []
-                        linter.messages[level].append(message)
+                        if level not in self.linter.messages:
+                            self.linter.messages[level] = []
+                        self.linter.messages[level].append(message)
                         assigned = True
                         break
 
             if not assigned:
-                linter.messages[GENERAL_ERROR_POSITION].append(message)
+                self.linter.messages[GENERAL_ERROR_POSITION].append(message)
 
     @abstractmethod
     def parse(self) -> Query:

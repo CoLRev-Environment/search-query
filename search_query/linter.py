@@ -11,17 +11,19 @@ from search_query.search_file import load_search_file
 from search_query.search_file import SearchFile
 
 if typing.TYPE_CHECKING:
-    from search_query.parser_base import QueryStringParser
+    from search_query.parser_base import QueryParserBase
 # pylint: disable=broad-except
 
 
 def _run_parser(
     search_string: str, *, platform: str, field_general: str
-) -> QueryStringParser:
+) -> QueryParserBase:
     """Run the linter on the search string"""
 
     platform = search_query.parser.get_platform(platform)
     version = search_query.parser.LATEST_VERSIONS[platform]
+
+    parser_class: type[QueryParserBase]
     if "1." in search_string:
         parser_class = search_query.parser.LIST_PARSERS[platform][version]
 

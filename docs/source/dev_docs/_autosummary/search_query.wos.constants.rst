@@ -4,11 +4,6 @@ search\_query.wos.constants
 .. automodule:: search_query.wos.constants
 
 
-
-
-
-
-
    .. rubric:: Functions
 
    .. autosummary::

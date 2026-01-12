@@ -234,19 +234,19 @@ class WOSQueryStringLinter(QueryStringLinter):
                 )
                 return
 
-            # Check if the yearspan is not more than 5 years
-            if len(query.value) > 4:
-                if int(query.value[5:9]) - int(query.value[0:4]) > 5:
-                    # Change the year span to five years
-                    query.value = (
-                        str(int(query.value[5:9]) - 5) + "-" + query.value[5:9]
-                    )
+            # # Check if the yearspan is not more than 5 years
+            # if len(query.value) > 4:
+            #     if int(query.value[5:9]) - int(query.value[0:4]) > 5:
+            #         # Change the year span to five years
+            #         query.value = (
+            #             str(int(query.value[5:9]) - 5) + "-" + query.value[5:9]
+            #         )
 
-                    self.add_message(
-                        QueryErrorCode.YEAR_SPAN_VIOLATION,
-                        positions=[query.position] if query.position else [],
-                        fatal=True,
-                    )
+            #         self.add_message(
+            #             QueryErrorCode.YEAR_SPAN_VIOLATION,
+            #             positions=[query.position] if query.position else [],
+            #             fatal=True,
+            #         )
 
         for child in query.children:
             self.check_year_format(child)

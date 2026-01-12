@@ -288,6 +288,8 @@ class PubmedParser(QueryStringParser):
 class PubmedListParser(QueryListParser):
     """Parser for Pubmed (list format) queries."""
 
+    linter: PubmedQueryListLinter
+
     def __init__(
         self,
         query_list: str,
@@ -329,7 +331,7 @@ class PubmedListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.assign_linter_messages(query_parser.linter.messages, self.linter)
+            self.assign_linter_messages(query_parser.linter.messages)
 
             self.linter.check_status()
 

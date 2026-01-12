@@ -294,6 +294,8 @@ class WOSParser(QueryStringParser):
 class WOSListParser(QueryListParser):
     """Parser for Web-of-Science (list format) queries."""
 
+    linter: WOSQueryListLinter
+
     def __init__(
         self,
         query_list: str,
@@ -335,7 +337,7 @@ class WOSListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.assign_linter_messages(query_parser.linter.messages, self.linter)
+            self.assign_linter_messages(query_parser.linter.messages)
             self.linter.check_status()
 
         query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)

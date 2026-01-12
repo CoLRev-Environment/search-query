@@ -361,6 +361,7 @@ class EBSCOListParser(QueryListParser):
     """Parser for EBSCO (list format) queries."""
 
     LIST_ITEM_REFERENCE = re.compile(r"S\d+|\#\d+")
+    linter: EBSCOListLinter
 
     def __init__(
         self,
@@ -402,7 +403,7 @@ class EBSCOListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.assign_linter_messages(query_parser.linter.messages, self.linter)
+            self.assign_linter_messages(query_parser.linter.messages)
 
             self.linter.check_status()
 
