@@ -30,11 +30,7 @@ class EBSCOParser(QueryStringParser):
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
 
-    STOP = r'(?:[()]|\b(?:AND|OR|NOT)\b|(?:[NW]\d+|(?:NEAR|WITHIN)/\d+))'
-    QUOTED_TERM_REGEX = re.compile(
-        rf'"(?:(?!{STOP}|").)*"?'
-    )
-    # QUOTED_TERM_REGEX = re.compile(f'".*?"')
+    QUOTATION_MARK_REGEX = re.compile(r'"')
     TERM_REGEX = re.compile(r'[^\s()"]+')
 
     OPERATOR_REGEX = re.compile(
@@ -48,7 +44,7 @@ class EBSCOParser(QueryStringParser):
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
                 FIELD_REGEX.pattern,
-                QUOTED_TERM_REGEX.pattern,
+                QUOTATION_MARK_REGEX.pattern,
                 TERM_REGEX.pattern,
             ]
         )
@@ -98,6 +94,33 @@ class EBSCOParser(QueryStringParser):
         distance = int(distance_string)
         token.value = operator
         return distance
+
+    def _has_closing_quote(self, index: int) -> bool:
+        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
+            return False
+
+        open_paren = 0
+        index += 1
+        for token in self.tokens[index:]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                open_paren += 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                if open_paren <= 0:
+                    # Boundary: unmatched local closing paren → likely unbalanced quote
+                    break
+                open_paren -= 1
+            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR] and token.value.isupper():
+                # Boundary: upper case operator → likely unbalanced quote
+                break
+            if token.type == TokenTypes.QUOTATION_MARK:
+                if open_paren != 0:
+                    # Boundary: unmatched local opening paren → likely unbalanced quote
+                    break
+                # Matching closing quote found
+                return True
+
+        return False
 
     def fix_ambiguous_tokens(self) -> None:
         """Fix ambiguous tokens that could be misinterpreted as a search field."""
@@ -168,8 +191,8 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
             elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.QUOTED_TERM_REGEX.fullmatch(value):
-                token_type = TokenTypes.TERM
+            elif self.QUOTATION_MARK_REGEX.fullmatch(value):
+                token_type = TokenTypes.QUOTATION_MARK
             elif self.TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.TERM
             else:  # pragma: no cover
@@ -182,7 +205,6 @@ class EBSCOParser(QueryStringParser):
 
         self.adjust_token_positions()
 
-        # Combine subsequent terms in case of no quotation marks
         self.fix_ambiguous_tokens()
         self.combine_subsequent_terms()
 
@@ -325,7 +347,7 @@ class EBSCOParser(QueryStringParser):
     def _pre_tokenization_checks(self) -> None:
         self.linter.handle_fully_quoted_query_str(self)
         self.linter.handle_nonstandard_quotes_in_query_str(self)
-        self.linter.handle_suffix_in_query_str(self)
+        # self.linter.handle_suffix_in_query_str(self)
         self.linter.handle_prefix_in_query_str(
             self,
             prefix_regex=re.compile(

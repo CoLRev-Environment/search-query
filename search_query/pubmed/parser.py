@@ -28,8 +28,8 @@ class PubmedParser(QueryStringParser):
     FIELD_REGEX = re.compile(r"\[[^\[]*?]")
     LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?])")
     PARENTHESIS_REGEX = re.compile(r"[()]")
-    SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
-    TERM_REGEX = re.compile(r"[^\s\[\]()|&]+")
+    QUOTATION_MARK_REGEX = re.compile(r'"')
+    TERM_REGEX = re.compile(r'[^\s\[\]()|&"]+')
     PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)]$")
 
     pattern = re.compile(
@@ -38,7 +38,7 @@ class PubmedParser(QueryStringParser):
                 FIELD_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
-                SEARCH_PHRASE_REGEX.pattern,
+                QUOTATION_MARK_REGEX.pattern,
                 TERM_REGEX.pattern,
             ]
         ),
@@ -89,6 +89,8 @@ class PubmedParser(QueryStringParser):
                 token_type = TokenTypes.PARENTHESIS_CLOSED
             elif value.startswith("[") and value.endswith("]"):
                 token_type = TokenTypes.FIELD
+            elif value == '"':
+                token_type = TokenTypes.QUOTATION_MARK
             else:
                 token_type = TokenTypes.TERM
 

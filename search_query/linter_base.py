@@ -344,6 +344,28 @@ class QueryStringLinter:
                     else:
                         i -= 1
 
+    def check_unbalanced_quotes(self) -> None:
+        """Check token list for unbalanced quotes."""
+        for token in self.tokens:
+            if token.type == TokenTypes.TERM:
+                # Case 1: unmatched opening quote
+                if token.value.startswith('"') and not token.value.endswith('"'):
+                    self.add_message(
+                        QueryErrorCode.UNBALANCED_QUOTES,
+                        positions=[token.position],
+                        details="Unmatched opening quote",
+                        fatal=True,
+                    )
+
+                # Case 2: unmatched closing quote
+                if not token.value.startswith('"') and token.value.endswith('"'):
+                    self.add_message(
+                        QueryErrorCode.UNBALANCED_QUOTES,
+                        positions=[token.position],
+                        details="Unmatched closing quote",
+                        fatal=True,
+                    )
+
     def check_unbalanced_quotes_in_terms(self, query: Query) -> None:
         """Recursively check for unbalanced quotes in quoted search terms."""
 

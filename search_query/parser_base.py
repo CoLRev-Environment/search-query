@@ -139,28 +139,60 @@ class QueryStringParser(QueryParserBase, ABC):
             assert virtual_position == token.position[1]
             last_end = end
 
+
+    def _has_closing_quote(self, index: int) -> bool:
+        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
+            return False
+
+        open_paren = 0
+        index += 1
+        for token in self.tokens[index:]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                open_paren += 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                if open_paren <= 0:
+                    # Boundary: unmatched local closing paren → likely unbalanced quote
+                    break
+                open_paren -= 1
+            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR] and token.value.isupper():
+                # Boundary: upper case operator → likely unbalanced quote
+                break
+            if token.type == TokenTypes.FIELD:
+                # Boundary: search field -> likely unbalanced quote
+                break
+            if token.type == TokenTypes.QUOTATION_MARK:
+                if open_paren != 0:
+                    # Boundary: unmatched local opening paren → likely unbalanced quote
+                    break
+                # Matching closing quote found
+                return True
+
+        return False
+
+
     def combine_subsequent_terms(self) -> None:
-        """Combine all consecutive TERM tokens into one."""
+        """Combine all consecutive TERM tokens into one. Combine contents inside quotation marks into single TERM token."""
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
-            if (
-                    self.tokens[i].type == TokenTypes.TERM
-                    and (not self.tokens[i].value.endswith('"') or self.tokens[i].value.strip() == '"') # Do not combine search phrases (exception: a single ")
-            ):
-                start = self.tokens[i].position[0]
+            if self.tokens[i].type == TokenTypes.TERM:
                 value = self.tokens[i].value
-                end = self.tokens[i].position[1]
+                start, end = self.tokens[i].position
                 i += 1
                 while i < len(self.tokens):
-                    if (
-                            self.tokens[i].type == TokenTypes.TERM
-                            and (not self.tokens[i].value.startswith('"') or self.tokens[i].value.strip() == '"') # Do not combine search phrases (exception: a single ")
-                    ):
+                    if self.tokens[i].type == TokenTypes.TERM:
                         value += " " * (self.tokens[i].position[0] - end) # Preserve original whitespace amount between terms
                         value += self.tokens[i].value
                         end = self.tokens[i].position[1]
                         i += 1
+                    elif self.tokens[i].type == TokenTypes.QUOTATION_MARK and not self._has_closing_quote(i):
+                        # Unbalanced closing quote found -> add to the end of latest search term
+                        value += " " * (self.tokens[i].position[0] - end)
+                        value += self.tokens[i].value
+                        end = self.tokens[i].position[1]
+                        i += 1
+                        break
                     else:
                         break
                 combined_token = Token(
@@ -168,10 +200,33 @@ class QueryStringParser(QueryParserBase, ABC):
                     type=TokenTypes.TERM,
                     position=(start, end),
                 )
-                combined_tokens.append(combined_token)
-            else:
-                combined_tokens.append(self.tokens[i])
+
+            elif self.tokens[i].type == TokenTypes.QUOTATION_MARK:
+                search_phrase_mode = self._has_closing_quote(i)
+                value = self.tokens[i].value
+                start, end = self.tokens[i].position
                 i += 1
+                while i < len(self.tokens):
+                    if self.tokens[i].type == TokenTypes.TERM or search_phrase_mode:
+                        value += " " * (self.tokens[i].position[0] - end)
+                        value += self.tokens[i].value
+                        end = self.tokens[i].position[1]
+                        i += 1
+                        if self.tokens[i - 1].type == TokenTypes.QUOTATION_MARK:
+                            # Stop if closing quote is found.
+                            break
+                    else:
+                        break
+                combined_token = Token(
+                    value=value,
+                    type=TokenTypes.TERM,
+                    position=(start, end),
+                )
+
+            else:
+                combined_token = self.tokens[i]
+                i += 1
+            combined_tokens.append(combined_token)
 
         self.tokens = combined_tokens
 

@@ -110,6 +110,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.CHARACTER_REPLACEMENT)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
+        self.check_unbalanced_quotes()
         self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         if self.has_fatal_errors():

@@ -416,6 +416,10 @@ def test_invalid_token_sequences(
             []
         ),
         (
+            'TI "Clinical Judgment (Not Diagnosis)"',
+            []
+        ),
+        (
           '"hearing difficult*" OR language barrier*" OR "digital literacy"',
             [
                 {
@@ -424,7 +428,7 @@ def test_invalid_token_sequences(
                     'is_fatal': True,
                     'label': 'unbalanced-quotes',
                     'message': 'Quotes are unbalanced in the query',
-                    'position': [(24, 43)]
+                    'position': [(24, 42)]
                 }
             ]
         ),
@@ -437,7 +441,7 @@ def test_invalid_token_sequences(
                     'is_fatal': True,
                     'label': 'unbalanced-quotes',
                     'message': 'Quotes are unbalanced in the query',
-                    'position': [(0, 23)]
+                    'position': [(0, 22)]
                 },
             ]
         ),

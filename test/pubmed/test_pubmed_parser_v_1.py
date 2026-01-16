@@ -275,29 +275,38 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "PARSE_0003",
-                    "label": "unbalanced-quotes",
-                    "message": "Quotes are unbalanced in the query",
-                    "is_fatal": True,
-                    "position": [(0, 8)],
-                    "details": "Unbalanced quotes inside term",
-                }
-            ],
-        ),
-        (
-            'eHe"a"l"t"h[ti]',
-            "",
-            [
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between "eHeal" th"',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [(0, 8)],
+                },
                 {
-                    "code": "PARSE_0003",
-                    "label": "unbalanced-quotes",
-                    "message": "Quotes are unbalanced in the query",
-                    "is_fatal": True,
-                    "position": [(0, 11)],
-                    "details": "Suspicious or excessive quote usage",
-                }
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 6),],
+                },
             ],
         ),
+        # This error no longer applies due to the new unbalanced quote validation.
+        #(
+        #        'eHe"a"l"t"h[ti]',
+        #        "",
+        #        [
+        #            {
+        #                "code": "PARSE_0003",
+        #                "label": "unbalanced-quotes",
+        #                "message": "Quotes are unbalanced in the query",
+        #                "is_fatal": True,
+        #                "position": [(0, 11)],
+        #                "details": "Suspicious or excessive quote usage",
+        #            }
+        #        ],
+        #),
         (
             '("health tracking" OR "remote monitoring")) AND ("mobile application" OR "wearable device")',
             "Title",
@@ -636,13 +645,21 @@ def test_pubmed_invalid_token_sequences(
                 },
                 {
                     'code': 'PUBMED_0002',
-                    'details': 'Invalid character \'=\' in search term \'TI="eHealth"\' will be '
-                    'replaced with whitespace.\n'
+                    'details': "Invalid character '=' in search term 'TI=' will be "
+                    "replaced with whitespace.\n"
                     'See PubMed character conversions: '
                     'https://pubmed.ncbi.nlm.nih.gov/help/',
                     'is_fatal': False,
                     'label': 'character-replacement',
                     'message': 'Character replacement',
+                    'position': [(0, 3)],
+                },
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between "TI  "eHealth""',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
                     'position': [(0, 12)],
                 },
             ],
@@ -873,6 +890,20 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Use AND, OR, NOT instead of |&",
                 }
             ],
+        ),
+        (
+            '"digital health[tiab] OR "eHealth"[tiab]',
+            "",
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 15)],
+                },
+            ]
         ),
     ],
 )

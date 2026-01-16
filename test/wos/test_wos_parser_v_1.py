@@ -756,6 +756,27 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+            'TS="digital health TS="eHealth"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between terms',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [(3, 22)],
+                },
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(3, 18)]
+                },
+            ]
+        ),
+        (
             "Web of Science: TS=eHealth",
             [
                 {

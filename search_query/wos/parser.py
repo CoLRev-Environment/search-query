@@ -32,16 +32,14 @@ class WOSParser(QueryStringParser):
     )
     PARENTHESIS_REGEX = re.compile(r"[()]")
 
-    # 2) quoted term — this matches only if quotes are balanced.
-    QUOTED_TERM_REGEX = re.compile(r"\".*?\"")
+    QUOTATION_MARK_REGEX = re.compile(r'"')
 
     # 3) fallback term:
-    # make this permissive enough to also swallow a stray `"`,
-    # but still exclude structural WOS characters (space, parens, equals).
-    PERMISSIVE_TERM_REGEX = re.compile(r"[^\s()=]+")
+    # exclude structural WOS characters (space, parens, equals, quotation marks).
+    PERMISSIVE_TERM_REGEX = re.compile(r'[^\s()="]+')
 
     # build the combined pattern:
-    # fields → logic/proximity → parens → quoted term → term
+    # fields → logic/proximity → parens → quotes → term
     pattern = re.compile(
         "|".join(
             [
@@ -49,7 +47,7 @@ class WOSParser(QueryStringParser):
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
-                QUOTED_TERM_REGEX.pattern,
+                QUOTATION_MARK_REGEX.pattern,
                 PERMISSIVE_TERM_REGEX.pattern,
             ]
         ),
@@ -103,9 +101,8 @@ class WOSParser(QueryStringParser):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
             elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
-            elif self.QUOTED_TERM_REGEX.fullmatch(value):
-                # fully quoted term
-                token_type = TokenTypes.TERM
+            elif self.QUOTATION_MARK_REGEX.fullmatch(value):
+                token_type = TokenTypes.QUOTATION_MARK
             elif self.PERMISSIVE_TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.TERM
             else:  # pragma: no cover
