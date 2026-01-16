@@ -33,6 +33,7 @@ class TokenTypes(Enum):
     PROXIMITY_OPERATOR = "PROXIMITY_OPERATOR"
     FIELD = "FIELD"
     TERM = "TERM"
+    QUOTATION_MARK = "QUOTATION_MARK"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
     RANGE_OPERATOR = "RANGE_OPERATOR"
@@ -1244,6 +1245,28 @@ Proximity operators must have a non-negative integer as the distance.
 
     # PLATFORM.WOS
     "digital-native"[ti]
+
+""",
+    )
+
+    WOS_INVALID_NEAR_QUERY = (
+        "WOS_0013",
+        "invalid-near-query",
+        "NEAR operator applied to AND query.",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A AND B) NEAR/3 C)"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A NEAR/3 C) AND (B NEAR/3 C))"
 
 """,
     )

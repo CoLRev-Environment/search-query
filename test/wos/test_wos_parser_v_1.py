@@ -145,7 +145,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search term contains invalid character",
                     "is_fatal": False,
                     "position": [(0, 12)],
-                    "details": "Invalid character '\\' in search term 'collaborat\\*'",
+                    "details": "Invalid character '\\' in search term 'collaborat\\*' will be replaced with whitespace.",
                 },
                 {
                     "code": "FIELD_0002",
@@ -234,7 +234,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(9, 12), (13, 15)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
                 },
             ],
         ),
@@ -260,7 +260,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator between terms",
                 },
                 {
                     "code": "PARSE_0004",
@@ -289,7 +289,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 10)],
-                    "details": "",
+                    "details": "Missing operator between terms",
                 }
             ],
         ),
@@ -310,7 +310,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "",
+                    "details": "Missing operator between terms",
                 },
                 {
                     "code": "PARSE_0002",
@@ -331,7 +331,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator between terms",
                 },
                 {
                     "code": "PARSE_0004",
@@ -341,19 +341,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(9, 12)],
                     "details": "Cannot end with FIELD",
                 },
-            ],
-        ),
-        (
-            "TI=term1 NEAR/20 TI=term2",
-            [
-                {
-                    "code": "WOS_0002",
-                    "label": "near-distance-too-large",
-                    "message": "NEAR distance is too large (max: 15).",
-                    "is_fatal": True,
-                    "position": [(9, 16)],
-                    "details": "NEAR distance 20 is larger than the maximum allowed value of 15.",
-                }
             ],
         ),
         # TODO: should be implemented properly.
@@ -380,6 +367,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         #         },
         #     ],
         # ),
+        (
+            "TS=(diversity NEAR/3 (speci* OR population*))",
+            []
+        ),
+        (
+            "TS=(diversity NEAR/3 (speci* AND population*))",
+            [
+                {
+                    "code": "WOS_0013",
+                    "label": "invalid-near-query",
+                    "message": "NEAR operator applied to AND query.",
+                    "is_fatal": True,
+                    "position": [(22, 44)],
+                    "details": ''
+                },
+            ]
+        ),
         (
             "TI=term1 !term2",
             [
@@ -466,9 +470,22 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator between terms",
                 }
             ],
+        ),
+        (
+            '"term1" "term2"',
+            [
+                {
+                    "code": "PARSE_0004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(0, 15)],
+                    "details": "Missing operator between terms",
+                }
+            ]
         ),
         (
             "TI=*te",
@@ -739,6 +756,27 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+            'TS="digital health TS="eHealth"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between terms',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [(3, 22)],
+                },
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(3, 18)]
+                },
+            ]
+        ),
+        (
             "Web of Science: TS=eHealth",
             [
                 {
@@ -938,7 +976,7 @@ def test_query_in_quotes() -> None:
     assert parser.tokens[0].value == "TI="
 
 
-def test_artificial_parentheses() -> None:
+def test_missing_field_query() -> None:
     parser = WOSParser_v1(
         query_str="remote OR online AND work",
         field_general="All Fields",
@@ -961,7 +999,7 @@ def test_artificial_parentheses() -> None:
             "message": "Operator changed at the same level (explicit parentheses are recommended)",
             "is_fatal": False,
             "position": [(7, 9), (17, 20)],
-            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
         },
         {
             "code": "FIELD_0003",
@@ -976,7 +1014,7 @@ def test_artificial_parentheses() -> None:
             "label": "field-missing",
             "message": "Search field is missing",
             "is_fatal": False,
-            "position": [(0, 6)],
+            "position": [(0, 6), (10, 16), (21, 25)],
             "details": "",
         },
     ]

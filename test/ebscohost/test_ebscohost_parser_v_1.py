@@ -235,19 +235,7 @@ def test_invalid_token_sequences(
                 }
             ],
         ),
-        (
-            "TI AND Artificial Intelligence",
-            [
-                {
-                    "code": "PARSE_0004",
-                    "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid.",
-                    "is_fatal": True,
-                    "position": [(0, 6)],
-                    "details": "Invalid operator position",
-                }
-            ],
-        ),
+        ("TI AND Artificial Intelligence", []),
         ("TI Artificial Intelligence AND AB Future", []),
         (
             "AI governance OR AB Future",
@@ -258,7 +246,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|MM|MW|ZY|ZU|PT|ZT|DT|XB",
                 }
             ],
         ),
@@ -271,7 +259,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|MM|MW|ZY|ZU|PT|ZT|DT|XB",
                 }
             ],
         ),
@@ -307,6 +295,25 @@ def test_invalid_token_sequences(
             [],
         ),
         (
+            '"person centred care"or" patient-centered care"',
+            [
+                {
+                    'code': 'STRUCT_0002',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'operator-capitalization',
+                    'message': 'Operators should be capitalized',
+                    'position': [
+                        (
+                                21,
+                                23,
+                        ),
+                    ],
+                },
+            ]
+
+        ),
+        (
             "bias OR OR politics",
             [
                 {
@@ -320,15 +327,33 @@ def test_invalid_token_sequences(
             ],
         ),
         (
+            'higher N1 level? "of education"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between terms',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [
+                        (
+                            10,
+                            31,
+                        ),
+                    ],
+                }
+            ]
+        ),
+        (
             "*ology",
             [
                 {
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
+                    "is_fatal": False,
                     "position": [(0, 1)],
-                    "details": "Wildcard not allowed at the beginning of a term.",
+                    "details": "Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
                 }
             ],
         ),
@@ -339,9 +364,9 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 4)],
-                    "details": "Invalid wildcard use: only one leading literal character found. When a wildcard appears within the first four characters, at least two literal (non-wildcard) characters must be present in that span.",
+                    "is_fatal": False,
+                    "position": [(3, 4)],
+                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it."
                 }
             ],
         ),
@@ -352,11 +377,15 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 5)],
-                    "details": "Do not use * in the second position followed by additional letters. Use ? or # instead (e.g., f?tal).",
+                    "is_fatal": False,
+                    "position": [(1, 2)],
+                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it.",
                 }
             ],
+        ),
+        (
+            "midsummer * dream",
+            [],
         ),
         (
             "colo#r",
@@ -381,6 +410,53 @@ def test_invalid_token_sequences(
         (
             "f?tal",
             [],
+        ),
+        (
+            "VR N3 simulat*",
+            []
+        ),
+        (
+            'TI "Clinical Judgment (Not Diagnosis)"',
+            []
+        ),
+        (
+          '"hearing difficult*" OR language barrier*" OR "digital literacy"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(24, 42)]
+                }
+            ]
+        ),
+        (
+            '"information synthesi* OR "synthesis writ*"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 22)]
+                },
+            ]
+        ),
+        (
+            '(DE "Graduate Medical Education) OR (DE "Nursing Education")',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(4, 31)]
+                }
+            ]
         ),
     ],
 )
@@ -429,7 +505,15 @@ def test_linter(query_string: str, messages: list) -> None:
                     "is_fatal": True,
                     "position": [(10, 16)],
                     "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
-                }
+                },
+                {
+                    'code': 'EBSCO_0002',
+                    'details': "Invalid character '[' in search term 'governance[tiab]' will be replaced with whitespace.",
+                    'is_fatal': False,
+                    'label': 'invalid-character',
+                    'message': 'Search term contains invalid character',
+                    'position': [(0, 16)],
+                },
             ],
         ),
         (

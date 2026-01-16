@@ -25,12 +25,12 @@ from search_query.query_term import Term
 class PubmedParser(QueryStringParser):
     """Parser for Pubmed queries."""
 
-    FIELD_REGEX = re.compile(r"\[[^\[]*?\]")
-    LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?\])")
-    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
-    SEARCH_PHRASE_REGEX = re.compile(r"\".*?\"")
-    TERM_REGEX = re.compile(r"[^\s\[\]()\|&]+")
-    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
+    FIELD_REGEX = re.compile(r"\[[^\[]*?]")
+    LOGIC_OPERATOR_REGEX = re.compile(r"(\||&|\b(?:AND|OR|NOT|:)\b)(?!\s?\[[^\[]*?])")
+    PARENTHESIS_REGEX = re.compile(r"[()]")
+    QUOTATION_MARK_REGEX = re.compile(r'"')
+    TERM_REGEX = re.compile(r'[^\s\[\]()|&"]+')
+    PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)]$")
 
     pattern = re.compile(
         "|".join(
@@ -38,7 +38,7 @@ class PubmedParser(QueryStringParser):
                 FIELD_REGEX.pattern,
                 LOGIC_OPERATOR_REGEX.pattern,
                 PARENTHESIS_REGEX.pattern,
-                SEARCH_PHRASE_REGEX.pattern,
+                QUOTATION_MARK_REGEX.pattern,
                 TERM_REGEX.pattern,
             ]
         ),
@@ -89,6 +89,8 @@ class PubmedParser(QueryStringParser):
                 token_type = TokenTypes.PARENTHESIS_CLOSED
             elif value.startswith("[") and value.endswith("]"):
                 token_type = TokenTypes.FIELD
+            elif value == '"':
+                token_type = TokenTypes.QUOTATION_MARK
             else:
                 token_type = TokenTypes.TERM
 
@@ -143,40 +145,28 @@ class PubmedParser(QueryStringParser):
             return Operators.RANGE
         raise ValueError()  # pragma: no cover
 
-    def _get_operator_indices(self, tokens: list) -> list:
+    def _get_operator_indices(self, tokens: list) -> list[int]:
         """Get indices of top-level operators in the token list"""
-        operator_indices = []
-
-        i = 0
-        first_operator_found = False
-        first_operator = ""
+        indices: list[int] = []
+        depth = 0
+        first_op = None
         # Iterate over tokens in reverse
         # to find and save positions of consecutive top-level operators
         # matching the first encountered until a different type is found.
         for token in reversed(tokens):
-            token_index = tokens.index(token)
-
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                i = i + 1
+                depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                i = i - 1
-
-            if i == 0 and token.type in [
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.RANGE_OPERATOR,
-            ]:
-                operator = self._get_operator_type(token)
-                if not first_operator_found:
-                    first_operator = operator
-                    first_operator_found = True
-                if operator == first_operator:
-                    operator_indices.append(token_index)
-                else:  # pragma: no cover
-                    # Note: this should not happen because the linter calls
-                    # add_artificial_parentheses_for_operator_precedence()
-                    raise ValueError
-
-        return operator_indices
+                depth -= 1
+            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR]:
+                op = self._get_operator_type(token)
+                if first_op is None:
+                    first_op = op
+                if op == first_op:
+                    indices.append(tokens.index(token))
+                else:
+                    break
+        return indices
 
     def _parse_compound_query(self, tokens: list) -> Query:
         """Parse a compound query

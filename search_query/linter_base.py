@@ -344,6 +344,28 @@ class QueryStringLinter:
                     else:
                         i -= 1
 
+    def check_unbalanced_quotes(self) -> None:
+        """Check token list for unbalanced quotes."""
+        for token in self.tokens:
+            if token.type == TokenTypes.TERM:
+                # Case 1: unmatched opening quote
+                if token.value.startswith('"') and not token.value.endswith('"'):
+                    self.add_message(
+                        QueryErrorCode.UNBALANCED_QUOTES,
+                        positions=[token.position],
+                        details="Unmatched opening quote",
+                        fatal=True,
+                    )
+
+                # Case 2: unmatched closing quote
+                if not token.value.startswith('"') and token.value.endswith('"'):
+                    self.add_message(
+                        QueryErrorCode.UNBALANCED_QUOTES,
+                        positions=[token.position],
+                        details="Unmatched closing quote",
+                        fatal=True,
+                    )
+
     def check_unbalanced_quotes_in_terms(self, query: Query) -> None:
         """Recursively check for unbalanced quotes in quoted search terms."""
 
@@ -411,25 +433,46 @@ class QueryStringLinter:
                     fatal=True,
                 )
 
+    def _format_invalid_char_details(self, char, value: str) -> str:
+        return f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace."
+
     def check_invalid_characters_in_term(
         self, invalid_characters: str, error: QueryErrorCode
     ) -> None:
-        """Check a search term for invalid characters"""
+        """Check search term tokens for invalid characters"""
+
+        refined_tokens = []
 
         for token in self.tokens:
             if token.type != TokenTypes.TERM:
+                refined_tokens.append(token)
                 continue
+
             value = token.value
+            value_new = ''
 
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
-            for char in token.value:
+            for i, char in enumerate(token.value):
                 if char in invalid_characters:
                     self.add_message(
                         error,
                         positions=[token.position],
-                        details=f"Invalid character '{char}' in search term '{value}'",
+                        details=self._format_invalid_char_details(char, value),
                     )
+                    value_new += ' '
+                else:
+                    value_new += token.value[i]
+
+            if not value_new.strip():
+                # Drop tokens consisting of only invalid characters
+                continue
+
+            token.value = value_new
+            refined_tokens.append(token)
+
+        self.tokens = refined_tokens
+
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""
@@ -599,157 +642,46 @@ class QueryStringLinter:
                 details=f"Non-standard quotes found: {''.join(sorted(found_quotes))}",
             )
 
-    def add_higher_value(
-        self,
-        output: list[Token],
-        previous_value: int,
-        value: int,
-        art_par: int,
-    ) -> tuple[list[Token], int]:
-        """Adds open parenthesis to higher value operators"""
-        temp: list[Token] = []
-        depth_lvl = 0  # Counter for actual parenthesis
-
-        while output:
-            # Get previous tokens until right operator has been reached
-            token = output.pop()
-
-            # Track already existing and correct query blocks
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                depth_lvl += 1
-            elif token.type == TokenTypes.PARENTHESIS_OPEN:
-                depth_lvl -= 1
-
-            temp.insert(0, token)
-
-            if (
-                token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
-                and depth_lvl == 0
-            ):
-                # Insert open parenthesis
-                # depth_lvl ensures that already existing blocks are ignored
-
-                # Insert open parenthesis after operator
-                while previous_value < value:
-                    # Insert open parenthesis after operator
-                    temp.insert(
-                        1,
-                        Token(
-                            value="(",
-                            type=TokenTypes.PARENTHESIS_OPEN,
-                            position=(-1, -1),
-                        ),
-                    )
-                    previous_value += 1
-                    art_par += 1
-                break
-
-        return temp, art_par
-
-    def flatten_redundant_artificial_nesting(self, tokens: list[Token]) -> None:
-        """
-        Flattens redundant artificial nesting:
-        If two artificial open parens are followed eventually by
-        two artificial close parens at the same level, removes the outer ones.
-        """
-
-        while True:
-            len_initial = len(tokens)
-
-            output = []
-            i = 0
-            while i < len(tokens):
-                # Look ahead for double artificial opening
-                if (
-                    i + 1 < len(tokens)
-                    and tokens[i].type == TokenTypes.PARENTHESIS_OPEN
-                    and tokens[i + 1].type == TokenTypes.PARENTHESIS_OPEN
-                    and tokens[i].position == (-1, -1)
-                    and tokens[i + 1].position == (-1, -1)
-                ):
-                    # Look for matching double closing
-                    inner_start = i + 2
-                    depth = 2
-                    j = inner_start
-                    while j < len(tokens) and depth > 0:
-                        if tokens[j].type == TokenTypes.PARENTHESIS_OPEN and tokens[
-                            j
-                        ].position == (-1, -1):
-                            depth += 1
-                        elif tokens[j].type == TokenTypes.PARENTHESIS_CLOSED and tokens[
-                            j
-                        ].position == (-1, -1):
-                            depth -= 1
-                        j += 1
-
-                    # Check for double artificial closing
-                    if (
-                        j < len(tokens)
-                        and tokens[j - 1].type == TokenTypes.PARENTHESIS_CLOSED
-                        and tokens[j - 2].type == TokenTypes.PARENTHESIS_CLOSED
-                        and tokens[j - 1].position == (-1, -1)
-                        and tokens[j - 2].position == (-1, -1)
-                    ):
-                        # Skip outer pair
-                        output.extend(tokens[i + 1 : j - 1])
-                        i = j
-
-                        continue
-
-                output.append(tokens[i])
-                i += 1
-
-            # Repeat for multiple nestings
-            if len_initial == len(output):
-                break
-            tokens = output
-
-        self.tokens = output
-
     def get_precedence(self, token: str) -> int:
         """Returns operator precedence for logical and proximity operators."""
         if token in self.OPERATOR_PRECEDENCE:
             return self.OPERATOR_PRECEDENCE[token]
         return -1  # Not an operator
 
-    def _get_unequal_precedence_operators(
-        self, tokens: list[Token]
-    ) -> typing.List[Token]:
-        """Get positions of unequal precedence operators."""
-        unequal_precedence_operators: typing.List[Token] = []
-        previous_value = -1
-        level = 0
-        prev_token = None
-        for token in tokens:
+    def _print_unequal_precedence_warning(self, tokens: typing.List[Token] = None) -> None:
+        """Warn user about unequal precedence operators in the query string."""
+        if tokens is None:
+            tokens = self.tokens
+
+        unequal_operators: typing.List[Token] = []
+        prev_value = -1
+        prev_operator = None
+        depth = 0
+        for index, token in enumerate(tokens):
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                self._print_unequal_precedence_warning(tokens[index+1:])
+                depth += 1
+
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                level -= 1
-            elif token.type == TokenTypes.PARENTHESIS_OPEN:
-                level += 1
-            if level < 0:
-                break
+                if depth == 0:
+                    break
+                depth -= 1
 
-            if level != 0:
-                continue
-            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
                 value = self.get_precedence(token.value.upper())
-                if previous_value not in [value, -1]:
-                    if not unequal_precedence_operators and prev_token:
-                        unequal_precedence_operators.append(prev_token)
-                    unequal_precedence_operators.append(token)
-                previous_value = value
-                prev_token = token
-        return unequal_precedence_operators
+                if prev_value not in [value, -1]:
+                    if not unequal_operators and prev_operator:
+                        unequal_operators.append(prev_operator)
+                    unequal_operators.append(token)
+                prev_value = value
+                prev_operator = token
 
-    def _print_unequal_precedence_warning(self, index: int) -> None:
-        unequal_precedence_operators = self._get_unequal_precedence_operators(
-            self.tokens[index:]
-        )
-        if not unequal_precedence_operators:
+        if not unequal_operators:
             return
 
         precedence_list = [
             (item, self.get_precedence(item.upper()))
-            for item in {o.value for o in unequal_precedence_operators}
+            for item in {o.value for o in unequal_operators}
         ]
         precedence_list.sort(key=lambda x: x[1], reverse=True)
         precedence_lines = []
@@ -778,144 +710,13 @@ class QueryStringLinter:
             "This can lead to unexpected interpretations of the query.\n\n"
             "Specifically:\n"
             f"{precedence_info}\n\n"
-            "To fix this, search-query adds artificial parentheses around "
-            "operator groups with higher precedence.\n\n"
         )
 
         self.add_message(
             QueryErrorCode.IMPLICIT_PRECEDENCE,
-            positions=[o.position for o in unequal_precedence_operators],
+            positions=[o.position for o in unequal_operators],
             details=details,
         )
-
-    # pylint: disable=too-many-branches
-    def add_artificial_parentheses_for_operator_precedence(
-        self,
-        index: int = 0,
-        output: typing.Optional[list] = None,
-    ) -> tuple[int, list[Token]]:
-        """
-        Adds artificial parentheses with position (-1, -1)
-        to enforce operator precedence.
-        """
-        if output is None:
-            output = []
-        # Value of operator
-        value = 0
-        # Value of previous operator
-        previous_value = -1
-        # Added artificial parentheses
-        art_par = 0
-        # Start index
-        start_index = index
-
-        self._print_unequal_precedence_warning(index)
-
-        while index < len(self.tokens):
-            # Forward iteration through tokens
-
-            if self.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
-                output.append(self.tokens[index])
-                index += 1
-                index, output = self.add_artificial_parentheses_for_operator_precedence(
-                    index, output
-                )
-                continue
-
-            if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
-                output.append(self.tokens[index])
-                index += 1
-                # Add parentheses in case there are missing ones
-                if art_par > 0:
-                    while art_par > 0:
-                        output.append(
-                            Token(
-                                value=")",
-                                type=TokenTypes.PARENTHESIS_CLOSED,
-                                position=(-1, -1),
-                            )
-                        )
-                        art_par -= 1
-                if art_par < 0:
-                    while art_par < 0:
-                        output.insert(
-                            start_index,
-                            Token(
-                                value="(",
-                                type=TokenTypes.PARENTHESIS_OPEN,
-                                position=(-1, -1),
-                            ),
-                        )
-                        art_par += 1
-                return index, output
-
-            if self.tokens[index].type in [
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.PROXIMITY_OPERATOR,
-            ]:
-                value = self.get_precedence(self.tokens[index].value.upper())
-
-                if previous_value in (value, -1):
-                    # Same precedence → just add to output
-                    output.append(self.tokens[index])
-                    previous_value = value
-
-                elif value > previous_value:
-                    # Higher precedence → start wrapping with artificial parenthesis
-                    temp, art_par = self.add_higher_value(
-                        output, previous_value, value, art_par
-                    )
-
-                    output.extend(temp)
-                    output.append(self.tokens[index])
-                    previous_value = value
-
-                elif value < previous_value:
-                    # Insert close parenthesis for each point in value difference
-                    while previous_value > value:
-                        # Lower precedence → close parenthesis
-                        output.append(
-                            Token(
-                                value=")",
-                                type=TokenTypes.PARENTHESIS_CLOSED,
-                                position=(-1, -1),
-                            )
-                        )
-                        previous_value -= 1
-                        art_par -= 1
-                    output.append(self.tokens[index])
-                    previous_value = value
-
-                index += 1
-                continue
-
-            # Default: search terms, fields, etc.
-            output.append(self.tokens[index])
-            index += 1
-
-        # Add parenthesis in case there are missing ones
-        if art_par > 0:
-            while art_par > 0:
-                output.append(
-                    Token(
-                        value=")", type=TokenTypes.PARENTHESIS_CLOSED, position=(-1, -1)
-                    )
-                )
-                art_par -= 1
-        if art_par < 0:
-            while art_par < 0:
-                output.insert(
-                    0,
-                    Token(
-                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
-                    ),
-                )
-                art_par += 1
-
-        if index == len(self.tokens):
-            self.flatten_redundant_artificial_nesting(output)
-
-        return index, output
 
     def get_query_with_fields_at_terms(self, query: Query) -> Query:
         """Move the search field from the operator to the terms.
@@ -1055,17 +856,36 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def _flatten_same_operator(self, query: Query) -> Query:
+    def _can_flatten_artificial_nesting(self, query: Query) -> bool:
+        """Check whether query is enclosed in artificial parentheses."""
+        token_index_before_query = query.position[0] - 1
+        token_index_after_query = query.position[1] + 1
+        if (
+                token_index_before_query > 0
+                and token_index_after_query < len(self.tokens)
+                and self.tokens[token_index_before_query] == TokenTypes.PARENTHESIS_OPEN
+                and self.tokens[token_index_before_query].position == (-1, -1)
+                and self.tokens[token_index_after_query] == TokenTypes.PARENTHESIS_CLOSED
+                and self.tokens[token_index_after_query].position == (-1, -1)
+        ):
+            return True
+        return False
+
+    def _flatten_same_operator(self, query: Query, flatten_artificial_nesting_only: bool = False) -> Query:
         """Return a copy of the query with same-operator nesting flattened."""
         if not query.operator:
             return query
 
         flattened_children = []
         for child in query.children:
-            if child.value == query.value:
-                flattened_children.extend(self._flatten_same_operator(child).children)
+            if child.value == query.value and (not flatten_artificial_nesting_only or self._can_flatten_artificial_nesting(child)):
+                flattened_children.extend(
+                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only).children
+                )
             else:
-                flattened_children.append(self._flatten_same_operator(child))
+                flattened_children.append(
+                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only)
+                )
         from search_query.query import Query
 
         return Query.create(
@@ -1252,9 +1072,12 @@ class QueryStringLinter:
 
         query = self._assign_subsequent_letters(query, abbreviation_dict)
 
-        original = query.to_string_structured_2()
+        original = self._flatten_same_operator(query, flatten_artificial_nesting_only=True)
+        original = original.to_string_structured_2()
+
         flattened = self._flatten_same_operator(query)
         simplified = flattened.to_string_structured_2()
+
         original = self._highlight_removed_chars(original, simplified)
 
         if original == simplified:
