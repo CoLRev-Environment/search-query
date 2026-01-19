@@ -349,7 +349,7 @@ class QueryStringLinter:
         for token in self.tokens:
             if token.type == TokenTypes.TERM:
                 # Case 1: unmatched opening quote
-                if token.value.startswith('"') and not token.value.endswith('"'):
+                if token.value == '"' or (token.value.startswith('"') and not token.value.endswith('"')):
                     self.add_message(
                         QueryErrorCode.UNBALANCED_QUOTES,
                         positions=[token.position],

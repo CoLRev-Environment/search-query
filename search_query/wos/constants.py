@@ -178,7 +178,4 @@ def field_general_to_syntax(
 ) -> str:
     """Map the general search field to the standard syntax of WOS."""
     field = field.strip()
-    if field in field_GENERAL_TO_SYNTAX_MAP:
-        return field_GENERAL_TO_SYNTAX_MAP[field]
-
-    raise ValueError(f"Search field {field} not supported by WOS")  # pragma: no cover
+    return field_GENERAL_TO_SYNTAX_MAP.get(field)

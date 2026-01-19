@@ -13,7 +13,7 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import syntax_str_to_generic_field_set
+from search_query.wos.constants import syntax_str_to_generic_field_set, field_general_to_syntax
 from search_query.wos.constants import VALID_fieldS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
@@ -451,6 +451,18 @@ class WOSQueryStringLinter(QueryStringLinter):
         # Recursively call the function on the child queries
         for child in query.children:
             self.check_issn_isbn_format(child)
+
+    def validate_field_general(self, field: str) -> None:
+        if not field:
+            return
+        field = field.strip()
+        if not field_general_to_syntax(field):
+            self.add_message(
+                QueryErrorCode.FIELD_UNSUPPORTED,
+                positions=[],
+                fatal=False,
+                details=f'The extracted search field "{field}" is not supported by WOS.'
+            )
 
     def check_deprecated_field_tags(self, query: Query) -> None:
         """Check for deprecated field tags."""

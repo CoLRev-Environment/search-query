@@ -204,19 +204,16 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             token_type = token.type
             prev_type = self.tokens[i - 1].type
 
-            token_type = token.type
-            prev_type = self.tokens[i - 1].type
+            if self.tokens[i - 1].value == '"' or token.value == '"': # Do not consider a single " for invalid token sequences (already handled by unbalanced-quote validation)
+                continue
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 details = ""
                 positions = [
                     (token.position if token_type else self.tokens[i - 1].position)
                 ]
-                if token_type == TokenTypes.FIELD:
-                    details = "Invalid search field position"
-                    positions = [token.position]
 
-                elif token_type == TokenTypes.LOGIC_OPERATOR:
+                if token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
                     if prev_type == TokenTypes.LOGIC_OPERATOR:
                         details = "Cannot have two consecutive operators"
@@ -233,6 +230,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             token.position[1],
                         )
                     ]
+
                 elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
                     r"^[a-z]{2}$", self.tokens[i - 1].value
                 ):
@@ -245,6 +243,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         fatal=True,
                     )
                     continue
+
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
@@ -255,6 +254,10 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             token.position[1],
                         )
                     ]
+
+                elif token_type == TokenTypes.FIELD:
+                    details = "Invalid search field position"
+                    positions = [token.position]
 
                 self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,

@@ -32,7 +32,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
     PLATFORM: PLATFORM = PLATFORM.PUBMED
 
-    INVALID_CHARACTERS = "!#$%+.;<>=?\\^_{}~'()[]"
+    INVALID_CHARACTERS = "!#$%+.;<>=?\\^_{}~'’()[]"
 
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
@@ -243,14 +243,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details = (
-                    "Missing operator between "
-                    f'"{self.tokens[i - 1].value} {token.value}"'
-                )
+                details="Missing operator between terms"
                 positions = [
                     (
                         self.tokens[i - 1].position[0],
-                        token.position[1],
+                        token.position[1]
                     )
                 ]
 
@@ -497,9 +494,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 self.add_message(
                     QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
-                    details=f"Search field {token.value} is not supported.",
-                    fatal=True,
+                    details=f"Search field {token.value} is not supported and will be ignored by PubMed.",
+                    fatal=False,
                 )
+                token.value = "[all]"
 
     def check_implicit_fields(self) -> None:
         """Check the general search field"""

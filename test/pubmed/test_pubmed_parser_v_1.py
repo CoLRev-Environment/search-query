@@ -119,7 +119,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 Token("treatment", TokenTypes.TERM, (7, 16)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            'Missing operator between "cancer treatment"',
+            'Missing operator between terms',
         ),
         (
             [
@@ -276,7 +276,7 @@ def test_pubmed_invalid_token_sequences(
             [
                 {
                     'code': 'PARSE_0004',
-                    'details': 'Missing operator between "eHeal" th"',
+                    'details': 'Missing operator between terms',
                     'is_fatal': True,
                     'label': 'invalid-token-sequence',
                     'message': 'The sequence of tokens is invalid.',
@@ -439,7 +439,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(9, 32)],
-                    "details": 'Missing operator between "[tiab] "digital health""',
+                    "details": 'Missing operator between terms',
                 },
             ],
         ),
@@ -453,7 +453,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(41, 43)],
-                    "details": 'Missing operator between ") ("',
+                    "details": 'Missing operator between terms',
                 },
             ],
         ),
@@ -611,9 +611,9 @@ def test_pubmed_invalid_token_sequences(
                     "code": "FIELD_0001",
                     "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
-                    "is_fatal": True,
+                    "is_fatal": False,
                     "position": [(9, 13)],
-                    "details": "Search field [ab] is not supported.",
+                    "details": "Search field [ab] is not supported and will be ignored by PubMed.",
                 }
             ],
         ),
@@ -656,7 +656,7 @@ def test_pubmed_invalid_token_sequences(
                 },
                 {
                     'code': 'PARSE_0004',
-                    'details': 'Missing operator between "TI  "eHealth""',
+                    'details': 'Missing operator between terms',
                     'is_fatal': True,
                     'label': 'invalid-token-sequence',
                     'message': 'The sequence of tokens is invalid.',
@@ -1000,9 +1000,9 @@ def test_linter(
                     "code": "FIELD_0001",
                     "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
-                    "is_fatal": True,
+                    "is_fatal": False,
                     "position": [(7, 13)],
-                    "details": "Search field [tldr] is not supported.",
+                    "details": "Search field [tldr] is not supported and will be ignored by PubMed.",
                 }
             ],
         ),
@@ -1183,7 +1183,7 @@ def test_list_parser_case_3() -> None:
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
                 "position": [(-1, -1)],
-                "details": 'Missing operator between ") ("',
+                "details": 'Missing operator between terms',
             },
         ],
         "1": [

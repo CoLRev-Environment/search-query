@@ -274,9 +274,10 @@ class WOSParser(QueryStringParser):
 
         query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
+        self.linter.validate_field_general(self.field_general)
         self.linter.check_status()
 
-        if self.field_general:
+        if self.field_general and field_general_to_syntax(self.field_general):
             field_general = SearchField(
                 value=field_general_to_syntax(self.field_general),
                 position=(-1, -1),

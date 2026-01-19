@@ -183,7 +183,7 @@ def test_tokenization(
                 Token("insulin", TokenTypes.TERM, (12, 19)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Invalid search field position",
+            "Missing operator between terms",
         ),
         (
             [
@@ -458,6 +458,27 @@ def test_invalid_token_sequences(
                 }
             ]
         ),
+        (
+            '"smartwatch*" OR "((activit*" OR "fitness") N3 track*)',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(17, 18)],
+                },
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(20, 29)],
+                },
+            ]
+        )
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
