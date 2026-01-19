@@ -648,75 +648,90 @@ class QueryStringLinter:
             return self.OPERATOR_PRECEDENCE[token]
         return -1  # Not an operator
 
-    def _print_unequal_precedence_warning(self, tokens: typing.List[Token] = None) -> None:
-        """Warn user about unequal precedence operators in the query string."""
-        if tokens is None:
-            tokens = self.tokens
+    def _get_scoped_operators(self, tokens: typing.List[Token], start: int = 0) -> list:
+        """Get operators in the same subquery scope."""
+        if start >= len(tokens):
+            return []
 
-        unequal_operators: typing.List[Token] = []
-        prev_value = -1
-        prev_operator = None
+        operator_tokens = []
         depth = 0
-        for index, token in enumerate(tokens):
+        for token in tokens[start:]:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                self._print_unequal_precedence_warning(tokens[index+1:])
                 depth += 1
-
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
                 if depth == 0:
-                    break
+                    return operator_tokens
                 depth -= 1
-
             if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
-                value = self.get_precedence(token.value.upper())
+                operator_tokens.append(token)
+
+        return operator_tokens
+
+    def _print_unequal_precedence_warning(self) -> None:
+        """Warn user about unequal precedence operators in the query string."""
+        tokens = self.tokens
+
+        for index, token in enumerate(self.tokens):
+            unequal_operators: typing.List[Token] = []
+            if index == 0:
+                ops = self._get_scoped_operators(tokens, start=index)
+            elif token.type == TokenTypes.PARENTHESIS_OPEN:
+                ops = self._get_scoped_operators(tokens, start=index + 1)
+            else:
+                continue
+
+            prev_value = -1
+            prev_operator = None
+            for op in ops:
+                value = self.get_precedence(op.value.upper())
                 if prev_value not in [value, -1]:
                     if not unequal_operators and prev_operator:
                         unequal_operators.append(prev_operator)
-                    unequal_operators.append(token)
+                    unequal_operators.append(op)
                 prev_value = value
-                prev_operator = token
+                prev_operator = op
 
-        if not unequal_operators:
-            return
+            if not unequal_operators:
+                continue
 
-        precedence_list = [
-            (item, self.get_precedence(item.upper()))
-            for item in {o.value for o in unequal_operators}
-        ]
-        precedence_list.sort(key=lambda x: x[1], reverse=True)
-        precedence_lines = []
-        for idx, (op, prec) in enumerate(precedence_list):
-            if idx == 0:
-                precedence_lines.append(
-                    f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first "
-                    f"because it has the highest precedence level ({prec})."
-                )
-            elif idx == len(precedence_list) - 1:
-                precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last "
-                    f"because it has the lowest precedence level ({prec})."
-                )
-            else:
-                precedence_lines.append(
-                    f"Operator {Colors.ORANGE}{op}{Colors.END} "
-                    f"has precedence level {prec}."
-                )
+            precedence_list = [
+                (item, self.get_precedence(item.upper()))
+                for item in {o.value for o in unequal_operators}
+            ]
+            precedence_list.sort(key=lambda x: x[1], reverse=True)
+            precedence_lines = []
+            for idx, (op, prec) in enumerate(precedence_list):
+                if idx == 0:
+                    precedence_lines.append(
+                        f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first "
+                        f"because it has the highest precedence level ({prec})."
+                    )
+                elif idx == len(precedence_list) - 1:
+                    precedence_lines.append(
+                        f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last "
+                        f"because it has the lowest precedence level ({prec})."
+                    )
+                else:
+                    precedence_lines.append(
+                        f"Operator {Colors.ORANGE}{op}{Colors.END} "
+                        f"has precedence level {prec}."
+                    )
 
-        precedence_info = "\n".join(precedence_lines)
+            precedence_info = "\n".join(precedence_lines)
 
-        details = (
-            "The query uses multiple operators with different precedence levels, "
-            "but without parentheses to make the intended logic explicit. "
-            "This can lead to unexpected interpretations of the query.\n\n"
-            "Specifically:\n"
-            f"{precedence_info}\n\n"
-        )
+            details = (
+                "The query uses multiple operators with different precedence levels, "
+                "but without parentheses to make the intended logic explicit. "
+                "This can lead to unexpected interpretations of the query.\n\n"
+                "Specifically:\n"
+                f"{precedence_info}\n\n"
+            )
 
-        self.add_message(
-            QueryErrorCode.IMPLICIT_PRECEDENCE,
-            positions=[o.position for o in unequal_operators],
-            details=details,
-        )
+            self.add_message(
+                QueryErrorCode.IMPLICIT_PRECEDENCE,
+                positions=[o.position for o in unequal_operators],
+                details=details,
+            )
 
     def get_query_with_fields_at_terms(self, query: Query) -> Query:
         """Move the search field from the operator to the terms.

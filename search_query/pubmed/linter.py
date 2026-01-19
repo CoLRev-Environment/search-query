@@ -270,74 +270,70 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def _print_unequal_precedence_warning(self, tokens: typing.List[Token] = None) -> None:
+    def _print_unequal_precedence_warning(self) -> None:
         """Warn user about unequal precedence operators in the query string."""
-        if tokens is None:
-            tokens = self.tokens
+        tokens = self.tokens
 
-        unequal_operators: typing.List[Token] = []
-        prev_value = -1
-        prev_operator = None
-        depth = 0
         for index, token in enumerate(tokens):
-            if token.type == TokenTypes.PARENTHESIS_OPEN:
-                self._print_unequal_precedence_warning(tokens[index+1:])
-                depth += 1
+            unequal_operators: typing.List[Token] = []
+            if index == 0:
+                ops = self._get_scoped_operators(tokens, start=index)
+            elif token.type == TokenTypes.PARENTHESIS_OPEN:
+                ops = self._get_scoped_operators(tokens, start=index + 1)
+            else:
+                continue
 
-            if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                if depth == 0:
-                    break
-                depth -= 1
-
-            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
-                value = self.get_precedence(token.value.upper())
+            prev_value = -1
+            prev_operator = None
+            for op in ops:
+                value = self.get_precedence(op.value.upper())
                 if prev_value not in [value, -1]:
                     if not unequal_operators and prev_operator:
                         unequal_operators.append(prev_operator)
-                    unequal_operators.append(token)
+                    unequal_operators.append(op)
                 prev_value = value
-                prev_operator = token
+                prev_operator = op
 
-        if not unequal_operators:
-            return
+            if not unequal_operators:
+                continue
 
-        precedence_list = [o.value for o in unequal_operators]
-        precedence_lines = []
-        for idx, op in enumerate(precedence_list):
-            if idx == 0:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} "
-                    f"is evaluated first "
-                    f"because it is the leftmost operator"
-                )
-            elif idx == len(precedence_list) - 1:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} "
-                    f"is evaluated last "
-                    f"because it is the rightmost operator"
-                )
-            else:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} " f"is evaluated next"
-                )
+            precedence_list = [o.value for o in unequal_operators]
+            precedence_lines = []
+            for idx, op in enumerate(precedence_list):
+                if idx == 0:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} "
+                        f"is evaluated first "
+                        f"because it is the leftmost operator"
+                    )
+                elif idx == len(precedence_list) - 1:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} "
+                        f"is evaluated last "
+                        f"because it is the rightmost operator"
+                    )
+                else:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} " f"is evaluated next"
+                    )
 
-        precedence_info = "\n".join(precedence_lines)
+            precedence_info = "\n".join(precedence_lines)
 
-        details = (
-            "The query uses multiple operators, but without parentheses "
-            "to make the\nintended logic explicit. PubMed evaluates queries "
-            "strictly from left to\nright without applying traditional "
-            "operator precedence. This can lead to\nunexpected "
-            "interpretations of the query.\n\n"
-            "Specifically:\n"
-            f"{precedence_info}\n\n"
-        )
+            details = (
+                "The query uses multiple operators, but without parentheses "
+                "to make the\nintended logic explicit. PubMed evaluates queries "
+                "strictly from left to\nright without applying traditional "
+                "operator precedence. This can lead to\nunexpected "
+                "interpretations of the query.\n\n"
+                "Specifically:\n"
+                f"{precedence_info}\n\n"
+            )
 
-        self.add_message(
-            QueryErrorCode.IMPLICIT_PRECEDENCE,
-            positions=[o.position for o in unequal_operators],
-            details=details,
-        )
+            self.add_message(
+                QueryErrorCode.IMPLICIT_PRECEDENCE,
+                positions=[o.position for o in unequal_operators],
+                details=details,
+            )
 
     def check_invalid_wildcard(self, query: Query) -> None:
         """Check search term for invalid wildcard *"""
