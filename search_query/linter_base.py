@@ -733,23 +733,32 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def get_query_with_fields_at_terms(self, query: Query) -> Query:
-        """Move the search field from the operator to the terms.
+    @abstractmethod
+    def _normalize_field(self, value: str) -> str:
+        """Map a field to the standard platform syntax."""
+
+    def get_query_with_normalized_fields_at_terms(self, query: Query) -> Query:
+        """Normalize and move search field from the operator to the terms.
 
         Note: utility function for validating search terms
         with efficient access to search fields (at the level of terms).
 
         """
         modified_query = query.copy()
-        if modified_query.operator and modified_query.field:
-            # move search field from operator to terms
-            for child in modified_query.children:
-                if not child.field:
-                    child.field = modified_query.field.copy()
-            modified_query.field = None
+        if modified_query.field:
+            try:
+                modified_query.field.value = self._normalize_field(modified_query.field.value)
+            except ValueError:
+                pass
+            if modified_query.operator:
+                # move search field from operator to terms
+                for child in modified_query.children:
+                    if not child.field:
+                        child.field = modified_query.field.copy()
+                modified_query.field = None
 
         for i, child in enumerate(modified_query.children):
-            modified_query.children[i] = self.get_query_with_fields_at_terms(child)
+            modified_query.children[i] = self.get_query_with_normalized_fields_at_terms(child)
 
         return modified_query
 
@@ -1316,17 +1325,17 @@ class QueryStringLinter:
                     for t in terms
                     if any(t.startswith(c) for c in stemmed_matching_multiple_terms)
                 ]
-                stemmeds = list(set(stemmed_matching_multiple_terms))
-                # drop longer stemmeds
+                stemmed_terms = list(set(stemmed_matching_multiple_terms))
+                # drop longer stemmed_terms
                 i = 0
-                while i < len(stemmeds):
+                while i < len(stemmed_terms):
                     if any(
-                        stemmeds[i].startswith(s) and s != stemmeds[i] for s in stemmeds
+                            stemmed_terms[i].startswith(s) and s != stemmed_terms[i] for s in stemmed_terms
                     ):
-                        stemmeds.pop(i)
+                        stemmed_terms.pop(i)
                     else:
                         i += 1
-                for stemmed in stemmeds:
+                for stemmed in stemmed_terms:
                     matching_terms = [
                         term.replace('"', "")
                         for term in terms
@@ -1348,7 +1357,7 @@ class QueryStringLinter:
                         details=(
                             "Multiple terms connected with OR stem to the same word. "
                             "Use a wildcard instead.\n"
-                            f"Replace {Colors.RED}{' OR '.join(terms)}{Colors.END} with "
+                            f"Replace {Colors.RED}{' OR '.join(matching_terms)}{Colors.END} with "
                             f"{Colors.GREEN}{stemmed}*{Colors.END}"
                         ),
                         fatal=False,

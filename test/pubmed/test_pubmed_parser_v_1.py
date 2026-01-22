@@ -760,7 +760,7 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
-            '"Pickwickian Syndrome*"[tiab] OR "Pickwickian Syndrome*"[tiab]',
+            '"Pickwickian Syndrome*"[tiab] OR "Pickwickian Syndrome*"[title/abstract]',
             "",
             [
                 {

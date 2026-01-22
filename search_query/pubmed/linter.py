@@ -437,6 +437,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_year_format(child)
 
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
+
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
         # Note: search fields are not yet translated.
@@ -448,10 +451,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_operators_with_fields(query)
         self._check_unnecessary_nesting(query)
         self.check_year_format(query)
+        self._check_date_filters_in_subquery(query)
+        self._check_journal_filters_in_subquery(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self._check_redundant_terms(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
         # mh is not matched exactly, terms can be redundant:
@@ -463,7 +466,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_platform_query(self, query: Query) -> None:
         """Validate the query for the PubMed platform"""
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
     def syntax_str_to_generic_field_set(self, field_value: str) -> set:

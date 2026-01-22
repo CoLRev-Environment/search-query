@@ -9,7 +9,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebscohost.constants import syntax_str_to_generic_field_set
+from search_query.ebscohost.constants import syntax_str_to_generic_field_set, map_to_standard
 from search_query.ebscohost.constants import VALID_fieldS_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
@@ -352,6 +352,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_unsupported_wildcards(child)
 
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
+
     def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
@@ -362,7 +365,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_unsupported_fields_in_query(query)
         self.check_unsupported_wildcards(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_for_wildcard_usage(term_field_query)

@@ -13,7 +13,7 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import syntax_str_to_generic_field_set, field_general_to_syntax
+from search_query.wos.constants import syntax_str_to_generic_field_set, field_general_to_syntax, map_to_standard
 from search_query.wos.constants import VALID_fieldS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
@@ -628,6 +628,8 @@ class WOSQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self._check_invalid_near_query(child)
 
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
 
     def validate_query_tree(self, query: Query) -> None:
         """
@@ -643,7 +645,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_quotes_in_terms(query)
         self._check_invalid_near_query(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self.check_year_format(term_field_query)
         self.check_nr_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
