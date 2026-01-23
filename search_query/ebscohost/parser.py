@@ -26,7 +26,7 @@ class EBSCOParser(QueryStringParser):
     PARENTHESIS_REGEX = re.compile(r"[()]")
     LOGIC_OPERATOR_REGEX = re.compile(r"(?i:\b(AND|OR|NOT)\b)")
     PROXIMITY_OPERATOR_REGEX = re.compile(
-        r"(?i:[NW]\d+|(NEAR|WITHIN)/\d+)"
+        r"(?i:[NW]\d+|(NEAR|N|WITHIN)/\d+)"
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
 

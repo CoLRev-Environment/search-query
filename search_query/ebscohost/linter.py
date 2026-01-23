@@ -155,7 +155,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 if m:
                     digit = m.group(1)
 
-                if token.value.startswith("NEAR"):
+                if token.value.startswith("NEAR") or token.value.startswith("N/"):
                     details = (
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be N{digit} instead."
@@ -164,6 +164,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
+                        fatal=True
                     )
                     token.value = token.value.replace("NEAR/", "N")
                 if token.value.startswith("WITHIN"):
@@ -175,6 +176,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
+                        fatal=True
                     )
                     token.value = token.value.replace("WITHIN/", "W")
 

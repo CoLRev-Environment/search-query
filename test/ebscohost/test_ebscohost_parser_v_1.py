@@ -581,9 +581,23 @@ def test_linter(query_string: str, messages: list) -> None:
                     "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(8, 14)],
                     "details": "Operator NEAR/2 is not supported by EBSCO. Must be N2 instead.",
+                }
+            ],
+        ),
+        (
+            "arrest* N/2 (record* OR history* OR police)",
+            "",
+            [
+                {
+                    "code": "STRUCT_0004",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": True,
+                    "position": [(8, 11)],
+                    "details": "Operator N/2 is not supported by EBSCO. Must be N2 instead.",
                 }
             ],
         ),
@@ -596,7 +610,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(8, 16)],
                     "details": "Operator WITHIN/2 is not supported by EBSCO. Must be W2 instead.",
                 }
