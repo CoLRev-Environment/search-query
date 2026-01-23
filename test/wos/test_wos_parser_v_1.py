@@ -1102,16 +1102,17 @@ def test_list_parser_case_4() -> None:
                 "position": [(25, 41), (63, 79)],
                 "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
             },
+
         ],
-        "2": [
+        '2': [
             {
-                "code": "QUALITY_0006",
-                "label": "potential-wildcard-use",
-                "message": "Potential wildcard use",
-                "is_fatal": False,
-                "position": [(88, 100), (104, 113), (117, 127)],
-                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m",
-            }
+                'code': 'QUALITY_0006',
+                'details': 'Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                'is_fatal': False,
+                'label': 'potential-wildcard-use',
+                'message': 'Potential wildcard use',
+                'position': [(88, 100), (104, 113), (117, 127)],
+            },
         ],
     }
 
@@ -1156,15 +1157,23 @@ def test_list_parser_case_6() -> None:
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
         -1: [],
-        "3": [
+        "1": [
             {
                 "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
-                "position": [(319, 321)],
+                "position": [(110, 112)],
                 "details": "",
-            }
+            },
+            {
+                'code': 'QUALITY_0006',
+                'details': 'Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
+                'is_fatal': False,
+                'label': 'potential-wildcard-use',
+                'message': 'Potential wildcard use',
+                'position': [(83, 88), (92, 98)],
+            },
         ],
         "2": [
             {
@@ -1176,23 +1185,15 @@ def test_list_parser_case_6() -> None:
                 "details": "",
             }
         ],
-        "1": [
+        "3": [
             {
                 "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
-                "position": [(110, 112)],
+                "position": [(319, 321)],
                 "details": "",
-            },
-            {
-                "code": "QUALITY_0006",
-                "label": "potential-wildcard-use",
-                "message": "Potential wildcard use",
-                "is_fatal": False,
-                "position": [(83, 88), (92, 98)],
-                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m",
-            },
+            }
         ],
     }
 

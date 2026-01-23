@@ -1169,8 +1169,6 @@ class QueryStringLinter:
 
             redundant_terms = []
             for term_a in terms:
-                if not term_a.field:
-                    continue
                 for term_b in terms:
                     if (
                         term_a == term_b
@@ -1179,16 +1177,13 @@ class QueryStringLinter:
                     ):
                         continue
 
-                    if not term_b.field:
-                        continue
-
-                    field_a = term_a.field.value
-                    field_b = term_b.field.value
+                    field_a = term_a.field.value if term_a.field else None
+                    field_b = term_b.field.value if term_b.field else None
 
                     if field_a != field_b:
                         continue
 
-                    if exact_fields and exact_fields.fullmatch(field_a):
+                    if field_a and exact_fields and exact_fields.fullmatch(field_a):
                         continue
 
                     if term_a.value == term_b.value or (
@@ -1301,67 +1296,85 @@ class QueryStringLinter:
             return
 
         if term_field_query.value == "OR" and term_field_query.operator:
-            # TODO : consider search-fields!
-            term_objects = [
-                child for child in term_field_query.children if child.is_term()
-            ]
-            terms = [
-                x.value.replace('"', "")
-                for x in term_field_query.children
-                if x.is_term()
-            ]
-            stemmed_all = [
-                _naive_stem(term.value.replace('"', ""))
-                for term in term_field_query.children
-                if term.is_term() and " " not in term.value
-            ]
-            stemmed_matching_multiple_terms = [
-                s for s in stemmed_all if stemmed_all.count(s) > 1
-            ]
-            if len(stemmed_matching_multiple_terms) > 1:
-                # assign terms and stemmed
+            term_object_groups = defaultdict(list)
+
+            for child in term_field_query.children:
+                if not child.is_term():
+                    continue
+
+                # Group terms by search field.
+                key = (
+                    child.field.value
+                    if child.field is not None
+                    else None
+                )
+                term_object_groups[key].append(child)
+
+            term_object_groups = list(term_object_groups.values())
+            for term_objects in term_object_groups:
                 terms = [
-                    t
-                    for t in terms
-                    if any(t.startswith(c) for c in stemmed_matching_multiple_terms)
+                    x.value.replace('"', "")
+                    for x in term_objects
                 ]
-                stemmed_terms = list(set(stemmed_matching_multiple_terms))
-                # drop longer stemmed_terms
-                i = 0
-                while i < len(stemmed_terms):
-                    if any(
-                            stemmed_terms[i].startswith(s) and s != stemmed_terms[i] for s in stemmed_terms
-                    ):
-                        stemmed_terms.pop(i)
-                    else:
-                        i += 1
-                for stemmed in stemmed_terms:
-                    matching_terms = [
-                        term.replace('"', "")
-                        for term in terms
-                        if term.startswith(stemmed)
+                stemmed_all = [
+                    _naive_stem(term.value.replace('"', ""))
+                    for term in term_objects
+                    if " " not in term.value
+                ]
+                stemmed_matching_multiple_terms = [
+                    s for s in stemmed_all if stemmed_all.count(s) > 1
+                ]
+                if len(stemmed_matching_multiple_terms) > 1:
+                    # assign terms and stemmed
+                    terms = [
+                        t
+                        for t in terms
+                        if any(t.startswith(c) for c in stemmed_matching_multiple_terms)
                     ]
-                    if not matching_terms:
-                        continue
-                    positions = [
-                        c.position
-                        for c in term_objects
-                        if c.value.replace('"', "") in matching_terms
-                    ]
-                    stemmed = stemmed.replace('"', "")
-                    # If all terms stem to the same word, we can use a wildcard
-                    # to replace the OR-terms with a single term.
-                    self.add_message(
-                        QueryErrorCode.POTENTIAL_WILDCARD_USE,
-                        positions=positions,  # type: ignore
-                        details=(
-                            "Multiple terms connected with OR stem to the same word. "
-                            "Use a wildcard instead.\n"
-                            f"Replace {Colors.RED}{' OR '.join(matching_terms)}{Colors.END} with "
-                            f"{Colors.GREEN}{stemmed}*{Colors.END}"
-                        ),
-                        fatal=False,
-                    )
+                    stemmed_terms = list(set(stemmed_matching_multiple_terms))
+                    # drop longer stemmed_terms
+                    i = 0
+                    while i < len(stemmed_terms):
+                        if any(
+                                stemmed_terms[i].startswith(s) and s != stemmed_terms[i] for s in stemmed_terms
+                        ):
+                            stemmed_terms.pop(i)
+                        else:
+                            i += 1
+                    for stemmed in stemmed_terms:
+                        if len(stemmed) <= 3:
+                            continue
+                        matching_terms = [
+                            term.replace('"', "")
+                            for term in terms
+                            if term.startswith(stemmed)
+                        ]
+                        non_exact_matches = [
+                            term
+                            for term in matching_terms
+                            if term != stemmed
+                        ]
+                        if not non_exact_matches:
+                            continue
+                        positions = [
+                            c.position
+                            for c in term_objects
+                            if c.value.replace('"', "") in matching_terms
+                        ]
+                        stemmed = stemmed.replace('"', "")
+                        # If all terms stem to the same word, we can use a wildcard
+                        # to replace the OR-terms with a single term.
+                        self.add_message(
+                            QueryErrorCode.POTENTIAL_WILDCARD_USE,
+                            positions=positions,  # type: ignore
+                            details=(
+                                "Multiple terms connected with OR stem to the same word. "
+                                "Use a wildcard instead.\n"
+                                f"Replace {Colors.RED}{' OR '.join(matching_terms)}{Colors.END} with "
+                                f"{Colors.GREEN}{stemmed}*{Colors.END}"
+                            ),
+                            fatal=False,
+                        )
 
         for child in term_field_query.children:
             self._check_for_wildcard_usage(child)

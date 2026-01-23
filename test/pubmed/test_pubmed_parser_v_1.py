@@ -905,6 +905,11 @@ def test_pubmed_invalid_token_sequences(
                 },
             ]
         ),
+        (
+            'fog[tiab] OR fogs[tiab] OR foggy[tiab]',
+            "",
+            []
+        ),
     ],
 )
 def test_linter(

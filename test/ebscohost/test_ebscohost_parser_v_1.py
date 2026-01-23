@@ -420,6 +420,23 @@ def test_invalid_token_sequences(
             []
         ),
         (
+            'TI thorac* OR AB thorac*',
+            []
+        ),
+        (
+            'thorac* OR thorac*',
+            [
+                {
+                    'code': 'QUALITY_0005',
+                    'details': 'Term thorac* is contained multiple times i.e., redundantly.',
+                    'is_fatal': False,
+                    'label': 'redundant-term',
+                    'message': 'Redundant term in the query',
+                    'position': [(0, 7), (11, 18)],
+                },
+            ]
+        ),
+        (
           '"hearing difficult*" OR language barrier*" OR "digital literacy"',
             [
                 {
@@ -478,7 +495,7 @@ def test_invalid_token_sequences(
                     'position': [(20, 29)],
                 },
             ]
-        )
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
