@@ -405,7 +405,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 continue
 
-            nr_of_terms = len(search_phrase_token.value.strip('"').split())
+            value = search_phrase_token.value.strip('"').replace('-', ' ')
+            nr_of_terms = len(value.split())
             if nr_of_terms < 2 or not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'

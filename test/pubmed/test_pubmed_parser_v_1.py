@@ -522,6 +522,11 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
+            '"VLBW-I"[Title/Abstract:~1]',
+            "",
+            []
+        ),
+        (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
             "Title",
             [
