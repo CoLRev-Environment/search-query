@@ -105,6 +105,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
+        if self.has_fatal_errors():
+            return self.tokens
 
         # No tokens marked as unknown token-type
         self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.CHARACTER_REPLACEMENT)
@@ -138,6 +140,23 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 f"'{match.group(0)}' is invalid.",
                 fatal=True,
             )
+
+    def _handle_unparsed_segment(self, *, start: int, end: int) -> None:
+        segment = self.query_str[start:end]
+        if not segment.strip():
+            return
+
+        if '[' in segment.strip() or ']' in segment.strip():
+            details = f"Unbalanced search field bracket."
+        else:
+            details = f"Unparsed segment: '{segment.strip()}'"
+
+        self.add_message(
+            QueryErrorCode.TOKENIZING_FAILED,
+            positions=[(start, end)],
+            details=details,
+            fatal=True,
+        )
 
     def _format_invalid_char_details(self, char, value: str) -> str:
         return (
@@ -494,7 +513,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
                     details=f"Search field {token.value} is not supported and will be ignored by PubMed.",
-                    fatal=False,
+                    fatal=True,
                 )
                 token.value = "[all]"
 

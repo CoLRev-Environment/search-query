@@ -93,6 +93,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
+        if self.has_fatal_errors():
+            return self.tokens
+
         self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.EBSCO_INVALID_CHARACTER)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
@@ -204,7 +207,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             token_type = token.type
             prev_type = self.tokens[i - 1].type
 
-            if self.tokens[i - 1].value == '"' or token.value == '"': # Do not consider a single " for invalid token sequences (already handled by unbalanced-quote validation)
+            # Do not consider a single " or a misplaced wildcard for invalid token sequences (already handled by other validation methods)
+            if self.tokens[i - 1].value == '"' or token.value.lstrip('*') in '" ':
                 continue
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:

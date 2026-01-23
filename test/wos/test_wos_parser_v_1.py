@@ -260,7 +260,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 },
                 {
                     "code": "PARSE_0004",
@@ -289,7 +289,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 10)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 }
             ],
         ),
@@ -310,7 +310,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 },
                 {
                     "code": "PARSE_0002",
@@ -331,7 +331,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 },
                 {
                     "code": "PARSE_0004",
@@ -470,7 +470,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 }
             ],
         ),
@@ -483,7 +483,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 15)],
-                    "details": "Missing operator between terms",
+                    "details": "Missing operator between terms.",
                 }
             ]
         ),
@@ -760,7 +760,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             [
                 {
                     'code': 'PARSE_0004',
-                    'details': 'Missing operator between terms',
+                    'details': 'Missing operator between terms.',
                     'is_fatal': True,
                     'label': 'invalid-token-sequence',
                     'message': 'The sequence of tokens is invalid.',

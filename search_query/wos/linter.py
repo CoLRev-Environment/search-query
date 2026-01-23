@@ -36,7 +36,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
-    INVALID_CHARACTERS = "@%^~\\<>{}()[]#"
+    INVALID_CHARACTERS = "@%^~\\<>{}()[]#+"
 
     PLATFORM: PLATFORM = PLATFORM.WOS
 
@@ -104,11 +104,6 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
-        self.check_invalid_token_sequences()
-        self.check_unbalanced_parentheses()
-        self.check_unbalanced_quotes()
-        self._print_unequal_precedence_warning()
-        self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens
 
@@ -117,6 +112,14 @@ class WOSQueryStringLinter(QueryStringLinter):
         )
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
+
+        self.check_invalid_token_sequences()
+        self.check_unbalanced_parentheses()
+        self.check_unbalanced_quotes()
+        self._print_unequal_precedence_warning()
+        self.check_operator_capitalization()
+        if self.has_fatal_errors():
+            return self.tokens
 
         self.check_general_field()
         self.check_missing_fields()
@@ -316,7 +319,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
                     fatal=True,
-                    details="Missing operator between terms",
+                    details="Missing operator between terms.",
                 )
                 continue
 

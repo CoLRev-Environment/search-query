@@ -611,7 +611,7 @@ def test_pubmed_invalid_token_sequences(
                     "code": "FIELD_0001",
                     "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(9, 13)],
                     "details": "Search field [ab] is not supported and will be ignored by PubMed.",
                 }
@@ -642,25 +642,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": True,
                     "position": [(0, 3)],
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
-                },
-                {
-                    'code': 'PUBMED_0002',
-                    'details': "Invalid character '=' in search term 'TI=' will be "
-                    "replaced with whitespace.\n"
-                    'See PubMed character conversions: '
-                    'https://pubmed.ncbi.nlm.nih.gov/help/',
-                    'is_fatal': False,
-                    'label': 'character-replacement',
-                    'message': 'Character replacement',
-                    'position': [(0, 3)],
-                },
-                {
-                    'code': 'PARSE_0004',
-                    'details': 'Missing operator between terms',
-                    'is_fatal': True,
-                    'label': 'invalid-token-sequence',
-                    'message': 'The sequence of tokens is invalid.',
-                    'position': [(0, 12)],
                 },
             ],
         ),
@@ -1005,7 +986,7 @@ def test_linter(
                     "code": "FIELD_0001",
                     "label": "field-unsupported",
                     "message": "Search field is not supported for this database",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(7, 13)],
                     "details": "Search field [tldr] is not supported and will be ignored by PubMed.",
                 }
