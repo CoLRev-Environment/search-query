@@ -599,7 +599,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(13, 16)],
-                    "details": "Search field IY= at position (13, 16) is not supported. Supported fields for PLATFORM.WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
+                    "details": "Search field IY= at position (13, 16) is not supported. Supported fields for WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
                 }
             ],
         ),
@@ -811,7 +811,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "Search field DI= at position (0, 3) is not supported. Supported fields for PLATFORM.WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
+                    "details": "Search field DI= at position (0, 3) is not supported. Supported fields for WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
                 },
                 {
                     "code": "LINT_2001",

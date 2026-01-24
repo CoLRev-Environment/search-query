@@ -288,7 +288,7 @@ class QueryStringLinter:
                 if query.field.position:
                     pos_info = f" at position {query.field.position}"
                 details = f"Search field {query.field}{pos_info} is not supported."
-                details += f" Supported fields for {self.PLATFORM}: "
+                details += f" Supported fields for {self.PLATFORM.value.upper()}: "
                 details += f"{self.VALID_fieldS_REGEX.pattern}"
                 self.add_message(
                     QueryErrorCode.FIELD_UNSUPPORTED,
