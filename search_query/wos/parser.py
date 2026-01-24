@@ -36,7 +36,7 @@ class WOSParser(QueryStringParser):
 
     # 3) fallback term:
     # exclude structural WOS characters (space, parens, equals, quotation marks).
-    PERMISSIVE_TERM_REGEX = re.compile(r'[^\s()="]+')
+    PERMISSIVE_TERM_REGEX = re.compile(r'[^\s()"]+')
 
     # build the combined pattern:
     # fields → logic/proximity → parens → quotes → term

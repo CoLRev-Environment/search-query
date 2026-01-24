@@ -36,7 +36,7 @@ class WOSQueryStringLinter(QueryStringLinter):
 
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
 
-    INVALID_CHARACTERS = "@%^~\\<>{}()[]#+"
+    INVALID_CHARACTERS = "@%^~\\<>{}()[]#+="
 
     PLATFORM: PLATFORM = PLATFORM.WOS
 
