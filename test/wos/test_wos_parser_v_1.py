@@ -137,6 +137,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+            '(TS=(term1) AND (TS=(term2) OR (term3)))',
+            [
+                {
+                    'code': 'FIELD_0002',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'field-missing',
+                    'message': 'Search field is missing',
+                    'position': [(32, 37)],
+                },
+            ]
+        ),
+        (
+            '(TS=(term1)) AND TS=(term2 OR term3)',
+            []
+        ),
+        (
             r"collaborat\* OR assistance",
             [
                 {

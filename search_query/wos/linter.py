@@ -173,30 +173,40 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_missing_fields(
         self,
     ) -> None:
-        """Check for missing search fields."""
+        """Check for terms without search fields.
 
+        For a TERM token to be considered fielded it must:
+        - immediately follow a search FIELD token
+        - appear inside parentheses group that immediately follows a FIELD token
+        """
         missing_positions = []
 
-        first_token = self.tokens[0]
-        if first_token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
-            missing_positions.append(first_token.position)
+        prev_token_type = None
+        depth = 0
 
-        previous_token = self.tokens[0].type
+        in_field_group = False
+        field_group_depth = None
 
-        # iterate over remaining tokens on the first level
-        level = 0
-        for token in self.tokens[1:]:
+        for token in self.tokens:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                level += 1
+                depth += 1
+                if not in_field_group and prev_token_type == TokenTypes.FIELD:
+                    # Enter fielded parentheses group
+                    in_field_group = True
+                    field_group_depth = depth
+
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                level -= 1
-            elif (
-                level == 0
-                and token.type == TokenTypes.TERM
-                and previous_token != TokenTypes.FIELD
-            ):
+                if in_field_group and field_group_depth == depth:
+                    # Exit fielded parentheses group
+                    in_field_group = False
+                    field_group_depth = None
+                depth -= 1
+
+            elif token.type == TokenTypes.TERM and not in_field_group and prev_token_type != TokenTypes.FIELD:
+                # Term is not in fielded group and has no preceding FIELD token
                 missing_positions.append(token.position)
-            previous_token = token.type
+
+            prev_token_type = token.type
 
         if missing_positions:
             self.add_message(
