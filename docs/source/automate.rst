@@ -8,6 +8,14 @@ Search-query can be used to automate different steps of the search process, such
 To run API searches, it is often necessary to represent a query in the form of a URL as opposed to a query string.
 Using the Crossref API as an example, the following illustrates how to construct such a URL to retrieve and store records.
 
+.. tip::
+
+    The example below requires the `colrev` package to be installed. You can install it via pip:
+
+   .. code-block:: bash
+
+        pip install colrev
+
 .. code-block:: python
    :linenos:
 
@@ -17,7 +25,7 @@ Using the Crossref API as an example, the following illustrates how to construct
    from colrev.writer.write_utils import write_file
 
    from search_query.constants import Fields, Operators
-   from search_query.or_query import OrQuery
+   from search_query.query_or import OrQuery
    from search_query.search_file import SearchFile
 
    def to_crossref_url(query):
@@ -42,7 +50,7 @@ Using the Crossref API as an example, the following illustrates how to construct
        query = OrQuery(["microsourcing", "lululemon"], field="title")
 
        url = to_crossref_url(query)
-       api_crossref = crossref_api.CrossrefAPI(params={"url": url})
+       api_crossref = crossref_api.CrossrefAPI(url=url)
        records = api_crossref.get_records()
 
        sf = SearchFile(
