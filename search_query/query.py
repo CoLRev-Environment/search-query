@@ -169,9 +169,15 @@ class Query:
     def _set_platform_recursively(self, platform: str) -> None:
         """Set the origin platform for this query node and its children."""
         self._platform = platform
+        self._normalize_field_for_platform()
         for child in self._children:
             # pylint: disable=protected-access
             child._set_platform_recursively(platform)
+
+    def _normalize_field_for_platform(self) -> None:
+        """Normalize field values based on the current platform."""
+        if self._field and self._platform == PLATFORM.GENERIC.value:
+            self._field.value = self._field.value.lower()
 
     @property
     def platform(self) -> str:
@@ -318,6 +324,8 @@ class Query:
     def field(self, sf: typing.Optional[SearchField]) -> None:
         """Set search field property."""
         self._field = copy.deepcopy(sf) if sf else None
+        if self._field and getattr(self, "_platform", None) == PLATFORM.GENERIC.value:
+            self._field.value = self._field.value.lower()
 
     def replace(self, new_query: Query) -> None:
         """Replace this query with a new query in the parent's children list."""
