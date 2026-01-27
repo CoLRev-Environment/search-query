@@ -29,7 +29,7 @@ SYNTAX_GENERIC_MAP = {
 }
 
 YEAR_PUBLISHED_FIELD_REGEX: re.Pattern = re.compile(
-    r"\[dp\]|\[publication date\]|\[pdat\]", re.IGNORECASE
+    r"\[dp\]|\[publication date\]|\[pdat\]|\[Date [-–—] Publication\]", re.IGNORECASE
 )
 
 _RAW_PREPROCESSING_MAP: typing.Dict[str, typing.Union[str, typing.Pattern[str]]] = {

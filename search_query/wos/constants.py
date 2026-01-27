@@ -22,6 +22,7 @@ SYNTAX_GENERIC_MAP = {
         Fields.KEYWORDS_PLUS,
     },
     "LA=": {Fields.LANGUAGE},
+    "DT=": {Fields.PUBLICATION_TYPE},
     "PY=": {Fields.YEAR_PUBLICATION},
     "AD=": {Fields.ADDRESS},
     "AI=": {Fields.AUTHOR_IDENTIFIERS},
@@ -66,6 +67,7 @@ DOI_FIELD_REGEX: re.Pattern = re.compile(r"do=|doi=", re.IGNORECASE)
 _RAW_PREPROCESSING_MAP = {
     "AB=": r"ab=|abstract=",
     "LA=": r"la=|language=",
+    "DT=": r"dt=|document type=",
     "AD=": r"ad=|address=",
     "ALL=": r"all=|all fields=",
     "AI=": r"ai=|author identifiers=",
@@ -178,7 +180,4 @@ def field_general_to_syntax(
 ) -> str:
     """Map the general search field to the standard syntax of WOS."""
     field = field.strip()
-    if field in field_GENERAL_TO_SYNTAX_MAP:
-        return field_GENERAL_TO_SYNTAX_MAP[field]
-
-    raise ValueError(f"Search field {field} not supported by WOS")  # pragma: no cover
+    return field_GENERAL_TO_SYNTAX_MAP.get(field)

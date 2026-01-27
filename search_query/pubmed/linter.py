@@ -32,6 +32,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
     PROXIMITY_REGEX = re.compile(r"^\[(.+):~(.*)\]$")
     PLATFORM: PLATFORM = PLATFORM.PUBMED
 
+    INVALID_CHARACTERS = "!#$%+.;<>=?\\^_{}~'’()[]"
+
     VALID_TOKEN_SEQUENCES: typing.Dict[TokenTypes, typing.List[TokenTypes]] = {
         TokenTypes.PARENTHESIS_OPEN: [
             TokenTypes.TERM,
@@ -63,12 +65,12 @@ class PubmedQueryStringLinter(QueryStringLinter):
     YEAR_VALUE_REGEX = re.compile(
         r'^"?'
         r"(?P<year>\d{4})"
-        r"(?P<month>\/(0[1-9]|1[0-2]))?"
-        r"(?P<day>\/(0[1-9]|[12]\d|3[01]))?"
+        r"(?P<month>\/(0?[1-9]|1[0-2]))?"
+        r"(?P<day>\/(0?[1-9]|[12]\d|3[01]))?"
         r"(\:"
         r"(?P<year2>(\d{4})"
-        r"(?P<month2>\/(0[1-9]|1[0-2]))?"
-        r"(?P<day2>\/(0[1-9]|[12]\d|3[01]))?))?"
+        r"(?P<month2>\/(0?[1-9]|1[0-2]))?"
+        r"(?P<day2>\/(0?[1-9]|[12]\d|3[01]))?))?"
         r'"?$',
         re.VERBOSE,
     )
@@ -103,11 +105,15 @@ class PubmedQueryStringLinter(QueryStringLinter):
 
         self.check_invalid_syntax()
         self.check_missing_tokens()
+        if self.has_fatal_errors():
+            return self.tokens
 
         # No tokens marked as unknown token-type
+        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.CHARACTER_REPLACEMENT)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
-        self.add_artificial_parentheses_for_operator_precedence()
+        self.check_unbalanced_quotes()
+        self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens
@@ -135,12 +141,35 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def _handle_unparsed_segment(self, *, start: int, end: int) -> None:
+        segment = self.query_str[start:end]
+        if not segment.strip():
+            return
+
+        if '[' in segment.strip() or ']' in segment.strip():
+            details = f"Unbalanced search field bracket."
+        else:
+            details = f"Unparsed segment: '{segment.strip()}'"
+
+        self.add_message(
+            QueryErrorCode.TOKENIZING_FAILED,
+            positions=[(start, end)],
+            details=details,
+            fatal=True,
+        )
+
+    def _format_invalid_char_details(self, char, value: str) -> str:
+        return (
+            f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace.\n"
+            "See PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/"
+        )
+
     def check_character_replacement_in_term(self, query: Query) -> None:
         """Check a search term for invalid characters"""
         # https://pubmed.ncbi.nlm.nih.gov/help/
         # PubMed character conversions
         # pylint: disable=duplicate-code
-        invalid_characters = "!#$%+.;<>=?\\^_{}~'()[]"
+        invalid_characters = self.INVALID_CHARACTERS
 
         if query.is_term():
             # Iterate over term to identify invalid characters
@@ -233,14 +262,11 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details = (
-                    "Missing operator between "
-                    f'"{self.tokens[i - 1].value} {token.value}"'
-                )
+                details="Missing operator between terms"
                 positions = [
                     (
                         self.tokens[i - 1].position[0],
-                        token.position[1],
+                        token.position[1]
                     )
                 ]
 
@@ -263,150 +289,70 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
-    def _print_unequal_precedence_warning(self, index: int) -> None:
-        unequal_precedence_operators = self._get_unequal_precedence_operators(
-            self.tokens[index:]
-        )
-        if not unequal_precedence_operators:
-            return
+    def _print_unequal_precedence_warning(self) -> None:
+        """Warn user about unequal precedence operators in the query string."""
+        tokens = self.tokens
 
-        precedence_list = [o.value for o in unequal_precedence_operators]
-        precedence_lines = []
-        for idx, op in enumerate(precedence_list):
-            if idx == 0:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} "
-                    f"is evaluated first "
-                    f"because it is the leftmost operator"
-                )
-            elif idx == len(precedence_list) - 1:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} "
-                    f"is evaluated last "
-                    f"because it is the rightmost operator"
-                )
+        for index, token in enumerate(tokens):
+            unequal_operators: typing.List[Token] = []
+            if index == 0:
+                ops = self._get_scoped_operators(tokens, start=index)
+            elif token.type == TokenTypes.PARENTHESIS_OPEN:
+                ops = self._get_scoped_operators(tokens, start=index + 1)
             else:
-                precedence_lines.append(
-                    f"- {Colors.ORANGE}{op}{Colors.END} " f"is evaluated next"
-                )
-
-        precedence_info = "\n".join(precedence_lines)
-
-        details = (
-            "The query uses multiple operators, but without parentheses "
-            "to make the\nintended logic explicit. PubMed evaluates queries "
-            "strictly from left to\nright without applying traditional "
-            "operator precedence. This can lead to\nunexpected "
-            "interpretations of the query.\n\n"
-            "Specifically:\n"
-            f"{precedence_info}\n\n"
-            "To fix this, search-query adds artificial parentheses around\noperators "
-            "based on their left-to-right position in the query.\n\n"
-        )
-
-        self.add_message(
-            QueryErrorCode.IMPLICIT_PRECEDENCE,
-            positions=[o.position for o in unequal_precedence_operators],
-            details=details,
-        )
-
-    def add_artificial_parentheses_for_operator_precedence(
-        self,
-        index: int = 0,
-        output: typing.Optional[list] = None,
-    ) -> tuple[int, list[Token]]:
-        """
-        Adds artificial parentheses with position (-1, -1)
-        to enforce PubMed operator precedence.
-        """
-        if output is None:
-            output = []
-        # Value of operator
-        value = 0
-        # Value of previous operator
-        previous_value = -1
-        # Added artificial parentheses
-        art_par = 0
-        # Start index
-        start_index = index
-
-        self._print_unequal_precedence_warning(index)
-
-        while index < len(self.tokens):
-            # Forward iteration through tokens
-
-            if self.tokens[index].type == TokenTypes.PARENTHESIS_OPEN:
-                output.append(self.tokens[index])
-                index += 1
-                index, output = self.add_artificial_parentheses_for_operator_precedence(
-                    index, output
-                )
                 continue
 
-            if self.tokens[index].type == TokenTypes.PARENTHESIS_CLOSED:
-                output.append(self.tokens[index])
-                index += 1
-                # Add opening parentheses in case there are missing ones
-                if art_par < 0:
-                    while art_par < 0:
-                        output.insert(
-                            start_index,
-                            Token(
-                                value="(",
-                                type=TokenTypes.PARENTHESIS_OPEN,
-                                position=(-1, -1),
-                            ),
-                        )
-                        art_par += 1
-                return index, output
+            prev_value = -1
+            prev_operator = None
+            for op in ops:
+                value = self.get_precedence(op.value.upper())
+                if prev_value not in [value, -1]:
+                    if not unequal_operators and prev_operator:
+                        unequal_operators.append(prev_operator)
+                    unequal_operators.append(op)
+                prev_value = value
+                prev_operator = op
 
-            if self.tokens[index].type in [
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.PROXIMITY_OPERATOR,
-            ]:
-                value = self.get_precedence(self.tokens[index].value.upper())
+            if not unequal_operators:
+                continue
 
-                if previous_value in (value, -1):
-                    # Same precedence → just add to output
-                    output.append(self.tokens[index])
-                    previous_value = value
-
-                elif value != previous_value:
-                    # Different precedence → close parenthesis
-                    output.append(
-                        Token(
-                            value=")",
-                            type=TokenTypes.PARENTHESIS_CLOSED,
-                            position=(-1, -1),
-                        )
+            precedence_list = [o.value for o in unequal_operators]
+            precedence_lines = []
+            for idx, op in enumerate(precedence_list):
+                if idx == 0:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} "
+                        f"is evaluated first "
+                        f"because it is the leftmost operator"
                     )
-                    previous_value -= 1
-                    art_par -= 1
-                    output.append(self.tokens[index])
-                    previous_value = value
+                elif idx == len(precedence_list) - 1:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} "
+                        f"is evaluated last "
+                        f"because it is the rightmost operator"
+                    )
+                else:
+                    precedence_lines.append(
+                        f"- {Colors.ORANGE}{op}{Colors.END} " f"is evaluated next"
+                    )
 
-                index += 1
-                continue
+            precedence_info = "\n".join(precedence_lines)
 
-            # Default: search terms, fields, etc.
-            output.append(self.tokens[index])
-            index += 1
+            details = (
+                "The query uses multiple operators, but without parentheses "
+                "to make the\nintended logic explicit. PubMed evaluates queries "
+                "strictly from left to\nright without applying traditional "
+                "operator precedence. This can lead to\nunexpected "
+                "interpretations of the query.\n\n"
+                "Specifically:\n"
+                f"{precedence_info}\n\n"
+            )
 
-        # Add opening parentheses in case there are missing ones
-        if art_par < 0:
-            while art_par < 0:
-                output.insert(
-                    0,
-                    Token(
-                        value="(", type=TokenTypes.PARENTHESIS_OPEN, position=(-1, -1)
-                    ),
-                )
-                art_par += 1
-
-        if index == len(self.tokens):
-            self.flatten_redundant_artificial_nesting(output)
-
-        return index, output
+            self.add_message(
+                QueryErrorCode.IMPLICIT_PRECEDENCE,
+                positions=[o.position for o in unequal_operators],
+                details=details,
+            )
 
     def check_invalid_wildcard(self, query: Query) -> None:
         """Check search term for invalid wildcard *"""
@@ -459,7 +405,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 continue
 
-            nr_of_terms = len(search_phrase_token.value.strip('"').split())
+            value = search_phrase_token.value.strip('"').replace('-', ' ')
+            nr_of_terms = len(value.split())
             if nr_of_terms < 2 or not (
                 search_phrase_token.value[0] == '"'
                 and search_phrase_token.value[-1] == '"'
@@ -510,6 +457,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_year_format(child)
 
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
+
     def validate_query_tree(self, query: Query) -> None:
         """Validate the query tree"""
         # Note: search fields are not yet translated.
@@ -517,15 +467,14 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_invalid_wildcard(query)
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_character_replacement_in_term(query)
 
         self.check_operators_with_fields(query)
         self._check_unnecessary_nesting(query)
         self.check_year_format(query)
+        self._check_date_filters_in_subquery(query)
+        self._check_journal_filters_in_subquery(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self._check_redundant_terms(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
         # mh is not matched exactly, terms can be redundant:
@@ -537,7 +486,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_platform_query(self, query: Query) -> None:
         """Validate the query for the PubMed platform"""
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
         self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
     def syntax_str_to_generic_field_set(self, field_value: str) -> set:
@@ -564,9 +513,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 self.add_message(
                     QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
-                    details=f"Search field {token.value} is not supported.",
+                    details=f"Search field {token.value} is not supported and will be ignored by PubMed.",
                     fatal=True,
                 )
+                token.value = "[all]"
 
     def check_implicit_fields(self) -> None:
         """Check the general search field"""

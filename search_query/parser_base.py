@@ -139,29 +139,94 @@ class QueryStringParser(QueryParserBase, ABC):
             assert virtual_position == token.position[1]
             last_end = end
 
+
+    def _has_closing_quote(self, index: int) -> bool:
+        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
+            return False
+
+        open_paren = 0
+        index += 1
+        for token in self.tokens[index:]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                open_paren += 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                if open_paren <= 0:
+                    # Boundary: unmatched local closing paren → likely unbalanced quote
+                    break
+                open_paren -= 1
+            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR] and token.value.isupper():
+                # Boundary: upper case operator → likely unbalanced quote
+                break
+            if token.type == TokenTypes.FIELD:
+                # Boundary: search field -> likely unbalanced quote
+                break
+            if token.type == TokenTypes.QUOTATION_MARK:
+                if open_paren != 0:
+                    # Boundary: unmatched local opening paren → likely unbalanced quote
+                    break
+                # Matching closing quote found
+                return True
+
+        return False
+
+
     def combine_subsequent_terms(self) -> None:
-        """Combine all consecutive TERM tokens into one."""
+        """Combine all consecutive TERM tokens into one. Combine contents inside quotation marks into single TERM token."""
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
             if self.tokens[i].type == TokenTypes.TERM:
-                start = self.tokens[i].position[0]
-                value_parts = [self.tokens[i].value]
-                end = self.tokens[i].position[1]
+                value = self.tokens[i].value
+                start, end = self.tokens[i].position
                 i += 1
-                while i < len(self.tokens) and self.tokens[i].type == TokenTypes.TERM:
-                    value_parts.append(self.tokens[i].value)
-                    end = self.tokens[i].position[1]
-                    i += 1
+                while i < len(self.tokens):
+                    if self.tokens[i].type == TokenTypes.TERM:
+                        value += " " * (self.tokens[i].position[0] - end) # Preserve original whitespace amount between terms
+                        value += self.tokens[i].value
+                        end = self.tokens[i].position[1]
+                        i += 1
+                    elif self.tokens[i].type == TokenTypes.QUOTATION_MARK and not self._has_closing_quote(i):
+                        # Unbalanced closing quote found -> add to the end of latest search term
+                        value += " " * (self.tokens[i].position[0] - end)
+                        value += self.tokens[i].value
+                        end = self.tokens[i].position[1]
+                        i += 1
+                        break
+                    else:
+                        break
                 combined_token = Token(
-                    value=" ".join(value_parts),
+                    value=value,
                     type=TokenTypes.TERM,
                     position=(start, end),
                 )
-                combined_tokens.append(combined_token)
-            else:
-                combined_tokens.append(self.tokens[i])
+
+            elif self.tokens[i].type == TokenTypes.QUOTATION_MARK:
+                search_phrase_mode = self._has_closing_quote(i)
+                value = self.tokens[i].value
+                start, end = self.tokens[i].position
                 i += 1
+                while i < len(self.tokens):
+                    if self.tokens[i].type == TokenTypes.TERM or search_phrase_mode:
+                        value += " " * (self.tokens[i].position[0] - end)
+                        value += self.tokens[i].value
+                        end = self.tokens[i].position[1]
+                        i += 1
+                        if self.tokens[i - 1].type == TokenTypes.QUOTATION_MARK:
+                            # Stop if closing quote is found.
+                            break
+                    else:
+                        break
+                combined_token = Token(
+                    value=value,
+                    type=TokenTypes.TERM,
+                    position=(start, end),
+                )
+
+            else:
+                combined_token = self.tokens[i]
+                i += 1
+            combined_tokens.append(combined_token)
 
         self.tokens = combined_tokens
 
@@ -265,53 +330,55 @@ class QueryListParser(QueryParserBase):
             }
             previous += len(line) + 1
 
+
     def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
-        """Tokenize the query string into list-references and logic operator tokens."""
-
+        """Tokenize the query string into list-references and non-list-reference contents."""
         tokens = []
-        pos = 0
-        length = len(query_str)
+        last_end = 0
 
-        while pos < length:
-            # Skip any whitespace
-            while pos < length and query_str[pos].isspace():
-                pos += 1
+        for match in re.finditer(self.LIST_ITEM_REFERENCE, query_str):
+            gap = query_str[last_end:match.start()]
+            gap_l = gap.lstrip()
+            gap_r = gap.rstrip()
 
-            if pos >= length:
-                break
-
-            match = self.LIST_ITEM_REFERENCE.match(query_str, pos)
-            if match:
-                start, end = match.span()
+            if gap_l:
+                start = last_end + (len(gap) - len(gap_l))
+                end = last_end + len(gap_r)
                 tokens.append(
                     ListToken(
-                        value=match.group(),
-                        type=OperatorNodeTokenTypes.LIST_ITEM_REFERENCE,
+                        value=gap_l.rstrip(),
+                        type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
                         level=node_nr,
                         position=(start, end),
                     )
                 )
-                pos = end
-            else:
-                # Collect non-space, non-list-ref characters
-                start = pos
-                while (
-                    pos < length
-                    and not query_str[pos].isspace()
-                    and not self.LIST_ITEM_REFERENCE.match(query_str, pos)
-                ):
-                    pos += 1
 
-                if start != pos:
-                    value = query_str[start:pos]
-                    tokens.append(
-                        ListToken(
-                            value=value,
-                            type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
-                            level=node_nr,
-                            position=(start, pos),
-                        )
-                    )
+            tokens.append(
+                ListToken(
+                    value=match.group(),
+                    type=OperatorNodeTokenTypes.LIST_ITEM_REFERENCE,
+                    level=node_nr,
+                    position=(match.start(), match.end()),
+                )
+            )
+
+            last_end = match.end()
+
+        tail = query_str[last_end:]
+        tail_l = tail.lstrip()
+        tail_r = tail.rstrip()
+
+        if tail_l:
+            start = last_end + (len(tail) - len(tail_l))
+            end = last_end + len(tail_r)
+            tokens.append(
+                ListToken(
+                    value=tail_l.rstrip(),
+                    type=OperatorNodeTokenTypes.NON_LIST_ITEM_REFERENCE,
+                    level=node_nr,
+                    position=(start, end),
+                )
+            )
 
         return tokens
 
@@ -345,10 +412,6 @@ class QueryListParser(QueryParserBase):
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
                 query = node_content["node_content"]
                 pos = node_content["content_pos"][0]
-                if query[-1] != ")":
-                    query = f"({query})"
-                    offset = {0: -1, 1: pos, len(query) - 1: -1}
-                    return query, offset
                 return query, {0: pos}
 
             if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
@@ -367,10 +430,13 @@ class QueryListParser(QueryParserBase):
                         resolved_query, nested_pos_dict = resolve_reference(
                             nested_ref_nr
                         )
-                        parts.append(resolved_query)
+                        parts.append(f"({resolved_query})")
+                        local_pos_dict[current_pos] = -1
+                        current_pos += 1
                         for rel_pos, orig_pos in nested_pos_dict.items():
                             local_pos_dict[current_pos + rel_pos] = orig_pos
-                        current_pos += len(resolved_query)
+                        local_pos_dict[current_pos + len(resolved_query)] = -1
+                        current_pos += len(resolved_query) + 1
                     else:
                         parts.append(token.value)
                         token_pos = operator_base_offset + token.position[0]
@@ -386,8 +452,8 @@ class QueryListParser(QueryParserBase):
             return "", {}
 
         # Entry point: find the top-level operator node and resolve it
-        for token_nr in self.query_dict:
-            query_str, offset = resolve_reference(token_nr)
+        top_level_node = max(self.query_dict.keys(), key=int)
+        query_str, offset = resolve_reference(top_level_node)
 
         return query_str, offset
 

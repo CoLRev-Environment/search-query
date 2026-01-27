@@ -119,7 +119,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 Token("treatment", TokenTypes.TERM, (7, 16)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            'Missing operator between "cancer treatment"',
+            'Missing operator between terms',
         ),
         (
             [
@@ -275,29 +275,38 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    "code": "PARSE_0003",
-                    "label": "unbalanced-quotes",
-                    "message": "Quotes are unbalanced in the query",
-                    "is_fatal": True,
-                    "position": [(0, 8)],
-                    "details": "Unbalanced quotes inside term",
-                }
-            ],
-        ),
-        (
-            'eHe"a"l"t"h[ti]',
-            "",
-            [
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator between terms',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [(0, 8)],
+                },
                 {
-                    "code": "PARSE_0003",
-                    "label": "unbalanced-quotes",
-                    "message": "Quotes are unbalanced in the query",
-                    "is_fatal": True,
-                    "position": [(0, 11)],
-                    "details": "Suspicious or excessive quote usage",
-                }
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 6),],
+                },
             ],
         ),
+        # This error no longer applies due to the new unbalanced quote validation.
+        #(
+        #        'eHe"a"l"t"h[ti]',
+        #        "",
+        #        [
+        #            {
+        #                "code": "PARSE_0003",
+        #                "label": "unbalanced-quotes",
+        #                "message": "Quotes are unbalanced in the query",
+        #                "is_fatal": True,
+        #                "position": [(0, 11)],
+        #                "details": "Suspicious or excessive quote usage",
+        #            }
+        #        ],
+        #),
         (
             '("health tracking" OR "remote monitoring")) AND ("mobile application" OR "wearable device")',
             "Title",
@@ -322,7 +331,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Operator changed at the same level (explicit parentheses are recommended)",
                     "is_fatal": False,
                     "position": [(18, 20), (49, 52)],
-                    "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
+                    "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\n",
                 },
                 {
                     "code": "FIELD_0003",
@@ -348,6 +357,17 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
+                    'code': 'PUBMED_0002',
+                    'details': 'Invalid character \'.\' in search term \'"Industry 4.0"\' will be '
+                    'replaced with whitespace.\n'
+                    'See PubMed character conversions: '
+                    'https://pubmed.ncbi.nlm.nih.gov/help/',
+                    'is_fatal': False,
+                    'label': 'character-replacement',
+                    'message': 'Character replacement',
+                    'position': [(28, 29),],
+                },
+                {
                     "code": "FIELD_0003",
                     "label": "field-extracted",
                     "message": "Recommend explicitly specifying the search field in the string",
@@ -362,14 +382,6 @@ def test_pubmed_invalid_token_sequences(
                     "is_fatal": False,
                     "position": [(0, 12), (17, 31)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
-                },
-                {
-                    "code": "PUBMED_0002",
-                    "label": "character-replacement",
-                    "message": "Character replacement",
-                    "is_fatal": False,
-                    "position": [(28, 29)],
-                    "details": "Character '.' in search term will be replaced with whitespace.\nSee PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/)",
                 },
             ],
         ),
@@ -427,7 +439,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(9, 32)],
-                    "details": 'Missing operator between "[tiab] "digital health""',
+                    "details": 'Missing operator between terms',
                 },
             ],
         ),
@@ -441,7 +453,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(41, 43)],
-                    "details": 'Missing operator between ") ("',
+                    "details": 'Missing operator between terms',
                 },
             ],
         ),
@@ -508,6 +520,11 @@ def test_pubmed_invalid_token_sequences(
                     "details": "Proximity operator is not supported: '[sb:~5]' (supported search fields: [tiab], [ti], [ad])",
                 },
             ],
+        ),
+        (
+            '"VLBW-I"[Title/Abstract:~1]',
+            "",
+            []
         ),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
@@ -601,7 +618,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(9, 13)],
-                    "details": "Search field [ab] is not supported.",
+                    "details": "Search field [ab] is not supported and will be ignored by PubMed.",
                 }
             ],
         ),
@@ -632,6 +649,23 @@ def test_pubmed_invalid_token_sequences(
                     "details": "PubMed fields must be enclosed in brackets and after a search term, e.g. robot[TIAB] or monitor[TI]. 'TI=' is invalid.",
                 },
             ],
+        ),
+        (
+            "'(eHealth[tiab] OR mHealth[tiab])",
+            "",
+            [
+                {
+                    'code': 'PUBMED_0002',
+                    'details': "Invalid character \''\' in search term \''\' will be "
+                    'replaced with whitespace.\n'
+                    'See PubMed character conversions: '
+                    'https://pubmed.ncbi.nlm.nih.gov/help/',
+                    'is_fatal': False,
+                    'label': 'character-replacement',
+                    'message': 'Character replacement',
+                    'position': [(0, 1)],
+                },
+            ]
         ),
         (
             "(eHealth OR mHealth)[tiab]",
@@ -712,7 +746,7 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
-            '"Pickwickian Syndrome*"[tiab] OR "Pickwickian Syndrome*"[tiab]',
+            '"Pickwickian Syndrome*"[tiab] OR "Pickwickian Syndrome*"[title/abstract]',
             "",
             [
                 {
@@ -843,6 +877,25 @@ def test_pubmed_invalid_token_sequences(
                 }
             ],
         ),
+        (
+            '"digital health[tiab] OR "eHealth"[tiab]',
+            "",
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 15)],
+                },
+            ]
+        ),
+        (
+            'fog[tiab] OR fogs[tiab] OR foggy[tiab]',
+            "",
+            []
+        ),
     ],
 )
 def test_linter(
@@ -940,7 +993,7 @@ def test_linter(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(7, 13)],
-                    "details": "Search field [tldr] is not supported.",
+                    "details": "Search field [tldr] is not supported and will be ignored by PubMed.",
                 }
             ],
         ),
@@ -1045,6 +1098,7 @@ def test_linter_with_general_field(
             'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
         ),
         ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
+        ('(2019/1/1:2024/2/22[Date - Publication])', "", '2019/1/1:2024/2/22[[Date - Publication]]')
     ],
 )
 def test_parser(query_str: str, field_general: str, expected_parsed: str) -> None:
@@ -1113,23 +1167,24 @@ def test_list_parser_case_3() -> None:
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        -1: [],
-        "1": [
+        -1: [
             {
                 "code": "PARSE_0004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
-                "position": [(106, 112)],
-                "details": 'Missing operator between ") ("',
+                "position": [(-1, -1)],
+                "details": 'Missing operator between terms',
             },
+        ],
+        "1": [
             {
                 "code": "STRUCT_0001",
                 "label": "implicit-precedence",
                 "message": "Operator changed at the same level (explicit parentheses are recommended)",
                 "is_fatal": False,
                 "position": [(33, 35), (67, 70)],
-                "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\nTo fix this, search-query adds artificial parentheses around\noperators based on their left-to-right position in the query.\n\n",
+                "details": "The query uses multiple operators, but without parentheses to make the\nintended logic explicit. PubMed evaluates queries strictly from left to\nright without applying traditional operator precedence. This can lead to\nunexpected interpretations of the query.\n\nSpecifically:\n- \x1b[93mOR\x1b[0m is evaluated first because it is the leftmost operator\n- \x1b[93mAND\x1b[0m is evaluated last because it is the rightmost operator\n\n",
             },
         ],
     }
@@ -1192,4 +1247,19 @@ def test_general_list_parser_4() -> None:
     assert (
         query.to_string()
         == "(Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] OR Distributed leader*[Title/Abstract]) AND (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])"
+    )
+
+
+def test_general_list_parser_5() -> None:
+    query_list = """
+1. Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]
+2. #1 AND "english"[Language]
+3. #2 NOT ("comment"[Publication Type] OR "news"[Publication Type])
+"""
+
+    query = parse(query_list, platform=PLATFORM.PUBMED.value)
+
+    assert (
+        query.to_string()
+        == '((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND "english"[Language]) NOT ("comment"[Publication Type] OR "news"[Publication Type])'
     )

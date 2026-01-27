@@ -15,7 +15,6 @@ from search_query.parser_base import QueryListParser
 from search_query.parser_base import QueryStringParser
 from search_query.query import Query
 from search_query.query import SearchField
-from search_query.query_near import NEARQuery
 from search_query.query_term import Term
 
 # pylint: disable=duplicate-code
@@ -24,13 +23,15 @@ from search_query.query_term import Term
 class EBSCOParser(QueryStringParser):
     """Parser for EBSCO queries."""
 
-    PARENTHESIS_REGEX = re.compile(r"[\(\)]")
-    LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
+    PARENTHESIS_REGEX = re.compile(r"[()]")
+    LOGIC_OPERATOR_REGEX = re.compile(r"(?i:\b(AND|OR|NOT)\b)")
     PROXIMITY_OPERATOR_REGEX = re.compile(
-        r"(N|W)\d+|(NEAR|WITHIN)/\d+", flags=re.IGNORECASE
+        r"(?i:[NW]\d+|(NEAR|N|WITHIN)/\d+)"
     )
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
-    TERM_REGEX = re.compile(r"\"[^\"]*\"|\*?\b[^()\s]+")
+
+    QUOTATION_MARK_REGEX = re.compile(r'"')
+    TERM_REGEX = re.compile(r'[^\s()"]+')
 
     OPERATOR_REGEX = re.compile(
         "|".join([LOGIC_OPERATOR_REGEX.pattern, PROXIMITY_OPERATOR_REGEX.pattern])
@@ -43,6 +44,7 @@ class EBSCOParser(QueryStringParser):
                 LOGIC_OPERATOR_REGEX.pattern,
                 PROXIMITY_OPERATOR_REGEX.pattern,
                 FIELD_REGEX.pattern,
+                QUOTATION_MARK_REGEX.pattern,
                 TERM_REGEX.pattern,
             ]
         )
@@ -75,52 +77,6 @@ class EBSCOParser(QueryStringParser):
             ignore_failing_linter=ignore_failing_linter,
         )
 
-    def combine_subsequent_tokens(self) -> None:
-        """Combine subsequent tokens based on specific conditions."""
-
-        combined_tokens = []
-        i = 0
-
-        while i < len(self.tokens):
-            # Iterate through token list
-            # current_token, current_token_type, position = self.tokens[i]
-
-            if self.tokens[i].type == TokenTypes.TERM:
-                # Filter out TERM
-                start_pos = self.tokens[i].position[0]
-                end_position = self.tokens[i].position[1]
-                combined_value = self.tokens[i].value
-
-                while (
-                    i + 1 < len(self.tokens)
-                    and self.tokens[i + 1].type == TokenTypes.TERM
-                ):
-                    # Iterate over subsequent terms and combine
-                    combined_value += f" {self.tokens[i + 1].value}"
-                    end_position = self.tokens[i + 1].position[1]
-                    i += 1
-
-                combined_tokens.append(
-                    Token(
-                        value=combined_value,
-                        type=self.tokens[i].type,
-                        position=(start_pos, end_position),
-                    )
-                )
-
-            else:
-                combined_tokens.append(
-                    Token(
-                        value=self.tokens[i].value,
-                        type=self.tokens[i].type,
-                        position=self.tokens[i].position,
-                    )
-                )
-
-            i += 1
-
-        self.tokens = combined_tokens
-
     def _extract_proximity_distance(self, token: Token) -> int:
         """Convert proximity operator token into operator and distance components"""
 
@@ -138,6 +94,33 @@ class EBSCOParser(QueryStringParser):
         distance = int(distance_string)
         token.value = operator
         return distance
+
+    def _has_closing_quote(self, index: int) -> bool:
+        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
+            return False
+
+        open_paren = 0
+        index += 1
+        for token in self.tokens[index:]:
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                open_paren += 1
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                if open_paren <= 0:
+                    # Boundary: unmatched local closing paren → likely unbalanced quote
+                    break
+                open_paren -= 1
+            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR] and token.value.isupper():
+                # Boundary: upper case operator → likely unbalanced quote
+                break
+            if token.type == TokenTypes.QUOTATION_MARK:
+                if open_paren != 0:
+                    # Boundary: unmatched local opening paren → likely unbalanced quote
+                    break
+                # Matching closing quote found
+                return True
+
+        return False
 
     def fix_ambiguous_tokens(self) -> None:
         """Fix ambiguous tokens that could be misinterpreted as a search field."""
@@ -157,6 +140,19 @@ class EBSCOParser(QueryStringParser):
             ):
                 # Reclassify the second field token as a TERM
                 next_token.type = TokenTypes.TERM
+
+        # Term followed by operator is misclassified as a field token
+        for i in range(len(self.tokens) - 1):
+            current = self.tokens[i]
+            next_token = self.tokens[i + 1]
+
+            if (
+                current.type == TokenTypes.FIELD
+                and next_token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                and is_potential_term(current.value)
+            ):
+                # Reclassify the second field token as a TERM
+                current.type = TokenTypes.TERM
 
         # Operator followed by a field token followed by a closing parenthesis
         for i in range(len(self.tokens) - 2):
@@ -195,6 +191,8 @@ class EBSCOParser(QueryStringParser):
                 token_type = TokenTypes.PROXIMITY_OPERATOR
             elif self.FIELD_REGEX.fullmatch(value):
                 token_type = TokenTypes.FIELD
+            elif self.QUOTATION_MARK_REGEX.fullmatch(value):
+                token_type = TokenTypes.QUOTATION_MARK
             elif self.TERM_REGEX.fullmatch(value):
                 token_type = TokenTypes.TERM
             else:  # pragma: no cover
@@ -207,9 +205,8 @@ class EBSCOParser(QueryStringParser):
 
         self.adjust_token_positions()
 
-        # Combine subsequent terms in case of no quotation marks
-        self.combine_subsequent_tokens()
         self.fix_ambiguous_tokens()
+        self.combine_subsequent_terms()
 
     def parse_query_tree(
         self, tokens: list[Token], field_context: SearchField | None = None
@@ -229,32 +226,18 @@ class EBSCOParser(QueryStringParser):
             )
 
         if self._is_compound_query(tokens):
-            # print(f"Compound query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_compound_query(tokens, field_context)
-        if self._is_near_query(tokens):
-            # print(f"Near query detected: {' '.join(t.value for t in tokens)}")
-            return self._parse_near_query(tokens, field_context)
         if self._is_nested_query(tokens):
-            # print(f"Nested query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_nested_query(tokens, field_context)
         if self._is_term_query(tokens):
-            # print(f"Term query detected: {' '.join(t.value for t in tokens)}")
             return self._parse_term(tokens, field_context)
         raise ValueError(
             f"Unrecognized query structure: \n{' '.join(t.value for t in tokens)}\n"
-            "Expected a term, near query, nested query, or compound query."
+            "Expected a term, nested query, or compound query."
         )
 
     def _is_term_query(self, tokens: list[Token]) -> bool:
         return bool(tokens and len(tokens) <= 2 and tokens[-1].type == TokenTypes.TERM)
-
-    def _is_near_query(self, tokens: list[Token]) -> bool:
-        return (
-            len(tokens) == 3
-            and tokens[0].type == TokenTypes.TERM
-            and tokens[1].type == TokenTypes.PROXIMITY_OPERATOR
-            and tokens[2].type == TokenTypes.TERM
-        )
 
     def _is_compound_query(self, tokens: list[Token]) -> bool:
         return bool(self._get_operator_indices(tokens))
@@ -278,25 +261,25 @@ class EBSCOParser(QueryStringParser):
         raise ValueError(f"Unrecognized operator: {token.value}")
 
     def _get_operator_indices(self, tokens: list[Token]) -> list[int]:
-        indices = []
+        """Get indices of top-level operators with the lowest precedence value."""
+        indices: list[int] = []
         depth = 0
-        first_op = None
+        prev_op = None
 
         for i, token in enumerate(tokens):
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            elif depth == 0 and token.type in [
-                TokenTypes.LOGIC_OPERATOR,
-                TokenTypes.PROXIMITY_OPERATOR,
-            ]:
+            elif depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
                 op = self._get_operator_type(token)
-                if first_op is None:
-                    first_op = op
-                elif op != first_op:
-                    raise ValueError("Mixed operators without parentheses.")
-                indices.append(i)
+                if prev_op is None:
+                    prev_op = op
+                    indices.append(i)
+                elif op == prev_op:
+                    indices.append(i)
+                elif self.linter.get_precedence(op) < self.linter.get_precedence(prev_op):
+                    indices = [i]
         return indices
 
     def _parse_compound_query(
@@ -361,41 +344,10 @@ class EBSCOParser(QueryStringParser):
             platform="deactivated",
         )
 
-    def _parse_near_query(
-        self, tokens: list[Token], field_context: SearchField | None
-    ) -> Query:
-        left_token = tokens[0]
-        operator_token = tokens[1]
-        right_token = tokens[2]
-
-        distance = self._extract_proximity_distance(operator_token)
-
-        return NEARQuery(
-            value=operator_token.value,
-            distance=int(distance),
-            position=(left_token.position[0], right_token.position[1]),
-            field=field_context,
-            children=[
-                Term(
-                    value=left_token.value,
-                    position=left_token.position,
-                    field=field_context,
-                    platform="deactivated",
-                ),
-                Term(
-                    value=right_token.value,
-                    position=right_token.position,
-                    field=field_context,
-                    platform="deactivated",
-                ),
-            ],
-            platform="deactivated",
-        )
-
     def _pre_tokenization_checks(self) -> None:
         self.linter.handle_fully_quoted_query_str(self)
         self.linter.handle_nonstandard_quotes_in_query_str(self)
-        self.linter.handle_suffix_in_query_str(self)
+        # self.linter.handle_suffix_in_query_str(self)
         self.linter.handle_prefix_in_query_str(
             self,
             prefix_regex=re.compile(
