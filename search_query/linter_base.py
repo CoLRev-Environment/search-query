@@ -457,7 +457,7 @@ class QueryStringLinter:
                 if char in invalid_characters:
                     self.add_message(
                         error,
-                        positions=[token.position],
+                        positions=[(token.position[0] + i, token.position[0] + i + 1)],
                         details=self._format_invalid_char_details(char, value),
                     )
                     value_new += ' '

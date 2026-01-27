@@ -365,7 +365,7 @@ def test_pubmed_invalid_token_sequences(
                     'is_fatal': False,
                     'label': 'character-replacement',
                     'message': 'Character replacement',
-                    'position': [(17, 31),],
+                    'position': [(28, 29),],
                 },
                 {
                     "code": "FIELD_0003",

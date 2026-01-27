@@ -161,7 +161,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-character",
                     "message": "Search term contains invalid character",
                     "is_fatal": False,
-                    "position": [(0, 12)],
+                    "position": [(10, 11)],
                     "details": "Invalid character '\\' in search term 'collaborat\\*' will be replaced with whitespace.",
                 },
                 {
