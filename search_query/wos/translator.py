@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-
+from search_query.constants import PLATFORM
 from search_query.constants import Fields
 from search_query.query import Query
 from search_query.query import SearchField
@@ -135,6 +135,7 @@ class WOSTranslator(QueryTranslator):
         """Convert the query to a specific syntax."""
 
         query = query.copy()
+        query.set_platform_unchecked(PLATFORM.WOS.value, silent=True)
 
         cls._translate_fields(query)
         cls.move_fields_to_operator(query)
