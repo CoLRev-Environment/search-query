@@ -47,7 +47,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    if __name__ == "__main__":
 
-       query = OrQuery(["microsourcing", "lululemon"], field="title")
+       query = OrQuery(["microsourcing", "online labor markets"], field="title")
 
        url = to_crossref_url(query)
        api_crossref = crossref_api.CrossrefAPI(url=url)
@@ -56,15 +56,14 @@ Using the Crossref API as an example, the following illustrates how to construct
        sf = SearchFile(
            search_string=query.to_string(),
            platform="crossref",
-           authors=[{"name": "Tom Brady"}],
+           authors=[{"name": "Gerit Wagner"}],
            record_info={"source": "manual", "url": url},
            date={"data_entry": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")},
            field="title",
-           description="Search for work authored by Tom Brady",
-           tags=["microsourcing", "lululemon", "research"]
+           description="Search for research on microsourcing"
        )
 
-       sf.save("test/tom_brady_search.json")
+       sf.save("test/microsourcing_search.json")
 
        records_dict = {record.get_value("doi"): record.get_data() for record in records}
        write_file(records_dict=records_dict, filename=Path("test/crossref_records.bib"))

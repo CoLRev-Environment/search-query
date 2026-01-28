@@ -9,4 +9,5 @@ search\_query.parser\_base
    .. autosummary::
 
       QueryListParser
+      QueryParserBase
       QueryStringParser

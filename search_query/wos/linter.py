@@ -444,8 +444,6 @@ class WOSQueryStringLinter(QueryStringLinter):
             if not query.field:
                 return
 
-            # TODO: clarify advice... + context (called via CI / with filename?)
-
             # use of the following field tags in the search interface prints
             # Search Error: Invalid field tag.
             if query.field.value in [

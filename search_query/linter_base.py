@@ -1241,7 +1241,8 @@ class QueryStringLinter:
             # skip added characters ('+')
         return result
 
-    # TODO : 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
+    # Examples:
+    # 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
     # 10.1079_SEARCHRXIV.2024.00457.json- position mismtach
     def _check_unnecessary_nesting(self, query: Query) -> None:
         """Check for unnecessary same-operator nesting and provide simplification advice."""
@@ -1454,7 +1455,6 @@ class QueryStringLinter:
             return
 
         if term_field_query.value == "OR" and term_field_query.operator:
-            # TODO : consider search-fields!
             term_objects = [
                 child for child in term_field_query.children if child.is_term()
             ]

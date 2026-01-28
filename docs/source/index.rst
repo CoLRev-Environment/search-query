@@ -47,7 +47,7 @@ Creating a query programmatically is simple:
     work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
     query = AndQuery([digital_synonyms, work_synonyms])
 
-A query can also be parsed from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
+A query can also be parsed from a string or a `JSON search file <load.html#file>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
 
 .. code-block:: python
 
