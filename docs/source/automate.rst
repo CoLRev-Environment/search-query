@@ -14,7 +14,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    .. code-block:: bash
 
-        pip install colrev
+        pip install colrev==0.16.0
 
 .. code-block:: python
    :linenos:
@@ -47,7 +47,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    if __name__ == "__main__":
 
-       query = OrQuery(["microsourcing", "online labor markets"], field="title")
+       query = OrQuery(["microsourcing", "lululemon"], field="title")
 
        url = to_crossref_url(query)
        api_crossref = crossref_api.CrossrefAPI(url=url)
