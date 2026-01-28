@@ -161,9 +161,13 @@ a Creative Commons Attribution 4.0 International License (CC BY
 </sec>
 <sec id="overview-of-search-query-functionality">
   <title>Overview of search-query Functionality</title>
-  <p><italic>search-query</italic> aims to support the entire process of
-  managing academic search queries. Its core functionality is shown in
-  Figure 1 and summarized in the following.</p>
+  <p><italic>search-query</italic> treats academic search strategies as
+  structured query objects rather than static strings. Query objects can
+  be created programmatically or derived from search strings or JSON
+  files, and are represented as object-oriented structures that capture
+  Boolean logic, nesting, and field restrictions. Based on a query
+  object, <italic>search-query</italic> supports the following
+  operations, as illustrated in Figure 1:</p>
   <list list-type="bullet">
     <list-item>
       <p><bold>Load:</bold> <italic>search-query</italic> provides
@@ -178,6 +182,13 @@ a Creative Commons Attribution 4.0 International License (CC BY
       databases.</p>
     </list-item>
     <list-item>
+      <p><bold>Save:</bold> Researchers can serialize the query object
+      back into a standard string or file format for reporting and
+      reuse. This facilitates transparency and reproducibility by
+      allowing search strategies to be easily reported, shared or
+      deposited.</p>
+    </list-item>
+    <list-item>
       <p><bold>Lint:</bold> <italic>search-query</italic> can apply
       linters to detect syntactical errors or inconsistencies that might
       compromise the search. It can check for issues such as unbalanced
@@ -187,7 +198,7 @@ a Creative Commons Attribution 4.0 International License (CC BY
       registry, revealing that many published queries still contained
       errors even after peer review. By identifying such problems early,
       linters can help researchers validate and refine queries before
-      execution. The linting component can be updated to cover more
+      execution. The linting component can be extended to cover more
       databases and incorporate new messages, such as warnings for
       database-specific quirks.</p>
     </list-item>
@@ -204,17 +215,6 @@ a Creative Commons Attribution 4.0 International License (CC BY
       databases to the translation repertoire.</p>
     </list-item>
     <list-item>
-      <p><bold>Save:</bold> After validation and refinement,
-      <italic>search-query</italic> can serialize the query object back
-      into a standard string or file format for reporting and reuse. In
-      practice, this means that a query constructed or edited within the
-      tool can be exported as a well-formatted search string that is
-      ready to be executed in a database or included in the methods
-      section of a paper. This facilitates transparency and
-      reproducibility by allowing search strategies to be easily
-      reported, shared or deposited.</p>
-    </list-item>
-    <list-item>
       <p><bold>Improve:</bold> Beyond basic syntax checking and
       translation, <italic>search-query</italic> aims to support
       semantic query improvement to enhance recall and precision. As
@@ -226,25 +226,19 @@ a Creative Commons Attribution 4.0 International License (CC BY
       suggestions and optimizations.</p>
     </list-item>
     <list-item>
-      <p><bold>Automate:</bold> Finally, <italic>search-query</italic>
-      is designed to support advanced automation efforts and to
+      <p><bold>Automate:</bold> Automation primarily refers to the
       integrate with systematic review management systems, such as
       CoLRev
       (<xref alt="Wagner &amp; Prester, 2025" rid="ref-WagnerPrester2025" ref-type="bibr">Wagner
       &amp; Prester, 2025</xref>). The library offers programmatic
       access via its Python API, which means it can be embedded in
-      scripts and pipelines to run searches or process queries without
-      manual intervention. It also provides a command-line interface and
-      git pre-commit hooks, allowing researchers to incorporate query
-      validation into version control and continuous integration setups.
-      By representing queries in the form of objects,
-      <italic>search-query</italic> further enables advanced use cases
-      such as executing searches on platforms that lack native Boolean
-      query support, for instance, by breaking a complex query into
-      multiple API calls.</p>
+      scripts and pipelines to run searches automatically. It also
+      provides a command-line interface and git pre-commit hooks,
+      allowing researchers to incorporate query validation into version
+      control and continuous integration setups. </p>
     </list-item>
   </list>
-  <fig id="figU003Asearch_query">
+  <fig>
     <caption><p>Core functionality of the <italic>search-query</italic>
     library</p></caption>
     <graphic mimetype="image" mime-subtype="png" xlink:href="figure_1.png" />

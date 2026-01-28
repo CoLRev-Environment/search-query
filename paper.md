@@ -93,8 +93,9 @@ Requirements include:
 
 # Overview of search-query Functionality
 
-*search-query* aims to support the entire process of managing academic search queries.
-Its core functionality is shown in Figure 1 and summarized in the following.
+*search-query* treats academic search strategies as structured query objects rather than static strings.
+Query objects can be created programmatically or derived from search strings or JSON files, and are represented as object-oriented structures that capture Boolean logic, nesting, and field restrictions.
+Based on a query object, *search-query* supports the following operations, as illustrated in Figure 1:
 
 - **Load:** *search-query* provides parsing capabilities to ingest search queries from both raw strings and JSON files.
   It parses database-specific query strings into internal, object-oriented representations of the search strategy.
@@ -102,36 +103,40 @@ Its core functionality is shown in Figure 1 and summarized in the following.
   Currently, parsers are available for Web of Science, PubMed, and EBSCOHost.
   The *load* functionality is extensible and the documentation outlines how to develop parsers for additional databases.
 
+- **Save:** Researchers can serialize the query object back into a standard string or file format for reporting and reuse.
+  <!-- In practice, this means that a query constructed or edited within the tool can be exported as a well-formatted search string that is ready to be executed in a database or included in the methods section of a paper. -->
+  This facilitates transparency and reproducibility by allowing search strategies to be easily reported, shared or deposited.
+
 - **Lint:** *search-query* can apply linters to detect syntactical errors or inconsistencies that might compromise the search.
   It can check for issues such as unbalanced parentheses, logical operator misuse, or database-specific syntax errors.
   The validation rules are based on an analysis of a large corpus of real-world search strategies from the searchRxiv registry, revealing that many published queries still contained errors even after peer review.
   By identifying such problems early, linters can help researchers validate and refine queries before execution.
-  The linting component can be updated to cover more databases and incorporate new messages, such as warnings for database-specific quirks.
+  The linting component can be extended to cover more databases and incorporate new messages, such as warnings for database-specific quirks.
 
 - **Translate:** The library can convert a query from one database syntax into another, enabling cross-platform use of search strategies.
   Using a generic query object as an intermediate representation, *search-query* currently supports translations between  Web of Science, PubMed, and EBSCOHost.
   Such query translation functionality can eliminate manual efforts for rewriting queries and reduce the risk of human error during translation.
   In line with the vision of seamless cross-database literature searches, future development will focus on adding more databases to the translation repertoire.
 
-- **Save:** After validation and refinement, *search-query* can serialize the query object back into a standard string or file format for reporting and reuse.
-  In practice, this means that a query constructed or edited within the tool can be exported as a well-formatted search string that is ready to be executed in a database or included in the methods section of a paper.
-  This facilitates transparency and reproducibility by allowing search strategies to be easily reported, shared or deposited.
-
 - **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support semantic query improvement to enhance recall and precision.
   As queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
   In future work, this improvement functionality may be augmented with more automated suggestions and optimizations.
 
-- **Automate:** Finally, *search-query* is designed to support advanced automation efforts and to integrate with systematic review management systems, such as CoLRev [@WagnerPrester2025].
-  The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches or process queries without manual intervention.
+- **Automate:** Automation primarily refers to the integrate with systematic review management systems, such as CoLRev [@WagnerPrester2025].
+  The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches automatically.
   It also provides a command-line interface and git pre-commit hooks, allowing researchers to incorporate query validation into version control and continuous integration setups.
-  By representing queries in the form of objects, *search-query* further enables advanced use cases such as executing searches on platforms that lack native Boolean query support, for instance, by breaking a complex query into multiple API calls.
+  <!-- By representing queries in the form of objects, *search-query* further enables advanced use cases such as executing searches on platforms that lack native Boolean query support, for instance, by breaking a complex query into multiple API calls. -->
 
+![Core functionality of the \textit{search-query} library](figure_1.png){label="fig_overview" width="340pt"}
+
+<!--
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{figure_1.png}
   \caption{Core functionality of the \textit{search-query} library}
   \label{fig:search_query}
 \end{figure}
+-->
 
 # Example Usage
 
