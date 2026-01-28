@@ -10,11 +10,14 @@ Using the Crossref API as an example, the following illustrates how to construct
 
 .. tip::
 
-    The example below requires the `colrev` package to be installed. You can install it via pip:
+    The example below requires the ``colrev`` package to be installed. You can install it via pip:
 
    .. code-block:: bash
 
         pip install colrev==0.16.1
+
+
+   **Important**: ``colrev`` version 0.16.1 requires Python **3.10** or higher. If you’re on a different Python version, create a Python 3.10 environment (e.g., via `uv`, `venv`, or `conda`) before installing.
 
 .. code-block:: python
    :linenos:
