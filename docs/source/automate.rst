@@ -14,7 +14,7 @@ Using the Crossref API as an example, the following illustrates how to construct
 
    .. code-block:: bash
 
-        pip install colrev==0.16.0
+        pip install colrev==0.16.1
 
 .. code-block:: python
    :linenos:
