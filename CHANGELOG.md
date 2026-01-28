@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 - No changes yet.
 
+## Release 0.14.1
+
+- **Fix broken sdist**: caused wheels to ship without package code.
+
 ## Release 0.14.0
 
 - **Documentation and demo notebook**: Revised the documentation and extended the demo notebook.

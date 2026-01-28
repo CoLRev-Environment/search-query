@@ -1,6 +1,6 @@
 [project]
 name = "search-query"
-version = "0.14.0"
+version = "0.14.1"
 description = "Package for managing literature search queries."
 authors = [
     { name = "Peter Eckhardt" },
@@ -55,7 +55,12 @@ search-query = "search_query.cli:main"
 packages = ["search_query"]
 
 [tool.hatch.build.targets.sdist]
-include = ["LICENSE", "README.md"]
+include = [
+  "search_query/**",
+  "LICENSE",
+  "README.md",
+  "pyproject.toml",
+]
 
 [tool.pylint.MAIN]
 extension-pkg-whitelist = "lxml.etree"
