@@ -115,10 +115,33 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 Functional overview
 ======================
 
-The search-query package supports the entire lifecycle of academic search query management.
-Below is a high-level overview of the core functionalities:
+*search-query* treats academic search strategies as structured query objects rather than static strings.
+Query objects can be created programmatically or derived from search strings or JSON files, and are represented as object-oriented structures that capture Boolean logic, nesting, and field restrictions.
+Based on a query object, *search-query* supports the following operations:
+
+- **Load:** *search-query* provides parsing capabilities to ingest search queries from both raw strings and JSON files.
+  It parses database-specific query strings into internal, object-oriented representations of the search strategy.
+  This allows the tool to capture complex Boolean logic and field restrictions in a standardized form.
+
+- **Save:** Researchers can serialize the query object back into a standard string or file format for reporting and reuse.
+  This facilitates transparency and reproducibility by allowing search strategies to be easily reported, shared or deposited.
+
+- **Lint:** *search-query* can apply linters to detect syntactical errors or inconsistencies that might compromise the search.
+  It can check for issues such as unbalanced parentheses, logical operator misuse, or database-specific syntax errors.
+
+- **Translate:** The library can convert a query from one database syntax into another, enabling cross-platform use of search strategies.
+  Using a generic query object as an intermediate representation, *search-query* currently supports translations between  Web of Science, PubMed, and EBSCOHost.
+
+- **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support query improvement to enhance recall and precision.
+  As queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
+
+- **Automate:** Automation primarily refers to the integration with systematic review management systems, such as `CoLRev <https://github.com/CoLRev-Environment/colrev?tab=readme-ov-file>`_.
+  The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches automatically.
+  It also provides a command-line interface and git pre-commit hooks, allowing researchers to incorporate query validation into version control and continuous integration setups.
 
 .. image:: presentation.png
+   :width: 800 px
+   :align: center
 
 .. toctree::
    :hidden:
