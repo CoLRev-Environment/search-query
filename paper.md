@@ -1,5 +1,5 @@
 ---
-title: 'search-query: An Open-Source Python Library for Academic Search Queries'
+title: 'search-query: An open source Python library for academic search queries'
 tags:
 - Python
 - Search query
@@ -40,13 +40,13 @@ header-includes: |
 
 # Summary
 
-*search-query* is an open-source Python library designed to load, lint, translate, save, improve, and automate academic literature search queries.
-Unlike existing proprietary and web-based tools, *search-query* offers programmatic access and thereby supports integration into research workflows, contributing to the automation of systematic literature reviews.
-It currently provides query translation between Web of Science, PubMed, and EBSCOHost, while its validation features detect syntactical errors and inconsistencies that may compromise queries.
-The parsers for these three databases are tested against a comprehensive set of peer-reviewed queries from searchRxiv.
-By addressing key gaps in literature search tools, *search-query* contributes to the correctness and efficiency of systematic reviews and meta-analyses.
+*search-query* is an open source Python library for academic literature search queries.
+Its core capabilities include linting to detect syntactic and logical errors, translation to convert queries across database-specific syntaxes, improvement to programmatically refine queries, and automation to integrate searches into reproducible workflows.
+The library currently supports *Web of Science*, *PubMed*, and *EBSCOHost*, with parsers validated against a comprehensive set of peer-reviewed queries from *searchRxiv*.
+Unlike existing proprietary and web-based software, *search-query* offers programmatic access and thereby supports integration into research workflows, contributing to the automation of systematic literature reviews.
+<!-- By addressing key gaps in literature search tools, *search-query* contributes to the correctness and efficiency of systematic reviews and meta-analyses. -->
 
-Keywords: Python, search query, literature search, literature review.
+Keywords: Python, search query, literature search, literature review, meta-analysis.
 
 <!-- 
 - entry: enter queries from cli/programmatically
@@ -67,7 +67,7 @@ Planned:
 - effectiveness: estimate retrieval performance based on a given sample
 - sample extension: strategically extend the sample to improve accuracy of retrieval performance estimates
 
-Properties: tested, extensible, open-source
+Properties: tested, extensible, open source
 
 - A substantial percentage of peer-reviewed literature search queries has syntactical errors, ambiguities (??), and inconsistencies
 - Existing tools do not sufficiently validate queries (often, it is unclear whether they were actually used)
@@ -84,50 +84,48 @@ https://link.springer.com/referenceworkentry/10.1007/978-0-387-39940-9_1070
 # Statement of Need
 
 Researchers conducting meta-analyses and other types of literature reviews rely on database searches as the primary search technique [@Hiebl2023].
-This primarily includes the design of Boolean queries, and the execution in academic databases.
+This involves the design of Boolean queries, the translation for specific databases, and the execution.
 Requirements include:
 (1) query translation, i.e., parsing a query in one database specific syntax and serializing it in another syntax [e.g., @AlZubidyCarver2019; @SturmSunyaev2019],
-(2) query validation, i.e., identifying syntactical errors or warning of known database errors [e.g., @LiRainer2023; @SinghSingh2017],
+(2) query linting, i.e., identifying syntactical errors or warning of known database errors [e.g., @LiRainer2023; @SinghSingh2017],
 (3) query improvement, i.e., manipulation of query objects to understand and enhance performance [e.g., @ScellsZucconKoopman2020], and
-(4) integration capability, i.e., offering programmatic or API access to integrate in a tool pipeline [e.g., @BellerClarkTsafnatEtAl2018; @OConnorTsafnatGilbertEtAl2018].
+(4) automation, i.e., offering programmatic or API access to integrate with existing workflows [e.g., @BellerClarkTsafnatEtAl2018; @OConnorTsafnatGilbertEtAl2018].
 
-# Overview of search-query Functionality
+# Overview of search-query capabilities
 
-*search-query* treats academic search strategies as structured query objects rather than static strings.
-Query objects can be created programmatically or derived from search strings or JSON files, and are represented as object-oriented structures that capture Boolean logic, nesting, and field restrictions.
-Based on a query object, *search-query* supports the following operations, as illustrated in Figure 1:
+*search-query* treats queries as objects rather than static strings.
+Query objects can be created programmatically or parsed from search strings, giving researchers access to the following capabilities (illustrated in Figure 1):
 
 - **Load:** *search-query* provides parsing capabilities to ingest search queries from both raw strings and JSON files.
-  It parses database-specific query strings into internal, object-oriented representations of the search strategy.
-  This allows the tool to capture complex Boolean logic and field restrictions in a standardized form.
-  Currently, parsers are available for Web of Science, PubMed, and EBSCOHost.
-  The *load* functionality is extensible and the documentation outlines how to develop parsers for additional databases.
+  It parses database-specific query strings into internal, object-oriented representations of nested queries consisting of operators, search terms, and field restrictions.
+  Currently, parsers are available for *Web of Science*, *PubMed*, and *EBSCOHost*.
+  The *load* capability is extensible, and the documentation outlines how to develop parsers for additional databases.
 
-- **Save:** Researchers can serialize the query object back into a standard string or file format for reporting and reuse.
+- **Save:** Researchers can serialize the query object back into a standard string or JSON file for reporting and reuse.
   <!-- In practice, this means that a query constructed or edited within the tool can be exported as a well-formatted search string that is ready to be executed in a database or included in the methods section of a paper. -->
   This facilitates transparency and reproducibility by allowing search strategies to be easily reported, shared or deposited.
 
-- **Lint:** *search-query* can apply linters to detect syntactical errors or inconsistencies that might compromise the search.
+- **Lint:** *search-query* includes linters to detect syntactical errors or inconsistencies that might compromise the search.
   It can check for issues such as unbalanced parentheses, logical operator misuse, or database-specific syntax errors.
-  The validation rules are based on an analysis of a large corpus of real-world search strategies from the searchRxiv registry, revealing that many published queries still contained errors even after peer review.
+  The validation rules are based on an analysis of a large corpus of real-world search strategies from the *searchRxiv* registry, revealing that many published queries still contained errors even after peer review.
   By identifying such problems early, linters can help researchers validate and refine queries before execution.
   The linting component can be extended to cover more databases and incorporate new messages, such as warnings for database-specific quirks.
 
 - **Translate:** The library can convert a query from one database syntax into another, enabling cross-platform use of search strategies.
-  Using a generic query object as an intermediate representation, *search-query* currently supports translations between  Web of Science, PubMed, and EBSCOHost.
-  Such query translation functionality can eliminate manual efforts for rewriting queries and reduce the risk of human error during translation.
+  Using a generic query object as an intermediate representation, *search-query* currently supports translations between  *Web of Science*, *PubMed*, and *EBSCOHost*.
+  Such query translation capability can eliminate manual efforts for rewriting queries and reduce the risk of human error during translation.
   In line with the vision of seamless cross-database literature searches, future development will focus on adding more databases to the translation repertoire.
 
 - **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support query improvement to enhance recall and precision.
-  As queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
-  In future work, this improvement functionality may be augmented with more automated suggestions and optimizations.
+  When queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
+  In future work, this improvement capability may be augmented with more automated suggestions and optimizations.
 
 - **Automate:** Automation primarily refers to the integration with systematic review management systems, such as CoLRev [@WagnerPrester2025].
   The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches automatically.
-  It also provides a command-line interface and git pre-commit hooks, allowing researchers to incorporate query validation into version control and continuous integration setups.
+  It also provides a command-line interface and pre-commit hooks (*Git*), allowing researchers to incorporate query validation into version control and continuous integration setups.
   <!-- By representing queries in the form of objects, *search-query* further enables advanced use cases such as executing searches on platforms that lack native Boolean query support, for instance, by breaking a complex query into multiple API calls. -->
 
-![Core functionality of the \textit{search-query} library](figure_1.png){label="fig_overview" width="340pt"}
+![Core capabilities of the \textit{search-query} library](figure_1.png){label="fig_overview" width="340pt"}
 
 <!--
 \begin{figure}[ht]
@@ -138,7 +136,7 @@ Based on a query object, *search-query* supports the following operations, as il
 \end{figure}
 -->
 
-# Example Usage
+# Example usage
 
 <!-- [Documentation](https://colrev-environment.github.io/search-query/) -->
 
@@ -169,13 +167,33 @@ from search_query.database import load_query
 FT50_journals = load_query("journals_FT50")
 ```
 
+## Save
+
+When saving a query, the JSON format is based on the standard proposed by @HaddawayRethlefsenDaviesEtAl2022.
+
+```python
+from search_query import SearchFile
+
+search_file = SearchFile(
+   search_string=pubmed_query.to_string(),
+   platform="pubmed",
+   version="1",
+   authors=[{"name": "Gerit Wagner"}],
+   record_info={},
+   date={}
+)
+
+search_file.save("search-file.json")
+```
+
 ## Lint
 
-The parser automatically emits linter messages that identify defects and provide suggestions for improvement.
+The parser automatically emits linter messages that identify errors and provide suggestions for improvement.
 This helps researchers maintain high-quality—even in complex search strategies.
-In fact, search queries used in literature reviews are often long and complex: peer-reviewed queries from searchRxiv, for instance, average over 2,900 characters and include around 60 parentheses.
+In fact, search queries used in literature reviews are often long and complex:
+Peer-reviewed queries from *searchRxiv*, for instance, average over 2,900 characters and include around 60 parentheses.
 Such queries are difficult to analyze visually—both for researchers constructing them and for reviewers assessing their validity.
-The linters identify six categories of issues, which are illustrated briefly in the following.
+The linters identify six categories of errors, which are illustrated briefly in the following.
 
 <!--
 rm test.cast
@@ -220,37 +238,37 @@ parse('(digital[ti] OR online[ti]) OR "digital work"[ti]', platform="pubmed")
 svg-term --in test.cast --out demo.svg --window --at 9553798 --height 17 --width 80
 -->
 
-**Parse errors** highlight critical syntax issues that prevent a query from being parsed.
+**Parsing errors** highlight critical syntax errors that prevent a query from being parsed.
 Typical examples include unmatched parentheses, misplaced logical operators, or invalid token sequences.
 These errors usually require correction before any further processing or database execution is possible.
 
-![Examples of parse errors](parse.svg){#fig:parse width="320pt"}
+![Examples of parsing errors](parse.svg){#fig:parse width="320pt"}
 
-**Structure warnings** highlight issues that affect the validity or clarity of a query's logical structure, such as implicit operator precedence or inconsistent capitalization of Boolean operators.
+**Query structure errors** highlight errors that affect the validity or clarity of a query's logical structure, such as implicit operator precedence or inconsistent capitalization of Boolean operators.
 These warnings help ensure that the intended logic is clear and that the query remains readable and easy to verify.
 
-![Examples of structral warnings](struct.svg){#fig:struct width="320pt"}
+![Examples of query structure errors](struct.svg){#fig:struct width="320pt"}
 
-**Term warnings** identify suspicious or malformed search terms, such as non-standard quotes or invalid date formats.
-These issues may cause databases to interpret the terms incorrectly or fail to return relevant results.
+**Term errors** identify suspicious or malformed search terms, such as non-standard quotes or invalid date formats.
+These errors may cause databases to interpret the terms incorrectly or fail to return relevant results.
 
-![Examples of term warnings](term.svg){#fig:term width="320pt"}
+![Examples of term errors](term.svg){#fig:term width="320pt"}
 
-**Field warnings** point to missing, implicit, or unsupported field tags.
-These issues may lead to incorrect interpretations or cause the query to fail during execution in the database.
+**Field errors** point to missing, implicit, or unsupported field tags.
+These errors may lead to incorrect interpretations or cause the query to fail during execution in the database.
 
-![Examples of field warnings](field.svg){#fig:field width="320pt"}
+![Examples of field errors](field.svg){#fig:field width="320pt"}
 
-**Database-specific warnings** flag platform-specific quirks and limitations that may not be obvious to users.
+**Database errors** flag platform-specific quirks and limitations that may not be obvious to users.
 These include constraints on wildcard usage, invalid characters, and limitations of proximity operators.
-These issues can cause queries to execute incorrectly or fail, despite appearing syntactically valid.
+These errors can cause queries to execute incorrectly or fail, despite appearing syntactically valid.
 
-![Examples of database-specific warnings](database.svg){#fig:database width="320pt"}
+![Examples of database errors](database.svg){#fig:database width="320pt"}
 
-**Quality warnings** offer best practice recommendations for constructing effective search queries.
+**Best practice qualities** include recommendations for constructing effective search queries.
 These include alerts about redundant terms, unnecessary parentheses or complex query structures.
 
-![Examples of quality warnings](quality.svg){#fig:quality width="320pt"}
+![Examples of best practice qualities](quality.svg){#fig:quality width="320pt"}
 
 In addition, it is possible to access linter messages programmatically:
 
@@ -271,17 +289,13 @@ print(wos_query.to_string())
 # (AB="dHealth" OR TI="dHealth") AND (AB="privacy" OR TI="privacy")
 ```
 
-## Save
-
-```python
-pubmed_query.to_string()
-```
-
-Functionality to improve and automate search queries focuses on the programmatic use of *search-query* for custom logic and use cases (e.g., writing tailored functions). As these features are designed for flexible integration into code-based workflows, it is hard to illustrate them through generic examples; instead, guidance can be found in the [online documentation](https://colrev-environment.github.io/search-query/index.html).
+Capability to improve and automate search queries focuses on the programmatic use of *search-query* for custom logic and use cases (e.g., writing tailored functions).
+As these features are designed for flexible integration into code-based workflows, it is hard to illustrate them through generic examples;
+instead, guidance can be found in the [online documentation](https://colrev-environment.github.io/search-query/index.html).
 
 \newpage
 
-# Related tools
+# Related software packages
 
 <!-- 
 Tools for academic (Boolean) literature search queries:
@@ -317,24 +331,26 @@ Table: Overview of related tools
 
 -->
 
-Table 1 provides an overview of related tools and a comparison with *search-query*.
-The leading query translators, Polyglot search and Litsonar, are proprietary and delivered through websites without further integration capabilities. 
+Table 1 provides an overview of related software packages and a comparison with *search-query*.
+The leading query translators, *Polyglot search* and *Litsonar*, are proprietary and delivered through websites, i.e., without integration capabilities. 
 <!-- Litsonar: no parser -->
-Polyglot search supports a more comprehensive selection of databases (15) and initial validation hints [@ClarkGlasziouDelMarEtAl2020a].
-Litsonar supports seven databases, serializes queries entered through the web interface, but does not offer parsers [@SturmSunyaev2019].
-As tools available under open-source licenses, Medline Transpose [@WannerBaumann2019] is a javascript-based website that translates queries between three databases, and litsearchr [@Grames2020] is an R library that supports semi-automated generation of queries based on text-mining techniques.
+*Polyglot search* supports a more comprehensive selection of databases (15) and initial validation hints [@ClarkGlasziouDelMarEtAl2020a].
+*Litsonar* supports seven databases, but does not offer parsers [@SturmSunyaev2019].
+As software packages available under open source licenses,
+*Medline Transpose* [@WannerBaumann2019] is a JavaScript-based website that translates queries between three databases,
+and *litsearchr* [@Grames2020] is an R library that supports semi-automated generation of queries based on text-mining techniques.
 <!-- https://github.com/MedlineTranspose/medlinetranspose.github.io/blob/master/transpose2EP.html -->
 
 \begin{table}[ht]
     \centering
     \begin{tabular}{lllccccccc}
-            Tool
+            Software package
              & Setup 
              & License 
              & \rotatebox{80}{Load} 
+             & \rotatebox{80}{Save}
              & \rotatebox{80}{Lint} 
              & \rotatebox{80}{Translate} 
-             & \rotatebox{80}{Save}
              & \rotatebox{80}{Improve}
              & \rotatebox{80}{Automate}
              \\
@@ -346,21 +362,21 @@ As tools available under open-source licenses, Medline Transpose [@WannerBaumann
         % litbaskets &  &  & & & & \\
         % PubVenn &  &  & & & & \\
         % SensPrecOptimizer & & &  &  & & \\
-        Polyglot search   & Website   & Proprietary & $\bigcirc$  & $\bigcirc$ & $\bullet$ & $\bullet$ & -         & $\bigcirc$ \\
-        LitSonar          & Website   & Proprietary & $\bigcirc$  & -          & $\bullet$ & $\bullet$ & -         & $\bigcirc$ \\
-        Medline Transpose & Website   & MIT         & $\bigcirc$  & -          & $\bullet$ & $\bullet$ & -         & $\bigcirc$ \\
-        litsearchr        & R library & GPL-3       & $\bigcirc$  & -          & -         & $\bullet$ & $\bullet$ & $\bullet$  \\
-        search-query      & Python    & MIT         & $\bullet$   & $\bullet$  & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$  \\
+        Polyglot search   & Website   & Proprietary & $\bigcirc$  & $\bullet$ & $\bigcirc$ & $\bullet$ &  -         & $\bigcirc$ \\
+        LitSonar          & Website   & Proprietary & $\bigcirc$  & $\bullet$ & -          & $\bullet$ &  -         & $\bigcirc$ \\
+        Medline Transpose & Website   & MIT         & $\bigcirc$  & $\bullet$ & -          & $\bullet$ &  -         & $\bigcirc$ \\
+        litsearchr        & R library & GPL-3       & $\bigcirc$  & $\bullet$ & -          & -         &  $\bullet$ & $\bullet$  \\
+        search-query      & Python    & MIT         & $\bullet$   & $\bullet$ & $\bullet$  & $\bullet$ &  $\bullet$ & $\bullet$  \\
         \hline
     \end{tabular}
-    \caption{Overview of related tools (- no support, $\bigcirc$ limited support, $\bullet$ support)}
+    \caption{Overview of related software packages (- no support, $\bigcirc$ limited support, $\bullet$ support)}
     \label{tab:query_tools}
 \end{table}
 
-In comparison to related tools, *search-query* provides a Python library, released under the MIT open-source license.
-It is extensible and currently supports three databases (Web of Science, PubMed, EBSCOHost) for query translation and query validation.
-The query parsers were tested with a comprehensive selection of peer-reviewed queries from [searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv) [@White2024].
-Testing showed that a significant number of queries still contained errors after passing the peer-review process, further highlighting the need for syntax validation tools like *search-query*.
+In comparison to related software packages, *search-query* provides a Python library, released under the MIT open source license.
+It is extensible and currently supports three databases (*Web of Science*, *PubMed*, *EBSCOHost*) for query translation and query validation.
+The query parsers were tested with a comprehensive selection of peer-reviewed queries from *[searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv)* [@White2024].
+Testing showed that a significant number of queries still contained errors after passing the peer-review process, further highlighting the need for linters like *search-query*.
 
 <!-- 
 Given that *search-query* is designed for programmatic access, it can serve as a basis for query improvement and can be integrated into existing tool pipelines [@BellerClarkTsafnatEtAl2018].
@@ -372,9 +388,9 @@ Integration: manual (error-prone/efforts) copy/paste
 
 This coincides with limitations mentioned in recent methods papers [@LiRainer2022; @SinghSingh2017] -->
 
-## Acknowledgments and Outlook
+## Acknowledgments and outlook
 
-The development of *search-query* originated from a series of student thesis projects supervised at the Digital Work Lab, Otto-Friedrich-Universität Bamberg [@fleischmann2025; @gessler2025; @schnickmann2025; @eckhardt2025; @ernst2024].
+The development of *search-query* originated from a series of student thesis projects at the Digital Work Lab, Otto-Friedrich-Universität Bamberg [@fleischmann2025; @gessler2025; @schnickmann2025; @eckhardt2025; @ernst2024].
 Looking forward, we envision *search-query* growing through both community and academic contributions.
 The developer documentation provides guidance on extending the library, for example, adding support for new databases or custom linter rules.
 Our goal is to build an open platform and continually expand *search-query*’s capabilities in line with the needs of researchers working on literature review projects.
