@@ -358,6 +358,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_unsupported_wildcards(child)
 
+    def _get_generic_field_set(self, value: str) -> set:
+        return syntax_str_to_generic_field_set(value)
+
     def _normalize_field(self, value: str) -> str:
         return map_to_standard(value)
 
@@ -375,18 +378,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
-        self._check_redundant_terms(
-            term_field_query, exact_fields=re.compile(r"^(ZY)$")
-        )
-        # Exception for ZY:
-        # ZY "south sudan" AND TI "context of vegetarians"
-        # ZY "sudan" AND TI "context of vegetarians"
-
-        # No exception for MH: paper 10.1080/15398285.2024.2420159
-        # has only "sleep hygiene" in MH,
-        # but is also returned when searching for MH "sleep"
-        # MH "sleep hygiene" AND TI "A Brazilian Experience"
-        # MH "sleep" AND TI "A Brazilian Experience"
+        self._check_redundant_terms(term_field_query, ["TI", "AB", "XB"])
 
 
 class EBSCOListLinter(QueryListLinter):

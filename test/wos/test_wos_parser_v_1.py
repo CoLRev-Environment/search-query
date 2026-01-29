@@ -1109,7 +1109,7 @@ def test_list_parser_case_4() -> None:
                 "message": "Redundant term in the query",
                 "is_fatal": False,
                 "position": [(7, 21), (45, 59)],
-                "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
+                "details": 'The term \x1b[93m"Peer leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
             {
                 "code": "QUALITY_0005",
@@ -1117,7 +1117,7 @@ def test_list_parser_case_4() -> None:
                 "message": "Redundant term in the query",
                 "is_fatal": False,
                 "position": [(25, 41), (63, 79)],
-                "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
+                "details": 'The term \x1b[93m"Shared leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
 
         ],

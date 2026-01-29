@@ -457,6 +457,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_year_format(child)
 
+    def _get_generic_field_set(self, value: str) -> set:
+        return syntax_str_to_generic_field_set(value)
+
     def _normalize_field(self, value: str) -> str:
         return map_to_standard(value)
 
@@ -475,13 +478,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self._check_journal_filters_in_subquery(query)
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
-        self._check_redundant_terms(term_field_query)
+        self._check_redundant_terms(term_field_query, ["[ti]", "[tiab]", "[tw]"])
         self._check_for_wildcard_usage(term_field_query)
-        # mh is not matched exactly, terms can be redundant:
-        # https://pubmed.ncbi.nlm.nih.gov/31176308/
-        # is found by both searches:
-        # "Sleep"[mh] AND "vigilant attention"[ti]
-        # "Sleep Deprivation"[mh] AND "vigilant attention"[ti]
 
     def validate_platform_query(self, query: Query) -> None:
         """Validate the query for the PubMed platform"""

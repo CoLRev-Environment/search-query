@@ -549,23 +549,15 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
-            '"device" AND ("wearable device" AND "health tracking")',
-            "Title",
+            '"device"[Title/Abstract] AND ("wearable device"[Title] AND "health tracking")',
+            "",
             [
-                {
-                    "code": "FIELD_0003",
-                    "label": "field-extracted",
-                    "message": "Recommend explicitly specifying the search field in the string",
-                    "is_fatal": False,
-                    "position": [],
-                    "details": "The search field is extracted and should be included in the query.",
-                },
                 {
                     "code": "FIELD_0004",
                     "label": "field-implicit",
                     "message": "Search field is implicitly specified",
                     "is_fatal": False,
-                    "position": [(0, 8), (14, 31), (36, 53)],
+                    "position": [(59, 76)],
                     "details": "The search field is implicit (will be set to [all] by PubMed).",
                 },
                 {
@@ -581,8 +573,8 @@ def test_pubmed_invalid_token_sequences(
                     "label": "redundant-term",
                     "message": "Redundant term in the query",
                     "is_fatal": False,
-                    "position": [(0, 8), (14, 31)],
-                    "details": 'The term \x1b[93m"wearable device"\x1b[0m is more specific than \x1b[93m"device"\x1b[0m—results matching \x1b[93m"wearable device"\x1b[0m are a subset of those matching \x1b[93m"device"\x1b[0m.\nSince both are connected with AND, including \x1b[93m"device"\x1b[0m does not further restrict the result set and is therefore redundant.',
+                    "position": [(0, 8)],
+                    "details": 'The term \x1b[93m"device"\x1b[0m is redundant in this AND query because another term already restricts the results as much or more.',
                 },
             ],
         ),
@@ -603,8 +595,8 @@ def test_pubmed_invalid_token_sequences(
                     "label": "redundant-term",
                     "message": "Redundant term in the query",
                     "is_fatal": False,
-                    "position": [(1, 9), (46, 63)],
-                    "details": 'Results for term \x1b[93m"wearable device"\x1b[0m are contained in the more general search for \x1b[93m"device"\x1b[0m.\nAs both terms are connected with OR, the term "wearable device" is redundant.',
+                    "position": [(46, 63)],
+                    "details": 'The term \x1b[93m"wearable device"\x1b[0m is redundant in this OR query because another term already matches all of its results.',
                 },
             ],
         ),
@@ -710,7 +702,7 @@ def test_pubmed_invalid_token_sequences(
             ],
         ),
         (
-            '("Sleep"[mh] OR "Sleep Deprivation"[mh]) AND "vigilant attention"[ti]',
+            '("Sleep"[ti] OR "Sleep Deprivation"[ti]) AND "vigilant attention"[ti]',
             "",
             [
                 {
@@ -718,8 +710,8 @@ def test_pubmed_invalid_token_sequences(
                     "label": "redundant-term",
                     "message": "Redundant term in the query",
                     "is_fatal": False,
-                    "position": [(1, 8), (16, 35)],
-                    "details": 'Results for term \x1b[93m"Sleep Deprivation"\x1b[0m are contained in the more general search for \x1b[93m"Sleep"\x1b[0m.\nAs both terms are connected with OR, the term "Sleep Deprivation" is redundant.',
+                    "position": [(16, 35)],
+                    "details": 'The term \x1b[93m"Sleep Deprivation"\x1b[0m is redundant in this OR query because another term already matches all of its results.',
                 }
             ],
         ),
@@ -735,14 +727,6 @@ def test_pubmed_invalid_token_sequences(
                     "position": [],
                     "details": 'Unnecessary parentheses around AND block(s). A query with the structure\n\x1b[91m(\x1b[0mA AND B\x1b[91m)\x1b[0m AND C\n can be simplified to \nA AND B AND C\nwith\n  A: "Sleep"\n  B: "Sleep Deprivation"\n  C: "vigilant attention".\n',
                 },
-                {
-                    "code": "QUALITY_0005",
-                    "label": "redundant-term",
-                    "message": "Redundant term in the query",
-                    "is_fatal": False,
-                    "position": [(1, 8), (17, 36)],
-                    "details": 'The term \x1b[93m"Sleep Deprivation"\x1b[0m is more specific than \x1b[93m"Sleep"\x1b[0m—results matching \x1b[93m"Sleep Deprivation"\x1b[0m are a subset of those matching \x1b[93m"Sleep"\x1b[0m.\nSince both are connected with AND, including \x1b[93m"Sleep"\x1b[0m does not further restrict the result set and is therefore redundant.',
-                },
             ],
         ),
         (
@@ -755,7 +739,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Redundant term in the query",
                     "is_fatal": False,
                     "position": [(0, 23), (33, 56)],
-                    "details": 'Term "Pickwickian Syndrome*" is contained multiple times i.e., redundantly.',
+                    "details": 'The term \x1b[93m"Pickwickian Syndrome*"\x1b[0m is contained multiple times i.e., redundantly.',
                 }
             ],
         ),

@@ -641,6 +641,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self._check_invalid_near_query(child)
 
+    def _get_generic_field_set(self, value: str) -> set:
+        return syntax_str_to_generic_field_set(value)
+
     def _normalize_field(self, value: str) -> str:
         return map_to_standard(value)
 
@@ -665,7 +668,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_doi_format(term_field_query)
         self._check_date_filters_in_subquery(term_field_query)
         self._check_journal_filters_in_subquery(term_field_query)
-        self._check_redundant_terms(term_field_query)
+        self._check_redundant_terms(term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="])
         self._check_for_wildcard_usage(term_field_query)
         self.check_deprecated_field_tags(term_field_query)
 

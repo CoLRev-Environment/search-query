@@ -734,6 +734,10 @@ class QueryStringLinter:
             )
 
     @abstractmethod
+    def _get_generic_field_set(self, value: str) -> set:
+        """Return generic field set for the given field value."""
+
+    @abstractmethod
     def _normalize_field(self, value: str) -> str:
         """Map a field to the standard platform syntax."""
 
@@ -1142,12 +1146,13 @@ class QueryStringLinter:
 
     # pylint: disable=too-many-branches
     def _check_redundant_terms(
-        self, query: Query, exact_fields: typing.Optional[re.Pattern] = None
+        self, query: Query, redundancy_fields: list[str]
     ) -> None:
-        """Check query for redundant search terms
+        """Check the query for redundant search terms.
 
-        exact_fields is a regex pattern that matches fields
-        that should not be considered for redundancy checks."""
+        Only fields listed in `redundancy_fields` are considered for sub-term
+        redundancy checks.
+        """
 
         subqueries: dict = {}
         subquery_types: dict = {}
@@ -1167,7 +1172,7 @@ class QueryStringLinter:
             if operator == Operators.NOT:
                 terms.pop(0)  # First term of a NOT query cannot be redundant
 
-            redundant_terms = []
+            redundant_terms = set()
             for term_a in terms:
                 for term_b in terms:
                     if (
@@ -1180,59 +1185,66 @@ class QueryStringLinter:
                     field_a = term_a.field.value if term_a.field else None
                     field_b = term_b.field.value if term_b.field else None
 
-                    if field_a != field_b:
-                        continue
-
-                    if field_a and exact_fields and exact_fields.fullmatch(field_a):
-                        continue
-
-                    if term_a.value == term_b.value or (
-                        term_a.value.strip('"').lower()
-                        in term_b.value.strip('"').lower().split()
+                    # 1) Exact duplicate term and field values => always redundant
+                    if (
+                            term_a.value.lower() == term_b.value.lower()
+                            and field_a == field_b
                     ):
-                        if term_a.value == term_b.value:
-                            details = (
-                                f"Term {term_b.value} is contained multiple times"
-                                " i.e., redundantly."
-                            )
-                            self.add_message(
-                                QueryErrorCode.REDUNDANT_TERM,
-                                positions=[term_a.position, term_b.position],
-                                details=details,
-                            )
-                            redundant_terms.append(term_a)
-                            continue
-                        # Terms in AND queries follow different redundancy logic
-                        # than terms in OR queries
-                        if operator == Operators.AND:
-                            details = (
-                                f"The term {Colors.ORANGE}{term_b.value}{Colors.END} is more "
-                                "specific than "
-                                f"{Colors.ORANGE}{term_a.value}{Colors.END}—results matching "
-                                f"{Colors.ORANGE}{term_b.value}{Colors.END} are a subset "
-                                f"of those matching {Colors.ORANGE}{term_a.value}{Colors.END}.\n"
-                                f"Since both are connected with AND, including "
-                                f"{Colors.ORANGE}{term_a.value}{Colors.END} does not further "
-                                f"restrict the result set and is therefore redundant."
-                            )
-                            self.add_message(
-                                QueryErrorCode.REDUNDANT_TERM,
-                                positions=[term_a.position, term_b.position],
-                                details=details,
-                            )
-                            redundant_terms.append(term_a)
-                        elif operator == Operators.OR:
-                            self.add_message(
-                                QueryErrorCode.REDUNDANT_TERM,
-                                positions=[term_a.position, term_b.position],
-                                details="Results for term "
-                                f"{Colors.ORANGE}{term_b.value}{Colors.END} "
-                                "are contained in the more general search for "
-                                f"{Colors.ORANGE}{term_a.value}{Colors.END}.\n"
-                                "As both terms are connected with OR, "
-                                f"the term {term_b.value} is redundant.",
-                            )
-                            redundant_terms.append(term_b)
+                        details = (
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is contained multiple times"
+                            " i.e., redundantly."
+                        )
+                        self.add_message(
+                            QueryErrorCode.REDUNDANT_TERM,
+                            positions=[term_a.position, term_b.position],
+                            details=details,
+                        )
+                        redundant_terms.add(term_a)
+                        continue
+
+                    if field_a not in redundancy_fields or field_b not in redundancy_fields:
+                        continue
+
+                    # 2) AND: more-specific term makes the broader one redundant
+                    if (
+                        operator == Operators.AND
+                        and term_a.value.strip('"').lower() in term_b.value.strip('"').lower().split()
+                        and (
+                            field_a == field_b
+                            or self._get_generic_field_set(field_a) > self._get_generic_field_set(field_b)
+                        )
+                    ):
+                        details = (
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is redundant in this AND query "
+                            f"because another term already restricts the results as much or more."
+                        )
+                        self.add_message(
+                            QueryErrorCode.REDUNDANT_TERM,
+                            positions=[term_a.position],
+                            details=details,
+                        )
+                        redundant_terms.add(term_a)
+                        continue
+
+                    # 3) OR: broader term makes the more-specific one redundant
+                    if (
+                        operator == Operators.OR
+                        and term_b.value.strip('"').lower() in term_a.value.strip('"').lower().split()
+                        and (
+                            field_a == field_b
+                            or self._get_generic_field_set(field_a) < self._get_generic_field_set(field_b)
+                        )
+                    ):
+                        details = (
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is redundant in this OR query "
+                            f"because another term already matches all of its results."
+                        )
+                        self.add_message(
+                            QueryErrorCode.REDUNDANT_TERM,
+                            positions=[term_a.position],
+                            details=details
+                        )
+                        redundant_terms.add(term_a)
 
     # 10.1079_SEARCHRXIV.2023.00269.json
     def _check_for_opportunities_to_combine_subqueries(

@@ -277,15 +277,15 @@ def test_invalid_token_sequences(
             ],
         ),
         (
-            'MH "sleep" OR MH "sleep disorders"',
+            'TI "sleep" OR TI "sleep disorders"',
             [
                 {
                     "code": "QUALITY_0005",
                     "label": "redundant-term",
                     "message": "Redundant term in the query",
                     "is_fatal": False,
-                    "position": [(3, 10), (17, 34)],
-                    "details": 'Results for term \x1b[93m"sleep disorders"\x1b[0m are contained in the more general search for \x1b[93m"sleep"\x1b[0m.\nAs both terms are connected with OR, the term "sleep disorders" is redundant.',
+                    "position": [(17, 34)],
+                    "details": 'The term \x1b[93m"sleep disorders"\x1b[0m is redundant in this OR query because another term already matches all of its results.',
                 }
             ],
         ),
@@ -428,7 +428,7 @@ def test_invalid_token_sequences(
             [
                 {
                     'code': 'QUALITY_0005',
-                    'details': 'Term thorac* is contained multiple times i.e., redundantly.',
+                    'details': 'The term \x1b[93mthorac*\x1b[0m is contained multiple times i.e., redundantly.',
                     'is_fatal': False,
                     'label': 'redundant-term',
                     'message': 'Redundant term in the query',
