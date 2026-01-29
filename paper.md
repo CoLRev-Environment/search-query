@@ -118,11 +118,11 @@ Based on a query object, *search-query* supports the following operations, as il
   Such query translation functionality can eliminate manual efforts for rewriting queries and reduce the risk of human error during translation.
   In line with the vision of seamless cross-database literature searches, future development will focus on adding more databases to the translation repertoire.
 
-- **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support semantic query improvement to enhance recall and precision.
+- **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support query improvement to enhance recall and precision.
   As queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
   In future work, this improvement functionality may be augmented with more automated suggestions and optimizations.
 
-- **Automate:** Automation primarily refers to the integrate with systematic review management systems, such as CoLRev [@WagnerPrester2025].
+- **Automate:** Automation primarily refers to the integration with systematic review management systems, such as CoLRev [@WagnerPrester2025].
   The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches automatically.
   It also provides a command-line interface and git pre-commit hooks, allowing researchers to incorporate query validation into version control and continuous integration setups.
   <!-- By representing queries in the form of objects, *search-query* further enables advanced use cases such as executing searches on platforms that lack native Boolean query support, for instance, by breaking a complex query into multiple API calls. -->

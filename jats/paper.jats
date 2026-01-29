@@ -216,9 +216,9 @@ a Creative Commons Attribution 4.0 International License (CC BY
     </list-item>
     <list-item>
       <p><bold>Improve:</bold> Beyond basic syntax checking and
-      translation, <italic>search-query</italic> aims to support
-      semantic query improvement to enhance recall and precision. As
-      queries are represented as manipulable objects, researchers can
+      translation, <italic>search-query</italic> aims to support query
+      improvement to enhance recall and precision. As queries are
+      represented as manipulable objects, researchers can
       programmatically experiment with modifications — for example,
       adding synonyms or adjusting field scopes — to observe how these
       changes affect the search results. In future work, this
@@ -227,7 +227,7 @@ a Creative Commons Attribution 4.0 International License (CC BY
     </list-item>
     <list-item>
       <p><bold>Automate:</bold> Automation primarily refers to the
-      integrate with systematic review management systems, such as
+      integration with systematic review management systems, such as
       CoLRev
       (<xref alt="Wagner &amp; Prester, 2025" rid="ref-WagnerPrester2025" ref-type="bibr">Wagner
       &amp; Prester, 2025</xref>). The library offers programmatic
@@ -809,6 +809,7 @@ print(wos_query.to_string())
       <article-title>CoLRev: An open-source environment for collaborative reviews</article-title>
       <year iso-8601-date="2025">2025</year>
       <uri>https://github.com/CoLRev-Environment/colrev</uri>
+      <pub-id pub-id-type="doi">10.5281/zenodo.11668338</pub-id>
     </element-citation>
   </ref>
 </ref-list>
