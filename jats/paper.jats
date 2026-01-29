@@ -109,6 +109,7 @@ a Creative Commons Attribution 4.0 International License (CC BY
 <kwd>Search query</kwd>
 <kwd>Literature search</kwd>
 <kwd>Literature review</kwd>
+<kwd>Meta-analysis</kwd>
 </kwd-group>
 </article-meta>
 </front>
@@ -125,7 +126,7 @@ a Creative Commons Attribution 4.0 International License (CC BY
   <italic>EBSCOHost</italic>, with parsers validated against a
   comprehensive set of peer-reviewed queries from
   <italic>searchRxiv</italic>. Unlike existing proprietary and web-based
-  softare, <italic>search-query</italic> offers programmatic access and
+  software, <italic>search-query</italic> offers programmatic access and
   thereby supports integration into research workflows, contributing to
   the automation of systematic literature reviews. </p>
   <p>Keywords: Python, search query, literature search, literature
@@ -174,7 +175,7 @@ a Creative Commons Attribution 4.0 International License (CC BY
       Currently, parsers are available for <italic>Web of
       Science</italic>, <italic>PubMed</italic>, and
       <italic>EBSCOHost</italic>. The <italic>load</italic> capability
-      is extensible and the documentation outlines how to develop
+      is extensible, and the documentation outlines how to develop
       parsers for additional databases.</p>
     </list-item>
     <list-item>
@@ -292,7 +293,7 @@ search_file.save(&quot;search-file.json&quot;)</code>
     errors and provide suggestions for improvement. This helps
     researchers maintain high-quality—even in complex search strategies.
     In fact, search queries used in literature reviews are often long
-    and complex: peer-reviewed queries from <italic>searchRxiv</italic>,
+    and complex: Peer-reviewed queries from <italic>searchRxiv</italic>,
     for instance, average over 2,900 characters and include around 60
     parentheses. Such queries are difficult to analyze visually—both for
     researchers constructing them and for reviewers assessing their
@@ -390,7 +391,7 @@ print(wos_query.to_string())
   &amp; Sunyaev, 2019</xref>). As software packages available under open
   source licenses, <italic>Medline Transpose</italic>
   (<xref alt="Wanner &amp; Baumann, 2019" rid="ref-WannerBaumann2019" ref-type="bibr">Wanner
-  &amp; Baumann, 2019</xref>) is a javascript-based website that
+  &amp; Baumann, 2019</xref>) is a JavaScript-based website that
   translates queries between three databases, and
   <italic>litsearchr</italic>
   (<xref alt="Grames, 2020" rid="ref-Grames2020" ref-type="bibr">Grames,

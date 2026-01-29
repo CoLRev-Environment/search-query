@@ -5,6 +5,7 @@ tags:
 - Search query
 - Literature search
 - Literature review
+- Meta-analysis
 authors:
 - name: Peter Eckhardt
   affiliation: 1
@@ -292,8 +293,6 @@ print(wos_query.to_string())
 Capability to improve and automate search queries focuses on the programmatic use of *search-query* for custom logic and use cases (e.g., writing tailored functions).
 As these features are designed for flexible integration into code-based workflows, it is hard to illustrate them through generic examples;
 instead, guidance can be found in the [online documentation](https://colrev-environment.github.io/search-query/index.html).
-
-\newpage
 
 # Related software packages
 
