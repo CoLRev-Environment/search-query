@@ -76,9 +76,7 @@ from search_query import SearchFile
 
 search_file = SearchFile(
     filepath="search-file.json",
-    search_string=wos_query.to_string(),
-    platform="wos",
-    version="1",
+    query=wos_query,
     authors=[{"name": "Tom Brady"}],
     record_info={},
     date={}

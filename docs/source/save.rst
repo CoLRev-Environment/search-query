@@ -14,6 +14,15 @@ To write a query to a JSON file, run the serializer:
     query.translate("wos")
 
     search_file = SearchFile(
+        query=query,
+        authors=[{"name": "Tom Brady"}],
+        record_info={},
+        date={}
+    )
+
+    # Another option is to pass the search string and platform
+    # as separate keyword arguments
+    search_file = SearchFile(
         search_string=query.to_string(),
         platform="wos",
         version="1",

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from search_query.parser import parse
 from search_query.search_file import load_search_file
 from search_query.search_file import SearchFile
 
@@ -50,6 +51,30 @@ def test_search_file_to_dict_and_save(tmp_path: Path) -> None:
     assert loaded.search_string == sf.search_string
     assert loaded.authors == sf.authors
     assert loaded.date == sf.date
+
+
+def test_search_file_query_to_dict_and_save(tmp_path: Path) -> None:
+    query = parse("cancer[ti] AND treatment[ti]", platform="pubmed")
+
+    search_data = {
+        "authors": [
+            {
+                "name": "John Doe",
+                "ORCID": "0000-0001-2345-678X",
+                "email": "john@example.com",
+            }
+        ],
+        "record_info": {"source": "manual"},
+        "date": {"year": 2024},
+        "extra_field": "extra_value",
+    }
+
+    sf = SearchFile(query=query, **search_data)  # type: ignore
+
+    # Check to_dict content
+    data_dict = sf.to_dict()
+    assert data_dict["search_string"] == "cancer[ti] AND treatment[ti]"
+    assert data_dict["platform"] == "pubmed"
 
 
 def test_save_without_filepath_raises() -> None:
