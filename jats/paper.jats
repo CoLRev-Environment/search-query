@@ -277,9 +277,7 @@ FT50_journals = load_query(&quot;journals_FT50&quot;)</code>
     <code language="python">from search_query import SearchFile
 
 search_file = SearchFile(
-   search_string=pubmed_query.to_string(),
-   platform=&quot;pubmed&quot;,
-   version=&quot;1&quot;,
+   query=pubmed_query,
    authors=[{&quot;name&quot;: &quot;Gerit Wagner&quot;}],
    record_info={},
    date={}

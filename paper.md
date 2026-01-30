@@ -176,9 +176,7 @@ When saving a query, the JSON format is based on the standard proposed by @Hadda
 from search_query import SearchFile
 
 search_file = SearchFile(
-   search_string=pubmed_query.to_string(),
-   platform="pubmed",
-   version="1",
+   query=pubmed_query,
    authors=[{"name": "Gerit Wagner"}],
    record_info={},
    date={}
