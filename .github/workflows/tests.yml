@@ -1,18 +1,22 @@
 name: Tests
 
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
 
 jobs:
   tests:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Remove existing venv (cross-platform)
+        shell: bash
+        run: rm -rf .venv
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -20,17 +24,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - name: Install dependencies with uv
-        run: |
-          uv venv
-          uv pip install -e .[dev]
-          echo "Dependencies installed successfully"
-
       - name: Setup git
         run: |
           git config --global user.name "Search-query test"
           git config --global user.email "actions@users.noreply.github.com"
           git config --global url.https://github.com/.insteadOf git://github.com/
+
+      - name: Install dependencies with uv
+        run: uv pip install -e .[dev]
 
       - name: Run tests with uv
         run: uv run pytest test -vv
@@ -39,26 +40,29 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install via pip
-        run: |
-          pip install -e .[dev]
-          pip list
+      - name: Upgrade pip tooling
+        run: python -m pip install -U pip setuptools wheel
 
       - name: Setup git
         run: |
           git config --global user.name "Search-query test"
           git config --global user.email "actions@users.noreply.github.com"
           git config --global url.https://github.com/.insteadOf git://github.com/
+
+      - name: Install via pip
+        run: |
+          pip install -e .[dev]
+          pip list
 
       - name: Run tests
         run: pytest test -vv

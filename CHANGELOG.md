@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 - No changes yet.
 
+## Release 0.15.0
+
+- Polish docs (automate page, with pinned colrev version; functional overview)
+- Extend tests (covering code in the paper; dist smoke test)
+- JSON: make `SearchQuery(query=...)` the (safer) default
+
 ## Release 0.14.1
 
 - **Fix broken sdist**: caused wheels to ship without package code.

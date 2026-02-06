@@ -12,8 +12,9 @@
 - Check whether the tests pass locally (``pytest tests``).
 - Run `git push --atomic origin main $VERSION`.
 
-- Create [new release on GitHub](https://github.com/CoLRev-Environment/search-query/releases/new)
-    - Select new tag
-    - Enter the release notes
-    - Publish the release
-    - The PyPI version is automatically published through a [github action](https://github.com/CoLRev-Environment/search-query/actions/workflows/publish.yml).
+Create [new release on GitHub](https://github.com/CoLRev-Environment/search-query/releases/new)
+
+- Select new tag
+- Enter the release notes
+- Publish the release
+- The PyPI version is automatically published through a [github action](https://github.com/CoLRev-Environment/search-query/actions/workflows/publish.yml).

@@ -1,6 +1,6 @@
 [project]
 name = "search-query"
-version = "0.14.1"
+version = "0.15.0"
 description = "Package for managing literature search queries."
 authors = [
     { name = "Peter Eckhardt" },
