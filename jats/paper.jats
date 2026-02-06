@@ -76,11 +76,16 @@ search queries</article-title>
 <surname>Wagner</surname>
 <given-names>Gerit</given-names>
 </name>
-<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
 </contrib>
 <aff id="aff-1">
 <institution-wrap>
 <institution>Otto-Friedrich Universität Bamberg</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution>Frankfurt School of Finance &amp; Management</institution>
 </institution-wrap>
 </aff>
 </contrib-group>

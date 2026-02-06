@@ -26,11 +26,13 @@ authors:
   affiliation: 1
   orcid: "0009-0000-5716-5816"
 - name: Gerit Wagner
-  affiliation: 1
+  affiliation: 2
   orcid: "0000-0003-3926-7717"
 affiliations:
   - name: Otto-Friedrich Universität Bamberg
     index: 1
+  - name: Frankfurt School of Finance & Management
+    index: 2
 date: "2024-05-20"
 bibliography: paper.bib
 header-includes: |
@@ -49,7 +51,7 @@ Unlike existing proprietary and web-based software, *search-query* offers progra
 
 Keywords: Python, search query, literature search, literature review, meta-analysis.
 
-<!-- 
+<!--
 - entry: enter queries from cli/programmatically
 - manipulation: change query elements programmatically
 - parsing: parse query (tree) object from different input formats
@@ -57,7 +59,7 @@ Keywords: Python, search query, literature search, literature review, meta-analy
 - analysis: retrieval size per sub-tree (Theis), syntactic analysis of contradiction
 - simplification:
   - Stemming and Lemmatization: Reduce words to their root forms to capture all variants (e.g., "running" to "run")., Wildcards: Use symbols (e.g., ?, #) within words to replace a single character (e.g., "wom?n" retrieves "woman" and "women"), Truncation: Use a symbol (usually ) to replace one or more characters at the end of a word (e.g., "comput" retrieves "computer," "computing").
-  - Combining terms: combining terms in queries like "run AND running" (absorption law), using wildcards to combine terms (if they have the same search-fields). 
+  - Combining terms: combining terms in queries like "run AND running" (absorption law), using wildcards to combine terms (if they have the same search-fields).
   - Redundant Nesting: Remove unnecessary parentheses to simplify the query structure (associative property), remove unnecessary parentheses
 -refinement (TBD): expansion based on synonyms and thesaurus terms
   - Synonym Expansion: Use a thesaurus or controlled vocabulary (like MeSH for medical terms) to expand queries with synonyms or related terms (see synonym-expansion-mesh.py)
@@ -294,7 +296,7 @@ instead, guidance can be found in the [online documentation](https://colrev-envi
 
 # Related software packages
 
-<!-- 
+<!--
 Tools for academic (Boolean) literature search queries:
 
 - *Yale MeSH Analyzer*: Organizes MeSH terms (keywords) for selected papers in a table for manual search query construction, [link](https://mesh.med.yale.edu/) [@GrossettaNardiniWang2023]
@@ -311,7 +313,7 @@ Tools for academic (Boolean) literature search queries:
 
 TODO:
 https://ielab.io/searchrefiner/
-https://github.com/netgen/query-translator 
+https://github.com/netgen/query-translator
 https://guides.library.cornell.edu/evidence-synthesis/translate
   - Galach!?
 
@@ -329,7 +331,7 @@ Table: Overview of related tools
 -->
 
 Table 1 provides an overview of related software packages and a comparison with *search-query*.
-The leading query translators, *Polyglot search* and *Litsonar*, are proprietary and delivered through websites, i.e., without integration capabilities. 
+The leading query translators, *Polyglot search* and *Litsonar*, are proprietary and delivered through websites, i.e., without integration capabilities.
 <!-- Litsonar: no parser -->
 *Polyglot search* supports a more comprehensive selection of databases (15) and initial validation hints [@ClarkGlasziouDelMarEtAl2020a].
 *Litsonar* supports seven databases, but does not offer parsers [@SturmSunyaev2019].
@@ -342,12 +344,12 @@ and *litsearchr* [@Grames2020] is an R library that supports semi-automated gene
     \centering
     \begin{tabular}{lllccccccc}
             Software package
-             & Setup 
-             & License 
-             & \rotatebox{80}{Load} 
+             & Setup
+             & License
+             & \rotatebox{80}{Load}
              & \rotatebox{80}{Save}
-             & \rotatebox{80}{Lint} 
-             & \rotatebox{80}{Translate} 
+             & \rotatebox{80}{Lint}
+             & \rotatebox{80}{Translate}
              & \rotatebox{80}{Improve}
              & \rotatebox{80}{Automate}
              \\
@@ -375,7 +377,7 @@ It is extensible and currently supports three databases (*Web of Science*, *PubM
 The query parsers were tested with a comprehensive selection of peer-reviewed queries from *[searchRxiv](https://www.cabidigitallibrary.org/journal/searchrxiv)* [@White2024].
 Testing showed that a significant number of queries still contained errors after passing the peer-review process, further highlighting the need for linters like *search-query*.
 
-<!-- 
+<!--
 Given that *search-query* is designed for programmatic access, it can serve as a basis for query improvement and can be integrated into existing tool pipelines [@BellerClarkTsafnatEtAl2018].
 
 There is no tool supporting programmatic access (integration with other tools).
