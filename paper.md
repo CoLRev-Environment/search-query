@@ -29,7 +29,7 @@ authors:
   affiliation: 2
   orcid: "0000-0003-3926-7717"
 affiliations:
-  - name: Otto-Friedrich Universität Bamberg
+  - name: Otto-Friedrich-Universität Bamberg
     index: 1
   - name: Frankfurt School of Finance & Management
     index: 2
