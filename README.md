@@ -98,7 +98,7 @@ Bug reports or issues can be submitted via [the issue tracker](https://github.co
 
 ## How to cite
 
-Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. "search-query: An Open-Source Python Library for Academic Search Queries".
+Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. search-query: An open source Python library for academic search queries. *Journal of Open Source Software*, 11(118), 8775, https://doi.org/10.21105/joss.08775
 
 The package was developed as part of Bachelor's theses:
 
