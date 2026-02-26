@@ -15,6 +15,8 @@
             onclick="window.open('https://pypi.org/project/search-query/')">
        <img src="https://img.shields.io/github/license/CoLRev-Environment/search-query" alt="License"
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
+       <img src="https://img.shields.io/badge/Web%20GUI-Open-6f42c1" alt="Web GUI"
+            onclick="window.open('https://colrev-environment.github.io/search-query-gui/')">
    </div><br>
 
 **Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
@@ -109,6 +111,8 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
+
+Try the interactive web GUI in your browser: `search-query-gui <https://colrev-environment.github.io/search-query-gui/>`_.
 
 Functional overview
 ======================

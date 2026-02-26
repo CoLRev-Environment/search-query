@@ -12,6 +12,7 @@
 [![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
 [![status](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9/status.svg)](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
+[![Web GUI](https://img.shields.io/badge/Web%20GUI-Open-6f42c1)](https://colrev-environment.github.io/search-query-gui/)
 
 </div>
 
@@ -86,6 +87,8 @@ search_file.save()
 ```
 
 For a more detailed overview of the package’s functionality, see the [documentation](https://colrev-environment.github.io/search-query/).
+
+Try the **web GUI** in your browser: [search-query-gui](https://colrev-environment.github.io/search-query-gui/).
 
 ## Demo
 
