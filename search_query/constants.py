@@ -605,10 +605,10 @@ search-query upgrade search_query.json --to 2.0.0
 """,
     )
 
-    CHARACTER_REPLACEMENT = (
+    PUBMED_INVALID_CHARACTER = (
         "PUBMED_0002",
-        "character-replacement",
-        "Character replacement",
+        "invalid-character",
+        "Search term contains invalid character",
         """
 **Problematic query**:
 

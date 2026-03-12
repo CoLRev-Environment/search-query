@@ -245,14 +245,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(13, 15)],
                     "details": "Cannot end with LOGIC_OPERATOR",
                 },
-                {
-                    "code": "STRUCT_0001",
-                    "label": "implicit-precedence",
-                    "message": "Operator changed at the same level (explicit parentheses are recommended)",
-                    "is_fatal": False,
-                    "position": [(9, 12), (13, 15)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
-                },
+                # {
+                #     "code": "STRUCT_0001",
+                #     "label": "implicit-precedence",
+                #     "message": "Operator changed at the same level (explicit parentheses are recommended)",
+                #     "is_fatal": False,
+                #     "position": [(9, 12), (13, 15)],
+                #     "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
+                # },
             ],
         ),
         (
@@ -277,7 +277,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0004",
@@ -306,7 +306,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 10)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 }
             ],
         ),
@@ -327,7 +327,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0002",
@@ -348,7 +348,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0004",
@@ -487,7 +487,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 }
             ],
         ),
@@ -500,7 +500,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 15)],
-                    "details": "Missing operator between terms.",
+                    "details": "Missing operator",
                 }
             ]
         ),
@@ -750,13 +750,13 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=(activity) AND (TS=(cancer) AND SO=(Lancet))",
             [
                 {
-                    "code": "QUALITY_0003",
-                    "label": "journal-filter-in-subquery",
-                    "message": "Journal (or publication name) filter in subquery",
-                    "is_fatal": False,
-                    "position": [(39, 45)],
-                    "details": "Check whether journal/publication-name filters (SO=) should apply to the entire query.",
-                }
+                    'code': 'QUALITY_0004',
+                    'details': 'Unnecessary parentheses around query block.',
+                    'is_fatal': False,
+                    'label': 'unnecessary-parentheses',
+                    'message': 'Unnecessary parentheses in queries',
+                    'position': [(18, 19), (46, 47)],
+                },
             ],
         ),
         (
@@ -777,7 +777,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             [
                 {
                     'code': 'PARSE_0004',
-                    'details': 'Missing operator between terms.',
+                    'details': 'Missing operator',
                     'is_fatal': True,
                     'label': 'invalid-token-sequence',
                     'message': 'The sequence of tokens is invalid.',
@@ -815,7 +815,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Potential wildcard use",
                     "is_fatal": False,
                     "position": [(4, 11), (15, 24), (28, 39), (43, 56)],
-                    "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
+                    "details": "Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
                 }
             ],
         ),
@@ -1108,7 +1108,7 @@ def test_list_parser_case_4() -> None:
                 "label": "redundant-term",
                 "message": "Redundant term in the query",
                 "is_fatal": False,
-                "position": [(7, 21), (45, 59)],
+                "position": [(7, 21)],
                 "details": 'The term \x1b[93m"Peer leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
             {
@@ -1116,7 +1116,7 @@ def test_list_parser_case_4() -> None:
                 "label": "redundant-term",
                 "message": "Redundant term in the query",
                 "is_fatal": False,
-                "position": [(25, 41), (63, 79)],
+                "position": [(25, 41)],
                 "details": 'The term \x1b[93m"Shared leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
 
@@ -1124,7 +1124,7 @@ def test_list_parser_case_4() -> None:
         '2': [
             {
                 'code': 'QUALITY_0006',
-                'details': 'Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m',
                 'is_fatal': False,
                 'label': 'potential-wildcard-use',
                 'message': 'Potential wildcard use',
@@ -1185,7 +1185,7 @@ def test_list_parser_case_6() -> None:
             },
             {
                 'code': 'QUALITY_0006',
-                'details': 'Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
+                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
                 'is_fatal': False,
                 'label': 'potential-wildcard-use',
                 'message': 'Potential wildcard use',

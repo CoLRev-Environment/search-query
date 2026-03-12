@@ -100,13 +100,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
-        self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         self.check_invalid_near_within_operators()
 
         if self.has_fatal_errors():
             return self.tokens
 
+        self._print_unequal_precedence_warning()
         self.check_general_field()
 
         return self.tokens
@@ -221,8 +221,6 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
                 if token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
-                    if prev_type == TokenTypes.LOGIC_OPERATOR:
-                        details = "Cannot have two consecutive operators"
                     positions = [(self.tokens[i - 1].position[0], token.position[1])]
 
                 elif (
@@ -253,7 +251,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
-                    details = "Missing operator between terms"
+                    details = "Missing operator"
                     positions = [
                         (
                             self.tokens[i - 1].position[0],
@@ -308,7 +306,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            details="Wildcard at the beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                             fatal=False,
                         )
                     elif not query.value[index - 1] == ' ':
@@ -326,7 +324,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             self.add_message(
                                 QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                                 positions=[position],
-                                details="The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it.",
+                                details="The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                                 fatal=False,
                             )
 
@@ -335,14 +333,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            details="Wildcard beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                             fatal=False,
                         )
                     if is_term_end and query.value[index - 1] != "#":
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="EBSCOHost interprets a trailing ? as a literal question mark, not a wildcard. Use #? to force wildcard behavior.",
+                            details="Trailing ? is interpreted as a literal question mark, not a wildcard. Use #? to force wildcard behavior (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                             fatal=False,
                         )
 
@@ -351,7 +349,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                            details="Wildcard beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                             fatal=False,
                         )
 
@@ -373,12 +371,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_quotes_in_terms(query)
         self.check_unsupported_fields_in_query(query)
         self.check_unsupported_wildcards(query)
+        self._check_unnecessary_nesting(query)
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
-        self._check_for_wildcard_usage(term_field_query)
         self._check_redundant_terms(term_field_query, ["TI", "AB", "XB"])
+        self._check_non_global_date_filter(term_field_query)
+        self._check_non_global_journal_filter(term_field_query)
+        self._check_for_wildcard_usage(term_field_query)
 
 
 class EBSCOListLinter(QueryListLinter):

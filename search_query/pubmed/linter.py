@@ -109,15 +109,15 @@ class PubmedQueryStringLinter(QueryStringLinter):
             return self.tokens
 
         # No tokens marked as unknown token-type
-        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.CHARACTER_REPLACEMENT)
+        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.PUBMED_INVALID_CHARACTER)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
-        self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens
 
+        self._print_unequal_precedence_warning()
         self.check_unsupported_pubmed_fields()
         self.check_general_field()
         self.check_implicit_fields()
@@ -221,6 +221,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if token_type in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 continue
 
+            # Do not consider a single " for invalid token sequences (already handled by other validation methods)
+            if self.tokens[i].value == '"':
+                continue
+
             details = ""
             positions = [token.position if token_type else self.tokens[i - 1].position]
 
@@ -262,7 +266,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details="Missing operator between terms"
+                details="Missing operator"
                 positions = [
                     (
                         self.tokens[i - 1].position[0],
@@ -474,18 +478,19 @@ class PubmedQueryStringLinter(QueryStringLinter):
         self.check_operators_with_fields(query)
         self._check_unnecessary_nesting(query)
         self.check_year_format(query)
-        self._check_date_filters_in_subquery(query)
-        self._check_journal_filters_in_subquery(query)
+        self._check_non_global_date_filter(query)
+        self._check_non_global_journal_filter(query)
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
-        self._check_redundant_terms(term_field_query, ["[ti]", "[tiab]", "[tw]"])
-        self._check_for_wildcard_usage(term_field_query)
+        flattened_query = self._flatten_same_operator(term_field_query)
+        self._check_redundant_terms(flattened_query, ["[ti]", "[tiab]", "[tw]"])
+        self._check_for_wildcard_usage(flattened_query)
 
     def validate_platform_query(self, query: Query) -> None:
         """Validate the query for the PubMed platform"""
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
-        self._check_for_opportunities_to_combine_subqueries(term_field_query)
+        # self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
     def syntax_str_to_generic_field_set(self, field_value: str) -> set:
         """Translate a search field"""

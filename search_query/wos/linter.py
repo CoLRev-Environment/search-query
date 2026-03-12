@@ -116,11 +116,11 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
-        self._print_unequal_precedence_warning()
         self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens
 
+        self._print_unequal_precedence_warning()
         self.check_general_field()
         self.check_missing_fields()
 
@@ -329,7 +329,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
                     fatal=True,
-                    details="Missing operator between terms.",
+                    details="Missing operator",
                 )
                 continue
 
@@ -660,15 +660,16 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unsupported_fields_in_query(query)
         self.check_unbalanced_quotes_in_terms(query)
         self._check_invalid_near_query(query)
+        self._check_unnecessary_nesting(query)
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
+        self._check_redundant_terms(term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="])
         self.check_year_format(term_field_query)
         self.check_nr_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
         self.check_doi_format(term_field_query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
-        self._check_redundant_terms(term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="])
+        self._check_non_global_date_filter(term_field_query)
+        self._check_non_global_journal_filter(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
         self.check_deprecated_field_tags(term_field_query)
 

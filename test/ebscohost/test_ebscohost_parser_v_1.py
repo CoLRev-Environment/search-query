@@ -158,7 +158,7 @@ def test_tokenization(
                 Token("hypertension", TokenTypes.TERM, (9, 20)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Missing operator between terms",
+            "Missing operator",
         ),
         (
             [
@@ -183,7 +183,7 @@ def test_tokenization(
                 Token("insulin", TokenTypes.TERM, (12, 19)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Missing operator between terms",
+            "Missing operator",
         ),
         (
             [
@@ -322,7 +322,7 @@ def test_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(5, 10)],
-                    "details": "Cannot have two consecutive operators",
+                    "details": "Invalid operator position",
                 }
             ],
         ),
@@ -331,7 +331,7 @@ def test_invalid_token_sequences(
             [
                 {
                     'code': 'PARSE_0004',
-                    'details': 'Missing operator between terms',
+                    'details': 'Missing operator',
                     'is_fatal': True,
                     'label': 'invalid-token-sequence',
                     'message': 'The sequence of tokens is invalid.',
@@ -353,7 +353,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(0, 1)],
-                    "details": "Wildcard has no effect. EBSCOHost removes wildcards that appear at the beginning of a search term.",
+                    "details": "Wildcard at the beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                 }
             ],
         ),
@@ -366,7 +366,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(3, 4)],
-                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it."
+                    "details": "The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost)."
                 }
             ],
         ),
@@ -379,7 +379,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(1, 2)],
-                    "details": "The * wildcard must be preceded by at least three characters; otherwise, EBSCOHost removes the wildcard and any characters that follow it.",
+                    "details": "The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
                 }
             ],
         ),
@@ -432,7 +432,7 @@ def test_invalid_token_sequences(
                     'is_fatal': False,
                     'label': 'redundant-term',
                     'message': 'Redundant term in the query',
-                    'position': [(0, 7), (11, 18)],
+                    'position': [(0, 7)],
                 },
             ]
         ),

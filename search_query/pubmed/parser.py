@@ -182,7 +182,7 @@ class PubmedParser(QueryStringParser):
             i = position + 1
         token_lists.append(tokens[i:])
 
-        # The token lists represent the subqueries (children
+        # The token lists represent the subqueries (children)
         # of the compound query and are parsed individually.
         children = []
         for token_list in token_lists:

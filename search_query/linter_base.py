@@ -807,29 +807,29 @@ class QueryStringLinter:
     def syntax_str_to_generic_field_set(self, field_value: str) -> set[Fields]:
         """Translate a search field"""
 
-    def _check_date_filters_in_subquery(self, query: Query, level: int = 0) -> None:
+    def _check_non_global_date_filter(self, query: Query, applies_globally: bool = True) -> None:
         """Check for date filters in subqueries"""
 
-        # Skip top-level queries
-        if level < 2:
-            for child in query.children:
-                try:
-                    self._check_date_filters_in_subquery(child, level + 1)
-                except ValueError:
-                    pass
-            return
         if query.operator:
+            if query.get_parent() is None and query.value != Operators.OR:
+                return
+
             for child in query.children:
-                try:
-                    self._check_date_filters_in_subquery(child, level + 1)
-                except ValueError:  # pragma: no cover
-                    pass
+                applies_globally = (
+                    applies_globally
+                    and not (query.value == Operators.OR and child.operator and child.value != Operators.OR)
+                )
+                self._check_non_global_date_filter(child, applies_globally)
             return
 
-        if not query.field:
+        if applies_globally or not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
+        try:
+            generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
+        except ValueError:
+            return
+
         if generic_fields & {Fields.YEAR_PUBLICATION}:
             details = "Check whether date filters should apply to the entire query."
             positions = [(-1, -1)]
@@ -844,29 +844,29 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def _check_journal_filters_in_subquery(self, query: Query, level: int = 0) -> None:
-        """Check for journal filters in subqueries"""
+    def _check_non_global_journal_filter(self, query: Query, applies_globally: bool = True) -> None:
+        """Check for non-global journal filters."""
 
-        # Skip top-level queries
-        if level == 0:
-            for child in query.children:
-                try:
-                    self._check_journal_filters_in_subquery(child, level + 1)
-                except ValueError:
-                    pass
-            return
         if query.operator:
+            if query.get_parent() is None and query.value != Operators.OR:
+                return
+
             for child in query.children:
-                try:
-                    self._check_journal_filters_in_subquery(child, level + 1)
-                except ValueError:  # pragma: no cover
-                    pass
+                applies_globally = (
+                        applies_globally
+                        and not (query.value == Operators.OR and child.operator and child.value != Operators.OR)
+                )
+                self._check_non_global_journal_filter(child, applies_globally)
             return
 
-        if not query.field:
+        if applies_globally or not query.field:
             return
 
-        generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
+        try:
+            generic_fields = self.syntax_str_to_generic_field_set(query.field.value)
+        except ValueError:
+            return
+
         if generic_fields & {
             Fields.JOURNAL,
             Fields.PUBLICATION_NAME,
@@ -884,7 +884,7 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def _can_flatten_artificial_nesting(self, query: Query) -> bool:
+    def  _can_flatten_artificial_nesting(self, query: Query) -> bool:
         """Check whether query is enclosed in artificial parentheses."""
         token_index_before_query = query.position[0] - 1
         token_index_after_query = query.position[1] + 1
@@ -901,28 +901,20 @@ class QueryStringLinter:
 
     def _flatten_same_operator(self, query: Query, flatten_artificial_nesting_only: bool = False) -> Query:
         """Return a copy of the query with same-operator nesting flattened."""
-        if not query.operator:
-            return query
+        modified_query = query.copy()
+
+        if not modified_query.operator:
+            return modified_query
 
         flattened_children = []
-        for child in query.children:
-            if child.value == query.value and (not flatten_artificial_nesting_only or self._can_flatten_artificial_nesting(child)):
-                flattened_children.extend(
-                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only).children
-                )
+        for child in modified_query.children:
+            if child.operator and child.value == query.value and (not flatten_artificial_nesting_only or self._can_flatten_artificial_nesting(child)):
+                flattened_children.extend(self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only).children)
             else:
-                flattened_children.append(
-                    self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only)
-                )
-        from search_query.query import Query
+                flattened_children.append(self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only))
+        modified_query.children = flattened_children
 
-        return Query.create(
-            operator=query.operator,
-            value=query.value,
-            children=list(flattened_children),
-            position=query.position,
-            platform="deactivated",
-        )
+        return modified_query
 
     def _simplify_to_letters(self, original: Query, abbreviation_dict: dict) -> Query:
         from search_query.query import Query
@@ -1091,8 +1083,9 @@ class QueryStringLinter:
 
     # TODO : 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
     # 10.1079_SEARCHRXIV.2024.00457.json- position mismtach
+    """
     def _check_unnecessary_nesting(self, query: Query) -> None:
-        """Check for unnecessary same-operator nesting and provide simplification advice."""
+        # Check for unnecessary same-operator nesting and provide simplification advice.
 
         abbreviation_dict: typing.Dict[str, str] = {}
         query = self._simplify_to_letters(query, abbreviation_dict)
@@ -1120,6 +1113,55 @@ class QueryStringLinter:
                 f"with\n{legend}.\n"
             ),
         )
+    """
+
+    def _is_enclosed_in_paren(self, pos) -> bool:
+        if pos is None:
+            return False
+        start, closing_paren_pos = pos
+        open_paren_pos = start - 1
+        query_str = self.original_str if self.original_str is not None else self.query_str
+        return (
+            0 <= open_paren_pos < len(query_str)
+            and query_str[open_paren_pos] == '('
+            and 0 <= closing_paren_pos < len(query_str)
+            and query_str[closing_paren_pos] == ')'
+        )
+
+    def _check_unnecessary_nesting(self, query: Query) -> None:
+        """Check for unnecessary same-operator nesting and provide simplification advice."""
+        if not query.position:
+            return
+
+        # Double nesting
+        if self._is_enclosed_in_paren(query.position) and self._is_enclosed_in_paren((query.position[0] - 1, query.position[1] + 1)):
+            start, end = query.position
+            open_paren_pos = (start - 2, start - 1)
+            end_paren_pos = (end + 1, end + 2)
+            self.add_message(
+                QueryErrorCode.UNNECESSARY_PARENTHESES,
+                positions=[open_paren_pos, end_paren_pos],
+                details=f"Unnecessary parentheses around query block.",
+            )
+
+        # Same-level operator nesting
+        for child in query.children:
+            if (
+                query.value in (Operators.AND, Operators.OR)
+                and child.operator
+                and child.value == query.value
+                and self._is_enclosed_in_paren(child.position)
+                and (not child.field or (query.field and query.field.value == child.field.value))
+            ):
+                start, end = child.position
+                open_paren_pos = (start - 1, start)
+                end_paren_pos = (end, end + 1)
+                self.add_message(
+                    QueryErrorCode.UNNECESSARY_PARENTHESES,
+                    positions=[open_paren_pos, end_paren_pos],
+                    details=f"Unnecessary parentheses around query block.",
+                )
+            self._check_unnecessary_nesting(child)
 
     def _extract_subqueries(
         self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
@@ -1196,7 +1238,7 @@ class QueryStringLinter:
                         )
                         self.add_message(
                             QueryErrorCode.REDUNDANT_TERM,
-                            positions=[term_a.position, term_b.position],
+                            positions=[term_a.position],
                             details=details,
                         )
                         redundant_terms.add(term_a)
@@ -1248,15 +1290,15 @@ class QueryStringLinter:
 
     # 10.1079_SEARCHRXIV.2023.00269.json
     def _check_for_opportunities_to_combine_subqueries(
-        self, term_field_query: Query
+        self, query: Query
     ) -> None:
         """Check for opportunities to combine subqueries with the same search field."""
 
         # Only consider top-level OR-connected subqueries with two children each
-        if term_field_query.operator and term_field_query.value == Operators.OR:
+        if query.operator and query.value == Operators.OR:
             candidates = [
                 q
-                for q in term_field_query.children
+                for q in query.children
                 if q.operator and q.value == Operators.AND and len(q.children) == 2
             ]
 
@@ -1266,10 +1308,10 @@ class QueryStringLinter:
                     b1, b2 = q2.children
 
                     # Identify identical and differing pairs
-                    if a1.value == b1.value and a2.value != b2.value:
+                    if a1.value == b1.value and (not (a1.field and b1.field) or a1.field.value == b1.field.value) and a2.value != b2.value:
                         identical = (a1, b1)
                         differing = (a2, b2)
-                    elif a2.value == b2.value and a1.value != b1.value:
+                    elif a2.value == b2.value and (not (a2.field and b2.field) or a2.field.value == b2.field.value) and a1.value != b1.value:
                         identical = (a2, b2)
                         differing = (a1, b1)
                     else:
@@ -1297,8 +1339,8 @@ class QueryStringLinter:
                     )
 
         # iterate over subqueries
-        if term_field_query.children:
-            for child in term_field_query.children:
+        if query.children:
+            for child in query.children:
                 self._check_for_opportunities_to_combine_subqueries(child)
 
     def _check_for_wildcard_usage(self, term_field_query: Query) -> None:
@@ -1380,8 +1422,7 @@ class QueryStringLinter:
                             QueryErrorCode.POTENTIAL_WILDCARD_USE,
                             positions=positions,  # type: ignore
                             details=(
-                                "Multiple terms connected with OR stem to the same word. "
-                                "Use a wildcard instead.\n"
+                                "Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\n"
                                 f"Replace {Colors.RED}{' OR '.join(matching_terms)}{Colors.END} with "
                                 f"{Colors.GREEN}{stemmed}*{Colors.END}"
                             ),
