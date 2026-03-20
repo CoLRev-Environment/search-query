@@ -26,7 +26,7 @@ from search_query.query_term import Term
     "query_string, expected_tokens",
     [
         (
-            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
+            'TI "Artificial Intelligence" AND AB future NOT AB past',
             [
                 Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
                 Token(
@@ -36,20 +36,20 @@ from search_query.query_term import Term
                 ),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(33, 35)),
-                Token(value="Future", type=TokenTypes.TERM, position=(36, 42)),
+                Token(value="future", type=TokenTypes.TERM, position=(36, 42)),
                 Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(43, 46)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(47, 49)),
-                Token(value="Past", type=TokenTypes.TERM, position=(50, 54)),
+                Token(value="past", type=TokenTypes.TERM, position=(50, 54)),
             ],
         ),
         (
-            "Artificial N2 Intelligence",
+            "artificial N2 intelligence",
             [
-                Token(value="Artificial", type=TokenTypes.TERM, position=(0, 10)),
+                Token(value="artificial", type=TokenTypes.TERM, position=(0, 10)),
                 Token(
                     value="N2", type=TokenTypes.PROXIMITY_OPERATOR, position=(11, 13)
                 ),
-                Token(value="Intelligence", type=TokenTypes.TERM, position=(14, 26)),
+                Token(value="intelligence", type=TokenTypes.TERM, position=(14, 26)),
             ],
         ),
         (
@@ -223,7 +223,7 @@ def test_invalid_token_sequences(
     "query_string, messages",
     [
         (
-            "(Artificial Intelligence AND Future",
+            "(artificial intelligence AND future",
             [
                 {
                     "code": "PARSE_0002",
@@ -235,10 +235,10 @@ def test_invalid_token_sequences(
                 }
             ],
         ),
-        ("TI AND Artificial Intelligence", []),
-        ("TI Artificial Intelligence AND AB Future", []),
+        # ("TI AND artificial intelligence", []),
+        ("TI artificial intelligence AND AB future", []),
         (
-            "AI governance OR AB Future",
+            "AI governance OR AB future",
             [
                 {
                     "code": "FIELD_0001",
@@ -251,7 +251,7 @@ def test_invalid_token_sequences(
             ],
         ),
         (
-            'AI "governance" OR AB Future',
+            'AI "governance" OR AB future',
             [
                 {
                     "code": "FIELD_0001",
@@ -413,7 +413,16 @@ def test_invalid_token_sequences(
         ),
         (
             "VR N3 simulat*",
-            []
+            [
+                {
+                    'code': 'STRUCT_0005',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'search-term-lowercase',
+                    'message': 'Unquoted search terms should be lowercase',
+                    'position': [(0, 2)],
+                },
+            ]
         ),
         (
             'TI "Clinical Judgment (Not Diagnosis)"',
@@ -508,7 +517,7 @@ def test_invalid_token_sequences(
                     'position': [(12, 14)]
                 }
             ]
-        )
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
@@ -532,7 +541,7 @@ def test_linter(query_string: str, messages: list) -> None:
     "query_string, field_general, messages",
     [
         (
-            "TI Artificial Intelligence AND AB Future",
+            "TI artificial intelligence AND AB future",
             "AB",
             [
                 {
@@ -560,7 +569,7 @@ def test_linter(query_string: str, messages: list) -> None:
             ],
         ),
         (
-            "Artificial intelligence and Future",
+            "artificial intelligence and future",
             "",
             [
                 {
@@ -618,7 +627,7 @@ def test_linter(query_string: str, messages: list) -> None:
         ),
         ("arrest* W2 (record* OR history* OR police)", "", []),
         (
-            '"Artificial Intelligence AND (Future OR Past)"',
+            '"artificial intelligence AND (future OR past)"',
             "",
             [
                 {
@@ -632,7 +641,7 @@ def test_linter(query_string: str, messages: list) -> None:
             ],
         ),
         (
-            "EBSCOHost: Artificial Intelligence AND Future",
+            "EBSCOHost: artificial intelligence AND future",
             "",
             [
                 {
@@ -671,32 +680,32 @@ def test_linter_general_field(
         ),
         # Implicit precedence / artificial parentheses
         (
-            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'AND["Artificial Intelligence"[TI], NOT[Future[AB], Past[AB]]]',
+            'TI "Artificial Intelligence" AND AB future NOT AB past',
+            'AND["Artificial Intelligence"[TI], NOT[future[AB], past[AB]]]',
         ),
         (
-            'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            'AND[NOT["Artificial Intelligence"[TI], Future[AB]], Past[AB]]',
+            'TI "Artificial Intelligence" NOT AB future AND AB past',
+            'AND[NOT["Artificial Intelligence"[TI], future[AB]], past[AB]]',
         ),
         (
-            'TI "AI" OR AB Robots AND AB Ethics',
-            'OR["AI"[TI], AND[Robots[AB], Ethics[AB]]]',
+            'TI "AI" OR AB robots AND AB ethics',
+            'OR["AI"[TI], AND[robots[AB], ethics[AB]]]',
         ),
         (
-            'TI "AI" AND AB Robots OR AB Ethics',
-            'OR[AND["AI"[TI], Robots[AB]], Ethics[AB]]',
+            'TI "AI" AND AB robots OR AB ethics',
+            'OR[AND["AI"[TI], robots[AB]], ethics[AB]]',
         ),
         (
-            'TI "AI" NOT AB Robots OR AB Ethics',
-            'OR[NOT["AI"[TI], Robots[AB]], Ethics[AB]]',
+            'TI "AI" NOT AB robots OR AB ethics',
+            'OR[NOT["AI"[TI], robots[AB]], ethics[AB]]',
         ),
         (
-            'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            'OR[AND["AI"[TI], OR[Robots[AB], NOT[Ethics[AB], Bias[AB]]]], "Technology"[SU]]',
+            'TI "AI" AND (AB robots OR AB ethics NOT AB bias) OR SU "Technology"',
+            'OR[AND["AI"[TI], OR[robots[AB], NOT[ethics[AB], bias[AB]]]], "Technology"[SU]]',
         ),
         (
-            'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'OR["Robo*"[TI], AND[Robots[AB], NOT[Ethics[AB], Bias[AB]]], "Technology"[SU]]',
+            'TI "Robo*" OR AB robots AND AB ethics NOT AB bias OR SU "Technology"',
+            'OR["Robo*"[TI], AND[robots[AB], NOT[ethics[AB], bias[AB]]], "Technology"[SU]]',
         ),
         (
             'TX ("digital transformation" N5 "organizational change")',

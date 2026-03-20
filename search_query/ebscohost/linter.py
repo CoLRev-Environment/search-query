@@ -101,6 +101,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
         self.check_operator_capitalization()
+        self.check_search_term_lowercase()
         self.check_invalid_near_within_operators()
 
         if self.has_fatal_errors():
