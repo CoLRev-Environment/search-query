@@ -720,6 +720,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+                "TS='carbon'",
+                [
+                    {
+                        "code": "TERM_0001",
+                        "label": "non-standard-quotes",
+                        "message": "Non-standard quotes",
+                        "is_fatal": False,
+                        "position": [(3, 4), (10, 11)],
+                        "details": 'Apostrophes used as quotation marks. Use standard double quotes (") instead.',
+                    }
+                ],
+        ),
+        (
             "ALL=(term1 OR term2 OR term3 OR term4 OR term5 OR term6 OR term7 OR term8 OR term9 OR term10 OR term11 OR term12 OR term13 OR term14 OR term15 OR term16 OR term17 OR term18 OR term19 OR term20 OR term21 OR term22 OR term23 OR term24 OR term25 OR term26 OR term27 OR term28 OR term29 OR term30 OR term31 OR term32 OR term33 OR term34 OR term35 OR term36 OR term37 OR term38 OR term39 OR term40 OR term41 OR term42 OR term43 OR term44 OR term45 OR term46 OR term47 OR term48 OR term49 OR term50 OR term51 OR term52)",
             [
                 {

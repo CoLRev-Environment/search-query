@@ -433,6 +433,24 @@ class QueryStringLinter:
         for child in query.children:
             self.check_unbalanced_quotes_in_terms(child)
 
+
+    def check_apostrophe_phrases(self, query: Query) -> None:
+        """Recursively check for search phrases created with apostrophes."""
+
+        if query.is_term():
+            if query.value.startswith("'") and query.value.endswith("'") and len(query.value) >= 2:
+                pos_1 = (query.position[0], query.position[0] + 1)
+                pos_2 = (query.position[1] - 1, query.position[1])
+                self.add_message(
+                    QueryErrorCode.NON_STANDARD_QUOTES,
+                    positions=[pos_1, pos_2],
+                    details='Apostrophes used as quotation marks. Use standard double quotes (") instead.'
+                )
+
+        for child in query.children:
+            self.check_apostrophe_phrases(child)
+
+
     def check_unknown_token_types(self) -> None:
         """Check for unknown token types."""
         for token in self.tokens:

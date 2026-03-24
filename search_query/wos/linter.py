@@ -659,6 +659,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unsupported_wildcards(query)
         self.check_unsupported_fields_in_query(query)
         self.check_unbalanced_quotes_in_terms(query)
+        self.check_apostrophe_phrases(query)
         self._check_invalid_near_query(query)
         self._check_unnecessary_nesting(query)
 
