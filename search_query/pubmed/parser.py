@@ -318,7 +318,10 @@ class PubmedListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        query_str, offset = self.build_query_str()
+        query_str, offset, processed_lines = self.build_query_str()
+
+        self.linter.validate_query_string(processed_lines)
+        self.linter.check_status()
 
         query_parser = PubmedParser(
             query_str=query_str,

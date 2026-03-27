@@ -577,6 +577,58 @@ search-query upgrade search_query.json --to 2.0.0
 **Typical fix**: Reference only existing list items.
 """,
     )
+    LIST_QUERY_CIRCULAR_REFERENCE = (
+        "PARSE_1003",
+        "list-query-circular-reference",
+        "Query line references itself",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2 AND #3
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2
+
+**Typical fix**: Remove the circular reference.
+""",
+    )
+    LIST_QUERY_UNREFERENCED_ITEM = (
+        "PARSE_1004",
+        "list-query-unreferenced-item",
+        "Unreferenced line in list query",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2
+
+**Typical fix**: Reference all list items.
+""",
+    )
 
     # -------------------------------------------------------
     # PubMed

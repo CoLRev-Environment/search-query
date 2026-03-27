@@ -11,6 +11,7 @@ from abc import abstractmethod
 from collections import defaultdict
 
 import search_query.parser_base
+from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import Colors
 from search_query.constants import Fields
 from search_query.constants import Operators
@@ -1509,6 +1510,80 @@ class QueryListLinter:
                 "details": details,
             }
         )
+
+    def _check_invalid_reference(self) -> None:
+        """Check if all list-references exist & check for circular references"""
+        for ind, query_node in self.parser.query_dict.items():
+            for match in re.finditer(
+                    self.parser.LIST_ITEM_REFERENCE,
+                    str(query_node["node_content"]),
+            ):
+                reference = match.group()
+                reference_number = self.parser.extract_reference_value(reference)
+                position = match.span()
+                offset = query_node["content_pos"][0]
+                position = (position[0] + offset, position[1] + offset)
+                if reference_number == ind:
+                    # Circular reference
+                    self.add_message(
+                        QueryErrorCode.LIST_QUERY_CIRCULAR_REFERENCE,
+                        list_position=ind,
+                        positions=[position],
+                        details=f"List reference {reference} is circular.",
+                        fatal=True,
+                    )
+                elif reference_number not in self.parser.query_dict:
+                    # Referenced item does not exist
+                    self.add_message(
+                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
+                        list_position=ind,
+                        positions=[position],
+                        details=f"List reference {reference} not found.",
+                        fatal=True,
+                    )
+
+    def _check_unreferenced_items(self, processed_lines: set):
+        """Verify that all query lines were processed during query string construction."""
+        missing = set(self.parser.query_dict) - set(processed_lines)
+
+        if not missing:
+            return
+
+        if len(processed_lines) == 1 and processed_lines.pop() == max(self.parser.query_dict.keys(), key=int):
+            # Missing root node
+            self.add_message(
+                QueryErrorCode.LIST_QUERY_MISSING_ROOT_NODE,
+                list_position=GENERAL_ERROR_POSITION,
+                positions=[],
+                details="The last item of the list must be a combining string.",
+                fatal=True,
+            )
+            return
+
+        # Missing individual lines
+        sorted_lines = sorted(missing)
+        positions = []
+        for line in sorted_lines:
+            positions.append(self.parser.query_dict[line]["content_pos"])
+        if len(sorted_lines) == 1:
+            details = f"Line {str(sorted_lines[0])} was not included in the combined string. Ensure all lines are referenced in the final list item."
+        else:
+            details = f"Lines {", ".join(map(str, sorted_lines[:-1])) + " and " + str(sorted_lines[-1])} were not included in the combined string. Ensure all lines are referenced in the final list item."
+        self.add_message(
+            QueryErrorCode.LIST_QUERY_UNREFERENCED_ITEM,
+            list_position=GENERAL_ERROR_POSITION,
+            positions=positions,
+            details=details,
+            fatal=True,
+        )
+
+    @staticmethod
+    def validate_tokens(self) -> None:
+        """Validate list tokens."""
+
+    @staticmethod
+    def validate_query_string(self, processed_lines: set) -> None:
+        """Verify query string integrity."""
 
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""

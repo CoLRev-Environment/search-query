@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -695,43 +694,10 @@ class WOSQueryListLinter(QueryListLinter):
         )
         self.messages: dict = {}
 
-    def validate_list_tokens(self) -> None:
-        """Lint the list parser."""
+    def validate_tokens(self) -> None:
+        """Validate list tokens."""
+        self._check_invalid_reference()
 
-        self._check_missing_root()
-        self._check_list_query_invalid_reference()
-
-    def _check_missing_root(self) -> None:
-        root_node_content: str = str(
-            list(self.parser.query_dict.values())[-1]["node_content"]
-        )
-        # Raise an error if the last item of the list is not the last combining string
-        if "#" not in root_node_content:
-            self.add_message(
-                QueryErrorCode.LIST_QUERY_MISSING_ROOT_NODE,
-                list_position=GENERAL_ERROR_POSITION,
-                positions=[],
-                details="The last item of the list must be a combining string.",
-                fatal=True,
-            )
-
-    def _check_list_query_invalid_reference(self) -> None:
-        # check if all list-references exist
-        for ind, query_node in enumerate(self.parser.query_dict.values()):
-            # check if all list references exist
-            for match in re.finditer(
-                self.parser.LIST_ITEM_REFERENCE,
-                str(query_node["node_content"]),
-            ):
-                reference = match.group()
-                position = match.span()
-                offset = query_node["content_pos"][0]
-                position = (position[0] + offset, position[1] + offset)
-                if reference.replace("#", "") not in self.parser.query_dict:
-                    self.add_message(
-                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
-                        list_position=ind,
-                        positions=[position],
-                        details=f"List reference {reference} not found.",
-                        fatal=True,
-                    )
+    def validate_query_string(self, processed_lines: set) -> None:
+        """Verify query string integrity."""
+        self._check_unreferenced_items(processed_lines)

@@ -283,7 +283,7 @@ class QueryListParser(QueryParserBase):
     """QueryListParser"""
 
     LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^\s*(\d+).\s+(.*)$")
-    LIST_ITEM_REFERENCE = re.compile(r"#\d+")
+    LIST_ITEM_REFERENCE = re.compile(r"[Ss#]\d+|\s\d+\s")
 
     linter: QueryListLinter
 
@@ -382,7 +382,14 @@ class QueryListParser(QueryParserBase):
 
         return tokens
 
-    def build_query_str(self) -> typing.Tuple[str, dict]:
+    def extract_reference_value(self, reference: str) -> str:
+        """Extract the numerical value of a list reference."""
+        match = re.search(r'(\d+)$', reference)
+        if not match:
+            raise ValueError(f"No trailing number found in '{reference}'")
+        return match.group(1)
+
+    def build_query_str(self) -> typing.Tuple[str, dict, set]:
         """Build the query string from the list format."""
         # The `offset` dictionary maps positions in the `query_str` back to their
         # corresponding character positions in the original (list) query string.
@@ -402,11 +409,13 @@ class QueryListParser(QueryParserBase):
         #   {0: 100, 7: 203, 10: 206}
         # So position 7 ("O" in "OR") traces back to character 203 in the original.
         offset: typing.Dict[int, int] = {}
+        processed_lines = set()
 
         # Helper function to recursively resolve query references
         def resolve_reference(ref_nr: str) -> typing.Tuple[str, dict]:
             # pylint: disable=too-many-locals
             assert ref_nr in self.query_dict
+            processed_lines.add(ref_nr)
 
             node_content = self.query_dict[ref_nr]
             if node_content["type"] == ListTokenTypes.QUERY_NODE:
@@ -426,7 +435,7 @@ class QueryListParser(QueryParserBase):
 
                 for token in tokens:
                     if token.type.name == "LIST_ITEM_REFERENCE":
-                        nested_ref_nr = token.value.lstrip("#S")
+                        nested_ref_nr = self.extract_reference_value(token.value)
                         resolved_query, nested_pos_dict = resolve_reference(
                             nested_ref_nr
                         )
@@ -455,7 +464,7 @@ class QueryListParser(QueryParserBase):
         top_level_node = max(self.query_dict.keys(), key=int)
         query_str, offset = resolve_reference(top_level_node)
 
-        return query_str, offset
+        return query_str, offset, processed_lines
 
     def assign_linter_messages(self, parser_messages) -> None:  # type: ignore
         """Assign linter messages to the appropriate query nodes."""

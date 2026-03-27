@@ -18,6 +18,7 @@ from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
 from search_query.query_or import OrQuery
 from search_query.query_term import Term
+from search_query.exception import ListQuerySyntaxError
 
 # flake8: noqa: E501
 
@@ -839,3 +840,29 @@ def test_list_parser_case_1() -> None:
         q.to_string()
         == '(DE "Irritable Bowel Syndrome" OR "Irritable Bowel Syndrome" OR "Irritable Bowel Syndromes" OR "irritable colon" OR "irritable colons") AND (DE "Clinical Trials" OR DE "Randomized Controlled Trials" OR DE "Randomized Clinical Trials" OR DE "Random Sampling" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies)'
     )
+
+
+def test_list_parser_case_2() -> None:
+    query_list = """
+1. DE \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndromes\" OR \"irritable colon\" OR \"irritable colons\"
+2. DE \"Clinical Trials\" OR DE \"Randomized Controlled Trials\" OR DE \"Randomized Clinical Trials\" OR DE \"Random Sampling\" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies
+"""
+
+    list_parser = EBSCOListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [
+            {
+                    'code': 'PARSE_1001',
+                    'details': 'The last item of the list must be a combining string.',
+                    'is_fatal': True,
+                    'label': 'list-query-missing-root-node',
+                    'message': 'List format query without root node (typically containing operators)',
+                    'position': [],
+                },
+        ],
+    }

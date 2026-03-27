@@ -400,10 +400,9 @@ class EBSCOListLinter(QueryListLinter):
         )
 
     def validate_tokens(self) -> None:
-        """Validate token list"""
+        """Validate list tokens."""
+        self._check_invalid_reference()
 
-        # self.parser.query_dict.items()
-        # self.check_missing_tokens()
-        # self.check_LIST_QUERY_INVALID_REFERENCE()
-        # # self.check_unknown_tokens()
-        # self.check_operator_node_token_sequence()
+    def validate_query_string(self, processed_lines: set) -> None:
+        """Verify query string integrity."""
+        self._check_unreferenced_items(processed_lines)

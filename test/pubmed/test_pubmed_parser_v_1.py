@@ -1285,3 +1285,31 @@ def test_general_list_parser_5() -> None:
         query.to_string()
         == '((Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]) AND "english"[Language]) NOT ("comment"[Publication Type] OR "news"[Publication Type])'
     )
+
+
+def test_general_list_parser_6() -> None:
+    query_list = """
+1. Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]
+2. acrobatics[Title/Abstract]
+3. #1 AND "english"[Language]
+4. #2 NOT ("comment"[Publication Type] OR "news"[Publication Type])
+"""
+
+    list_parser = PubMedListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+
+    assert list_parser.linter.messages == {
+        -1: [
+            {
+                'code': 'PARSE_1004',
+                'details': 'Lines 1 and 3 were not included in the combined string. Ensure all lines are referenced in the final list item.',
+                'is_fatal': True,
+                'label': 'list-query-unreferenced-item',
+                'message': 'Unreferenced line in list query',
+                'position': [(3, 65), (99, 125)],
+            },
+        ]
+    }

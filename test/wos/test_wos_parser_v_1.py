@@ -1088,7 +1088,7 @@ def test_list_parser_case_3() -> None:
     except ListQuerySyntaxError as exc:
         print(exc)
     assert list_parser.linter.messages == {
-        2: [
+        "3": [
             {
                 "code": "PARSE_1002",
                 "label": "list-query-invalid-reference",
@@ -1263,6 +1263,28 @@ def test_list_parser_case_8() -> None:
         == '("Peer leader*" OR "Shared leader*") AND ("acrobatics" OR "acrobat")'
     )
 
+
+# Test case 9
+def test_list_parser_case_9() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #3\n'
+
+    list_parser = WOSListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    assert list_parser.linter.messages == {
+        "3": [
+            {
+                'code': 'PARSE_1003',
+                'details': 'List reference #3 is circular.',
+                'is_fatal': True,
+                'label': 'list-query-circular-reference',
+                'message': 'Query line references itself',
+                'position': [(101, 103)],
+            },
+        ]
+    }
 
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""
