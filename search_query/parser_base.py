@@ -283,7 +283,7 @@ class QueryListParser(QueryParserBase):
     """QueryListParser"""
 
     LIST_QUERY_LINE_REGEX: re.Pattern = re.compile(r"^\s*(\d+).\s+(.*)$")
-    LIST_ITEM_REFERENCE = re.compile(r"[Ss#]\d+|\s\d+\s")
+    LIST_ITEM_REFERENCE = re.compile(r"#\d+|(?:^|\s|\(|\)|\{|})([sScC]\d+|\d{1,2})(?=$|\s|\(|\)|\{|})")
 
     linter: QueryListLinter
 
