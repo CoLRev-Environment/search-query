@@ -15,6 +15,8 @@
             onclick="window.open('https://pypi.org/project/search-query/')">
        <img src="https://img.shields.io/github/license/CoLRev-Environment/search-query" alt="License"
             onclick="window.open('https://github.com/CoLRev-Environment/search-query/releases/')">
+       <img src="https://img.shields.io/badge/Web%20GUI-Open-6f42c1" alt="Web GUI"
+            onclick="window.open('https://colrev-environment.github.io/search-query-gui/')">
    </div><br>
 
 **Search Query** is a Python package designed to **load**, **lint**, **translate**, **save**, **improve**, and **automate** academic literature search queries.
@@ -47,7 +49,7 @@ Creating a query programmatically is simple:
     work_synonyms = OrQuery(["work", "labor", "service"], field="abstract")
     query = AndQuery([digital_synonyms, work_synonyms])
 
-A query can also be parsed from a string or a `JSON search file <#json-search-files>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
+A query can also be parsed from a string or a `JSON search file <load.html#file>`_ (see the :doc:`overview of platform identifiers </platforms/platform_index>`):
 
 .. code-block:: python
 
@@ -94,9 +96,7 @@ The translated query can be saved as follows:
    from search_query import SearchFile
 
    search_file = SearchFile(
-      search_string=wos_query.to_string(),
-      platform="wos",
-      version="1",
+      query=wos_query,
       authors=[{"name": "Tom Brady"}],
       record_info={},
       date={}
@@ -112,13 +112,38 @@ A Jupyter Notebook demo (hosted on Binder) is available here:
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb
 
+Try the interactive web GUI in your browser: `search-query-gui <https://colrev-environment.github.io/search-query-gui/>`_.
+
 Functional overview
 ======================
 
-The search-query package supports the entire lifecycle of academic search query management.
-Below is a high-level overview of the core functionalities:
+*search-query* treats academic search strategies as structured query objects rather than static strings.
+Query objects can be created programmatically or derived from search strings or JSON files, and are represented as object-oriented structures that capture Boolean logic, nesting, and field restrictions.
+Based on a query object, *search-query* supports the following operations:
+
+- **Load:** *search-query* provides parsing capabilities to ingest search queries from both raw strings and JSON files.
+  It parses database-specific query strings into internal, object-oriented representations of the search strategy.
+  This allows the tool to capture complex Boolean logic and field restrictions in a standardized form.
+
+- **Save:** Researchers can serialize the query object back into a standard string or file format for reporting and reuse.
+  This facilitates transparency and reproducibility by allowing search strategies to be easily reported, shared or deposited.
+
+- **Lint:** *search-query* can apply linters to detect syntactical errors or inconsistencies that might compromise the search.
+  It can check for issues such as unbalanced parentheses, logical operator misuse, or database-specific syntax errors.
+
+- **Translate:** The library can convert a query from one database syntax into another, enabling cross-platform use of search strategies.
+  Using a generic query object as an intermediate representation, *search-query* currently supports translations between  Web of Science, PubMed, and EBSCOHost.
+
+- **Improve:** Beyond basic syntax checking and translation, *search-query* aims to support query improvement to enhance recall and precision.
+  As queries are represented as manipulable objects, researchers can programmatically experiment with modifications — for example, adding synonyms or adjusting field scopes — to observe how these changes affect the search results.
+
+- **Automate:** Automation primarily refers to the integration with systematic review management systems, such as `CoLRev <https://github.com/CoLRev-Environment/colrev?tab=readme-ov-file>`_.
+  The library offers programmatic access via its Python API, which means it can be embedded in scripts and pipelines to run searches automatically.
+  It also provides a command-line interface and git pre-commit hooks, allowing researchers to incorporate query validation into version control and continuous integration setups.
 
 .. image:: presentation.png
+   :width: 800 px
+   :align: center
 
 .. toctree::
    :hidden:

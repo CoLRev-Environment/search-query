@@ -12,6 +12,7 @@
 [![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
 [![status](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9/status.svg)](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
+[![Web GUI](https://img.shields.io/badge/Web%20GUI-Open-6f42c1)](https://colrev-environment.github.io/search-query-gui/)
 
 </div>
 
@@ -76,9 +77,7 @@ from search_query import SearchFile
 
 search_file = SearchFile(
     filepath="search-file.json",
-    search_string=wos_query.to_string(),
-    platform="wos",
-    version="1",
+    query=wos_query,
     authors=[{"name": "Tom Brady"}],
     record_info={},
     date={}
@@ -88,6 +87,8 @@ search_file.save()
 ```
 
 For a more detailed overview of the package’s functionality, see the [documentation](https://colrev-environment.github.io/search-query/).
+
+Try the **web GUI** in your browser: [search-query-gui](https://colrev-environment.github.io/search-query-gui/).
 
 ## Demo
 
@@ -100,7 +101,7 @@ Bug reports or issues can be submitted via [the issue tracker](https://github.co
 
 ## How to cite
 
-Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. "search-query: An Open-Source Python Library for Academic Search Queries".
+Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. search-query: An open source Python library for academic search queries. *Journal of Open Source Software*, 11(118), 8775, https://doi.org/10.21105/joss.08775
 
 The package was developed as part of Bachelor's theses:
 

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 
 - No changes yet.
 
+## Release 0.15.0
+
+- Polish docs (automate page, with pinned colrev version; functional overview)
+- Extend tests (covering code in the paper; dist smoke test)
+- JSON: make `SearchQuery(query=...)` the (safer) default
+
+## Release 0.14.1
+
+- **Fix broken sdist**: caused wheels to ship without package code.
+
+## Release 0.14.0
+
+- **Documentation and demo notebook**: Revised the documentation and extended the demo notebook.
+- **Generic query syntax**: Make fields case insensitive.
+- **Linter message refinement**: Formatting (cli) and internal handling revised. `WOS_0005`deprecated.
+- **Extend `QueryErrorCode.JOURNAL_FILTER_IN_SUBQUERY`**: Added `ISSN` and `ISBN` fields.
+- **Dependency**: Removed `packaging` dependency.
+
 ## Release 0.13.0
 
 - **Versioned platform architecture & upgrades**: Introduced version-aware parser registry that selects list or string parsers per platform version and defaults to the latest registered release. Auto-discovery for parser, serializer, and translator implementations. Added an upgrade pipeline that routes through the generic query as an intermediate representation, exposed through a new `upgrade` CLI subcommand.

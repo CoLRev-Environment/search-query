@@ -5,11 +5,25 @@ Load
 
 Queries can be loaded from strings/files, defined as objects, or retrieved from the internal database.
 
-String/file
+String
 -------------------------
 
-Search-query can parse queries from strings and JSON query files.
-To load a JSON query file, run the parser:
+Search-query can parse queries from strings.
+To load a query from a string, run:
+
+.. code-block:: python
+
+   from search_query.parser import parse
+
+   query_string = '("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract])'
+   query = parse(query_string, platform="pubmed")
+
+
+File
+-------------------------
+
+Search-query can parse queries from JSON query files.
+To load a JSON query file, run:
 
 .. code-block:: python
 

@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import json
 import re
+import typing
 from pathlib import Path
+from typing import Any
 from typing import Optional
+from typing import overload  # noqa: TYP002
 from typing import Union
+
+if typing.TYPE_CHECKING:
+    from search_query.query import Query
 
 # pylint: disable=too-few-public-methods
 
@@ -20,23 +26,74 @@ class SearchFile:
     _search_history_path: Optional[Path] = None
 
     # pylint: disable=too-many-arguments
+    # Classic constructor
+    @overload
     def __init__(
         self,
         search_string: str,
         platform: str,
+        field_general: str = "",
         authors: Optional[list[dict]] = None,
         record_info: Optional[dict] = None,
         date: Optional[dict] = None,
         search_results_path: Optional[str | Path] = None,
-        **kwargs: dict,
+        **kwargs: Any,
     ) -> None:
+        ...
+
+    # pylint: disable=too-many-arguments
+    # Query-only constructor
+    @overload
+    def __init__(
+        self,
+        search_string: Optional[str] = None,
+        platform: Optional[str] = None,
+        field_general: str = "",
+        *,
+        query: Query,
+        authors: Optional[list[dict]] = None,
+        record_info: Optional[dict] = None,
+        date: Optional[dict] = None,
+        search_results_path: Optional[str | Path] = None,
+        **kwargs: Any,
+    ) -> None:
+        ...
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        search_string: Optional[str] = None,
+        platform: Optional[str] = None,
+        field_general: str = "",
+        authors: Optional[list[dict]] = None,
+        record_info: Optional[dict] = None,
+        date: Optional[dict] = None,
+        search_results_path: Optional[str | Path] = None,
+        *,
+        query: Optional[Query] = None,
+        **kwargs: Any,
+    ) -> None:
+        if query is not None:
+            if search_string is not None or platform is not None:
+                raise ValueError(
+                    "Pass either (search_string, platform) OR query, not both."
+                )
+            search_string = query.to_string()
+            platform = query.platform
+
+        if search_string is None or platform is None:
+            raise ValueError(
+                "search_string and platform are required unless query is provided."
+            )
+
         self.search_string = search_string
         self.platform = platform
         self.authors = authors or []
         self.record_info = record_info or {}
         self.date = date or {}
         # Note: this will be called field_general
-        self.field = ""
+        self.field = field_general
+
         self.set_search_results_path(search_results_path)
 
         for key, value in kwargs.items():

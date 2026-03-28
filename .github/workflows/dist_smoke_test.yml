@@ -1,0 +1,81 @@
+name: dist-smoke-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "search_query/**"
+      - ".github/workflows/dist-smoke-test.yml"
+
+jobs:
+  dist-smoke-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Build dists (wheel + sdist)
+        run: |
+          uv pip install build
+          uv run -m build
+
+      - name: Inspect artifacts (files present)
+        run: |
+          # wheel must contain the package dir
+          uv run python - <<'PY'
+          import glob, zipfile
+          whls = glob.glob("dist/*.whl")
+          assert whls, "No wheel found in dist/"
+          whl = whls[0]
+          z = zipfile.ZipFile(whl)
+          names = z.namelist()
+          assert any(n.startswith("search_query/") for n in names), f"wheel missing search_query/: {whl}"
+          print("OK: wheel contains package files")
+          PY
+
+          # sdist must contain the package dir too (path may be prefixed with project name/version)
+          uv run python - <<'PY'
+          import glob, tarfile
+          tgzs = glob.glob("dist/*.tar.gz")
+          assert tgzs, "No sdist found in dist/"
+          tgz = tgzs[0]
+          t = tarfile.open(tgz, "r:gz")
+          names = t.getnames()
+          assert any("/search_query/" in n or n.endswith("/search_query") for n in names), f"sdist missing search_query/: {tgz}"
+          print("OK: sdist contains package files")
+          PY
+
+      - name: Install from wheel and import (isolated venv)
+        run: |
+          uv venv .venv-wheel
+          VPY="$PWD/.venv-wheel/bin/python"
+          "$VPY" -m ensurepip --upgrade
+          "$VPY" -m pip install --upgrade pip
+          "$VPY" -m pip install dist/*.whl
+          "$VPY" -c "import search_query; print('import OK:', search_query.__file__)"
+          "$VPY" -c "from search_query.exception import QuerySyntaxError; print('symbol OK:', QuerySyntaxError)"
+
+      - name: Install from sdist and import (isolated venv)
+        run: |
+          uv venv .venv-sdist
+          VPY="$PWD/.venv-sdist/bin/python"
+          "$VPY" -m ensurepip --upgrade
+          "$VPY" -m pip install --upgrade pip
+          "$VPY" -m pip install dist/*.tar.gz
+          "$VPY" -c "import search_query; print('import OK:', search_query.__file__)"
+          "$VPY" -c "from search_query.exception import QuerySyntaxError; print('symbol OK:', QuerySyntaxError)"

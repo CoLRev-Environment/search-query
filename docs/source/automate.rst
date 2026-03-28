@@ -8,6 +8,17 @@ Search-query can be used to automate different steps of the search process, such
 To run API searches, it is often necessary to represent a query in the form of a URL as opposed to a query string.
 Using the Crossref API as an example, the following illustrates how to construct such a URL to retrieve and store records.
 
+.. tip::
+
+    The example below requires the ``colrev`` package to be installed. You can install it via pip:
+
+   .. code-block:: bash
+
+        pip install colrev==0.16.1
+
+
+   **Important**: ``colrev`` version 0.16.1 requires Python **3.10** or higher. If you’re on a different Python version, create a Python 3.10 environment (e.g., via `uv`, `venv`, or `conda`) before installing.
+
 .. code-block:: python
    :linenos:
 
@@ -17,7 +28,7 @@ Using the Crossref API as an example, the following illustrates how to construct
    from colrev.writer.write_utils import write_file
 
    from search_query.constants import Fields, Operators
-   from search_query.or_query import OrQuery
+   from search_query.query_or import OrQuery
    from search_query.search_file import SearchFile
 
    def to_crossref_url(query):
@@ -42,21 +53,20 @@ Using the Crossref API as an example, the following illustrates how to construct
        query = OrQuery(["microsourcing", "lululemon"], field="title")
 
        url = to_crossref_url(query)
-       api_crossref = crossref_api.CrossrefAPI(params={"url": url})
+       api_crossref = crossref_api.CrossrefAPI(url=url)
        records = api_crossref.get_records()
 
        sf = SearchFile(
            search_string=query.to_string(),
            platform="crossref",
-           authors=[{"name": "Tom Brady"}],
+           authors=[{"name": "Gerit Wagner"}],
            record_info={"source": "manual", "url": url},
            date={"data_entry": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")},
            field="title",
-           description="Search for work authored by Tom Brady",
-           tags=["microsourcing", "lululemon", "research"]
+           description="Search for research on microsourcing"
        )
 
-       sf.save("test/tom_brady_search.json")
+       sf.save("test/microsourcing_search.json")
 
        records_dict = {record.get_value("doi"): record.get_data() for record in records}
        write_file(records_dict=records_dict, filename=Path("test/crossref_records.bib"))

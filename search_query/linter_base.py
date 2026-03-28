@@ -1111,7 +1111,8 @@ class QueryStringLinter:
             # skip added characters ('+')
         return result
 
-    # TODO : 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
+    # Examples:
+    # 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
     # 10.1079_SEARCHRXIV.2024.00457.json- position mismtach
     """
     def _check_unnecessary_nesting(self, query: Query) -> None:

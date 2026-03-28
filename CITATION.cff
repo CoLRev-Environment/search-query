@@ -1,19 +1,64 @@
-cff-version: 0.1.0
-message: "Please cite this software as below."
+cff-version: "1.2.0"
 authors:
-- family-names: "Eckhardt"
-  given-names: "Peter"
-- family-names: "Ernst"
-  given-names: "Katharina Maria"
-- family-names: "Fleischmann"
-  given-names: "Thomas"
-- family-names: "Geßler"
-  given-names: "Anna"
-- family-names: "Schnickmann"
-  given-names: "Karl"
-- family-names: "Wagner"
-  given-names: "Gerit"
-title: "Search-query: A Python package for queries in academic literature searches."
-version: 0.12.0
-date-released: 2025-09-18
-url: "https://github.com/ColRev-Environment/search-query"
+- family-names: Eckhardt
+  given-names: Peter
+  orcid: "https://orcid.org/0009-0005-5015-4846"
+- family-names: Ernst
+  given-names: Katharina
+  orcid: "https://orcid.org/0009-0007-9833-6280"
+- family-names: Fleischmann
+  given-names: Thomas
+  orcid: "https://orcid.org/0009-0004-4218-4095"
+- family-names: Geßler
+  given-names: Anna
+  orcid: "https://orcid.org/0009-0008-3920-9975"
+- family-names: Schnickmann
+  given-names: Karl
+  orcid: "https://orcid.org/0009-0008-7763-7276"
+- family-names: Thurner
+  given-names: Laureen
+  orcid: "https://orcid.org/0009-0000-5716-5816"
+- family-names: Wagner
+  given-names: Gerit
+  orcid: "https://orcid.org/0000-0003-3926-7717"
+doi: 10.5281/zenodo.18502307
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Eckhardt
+    given-names: Peter
+    orcid: "https://orcid.org/0009-0005-5015-4846"
+  - family-names: Ernst
+    given-names: Katharina
+    orcid: "https://orcid.org/0009-0007-9833-6280"
+  - family-names: Fleischmann
+    given-names: Thomas
+    orcid: "https://orcid.org/0009-0004-4218-4095"
+  - family-names: Geßler
+    given-names: Anna
+    orcid: "https://orcid.org/0009-0008-3920-9975"
+  - family-names: Schnickmann
+    given-names: Karl
+    orcid: "https://orcid.org/0009-0008-7763-7276"
+  - family-names: Thurner
+    given-names: Laureen
+    orcid: "https://orcid.org/0009-0000-5716-5816"
+  - family-names: Wagner
+    given-names: Gerit
+    orcid: "https://orcid.org/0000-0003-3926-7717"
+  date-published: 2026-02-19
+  doi: 10.21105/joss.08775
+  issn: 2475-9066
+  issue: 118
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 8775
+  title: "search-query: An open source Python library for academic
+    search queries"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.08775"
+  volume: 11
+title: "search-query: An open source Python library for academic search
+  queries"
