@@ -1569,7 +1569,8 @@ class QueryListLinter:
         if len(sorted_lines) == 1:
             details = f"Line {str(sorted_lines[0])} was not included in the combined string. Ensure all lines are referenced in the final list item."
         else:
-            details = f"Lines {", ".join(map(str, sorted_lines[:-1])) + " and " + str(sorted_lines[-1])} were not included in the combined string. Ensure all lines are referenced in the final list item."
+            joined = ", ".join(map(str, sorted_lines[:-1]))
+            details = f"Lines {joined} and {sorted_lines[-1]} were not included in the combined string. Ensure all lines are referenced in the final list item."
         self.add_message(
             QueryErrorCode.LIST_QUERY_UNREFERENCED_ITEM,
             list_position=GENERAL_ERROR_POSITION,
