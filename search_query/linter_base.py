@@ -1381,7 +1381,7 @@ class QueryStringLinter:
             return
 
         if term_field_query.value == "OR" and term_field_query.operator:
-            term_object_groups = defaultdict(list)
+            term_query_groups = defaultdict(list)
 
             for child in term_field_query.children:
                 if not child.is_term():
@@ -1393,69 +1393,37 @@ class QueryStringLinter:
                     if child.field is not None
                     else None
                 )
-                term_object_groups[key].append(child)
+                term_query_groups[key].append(child)
 
-            term_object_groups = list(term_object_groups.values())
-            for term_objects in term_object_groups:
-                terms = [
-                    x.value.replace('"', "")
-                    for x in term_objects
-                ]
-                stemmed_all = [
-                    _naive_stem(term.value.replace('"', ""))
-                    for term in term_objects
-                    if " " not in term.value
-                ]
-                stemmed_matching_multiple_terms = [
-                    s for s in stemmed_all if stemmed_all.count(s) > 1
-                ]
-                if len(stemmed_matching_multiple_terms) > 1:
-                    # assign terms and stemmed
-                    terms = [
-                        t
-                        for t in terms
-                        if any(t.startswith(c) for c in stemmed_matching_multiple_terms)
-                    ]
-                    stemmed_terms = list(set(stemmed_matching_multiple_terms))
-                    # drop longer stemmed_terms
-                    i = 0
-                    while i < len(stemmed_terms):
-                        if any(
-                                stemmed_terms[i].startswith(s) and s != stemmed_terms[i] for s in stemmed_terms
-                        ):
-                            stemmed_terms.pop(i)
-                        else:
-                            i += 1
-                    for stemmed in stemmed_terms:
-                        if len(stemmed) <= 3:
-                            continue
-                        matching_terms = [
-                            term.replace('"', "")
-                            for term in terms
-                            if term.startswith(stemmed)
-                        ]
-                        non_exact_matches = [
-                            term
-                            for term in matching_terms
-                            if term != stemmed
-                        ]
-                        if not non_exact_matches:
-                            continue
-                        positions = [
-                            c.position
-                            for c in term_objects
-                            if c.value.replace('"', "") in matching_terms
-                        ]
-                        stemmed = stemmed.replace('"', "")
-                        # If all terms stem to the same word, we can use a wildcard
-                        # to replace the OR-terms with a single term.
+            term_query_groups = list(term_query_groups.values())
+            for term_query_group in term_query_groups:
+                stemmed = defaultdict(list)
+
+                for term_query in term_query_group:
+
+                    # Group term queries by their stemmed value.
+                    key = _naive_stem(term_query.value.replace('"', ""))
+
+                    if len(key) <= 3:
+                        continue
+
+                    # Skip duplicate (redundant) terms for potential wildcard suggestions.
+                    if stemmed.get(key) and any(term_query.value == q.value for q in stemmed[key]):
+                        continue
+
+                    stemmed[key].append(term_query)
+
+                for stem, queries in stemmed.items():
+                    if len(queries) > 1:
+                        positions = [q.position for q in queries]
+                        matching_terms = " OR ".join([q.value for q in queries])
                         self.add_message(
                             QueryErrorCode.POTENTIAL_WILDCARD_USE,
                             positions=positions,  # type: ignore
                             details=(
                                 "Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\n"
-                                f"Replace {Colors.RED}{' OR '.join(matching_terms)}{Colors.END} with "
-                                f"{Colors.GREEN}{stemmed}*{Colors.END}"
+                                f"Replace {Colors.RED}{matching_terms}{Colors.END} with "
+                                f"{Colors.GREEN}{stem}*{Colors.END}"
                             ),
                             fatal=False,
                         )
@@ -1691,6 +1659,7 @@ def _naive_stem(word: str) -> str:
         "s",
         "e",
         "ic",
+        "ics"
     ]
     for suffix in sorted(suffixes, key=len, reverse=True):  # Longest first
         if word.endswith(suffix) and len(word) > len(suffix) + 2:

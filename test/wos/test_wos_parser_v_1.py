@@ -1137,7 +1137,7 @@ def test_list_parser_case_4() -> None:
         '2': [
             {
                 'code': 'QUALITY_0006',
-                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
                 'is_fatal': False,
                 'label': 'potential-wildcard-use',
                 'message': 'Potential wildcard use',
