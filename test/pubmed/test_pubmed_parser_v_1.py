@@ -1175,7 +1175,7 @@ def test_list_parser_case_2() -> None:
 
 
 def test_list_parser_case_3() -> None:
-    query_list = """1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract])
+    query_list = """1. (Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract] AND Distributed leader*[Title/Abstract]
 2. (acrobatics[Title/Abstract] OR aikido[Title/Abstract] OR archer[Title/Abstract] OR athletics[Title/Abstract])
 3. #1 #2
 """
@@ -1197,6 +1197,16 @@ def test_list_parser_case_3() -> None:
                 "is_fatal": True,
                 "position": [(-1, -1)],
                 "details": 'Missing operator',
+            },
+        ],
+        '1': [
+            {
+                'code': 'PARSE_0002',
+                'details': 'Unbalanced opening parenthesis',
+                'is_fatal': True,
+                'label': 'unbalanced-parentheses',
+                'message': 'Parentheses are unbalanced in the query',
+                'position': [(3, 4)],
             },
         ],
         # "1": [
