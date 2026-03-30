@@ -8,10 +8,12 @@ import typing
 from search_query.constants import Colors
 
 
-def _is_single_short_line_error(positions: list, query_str: str) -> bool:
-    if len(positions) != 1 or "\n" not in query_str:
+def _is_same_line_error(positions: list, query_str: str) -> bool:
+    """Return True if all positions are on the same list query line."""
+    if not positions or "\n" not in query_str:
         return False
-    start, end = positions[0]
+    start = min(pos[0] for pos in positions)
+    end = max(pos[1] for pos in positions)
     # Check if the position is on a single line
     single_line = query_str.count("\n", 0, start) == query_str.count("\n", 0, end)
     short_line = end - start < 100  # Arbitrary threshold for "short" line
@@ -44,19 +46,25 @@ def format_query_string_positions(
             # Append new non-overlapping interval
             merged.append([start, end])
 
-    if _is_single_short_line_error(positions, query_str):
-        # get line string surrounding the error
-        start, end = positions[0]
-        if len(query_str[start:end].strip()) == 0:
-            return ""
+    if _is_same_line_error(positions, query_str):
+        # get line string surrounding the errors
+        positions = sorted(positions)  # sort by start index
+        result = []
+        last_index = 0
+        for start, end in positions:
+            if not query_str[last_index:start].strip():
+                continue
+            result.append(query_str[last_index:start])
+            result.append(f"{color}{query_str[start:end]}{Colors.END}")
+            last_index = end
+        if not result:
+            return '""'
+        result.append(query_str[last_index:])
+        highlighted_query = "".join(result)
 
-        highlighted_query = (
-            f"{query_str[:start]}{color}{query_str[start:end]}"
-            f"{Colors.END}{query_str[end:]}"
-        )
         # Find the line containing the error
-        line_start = highlighted_query.rfind("\n", 0, start) + 1
-        line_end = highlighted_query.find("\n", end)
+        line_start = highlighted_query.rfind("\n", 0, positions[0][0]) + 1
+        line_end = highlighted_query.find("\n", positions[-1][1])
         before = f"{Colors.GREY}[...]{Colors.END}\n"
         after = f"\n{Colors.GREY}[...]{Colors.END}"
         if line_end == -1:  # If no newline after end

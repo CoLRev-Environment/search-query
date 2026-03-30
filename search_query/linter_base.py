@@ -1569,49 +1569,50 @@ class QueryListLinter:
         if not self.messages:
             return
 
+        new_messages = []
+
         for list_position, messages in self.messages.items():
             if list_position not in self.last_read_index:
                 self.last_read_index[list_position] = 0
 
-            messages = messages[self.last_read_index[list_position] :]
-
-            grouped_messages = defaultdict(list)
-            str(sys.stdout.encoding).lower().startswith("utf")
-
-            for message in messages[self.last_read_index[list_position] :]:
-                grouped_messages[message["code"]].append(message)
-
-            for code, group in grouped_messages.items():
-                # Take the first message as representative
-                representative = group[0]
-                code = representative["code"]
-
-                category = ""
-                if representative["is_fatal"]:
-                    color = Colors.RED
-                    category = "❌ Fatal"
-                else:
-                    color = Colors.ORANGE
-                    category = "💡 Warning"
-
-                print(
-                    f"{color}{category}{Colors.END}: {representative['label']} ({code})"
-                )
-                consolidated_messages = []
-                for message in group:
-                    if message["details"]:
-                        consolidated_messages.append(f"  {message['details']}")
-                    else:
-                        consolidated_messages.append(f"  {message['message']}")
-                for item in set(consolidated_messages):
-                    _print_bullet_message(item)
-                positions = [pos for message in group for pos in message["position"]]
-                query_info = format_query_string_positions(
-                    self.parser.query_list, positions, color=color
-                )
-                _print_bullet_message(query_info, bullet=" ")
+            new_messages.extend(messages[self.last_read_index[list_position]:])
 
             self.last_read_index[list_position] += len(messages)
+
+        grouped_messages = defaultdict(list)
+        str(sys.stdout.encoding).lower().startswith("utf")
+        for message in new_messages:
+            grouped_messages[message["code"]].append(message)
+
+        for code, group in grouped_messages.items():
+            # Take the first message as representative
+            representative = group[0]
+            code = representative["code"]
+
+            category = ""
+            if representative["is_fatal"]:
+                color = Colors.RED
+                category = "❌ Fatal"
+            else:
+                color = Colors.ORANGE
+                category = "💡 Warning"
+
+            print(
+                f"{color}{category}{Colors.END}: {representative['label']} ({code})"
+            )
+            consolidated_messages = []
+            for msg in group:
+                if msg["details"]:
+                    consolidated_messages.append(f"  {msg['details']}")
+                else:
+                    consolidated_messages.append(f"  {msg['message']}")
+            for item in set(consolidated_messages):
+                _print_bullet_message(item)
+            positions = [pos for message in group for pos in message["position"]]
+            query_info = format_query_string_positions(
+                self.parser.query_list, positions, color=color
+            )
+            _print_bullet_message(query_info, bullet=" ")
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors"""
