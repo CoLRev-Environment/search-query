@@ -284,6 +284,18 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def check_search_term_lowercase(self) -> None:
+        """Check if search terms are lowercase."""
+        for token in self.tokens:
+            if token.type == TokenTypes.TERM:
+                if token.value.strip()[0] != '"' and token.value != token.value.lower():
+                    self.add_message(
+                        QueryErrorCode.SEARCH_TERM_LOWERCASE,
+                        positions=[token.position],
+                        details="Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine."
+                    )
+                    token.value = token.value.lower()
+
     def check_unsupported_wildcards(self, query: Query) -> None:
         """Check for unsupported characters in the search string."""
 

@@ -312,17 +312,6 @@ class QueryStringLinter:
                     )
                     token.value = token.value.upper()
 
-    def check_search_term_lowercase(self, details: str = None) -> None:
-        """Check if search terms are lowercase."""
-        for token in self.tokens:
-            if token.type == TokenTypes.TERM:
-                if token.value.strip()[0] != '"' and token.value != token.value.lower():
-                    self.add_message(
-                        QueryErrorCode.SEARCH_TERM_LOWERCASE,
-                        positions=[token.position],
-                    )
-                    token.value = token.value.lower()
-
     def check_unbalanced_parentheses(self) -> None:
         """Check query for unbalanced parentheses."""
         i = 0

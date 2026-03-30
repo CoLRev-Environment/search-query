@@ -417,7 +417,7 @@ def test_invalid_token_sequences(
             [
                 {
                     'code': 'STRUCT_0005',
-                    'details': '',
+                    'details': 'Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.',
                     'is_fatal': False,
                     'label': 'search-term-lowercase',
                     'message': 'Unquoted search terms should be lowercase',
