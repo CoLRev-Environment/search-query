@@ -1425,7 +1425,7 @@ class QueryStringLinter:
                             QueryErrorCode.POTENTIAL_WILDCARD_USE,
                             positions=positions,  # type: ignore
                             details=(
-                                "Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\n"
+                                "Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\n"
                                 f"Replace {Colors.RED}{matching_terms}{Colors.END} with "
                                 f"{Colors.GREEN}{stem}*{Colors.END}"
                             ),

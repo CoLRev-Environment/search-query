@@ -828,7 +828,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Potential wildcard use",
                     "is_fatal": False,
                     "position": [(4, 11), (15, 24), (28, 39), (43, 56)],
-                    "details": "Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
+                    "details": "Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
                 }
             ],
         ),
@@ -1137,7 +1137,7 @@ def test_list_parser_case_4() -> None:
         '2': [
             {
                 'code': 'QUALITY_0006',
-                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
                 'is_fatal': False,
                 'label': 'potential-wildcard-use',
                 'message': 'Potential wildcard use',
@@ -1198,7 +1198,7 @@ def test_list_parser_case_6() -> None:
             },
             {
                 'code': 'QUALITY_0006',
-                'details': 'Multiple terms connected with OR stem to the same word. If high recall is more important than precision, consider using a wildcard.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
+                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
                 'is_fatal': False,
                 'label': 'potential-wildcard-use',
                 'message': 'Potential wildcard use',
