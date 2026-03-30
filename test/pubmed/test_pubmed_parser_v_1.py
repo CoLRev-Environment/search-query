@@ -1189,16 +1189,7 @@ def test_list_parser_case_3() -> None:
 
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
-        -1: [
-            {
-                "code": "PARSE_0004",
-                "label": "invalid-token-sequence",
-                "message": "The sequence of tokens is invalid.",
-                "is_fatal": True,
-                "position": [(-1, -1)],
-                "details": 'Missing operator',
-            },
-        ],
+        -1: [],
         '1': [
             {
                 'code': 'PARSE_0002',
@@ -1207,6 +1198,16 @@ def test_list_parser_case_3() -> None:
                 'label': 'unbalanced-parentheses',
                 'message': 'Parentheses are unbalanced in the query',
                 'position': [(3, 4)],
+            },
+        ],
+        '3': [
+            {
+                "code": "PARSE_0004",
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "is_fatal": True,
+                "position": [(223, 228)],
+                "details": 'Missing operator',
             },
         ],
         # "1": [
@@ -1322,4 +1323,32 @@ def test_general_list_parser_6() -> None:
                 'position': [(3, 65), (99, 125)],
             },
         ]
+    }
+
+
+def test_general_list_parser_7() -> None:
+    query_list = """
+1. Peer leader*[Title/Abstract] OR Shared leader*[Title/Abstract]
+2. #1 (acrobatics[Title/Abstract] OR athletics[Title/Abstract])
+3. #2 AND "english"[Language]
+"""
+
+    list_parser = PubMedListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+
+    assert list_parser.linter.messages == {
+        -1: [],
+        '2': [
+             {
+                'code': 'PARSE_0004',
+                'details': 'Missing operator',
+                'is_fatal': True,
+                'label': 'invalid-token-sequence',
+                'message': 'The sequence of tokens is invalid.',
+                'position': [(69, 73)],
+            },
+        ],
     }

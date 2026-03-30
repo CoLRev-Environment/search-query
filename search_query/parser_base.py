@@ -108,7 +108,7 @@ class QueryStringParser(QueryParserBase, ABC):
                 # )
 
             token_length = end - start
-            if virtual_position == -1:
+            if virtual_position < 0:
                 token_length = 0  # Special case for artificial parentheses tokens
 
             # print("")
@@ -389,7 +389,66 @@ class QueryListParser(QueryParserBase):
             raise ValueError(f"No trailing number found in '{reference}'")
         return match.group(1)
 
-    def build_query_str(self) -> typing.Tuple[str, dict, set]:
+    def _resolve_reference(
+            self,
+            ref_nr: str,
+            processed_lines: set,
+            artificial_to_original_pos: dict
+    ) -> typing.Tuple[str, dict, dict]:
+        """Recursively resolve query references."""
+        # pylint: disable=too-many-locals
+        assert ref_nr in self.query_dict
+        processed_lines.add(ref_nr)
+
+        node_content = self.query_dict[ref_nr]
+        if node_content["type"] == ListTokenTypes.QUERY_NODE:
+            query = node_content["node_content"]
+            pos = node_content["content_pos"][0]
+            return query, {0: pos}, artificial_to_original_pos
+
+        if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
+            tokens = self.tokenize_operator_node(
+                node_content["node_content"], int(ref_nr)
+            )
+            operator_base_offset = node_content["content_pos"][0]
+
+            parts = []
+            local_pos_dict = {}
+            current_pos = 0
+
+            for token in tokens:
+                if token.type.name == "LIST_ITEM_REFERENCE":
+                    if not artificial_to_original_pos:
+                        next_paren_id = -2
+                    else:
+                        next_paren_id = min(artificial_to_original_pos) - 1
+                    artificial_to_original_pos[next_paren_id] = (token.position[0] + operator_base_offset, token.position[1] + operator_base_offset)
+                    nested_ref_nr = self.extract_reference_value(token.value)
+                    resolved_query, nested_pos_dict, artificial_to_original_pos = self._resolve_reference(
+                        nested_ref_nr, processed_lines, artificial_to_original_pos
+                    )
+                    parts.append(f"({resolved_query})")
+                    local_pos_dict[current_pos] = next_paren_id
+                    current_pos += 1
+                    for rel_pos, orig_pos in nested_pos_dict.items():
+                        local_pos_dict[current_pos + rel_pos] = orig_pos
+                    local_pos_dict[current_pos + len(resolved_query)] = next_paren_id
+                    current_pos += len(resolved_query) + 1
+                else:
+                    parts.append(token.value)
+                    token_pos = operator_base_offset + token.position[0]
+                    local_pos_dict[current_pos] = token_pos
+                    current_pos += len(token.value)
+
+                parts.append(" ")
+                current_pos += 1
+
+            resolved = "".join(parts).strip()
+            return resolved, local_pos_dict, artificial_to_original_pos
+
+        return "", {}, artificial_to_original_pos
+
+    def build_query_str(self) -> typing.Tuple[str, dict, set, dict]:
         """Build the query string from the list format."""
         # The `offset` dictionary maps positions in the `query_str` back to their
         # corresponding character positions in the original (list) query string.
@@ -410,61 +469,33 @@ class QueryListParser(QueryParserBase):
         # So position 7 ("O" in "OR") traces back to character 203 in the original.
         offset: typing.Dict[int, int] = {}
         processed_lines = set()
-
-        # Helper function to recursively resolve query references
-        def resolve_reference(ref_nr: str) -> typing.Tuple[str, dict]:
-            # pylint: disable=too-many-locals
-            assert ref_nr in self.query_dict
-            processed_lines.add(ref_nr)
-
-            node_content = self.query_dict[ref_nr]
-            if node_content["type"] == ListTokenTypes.QUERY_NODE:
-                query = node_content["node_content"]
-                pos = node_content["content_pos"][0]
-                return query, {0: pos}
-
-            if node_content["type"] == ListTokenTypes.OPERATOR_NODE:
-                tokens = self.tokenize_operator_node(
-                    node_content["node_content"], int(ref_nr)
-                )
-                operator_base_offset = node_content["content_pos"][0]
-
-                parts = []
-                local_pos_dict = {}
-                current_pos = 0
-
-                for token in tokens:
-                    if token.type.name == "LIST_ITEM_REFERENCE":
-                        nested_ref_nr = self.extract_reference_value(token.value)
-                        resolved_query, nested_pos_dict = resolve_reference(
-                            nested_ref_nr
-                        )
-                        parts.append(f"({resolved_query})")
-                        local_pos_dict[current_pos] = -1
-                        current_pos += 1
-                        for rel_pos, orig_pos in nested_pos_dict.items():
-                            local_pos_dict[current_pos + rel_pos] = orig_pos
-                        local_pos_dict[current_pos + len(resolved_query)] = -1
-                        current_pos += len(resolved_query) + 1
-                    else:
-                        parts.append(token.value)
-                        token_pos = operator_base_offset + token.position[0]
-                        local_pos_dict[current_pos] = token_pos
-                        current_pos += len(token.value)
-
-                    parts.append(" ")
-                    current_pos += 1
-
-                resolved = "".join(parts).strip()
-                return resolved, local_pos_dict
-
-            return "", {}
+        artificial_to_original_pos = dict()
 
         # Entry point: find the top-level operator node and resolve it
         top_level_node = max(self.query_dict.keys(), key=int)
-        query_str, offset = resolve_reference(top_level_node)
+        query_str, offset, artificial_to_original_pos = self._resolve_reference(
+            top_level_node, processed_lines, artificial_to_original_pos
+        )
 
-        return query_str, offset, processed_lines
+        return query_str, offset, processed_lines, artificial_to_original_pos
+
+    def map_artificial_to_original_positions(self, parser_messages: list, artificial_to_original_pos: dict):
+        """Map artificial parentheses positions back to the original positions of the list references."""
+        for message in parser_messages:
+            new_positions = []
+
+            for start, end in message["position"]:
+                mapped_start = artificial_to_original_pos.get(start)
+                mapped_end = artificial_to_original_pos.get(end)
+
+                pos_1 = mapped_start[0] if mapped_start else start
+                pos_2 = mapped_end[1] if mapped_end else end
+
+                new_positions.append((pos_1, pos_2))
+
+            message["position"] = new_positions
+
+        return parser_messages
 
     def assign_linter_messages(self, parser_messages) -> None:  # type: ignore
         """Assign linter messages to the appropriate query nodes."""
@@ -487,6 +518,10 @@ class QueryListParser(QueryParserBase):
 
             if not assigned:
                 self.linter.messages[GENERAL_ERROR_POSITION].append(message)
+
+    def adapt_linter_messages_for_list_query(self, parser_messages: list, artificial_to_original_pos: dict):
+        parser_messages = self.map_artificial_to_original_positions(parser_messages, artificial_to_original_pos)
+        self.assign_linter_messages(parser_messages)
 
     @abstractmethod
     def parse(self) -> Query:

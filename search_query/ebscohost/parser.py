@@ -409,7 +409,7 @@ class EBSCOListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        query_str, offset, processed_lines = self.build_query_str()
+        query_str, offset, processed_lines, artificial_to_original_pos = self.build_query_str()
 
         self.linter.validate_query_string(processed_lines)
         self.linter.check_status()
@@ -427,7 +427,7 @@ class EBSCOListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.assign_linter_messages(query_parser.linter.messages)
+            self.adapt_linter_messages_for_list_query(query_parser.linter.messages, artificial_to_original_pos)
 
             self.linter.check_status()
 

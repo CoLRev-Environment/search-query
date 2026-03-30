@@ -327,7 +327,7 @@ class QueryStringLinter:
         """Check query for unbalanced parentheses."""
         i = 0
         for token in self.tokens:
-            if token.position == (-1, -1): # Ignore artificial parentheses
+            if token.position[0] < 0: # Ignore artificial parentheses
                 continue
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i += 1
@@ -345,7 +345,7 @@ class QueryStringLinter:
             # Query contains unbalanced opening parentheses
             i = 0
             for token in reversed(self.tokens):
-                if token.position == (-1, -1):
+                if token.position[0] < 0:
                     continue
                 if token.type == TokenTypes.PARENTHESIS_CLOSED:
                     i += 1
