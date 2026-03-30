@@ -319,7 +319,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard at the beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                            details="Wildcard at the beginning of a term has no effect.",
                             fatal=False,
                         )
                     elif not query.value[index - 1] == ' ':
@@ -337,7 +337,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             self.add_message(
                                 QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                                 positions=[position],
-                                details="The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                                details="EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
                                 fatal=False,
                             )
 
@@ -346,14 +346,14 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                            details="Wildcard at the beginning of a term has no effect.",
                             fatal=False,
                         )
                     if is_term_end and query.value[index - 1] != "#":
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Trailing ? is interpreted as a literal question mark, not a wildcard. Use #? to force wildcard behavior (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                            details="Trailing ? is interpreted as a literal question mark, not a wildcard. Use #? to force wildcard behavior.",
                             fatal=False,
                         )
 
@@ -362,7 +362,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
                             positions=[position],
-                            details="Wildcard beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                            details="Wildcard beginning of a term has no effect.",
                             fatal=False,
                         )
 

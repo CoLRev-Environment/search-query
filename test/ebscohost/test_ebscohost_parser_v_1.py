@@ -354,7 +354,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(0, 1)],
-                    "details": "Wildcard at the beginning of a term has no effect (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                    "details": "Wildcard at the beginning of a term has no effect.",
                 }
             ],
         ),
@@ -367,7 +367,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(3, 4)],
-                    "details": "The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost)."
+                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results."
                 }
             ],
         ),
@@ -380,7 +380,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(1, 2)],
-                    "details": "The * wildcard must be preceded by at least three characters (see EBSCOHost wildcard restrictions: https://connect.ebsco.com/s/article/Searching-with-Wildcards-in-EDS-and-EBSCOhost).",
+                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
                 }
             ],
         ),
