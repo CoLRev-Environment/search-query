@@ -54,6 +54,8 @@ class ListTokenTypes(Enum):
 
 
 GENERAL_ERROR_POSITION = -1
+DOCS_INTERFACE_OK = "docs-interface-ok"
+DOCS_INTERFACE_MISMATCH = "docs-interface-mismatch"
 
 
 @dataclass
@@ -208,6 +210,7 @@ class QueryErrorCode(Enum):
         "EBSCO_0001",
         "wildcard-unsupported",
         "Unsupported wildcard in search string.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -229,6 +232,7 @@ class QueryErrorCode(Enum):
         "EBSCO_0002",
         "invalid-character",
         "Search term contains invalid character",
+        DOCS_INTERFACE_OK,
         "",
     )
 
@@ -245,6 +249,7 @@ class QueryErrorCode(Enum):
         "FIELD_0001",
         "field-unsupported",
         "Search field is not supported for this database",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -265,6 +270,7 @@ class QueryErrorCode(Enum):
         "FIELD_0002",
         "field-missing",
         "Search field is missing",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -285,6 +291,7 @@ class QueryErrorCode(Enum):
         "FIELD_0003",
         "field-extracted",
         "Recommend explicitly specifying the search field in the string",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -309,6 +316,7 @@ class QueryErrorCode(Enum):
         "FIELD_0004",
         "field-implicit",
         "Search field is implicitly specified",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -337,6 +345,7 @@ class QueryErrorCode(Enum):
         "LINT_2001",
         "deprecated-syntax",
         "deprecated-syntax",
+        DOCS_INTERFACE_OK,
         """This message indicates that the query uses deprecated syntax.
 
 **Typical fix**: Update the query to use the latest syntax by running
@@ -354,12 +363,14 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0001",
         "tokenizing-failed",
         "Fatal error during tokenization",
+        DOCS_INTERFACE_OK,
         """**Typical fix**: Check the query syntax and ensure it is correctly formatted.""",
     )
     UNBALANCED_PARENTHESES = (
         "PARSE_0002",
         "unbalanced-parentheses",
         "Parentheses are unbalanced in the query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -380,6 +391,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0003",
         "unbalanced-quotes",
         "Quotes are unbalanced in the query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -403,6 +415,7 @@ search-query upgrade search_query.json --to 2.0.0
         # Note: provide details like
         # ([token_type] followed by [token_type] is not allowed)
         "The sequence of tokens is invalid." "",
+        DOCS_INTERFACE_OK,
         """**Problematic query**:
 
 .. code-block:: texts
@@ -423,6 +436,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0006",
         "invalid-syntax",
         "Query contains invalid syntax",
+        DOCS_INTERFACE_OK,
         """**Problematic query**:
 
 .. code-block:: text
@@ -449,6 +463,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0007",
         "query-in-quotes",
         "The whole Search string is in quotes.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -469,6 +484,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0008",
         "unsupported-prefix",
         "Unsupported prefix in search query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -489,6 +505,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0009",
         "unsupported-suffix",
         "Unsupported suffix in search query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -510,6 +527,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_0010",
         "unsupported-prefix-platform-identifier",
         "Query starts with platform identifier",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -531,6 +549,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_1001",
         "list-query-missing-root-node",
         "List format query without root node (typically containing operators)",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -554,6 +573,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PARSE_1002",
         "list-query-invalid-reference",
         "Invalid list reference in list query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -587,6 +607,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PUBMED_0001",
         "nested-query-with-field",
         "A Nested query cannot have a search field.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -608,6 +629,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PUBMED_0002",
         "character-replacement",
         "Character replacement",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -629,6 +651,7 @@ search-query upgrade search_query.json --to 2.0.0
         "PUBMED_0003",
         "invalid-wildcard-use",
         "Invalid use of the wildcard operator *",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -654,6 +677,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0001",
         "query-structure-unnecessarily-complex",
         "Query structure is more complex than necessary",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -684,6 +708,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0002",
         "date-filter-in-subquery",
         "Date filter in subquery",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -707,6 +732,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0003",
         "journal-filter-in-subquery",
         "Journal (or publication name) filter in subquery",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -728,6 +754,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0004",
         "unnecessary-parentheses",
         "Unnecessary parentheses in queries",
+        DOCS_INTERFACE_OK,
         """
 
 **Problematic query**:
@@ -749,6 +776,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0005",
         "redundant-term",
         "Redundant term in the query",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query (AND)**:
 
@@ -793,6 +821,7 @@ search-query upgrade search_query.json --to 2.0.0
         "QUALITY_0006",
         "potential-wildcard-use",
         "Potential wildcard use",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -816,6 +845,7 @@ search-query upgrade search_query.json --to 2.0.0
         "STRUCT_0001",
         "implicit-precedence",
         "Operator changed at the same level (explicit parentheses are recommended)",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -838,6 +868,7 @@ search-query upgrade search_query.json --to 2.0.0
         "STRUCT_0002",
         "operator-capitalization",
         "Operators should be capitalized",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -859,6 +890,7 @@ search-query upgrade search_query.json --to 2.0.0
         "STRUCT_0003",
         "boolean-operator-readability",
         "Boolean operator readability",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -877,6 +909,7 @@ search-query upgrade search_query.json --to 2.0.0
         "STRUCT_0004",
         "invalid-proximity-use",
         "Invalid use of the proximity operator",
+        DOCS_INTERFACE_OK,
         """
 Proximity operators must have a non-negative integer as the distance.
 
@@ -902,6 +935,7 @@ Proximity operators must have a non-negative integer as the distance.
         "TERM_0001",
         "non-standard-quotes",
         "Non-standard quotes",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -922,6 +956,7 @@ Proximity operators must have a non-negative integer as the distance.
         "TERM_0002",
         "year-format-invalid",
         "Invalid year format.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -942,6 +977,7 @@ Proximity operators must have a non-negative integer as the distance.
         "TERM_0003",
         "doi-format-invalid",
         "Invalid DOI format.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -962,6 +998,7 @@ Proximity operators must have a non-negative integer as the distance.
         "TERM_0004",
         "isbn-format-invalid",
         "Invalid ISBN format.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -998,6 +1035,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0001",
         "too-many-terms",
         "Too many search terms in the query",
+        DOCS_INTERFACE_OK,
         """
 **Explanation:** The query contains too many search terms, which may lead to performance issues or exceed platform limits.
 
@@ -1022,7 +1060,8 @@ Proximity operators must have a non-negative integer as the distance.
     NEAR_DISTANCE_TOO_LARGE = (
         "WOS_0002",
         "near-distance-too-large",
-        "NEAR distance is too large (max: 15).",
+        "NEAR distance is too large (max: 15). Note: This is based on WOS documentation (TODO:URL). The web interface accepts larger NEAR distances.",
+        DOCS_INTERFACE_MISMATCH,
         """
 **Problematic query**:
 
@@ -1044,6 +1083,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0003",
         "year-without-terms",
         "A search for publication years must include at least another search term.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1065,6 +1105,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0004",
         "implicit-near-value",
         "The value of NEAR operator is implicit",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1086,6 +1127,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0005",
         "year-span-violation",
         "Year span must be five or less.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1107,6 +1149,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0006",
         "wildcard-in-year",
         "Wildcard characters (*, ?, $) not supported in year search.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1127,6 +1170,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0007",
         "wildcard-left-short-length",
         "Left-hand wildcard must be followed by at least three characters.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1147,6 +1191,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0008",
         "wildcard-right-short-length",
         "Right-hand wildcard must preceded by at least three characters.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1169,6 +1214,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0009",
         "wildcard-after-special-char",
         "Wildcard cannot be preceded by special characters.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1189,6 +1235,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0010",
         "wildcard-standalone",
         "Wildcard cannot be standalone.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1210,6 +1257,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0011",
         "wildcard-unsupported",
         "Unsupported wildcard in search string.",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1230,6 +1278,7 @@ Proximity operators must have a non-negative integer as the distance.
         "WOS_0012",
         "invalid-character",
         "Search term contains invalid character",
+        DOCS_INTERFACE_OK,
         """
 **Problematic query**:
 
@@ -1249,8 +1298,11 @@ Proximity operators must have a non-negative integer as the distance.
     )
 
     # pylint: disable=too-many-arguments
-    def __init__(self, code: str, label: str, message: str, docs: str) -> None:
+    def __init__(
+        self, code: str, label: str, message: str, docs_interface_flag: str, docs: str
+    ) -> None:
         self.code = code
         self.label = label
         self.message = message
+        self.docs_interface_flag = docs_interface_flag
         self.docs = docs

@@ -56,6 +56,8 @@ def generate_rst_file(error: QueryErrorCode) -> None:
         "",
         f"**Message**: ``{error.message}``",
         "",
+        f"**Documentation / interface conformance**: ``{error.docs_interface_flag}``",
+        "",
         error.docs.strip()
         if error.docs.strip()
         else "**Description**: " + error.message,

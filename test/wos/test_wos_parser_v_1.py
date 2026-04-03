@@ -349,7 +349,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 {
                     "code": "WOS_0002",
                     "label": "near-distance-too-large",
-                    "message": "NEAR distance is too large (max: 15).",
+                    "message": "NEAR distance is too large (max: 15). Note: This is based on WOS documentation (TODO:URL). The web interface accepts larger NEAR distances.",
                     "is_fatal": True,
                     "position": [(9, 16)],
                     "details": "NEAR distance 20 is larger than the maximum allowed value of 15.",
