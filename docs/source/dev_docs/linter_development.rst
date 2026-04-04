@@ -19,6 +19,10 @@ Each linter must override the `validate_tokens()` method and the `validate_query
 Best practices
 --------------
 - **Use standardized linter messages** defined in `constants.QueryErrorCode`.
+  Each message tuple includes a documentation/interface conformance flag:
+  ``DOCS_INTERFACE_OK`` when implementation behavior conforms to documented rules, and
+  ``DOCS_INTERFACE_MISMATCH`` when diagnostics enforce a documented rule that does not
+  fully match observed database behavior.
 - **Add details** in messages for guidance (e.g., invalid format, missing logic).
 - Ensure **valid token sequences** using the `VALID_TOKEN_SEQUENCES` dictionary.
 - Consider using **utility methods** provided by `linter_base.py`:
