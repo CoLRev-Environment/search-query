@@ -8,7 +8,6 @@ from typing import List
 from typing import Union
 
 from search_query.constants import Operators
-from search_query.constants import PLATFORM
 from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_term import Term
@@ -66,14 +65,12 @@ class NotQuery(Query):
         if self.platform != "deactivated" and not isinstance(children, list):
             raise TypeError("children must be a list of Query instances or strings")
 
-        if self.platform not in {"deactivated", PLATFORM.WOS} and len(children) != 2:
-            raise ValueError("A NOT query must have two children")
+        if self.platform not in {"deactivated"} and len(children) != 1:
+            raise ValueError("A NOT query must have one child.")
 
         # Add each new child using add_child (ensures parent is set)
         for child in children or []:
             self.add_child(child)
 
     def selects_record(self, record_dict: dict) -> bool:
-        return self.children[0].selects(record_dict=record_dict) and not self.children[
-            1
-        ].selects(record_dict=record_dict)
+        return not self.children[0].selects(record_dict=record_dict)
