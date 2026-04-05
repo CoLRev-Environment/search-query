@@ -17,6 +17,7 @@ from search_query.query import Query
 from search_query.query import SearchField
 from search_query.query_near import NEARQuery
 from search_query.query_term import Term
+from search_query.utils import aggregate_linter_messages
 
 # pylint: disable=duplicate-code
 
@@ -421,7 +422,7 @@ class EBSCOParser(QueryStringParser):
         query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
         self.linter.check_status()
-
+        self.linter.messages = aggregate_linter_messages(self.linter.messages)
         query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
 
         return query

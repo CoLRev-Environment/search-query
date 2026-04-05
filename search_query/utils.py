@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import typing
+from collections import OrderedDict
 
 from search_query.constants import Colors
 
@@ -122,3 +123,50 @@ def format_query_string_positions(
 
     highlighted = highlighted.rstrip("\n").lstrip("\n")
     return highlighted
+
+
+def aggregate_linter_messages(
+    messages: typing.Sequence[dict],
+) -> typing.List[dict]:
+    """Combine duplicate linter messages by aggregating their positions."""
+
+    aggregated_messages: typing.List[dict] = []
+    message_index: OrderedDict[typing.Tuple[typing.Any, ...], int] = OrderedDict()
+
+    for message in messages:
+        key = (
+            message.get("code"),
+            message.get("label"),
+            message.get("message"),
+            message.get("is_fatal"),
+            message.get("details", ""),
+        )
+
+        if key not in message_index:
+            # Copy the message so we don't mutate the original list.
+            copied_message = {
+                "code": message.get("code"),
+                "label": message.get("label"),
+                "message": message.get("message"),
+                "is_fatal": message.get("is_fatal"),
+                "details": message.get("details", ""),
+                "position": None,
+            }
+
+            if message.get("position") is not None:
+                copied_message["position"] = list(message["position"])
+
+            aggregated_messages.append(copied_message)
+            message_index[key] = len(aggregated_messages) - 1
+            continue
+
+        aggregated_message = aggregated_messages[message_index[key]]
+
+        if aggregated_message["position"] is None or message.get("position") is None:
+            continue
+
+        for position in message["position"]:
+            if position not in aggregated_message["position"]:
+                aggregated_message["position"].append(position)
+
+    return aggregated_messages

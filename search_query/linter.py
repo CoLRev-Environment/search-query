@@ -9,6 +9,7 @@ import search_query.parser
 from search_query.constants import ExitCodes
 from search_query.search_file import load_search_file
 from search_query.search_file import SearchFile
+from search_query.utils import aggregate_linter_messages
 
 if typing.TYPE_CHECKING:
     from search_query.parser_base import QueryParserBase
@@ -28,7 +29,7 @@ def _run_parser(
         parser_class = search_query.parser.LIST_PARSERS[platform][version]
 
     else:
-        parser_class = search_query.parser.PARSERS[platform][version]
+        parser_class = search_query.parser.PARSERS[platform][version]  # type: ignore
     parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:
@@ -36,8 +37,8 @@ def _run_parser(
     except Exception:
         assert parser.linter.messages  # type: ignore
 
-    if parser.linter.messages == {-1: []}:
-        parser.linter.messages = {}
+    if parser.linter.messages == {-1: []}:  # type: ignore
+        parser.linter.messages = {}  # type: ignore
     return parser
 
 
@@ -75,7 +76,7 @@ def lint_query_string(
 
     parser = _run_parser(search_string, platform=platform, field_general=field_general)
 
-    return parser.linter.messages  # type: ignore
+    return aggregate_linter_messages(parser.linter.messages)  # type: ignore
 
 
 # pylint: disable=too-many-locals
