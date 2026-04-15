@@ -120,6 +120,7 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_missing_fields()
 
         self.check_implicit_near()
+        self.check_unicode_escape_sequences_in_terms()
         return self.tokens
 
     def check_invalid_syntax(self) -> None:

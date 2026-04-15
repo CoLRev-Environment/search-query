@@ -39,6 +39,7 @@ class QueryStringLinter:
 
     FAULTY_OPERATOR_REGEX = r"\b(?:[aA][nN][dD]|[oO][rR]|[nN][oO][tT])\b"
     PARENTHESIS_REGEX = r"[\(\)]"
+    UNICODE_ESCAPE_PATTERN = re.compile(r"\\u[0-9a-fA-F]{4}")
 
     # Higher number=higher precedence
     OPERATOR_PRECEDENCE = {
@@ -430,6 +431,85 @@ class QueryStringLinter:
                         positions=[token.position],
                         details=f"Invalid character '{char}' in search term '{value}'",
                     )
+
+    def _decode_unicode_escape_pair(
+        self, seq1: str, seq2: str | None = None
+    ) -> tuple[str, int]:
+        """Decode unicode escape, optionally combining surrogate pairs.
+
+        Returns:
+            (decoded_char, consumed_matches)
+        """
+        cp1 = int(seq1[2:], 16)
+
+        # High surrogate
+        if 0xD800 <= cp1 <= 0xDBFF and seq2:
+            cp2 = int(seq2[2:], 16)
+            if 0xDC00 <= cp2 <= 0xDFFF:
+                full = 0x10000 + ((cp1 - 0xD800) << 10) + (cp2 - 0xDC00)
+                return chr(full), 2
+
+        # Lone low surrogate → invalid → skip
+        if 0xDC00 <= cp1 <= 0xDFFF:
+            return "", 1
+
+        return chr(cp1), 1
+
+    def check_unicode_escape_sequences_in_terms(self) -> None:
+        """Warn when search terms contain escaped Unicode sequences."""
+
+        for token in self.tokens:
+            if token.type != TokenTypes.TERM:
+                continue
+
+            matches = list(self.UNICODE_ESCAPE_PATTERN.finditer(token.value))
+            i = 0
+
+            while i < len(matches):
+                match = matches[i]
+                raw_sequence = match.group(0)
+
+                next_seq = None
+                if i + 1 < len(matches):
+                    next_seq = matches[i + 1].group(0)
+
+                try:
+                    unicode_char, consumed = self._decode_unicode_escape_pair(
+                        raw_sequence, next_seq
+                    )
+                except ValueError:  # pragma: no cover
+                    unicode_char, consumed = "", 1
+
+                replacement_hint = f" '{unicode_char}'" if unicode_char else ""
+
+                display_sequence = raw_sequence
+                if consumed == 2:
+                    display_sequence += matches[i + 1].group(0)
+
+                if token.position and token.position != (-1, -1):
+                    start = token.position[0] + match.start()
+
+                    if consumed == 2:
+                        end = token.position[0] + matches[i + 1].end()
+                    else:
+                        end = token.position[0] + match.end()
+
+                    positions = [(start, end)]
+                else:
+                    positions = []
+
+                details = (
+                    f"Escaped Unicode sequence '{display_sequence}' in search term "
+                    f"'{token.value}'. Use the UTF-8 character{replacement_hint} instead."
+                )
+
+                self.add_message(
+                    QueryErrorCode.UNICODE_ESCAPE_SEQUENCE,
+                    positions=positions,
+                    details=details,
+                )
+
+                i += consumed
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""
