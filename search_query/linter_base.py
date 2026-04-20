@@ -647,9 +647,10 @@ class QueryStringLinter:
         non_standard_quotes = "“”«»„‟"
         positions = []
         found_quotes = []
+        query_str = parser.original_str or parser.query_str
         for quote in non_standard_quotes:
             quote_positions = [
-                (i, i + 1) for i, c in enumerate(parser.query_str) if c == quote
+                (i, i + 1) for i, c in enumerate(query_str) if c == quote
             ]
             if not quote_positions:
                 continue
