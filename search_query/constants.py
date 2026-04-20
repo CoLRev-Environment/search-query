@@ -33,6 +33,7 @@ class TokenTypes(Enum):
     PROXIMITY_OPERATOR = "PROXIMITY_OPERATOR"
     FIELD = "FIELD"
     TERM = "TERM"
+    QUOTATION_MARK = "QUOTATION_MARK"
     PARENTHESIS_OPEN = "PARENTHESIS_OPEN"
     PARENTHESIS_CLOSED = "PARENTHESIS_CLOSED"
     RANGE_OPERATOR = "RANGE_OPERATOR"
@@ -576,6 +577,58 @@ search-query upgrade search_query.json --to 2.0.0
 **Typical fix**: Reference only existing list items.
 """,
     )
+    LIST_QUERY_CIRCULAR_REFERENCE = (
+        "PARSE_1003",
+        "list-query-circular-reference",
+        "Query line references itself",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2 AND #3
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2
+
+**Typical fix**: Remove the circular reference.
+""",
+    )
+    LIST_QUERY_UNREFERENCED_ITEM = (
+        "PARSE_1004",
+        "list-query-unreferenced-item",
+        "Unreferenced line in list query",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS:
+    1. TS=("Peer leader*" OR "Shared leader*")
+    2. TS=("acrobatics" OR "acrobat")
+    3. #1 AND #2
+
+**Typical fix**: Reference all list items.
+""",
+    )
 
     # -------------------------------------------------------
     # PubMed
@@ -604,10 +657,10 @@ search-query upgrade search_query.json --to 2.0.0
 """,
     )
 
-    CHARACTER_REPLACEMENT = (
+    PUBMED_INVALID_CHARACTER = (
         "PUBMED_0002",
-        "character-replacement",
-        "Character replacement",
+        "invalid-character",
+        "Search term contains invalid character",
         """
 **Problematic query**:
 
@@ -891,6 +944,26 @@ Proximity operators must have a non-negative integer as the distance.
 .. code-block:: text
 
     "digital health"[tiab:5]
+""",
+    )
+    SEARCH_TERM_LOWERCASE = (
+        "STRUCT_0005",
+        "search-term-lowercase",
+        "Unquoted search terms should be lowercase",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    VR AND game
+
+**Recommended query**:
+
+.. code-block:: text
+    
+    vr AND game
+
+**Typical fix**: Make unquoted search term lowercase
 """,
     )
 
@@ -1244,6 +1317,28 @@ Proximity operators must have a non-negative integer as the distance.
 
     # PLATFORM.WOS
     "digital-native"[ti]
+
+""",
+    )
+
+    WOS_INVALID_NEAR_QUERY = (
+        "WOS_0013",
+        "invalid-near-query",
+        "NEAR operator applied to AND query.",
+        """
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A AND B) NEAR/3 C)"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A NEAR/3 C) AND (B NEAR/3 C))"
 
 """,
     )

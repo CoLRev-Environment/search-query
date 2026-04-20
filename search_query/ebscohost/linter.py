@@ -9,7 +9,7 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebscohost.constants import syntax_str_to_generic_field_set
+from search_query.ebscohost.constants import syntax_str_to_generic_field_set, map_to_standard
 from search_query.ebscohost.constants import VALID_fieldS_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
@@ -28,6 +28,8 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
     PLATFORM: PLATFORM = PLATFORM.EBSCO
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
+
+    INVALID_CHARACTERS = "@%$^~\\<>{}[]"
 
     VALID_TOKEN_SEQUENCES = {
         TokenTypes.FIELD: [
@@ -91,15 +93,21 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
+        if self.has_fatal_errors():
+            return self.tokens
+
+        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.EBSCO_INVALID_CHARACTER)
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
-        self.add_artificial_parentheses_for_operator_precedence()
+        self.check_unbalanced_quotes()
         self.check_operator_capitalization()
+        self.check_search_term_lowercase()
         self.check_invalid_near_within_operators()
 
         if self.has_fatal_errors():
             return self.tokens
 
+        self._print_unequal_precedence_warning()
         self.check_general_field()
 
         return self.tokens
@@ -148,7 +156,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 if m:
                     digit = m.group(1)
 
-                if token.value.startswith("NEAR"):
+                if token.value.startswith("NEAR") or token.value.startswith("N/"):
                     details = (
                         f"Operator {token.value} "
                         f"is not supported by EBSCO. Must be N{digit} instead."
@@ -157,6 +165,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
+                        fatal=True
                     )
                     token.value = token.value.replace("NEAR/", "N")
                 if token.value.startswith("WITHIN"):
@@ -168,6 +177,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
+                        fatal=True
                     )
                     token.value = token.value.replace("WITHIN/", "W")
 
@@ -200,22 +210,18 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             token_type = token.type
             prev_type = self.tokens[i - 1].type
 
-            token_type = token.type
-            prev_type = self.tokens[i - 1].type
+            # Do not consider a single " or a misplaced wildcard for invalid token sequences (already handled by other validation methods)
+            if self.tokens[i - 1].value == '"' or token.value.lstrip('*') in '" ':
+                continue
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 details = ""
                 positions = [
                     (token.position if token_type else self.tokens[i - 1].position)
                 ]
-                if token_type == TokenTypes.FIELD:
-                    details = "Invalid search field position"
-                    positions = [token.position]
 
-                elif token_type == TokenTypes.LOGIC_OPERATOR:
+                if token_type == TokenTypes.LOGIC_OPERATOR:
                     details = "Invalid operator position"
-                    if prev_type == TokenTypes.LOGIC_OPERATOR:
-                        details = "Cannot have two consecutive operators"
                     positions = [(self.tokens[i - 1].position[0], token.position[1])]
 
                 elif (
@@ -229,6 +235,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             token.position[1],
                         )
                     ]
+
                 elif token_type == TokenTypes.PARENTHESIS_OPEN and re.match(
                     r"^[a-z]{2}$", self.tokens[i - 1].value
                 ):
@@ -241,16 +248,21 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         fatal=True,
                     )
                     continue
+
                 elif (
                     token_type and prev_type and prev_type != TokenTypes.LOGIC_OPERATOR
                 ):
-                    details = "Missing operator between terms"
+                    details = "Missing operator"
                     positions = [
                         (
                             self.tokens[i - 1].position[0],
                             token.position[1],
                         )
                     ]
+
+                elif token_type == TokenTypes.FIELD:
+                    details = "Invalid search field position"
+                    positions = [token.position]
 
                 self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -272,64 +284,96 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def check_search_term_lowercase(self) -> None:
+        """Check if search terms are lowercase."""
+        for token in self.tokens:
+            if token.type == TokenTypes.TERM:
+                if token.value.strip()[0] != '"' and token.value != token.value.lower():
+                    self.add_message(
+                        QueryErrorCode.SEARCH_TERM_LOWERCASE,
+                        positions=[token.position],
+                        details="Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine."
+                    )
+                    token.value = token.value.lower()
+
     def check_unsupported_wildcards(self, query: Query) -> None:
         """Check for unsupported characters in the search string."""
 
         if query.is_term():
-            val = query.value
-            # Check for leading wildcard
-            match = re.search(r"^(\*|\?|\#)", val)
-            if match:
+            pattern = re.compile(r"[*?#]")
+            for match in pattern.finditer(query.value):
+                wildcard_value = match.group()
+                index = match.start()
                 position = (-1, -1)
                 if query.position:
                     position = (
-                        query.position[0] + match.start(),
+                        query.position[0] + index,
                         query.position[0] + match.end(),
                     )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details="Wildcard not allowed at the beginning of a term.",
-                    fatal=True,
-                )
 
-            # Count each wildcard
-            char_count = sum(c not in "*?#" for c in val[:4])
-            if re.search(r"^[^\*\?\#](\?|\#)", val) and char_count < 2:
-                # Star in second position followed by more letters (e.g., "f*tal")
-                position = (-1, -1)
-                if query.position:
-                    position = (query.position[0], query.position[0] + len(val))
-                details = (
-                    "Invalid wildcard use: only one leading literal character found. "
-                    "When a wildcard appears within the first four characters, "
-                    "at least two literal (non-wildcard) characters "
-                    "must be present in that span."
-                )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details=details,
-                    fatal=True,
-                )
+                is_term_start = index == 0 or query.value[:index].strip('"').isspace()
+                is_term_end = index == len(query.value) - 1 or query.value[index:].strip('"').isspace()
 
-            if re.search(r"^[^\*\?\#](\*)", val):
-                position = (-1, -1)
-                if query.position:
-                    position = (query.position[0], query.position[0] + len(val))
-                details = (
-                    "Do not use * in the second position followed by "
-                    "additional letters. Use ? or # instead (e.g., f?tal)."
-                )
-                self.add_message(
-                    QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                    positions=[position],
-                    details=details,
-                    fatal=True,
-                )
+                if wildcard_value == '*':
+                    if is_term_start:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard at the beginning of a term has no effect.",
+                            fatal=False,
+                        )
+                    elif not query.value[index - 1] == ' ':
+                        leading_char_count = 0
+                        prev = wildcard_value
+                        for c in reversed(query.value[:index]):
+                            if c in ' "' or leading_char_count >= 3:
+                                break
+                            if c == '*' or (c in '#?' and prev in '#?'):
+                                # Count multiple # or ? wildcards in a row as one char, skip * wildcards.
+                                continue
+                            leading_char_count += 1
+                            prev = c
+                        if leading_char_count < 3:
+                            self.add_message(
+                                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                                positions=[position],
+                                details="EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
+                                fatal=False,
+                            )
+
+                if wildcard_value == '?':
+                    if is_term_start:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard at the beginning of a term has no effect.",
+                            fatal=False,
+                        )
+                    if is_term_end and query.value[index - 1] != "#":
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Trailing ? is interpreted as a literal question mark, not a wildcard. Use #? to force wildcard behavior.",
+                            fatal=False,
+                        )
+
+                if wildcard_value == '#':
+                    if is_term_start:
+                        self.add_message(
+                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                            positions=[position],
+                            details="Wildcard beginning of a term has no effect.",
+                            fatal=False,
+                        )
 
         for child in query.children:
             self.check_unsupported_wildcards(child)
+
+    def _get_generic_field_set(self, value: str) -> set:
+        return syntax_str_to_generic_field_set(value)
+
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
 
     def validate_query_tree(self, query: Query) -> None:
         """
@@ -338,28 +382,16 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         """
 
         self.check_unbalanced_quotes_in_terms(query)
-        self.check_invalid_characters_in_term_query(
-            query, "@%$^~\\<>{}[]", QueryErrorCode.EBSCO_INVALID_CHARACTER
-        )
+        self.check_apostrophe_phrases(query)
         self.check_unsupported_fields_in_query(query)
         self.check_unsupported_wildcards(query)
+        self._check_unnecessary_nesting(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
+        self._check_redundant_terms(term_field_query, ["TI", "AB", "XB"])
+        self._check_non_global_date_filter(term_field_query)
+        self._check_non_global_journal_filter(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
-        self._check_redundant_terms(
-            term_field_query, exact_fields=re.compile(r"^(ZY)$")
-        )
-        # Exception for ZY:
-        # ZY "south sudan" AND TI "context of vegetarians"
-        # ZY "sudan" AND TI "context of vegetarians"
-
-        # No exception for MH: paper 10.1080/15398285.2024.2420159
-        # has only "sleep hygiene" in MH,
-        # but is also returned when searching for MH "sleep"
-        # MH "sleep hygiene" AND TI "A Brazilian Experience"
-        # MH "sleep" AND TI "A Brazilian Experience"
 
 
 class EBSCOListLinter(QueryListLinter):
@@ -380,10 +412,9 @@ class EBSCOListLinter(QueryListLinter):
         )
 
     def validate_tokens(self) -> None:
-        """Validate token list"""
+        """Validate list tokens."""
+        self._check_invalid_reference()
 
-        # self.parser.query_dict.items()
-        # self.check_missing_tokens()
-        # self.check_LIST_QUERY_INVALID_REFERENCE()
-        # # self.check_unknown_tokens()
-        # self.check_operator_node_token_sequence()
+    def validate_query_string(self, processed_lines: set) -> None:
+        """Verify query string integrity."""
+        self._check_unreferenced_items(processed_lines)

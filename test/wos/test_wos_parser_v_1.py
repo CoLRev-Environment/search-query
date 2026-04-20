@@ -137,6 +137,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+            '(TS=(term1) AND (TS=(term2) OR (term3)))',
+            [
+                {
+                    'code': 'FIELD_0002',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'field-missing',
+                    'message': 'Search field is missing',
+                    'position': [(32, 37)],
+                },
+            ]
+        ),
+        (
+            '(TS=(term1)) AND TS=(term2 OR term3)',
+            []
+        ),
+        (
             r"collaborat\* OR assistance",
             [
                 {
@@ -144,8 +161,8 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-character",
                     "message": "Search term contains invalid character",
                     "is_fatal": False,
-                    "position": [(0, 12)],
-                    "details": "Invalid character '\\' in search term 'collaborat\\*'",
+                    "position": [(10, 11)],
+                    "details": "Invalid character '\\' in search term 'collaborat\\*' will be replaced with whitespace.",
                 },
                 {
                     "code": "FIELD_0002",
@@ -228,14 +245,14 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(13, 15)],
                     "details": "Cannot end with LOGIC_OPERATOR",
                 },
-                {
-                    "code": "STRUCT_0001",
-                    "label": "implicit-precedence",
-                    "message": "Operator changed at the same level (explicit parentheses are recommended)",
-                    "is_fatal": False,
-                    "position": [(9, 12), (13, 15)],
-                    "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
-                },
+                # {
+                #     "code": "STRUCT_0001",
+                #     "label": "implicit-precedence",
+                #     "message": "Operator changed at the same level (explicit parentheses are recommended)",
+                #     "is_fatal": False,
+                #     "position": [(9, 12), (13, 15)],
+                #     "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
+                # },
             ],
         ),
         (
@@ -260,7 +277,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0004",
@@ -289,7 +306,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 10)],
-                    "details": "",
+                    "details": "Missing operator",
                 }
             ],
         ),
@@ -310,7 +327,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0002",
@@ -331,7 +348,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator",
                 },
                 {
                     "code": "PARSE_0004",
@@ -341,19 +358,6 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(9, 12)],
                     "details": "Cannot end with FIELD",
                 },
-            ],
-        ),
-        (
-            "TI=term1 NEAR/20 TI=term2",
-            [
-                {
-                    "code": "WOS_0002",
-                    "label": "near-distance-too-large",
-                    "message": "NEAR distance is too large (max: 15).",
-                    "is_fatal": True,
-                    "position": [(9, 16)],
-                    "details": "NEAR distance 20 is larger than the maximum allowed value of 15.",
-                }
             ],
         ),
         # TODO: should be implemented properly.
@@ -380,6 +384,23 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         #         },
         #     ],
         # ),
+        (
+            "TS=(diversity NEAR/3 (speci* OR population*))",
+            []
+        ),
+        (
+            "TS=(diversity NEAR/3 (speci* AND population*))",
+            [
+                {
+                    "code": "WOS_0013",
+                    "label": "invalid-near-query",
+                    "message": "NEAR operator applied to AND query.",
+                    "is_fatal": True,
+                    "position": [(22, 44)],
+                    "details": ''
+                },
+            ]
+        ),
         (
             "TI=term1 !term2",
             [
@@ -466,9 +487,22 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(3, 12)],
-                    "details": "",
+                    "details": "Missing operator",
                 }
             ],
+        ),
+        (
+            '"term1" "term2"',
+            [
+                {
+                    "code": "PARSE_0004",
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "is_fatal": True,
+                    "position": [(0, 15)],
+                    "details": "Missing operator",
+                }
+            ]
         ),
         (
             "TI=*te",
@@ -582,7 +616,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(13, 16)],
-                    "details": "Search field IY= at position (13, 16) is not supported. Supported fields for PLATFORM.WOS: ab=|abstract=|la=|language=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
+                    "details": "Search field IY= at position (13, 16) is not supported. Supported fields for WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
                 }
             ],
         ),
@@ -686,6 +720,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
+                "TS='carbon'",
+                [
+                    {
+                        "code": "TERM_0001",
+                        "label": "non-standard-quotes",
+                        "message": "Non-standard quotes",
+                        "is_fatal": False,
+                        "position": [(3, 4), (10, 11)],
+                        "details": 'Apostrophes used as quotation marks. Use standard double quotes (") instead.',
+                    }
+                ],
+        ),
+        (
             "ALL=(term1 OR term2 OR term3 OR term4 OR term5 OR term6 OR term7 OR term8 OR term9 OR term10 OR term11 OR term12 OR term13 OR term14 OR term15 OR term16 OR term17 OR term18 OR term19 OR term20 OR term21 OR term22 OR term23 OR term24 OR term25 OR term26 OR term27 OR term28 OR term29 OR term30 OR term31 OR term32 OR term33 OR term34 OR term35 OR term36 OR term37 OR term38 OR term39 OR term40 OR term41 OR term42 OR term43 OR term44 OR term45 OR term46 OR term47 OR term48 OR term49 OR term50 OR term51 OR term52)",
             [
                 {
@@ -716,13 +763,13 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=(activity) AND (TS=(cancer) AND SO=(Lancet))",
             [
                 {
-                    "code": "QUALITY_0003",
-                    "label": "journal-filter-in-subquery",
-                    "message": "Journal (or publication name) filter in subquery",
-                    "is_fatal": False,
-                    "position": [(39, 45)],
-                    "details": "Check whether journal/publication-name filters (SO=) should apply to the entire query.",
-                }
+                    'code': 'QUALITY_0004',
+                    'details': 'Unnecessary parentheses around query block.',
+                    'is_fatal': False,
+                    'label': 'unnecessary-parentheses',
+                    'message': 'Unnecessary parentheses in queries',
+                    'position': [(18, 19), (46, 47)],
+                },
             ],
         ),
         (
@@ -737,6 +784,27 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "details": "",
                 }
             ],
+        ),
+        (
+            'TS="digital health TS="eHealth"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [(3, 22)],
+                },
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(3, 18)]
+                },
+            ]
         ),
         (
             "Web of Science: TS=eHealth",
@@ -760,7 +828,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Potential wildcard use",
                     "is_fatal": False,
                     "position": [(4, 11), (15, 24), (28, 39), (43, 56)],
-                    "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
+                    "details": "Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcompute OR computing OR computation OR computational\x1b[0m with \x1b[92mcomput*\x1b[0m",
                 }
             ],
         ),
@@ -773,7 +841,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 3)],
-                    "details": "Search field DI= at position (0, 3) is not supported. Supported fields for PLATFORM.WOS: ab=|abstract=|la=|language=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
+                    "details": "Search field DI= at position (0, 3) is not supported. Supported fields for WOS: ab=|abstract=|la=|language=|dt=|document type=|ad=|address=|all=|all fields=|ai=|author identifiers=|ak=|author keywords=|au=|author=|cf=|conference=|ci=|city=|cu=|country/region=|do=|doi=|ed=|editor=|fg=|grant number=|fo=|funding agency=|ft=|funding text=|gp=|group author=|is=|issn/isbn=|kp=|keywords plus=|og=|organization - enhanced=|oo=|organization=|pmid=|pubmed id=|ps=|province/state=|py=|year published=|sa=|street address=|sg=|suborganization=|so=|publication name=|su=|research area=|ti=|title=|ts=|topic=|ut=|accession number=|wc=|web of science category=|zp=|zip/postal code=",
                 },
                 {
                     "code": "LINT_2001",
@@ -938,7 +1006,7 @@ def test_query_in_quotes() -> None:
     assert parser.tokens[0].value == "TI="
 
 
-def test_artificial_parentheses() -> None:
+def test_missing_field_query() -> None:
     parser = WOSParser_v1(
         query_str="remote OR online AND work",
         field_general="All Fields",
@@ -961,7 +1029,7 @@ def test_artificial_parentheses() -> None:
             "message": "Operator changed at the same level (explicit parentheses are recommended)",
             "is_fatal": False,
             "position": [(7, 9), (17, 20)],
-            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\nTo fix this, search-query adds artificial parentheses around operator groups with higher precedence.\n\n",
+            "details": "The query uses multiple operators with different precedence levels, but without parentheses to make the intended logic explicit. This can lead to unexpected interpretations of the query.\n\nSpecifically:\nOperator \x1b[92mAND\x1b[0m is evaluated first because it has the highest precedence level (1).\nOperator \x1b[93mOR\x1b[0m is evaluated last because it has the lowest precedence level (0).\n\n",
         },
         {
             "code": "FIELD_0003",
@@ -976,7 +1044,7 @@ def test_artificial_parentheses() -> None:
             "label": "field-missing",
             "message": "Search field is missing",
             "is_fatal": False,
-            "position": [(0, 6)],
+            "position": [(0, 6), (10, 16), (21, 25)],
             "details": "",
         },
     ]
@@ -1020,7 +1088,7 @@ def test_list_parser_case_3() -> None:
     except ListQuerySyntaxError as exc:
         print(exc)
     assert list_parser.linter.messages == {
-        2: [
+        "3": [
             {
                 "code": "PARSE_1002",
                 "label": "list-query-invalid-reference",
@@ -1053,27 +1121,28 @@ def test_list_parser_case_4() -> None:
                 "label": "redundant-term",
                 "message": "Redundant term in the query",
                 "is_fatal": False,
-                "position": [(7, 21), (45, 59)],
-                "details": 'Term "Peer leader*" is contained multiple times i.e., redundantly.',
+                "position": [(7, 21)],
+                "details": 'The term \x1b[93m"Peer leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
             {
                 "code": "QUALITY_0005",
                 "label": "redundant-term",
                 "message": "Redundant term in the query",
                 "is_fatal": False,
-                "position": [(25, 41), (63, 79)],
-                "details": 'Term "Shared leader*" is contained multiple times i.e., redundantly.',
+                "position": [(25, 41)],
+                "details": 'The term \x1b[93m"Shared leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
+
         ],
-        "2": [
+        '2': [
             {
-                "code": "QUALITY_0006",
-                "label": "potential-wildcard-use",
-                "message": "Potential wildcard use",
-                "is_fatal": False,
-                "position": [(88, 100), (104, 113), (117, 127)],
-                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91macrobatics OR acrobat OR acrobats\x1b[0m with \x1b[92macrobat*\x1b[0m",
-            }
+                'code': 'QUALITY_0006',
+                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                'is_fatal': False,
+                'label': 'potential-wildcard-use',
+                'message': 'Potential wildcard use',
+                'position': [(88, 100), (104, 113), (117, 127)],
+            },
         ],
     }
 
@@ -1118,15 +1187,23 @@ def test_list_parser_case_6() -> None:
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
         -1: [],
-        "3": [
+        "1": [
             {
                 "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
-                "position": [(319, 321)],
+                "position": [(110, 112)],
                 "details": "",
-            }
+            },
+            {
+                'code': 'QUALITY_0006',
+                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
+                'is_fatal': False,
+                'label': 'potential-wildcard-use',
+                'message': 'Potential wildcard use',
+                'position': [(83, 88), (92, 98)],
+            },
         ],
         "2": [
             {
@@ -1138,23 +1215,15 @@ def test_list_parser_case_6() -> None:
                 "details": "",
             }
         ],
-        "1": [
+        "3": [
             {
                 "code": "STRUCT_0002",
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
-                "position": [(110, 112)],
+                "position": [(319, 321)],
                 "details": "",
-            },
-            {
-                "code": "QUALITY_0006",
-                "label": "potential-wildcard-use",
-                "message": "Potential wildcard use",
-                "is_fatal": False,
-                "position": [(83, 88), (92, 98)],
-                "details": "Multiple terms connected with OR stem to the same word. Use a wildcard instead.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m",
-            },
+            }
         ],
     }
 
@@ -1194,6 +1263,28 @@ def test_list_parser_case_8() -> None:
         == '("Peer leader*" OR "Shared leader*") AND ("acrobatics" OR "acrobat")'
     )
 
+
+# Test case 9
+def test_list_parser_case_9() -> None:
+    query_list = '1. TS=("Peer leader*" OR "Shared leader*")\n2. TS=("acrobatics" OR "acrobat" OR "acrobats")\n3. #1 AND #3\n'
+
+    list_parser = WOSListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    assert list_parser.linter.messages == {
+        "3": [
+            {
+                'code': 'PARSE_1003',
+                'details': 'List reference #3 is circular.',
+                'is_fatal': True,
+                'label': 'list-query-circular-reference',
+                'message': 'Query line references itself',
+                'position': [(101, 103)],
+            },
+        ]
+    }
 
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""

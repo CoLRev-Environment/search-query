@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing
 
-from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
@@ -13,7 +12,7 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import syntax_str_to_generic_field_set
+from search_query.wos.constants import syntax_str_to_generic_field_set, field_general_to_syntax, map_to_standard
 from search_query.wos.constants import VALID_fieldS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
@@ -35,6 +34,8 @@ class WOSQueryStringLinter(QueryStringLinter):
     WILDCARD_CHARS = ["?", "$", "*"]
 
     VALID_fieldS_REGEX = VALID_fieldS_REGEX
+
+    INVALID_CHARACTERS = "@%^~\\<>{}()[]#+="
 
     PLATFORM: PLATFORM = PLATFORM.WOS
 
@@ -102,20 +103,23 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_invalid_syntax()
         self.check_missing_tokens()
         self.check_unknown_token_types()
-        self.check_invalid_token_sequences()
-        self.check_unbalanced_parentheses()
-        self.add_artificial_parentheses_for_operator_precedence()
-        self.check_operator_capitalization()
         if self.has_fatal_errors():
             return self.tokens
 
         self.check_invalid_characters_in_term(
-            "@%^~\\<>{}()[]#", QueryErrorCode.WOS_INVALID_CHARACTER
+            self.INVALID_CHARACTERS, QueryErrorCode.WOS_INVALID_CHARACTER
         )
         # Note : "&" is allowed for journals (e.g., "Information & Management")
         # When used for search terms, it seems to be translated to "AND"
-        self.check_near_distance_in_range(max_value=15)
 
+        self.check_invalid_token_sequences()
+        self.check_unbalanced_parentheses()
+        self.check_unbalanced_quotes()
+        self.check_operator_capitalization()
+        if self.has_fatal_errors():
+            return self.tokens
+
+        self._print_unequal_precedence_warning()
         self.check_general_field()
         self.check_missing_fields()
 
@@ -168,30 +172,40 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_missing_fields(
         self,
     ) -> None:
-        """Check for missing search fields."""
+        """Check for terms without search fields.
 
+        For a TERM token to be considered fielded it must:
+        - immediately follow a search FIELD token
+        - appear inside parentheses group that immediately follows a FIELD token
+        """
         missing_positions = []
 
-        first_token = self.tokens[0]
-        if first_token.type not in [TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]:
-            missing_positions.append(first_token.position)
+        prev_token_type = None
+        depth = 0
 
-        previous_token = self.tokens[0].type
+        in_field_group = False
+        field_group_depth = None
 
-        # iterate over remaining tokens on the first level
-        level = 0
-        for token in self.tokens[1:]:
+        for token in self.tokens:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                level += 1
+                depth += 1
+                if not in_field_group and prev_token_type == TokenTypes.FIELD:
+                    # Enter fielded parentheses group
+                    in_field_group = True
+                    field_group_depth = depth
+
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
-                level -= 1
-            elif (
-                level == 0
-                and token.type == TokenTypes.TERM
-                and previous_token != TokenTypes.FIELD
-            ):
+                if in_field_group and field_group_depth == depth:
+                    # Exit fielded parentheses group
+                    in_field_group = False
+                    field_group_depth = None
+                depth -= 1
+
+            elif token.type == TokenTypes.TERM and not in_field_group and prev_token_type != TokenTypes.FIELD:
+                # Term is not in fielded group and has no preceding FIELD token
                 missing_positions.append(token.position)
-            previous_token = token.type
+
+            prev_token_type = token.type
 
         if missing_positions:
             self.add_message(
@@ -302,6 +316,19 @@ class WOSQueryStringLinter(QueryStringLinter):
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
                     fatal=True,
+                )
+                continue
+
+            # Missing operator
+            if (
+                    token.type in [TokenTypes.TERM, TokenTypes.PARENTHESIS_CLOSED]
+                    and next_token.type in [TokenTypes.TERM, TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]
+            ):
+                self.add_message(
+                    QueryErrorCode.INVALID_TOKEN_SEQUENCE,
+                    positions=[(token.position[0], next_token.position[1])],
+                    fatal=True,
+                    details="Missing operator",
                 )
                 continue
 
@@ -437,6 +464,18 @@ class WOSQueryStringLinter(QueryStringLinter):
         for child in query.children:
             self.check_issn_isbn_format(child)
 
+    def validate_field_general(self, field: str) -> None:
+        if not field:
+            return
+        field = field.strip()
+        if not field_general_to_syntax(field):
+            self.add_message(
+                QueryErrorCode.FIELD_UNSUPPORTED,
+                positions=[],
+                fatal=False,
+                details=f'The extracted search field "{field}" is not supported by WOS.'
+            )
+
     def check_deprecated_field_tags(self, query: Query) -> None:
         """Check for deprecated field tags."""
 
@@ -566,7 +605,7 @@ class WOSQueryStringLinter(QueryStringLinter):
     def check_nr_terms(self, query: Query) -> None:
         """Check the number of search terms in the query."""
         nr_terms = query.get_nr_leaves()
-        if nr_terms > 1600:  # pragma: no cover
+        if nr_terms > 16000:  # pragma: no cover
             self.add_message(
                 QueryErrorCode.TOO_MANY_TERMS,
                 positions=[query.position] if query.position else [],
@@ -582,6 +621,29 @@ class WOSQueryStringLinter(QueryStringLinter):
                 fatal=True,
             )
 
+    def _check_invalid_near_query(self, query: Query) -> None:
+        """Check if NEAR operator is applied to an AND query."""
+        if not query.operator:
+            return
+
+        if query.value == "NEAR":
+            for child in query.children:
+                if child.operator and child.value == "AND":
+                    self.add_message(
+                        QueryErrorCode.WOS_INVALID_NEAR_QUERY,
+                        positions=[child.position] if child.position else [],
+                        fatal=True
+                    )
+
+        for child in query.children:
+            self._check_invalid_near_query(child)
+
+    def _get_generic_field_set(self, value: str) -> set:
+        return syntax_str_to_generic_field_set(value)
+
+    def _normalize_field(self, value: str) -> str:
+        return map_to_standard(value)
+
     def validate_query_tree(self, query: Query) -> None:
         """
         Validate the query tree.
@@ -594,15 +656,18 @@ class WOSQueryStringLinter(QueryStringLinter):
         self.check_unsupported_wildcards(query)
         self.check_unsupported_fields_in_query(query)
         self.check_unbalanced_quotes_in_terms(query)
+        self.check_apostrophe_phrases(query)
+        self._check_invalid_near_query(query)
+        self._check_unnecessary_nesting(query)
 
-        term_field_query = self.get_query_with_fields_at_terms(query)
+        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
+        self._check_redundant_terms(term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="])
         self.check_year_format(term_field_query)
         self.check_nr_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)
         self.check_doi_format(term_field_query)
-        self._check_date_filters_in_subquery(term_field_query)
-        self._check_journal_filters_in_subquery(term_field_query)
-        self._check_redundant_terms(term_field_query)
+        self._check_non_global_date_filter(term_field_query)
+        self._check_non_global_journal_filter(term_field_query)
         self._check_for_wildcard_usage(term_field_query)
         self.check_deprecated_field_tags(term_field_query)
 
@@ -627,43 +692,10 @@ class WOSQueryListLinter(QueryListLinter):
         )
         self.messages: dict = {}
 
-    def validate_list_tokens(self) -> None:
-        """Lint the list parser."""
+    def validate_tokens(self) -> None:
+        """Validate list tokens."""
+        self._check_invalid_reference()
 
-        self._check_missing_root()
-        self._check_list_query_invalid_reference()
-
-    def _check_missing_root(self) -> None:
-        root_node_content: str = str(
-            list(self.parser.query_dict.values())[-1]["node_content"]
-        )
-        # Raise an error if the last item of the list is not the last combining string
-        if "#" not in root_node_content:
-            self.add_message(
-                QueryErrorCode.LIST_QUERY_MISSING_ROOT_NODE,
-                list_position=GENERAL_ERROR_POSITION,
-                positions=[],
-                details="The last item of the list must be a combining string.",
-                fatal=True,
-            )
-
-    def _check_list_query_invalid_reference(self) -> None:
-        # check if all list-references exist
-        for ind, query_node in enumerate(self.parser.query_dict.values()):
-            # check if all list references exist
-            for match in re.finditer(
-                self.parser.LIST_ITEM_REFERENCE,
-                str(query_node["node_content"]),
-            ):
-                reference = match.group()
-                position = match.span()
-                offset = query_node["content_pos"][0]
-                position = (position[0] + offset, position[1] + offset)
-                if reference.replace("#", "") not in self.parser.query_dict:
-                    self.add_message(
-                        QueryErrorCode.LIST_QUERY_INVALID_REFERENCE,
-                        list_position=ind,
-                        positions=[position],
-                        details=f"List reference {reference} not found.",
-                        fatal=True,
-                    )
+    def validate_query_string(self, processed_lines: set) -> None:
+        """Verify query string integrity."""
+        self._check_unreferenced_items(processed_lines)

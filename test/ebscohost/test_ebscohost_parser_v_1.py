@@ -18,6 +18,7 @@ from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
 from search_query.query_or import OrQuery
 from search_query.query_term import Term
+from search_query.exception import ListQuerySyntaxError
 
 # flake8: noqa: E501
 
@@ -26,7 +27,7 @@ from search_query.query_term import Term
     "query_string, expected_tokens",
     [
         (
-            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
+            'TI "Artificial Intelligence" AND AB future NOT AB past',
             [
                 Token(value="TI", type=TokenTypes.FIELD, position=(0, 2)),
                 Token(
@@ -36,20 +37,20 @@ from search_query.query_term import Term
                 ),
                 Token(value="AND", type=TokenTypes.LOGIC_OPERATOR, position=(29, 32)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(33, 35)),
-                Token(value="Future", type=TokenTypes.TERM, position=(36, 42)),
+                Token(value="future", type=TokenTypes.TERM, position=(36, 42)),
                 Token(value="NOT", type=TokenTypes.LOGIC_OPERATOR, position=(43, 46)),
                 Token(value="AB", type=TokenTypes.FIELD, position=(47, 49)),
-                Token(value="Past", type=TokenTypes.TERM, position=(50, 54)),
+                Token(value="past", type=TokenTypes.TERM, position=(50, 54)),
             ],
         ),
         (
-            "Artificial N2 Intelligence",
+            "artificial N2 intelligence",
             [
-                Token(value="Artificial", type=TokenTypes.TERM, position=(0, 10)),
+                Token(value="artificial", type=TokenTypes.TERM, position=(0, 10)),
                 Token(
                     value="N2", type=TokenTypes.PROXIMITY_OPERATOR, position=(11, 13)
                 ),
-                Token(value="Intelligence", type=TokenTypes.TERM, position=(14, 26)),
+                Token(value="intelligence", type=TokenTypes.TERM, position=(14, 26)),
             ],
         ),
         (
@@ -158,7 +159,7 @@ def test_tokenization(
                 Token("hypertension", TokenTypes.TERM, (9, 20)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Missing operator between terms",
+            "Missing operator",
         ),
         (
             [
@@ -183,7 +184,7 @@ def test_tokenization(
                 Token("insulin", TokenTypes.TERM, (12, 19)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            "Invalid search field position",
+            "Missing operator",
         ),
         (
             [
@@ -223,7 +224,7 @@ def test_invalid_token_sequences(
     "query_string, messages",
     [
         (
-            "(Artificial Intelligence AND Future",
+            "(artificial intelligence AND future",
             [
                 {
                     "code": "PARSE_0002",
@@ -235,22 +236,10 @@ def test_invalid_token_sequences(
                 }
             ],
         ),
+        # ("TI AND artificial intelligence", []),
+        ("TI artificial intelligence AND AB future", []),
         (
-            "TI AND Artificial Intelligence",
-            [
-                {
-                    "code": "PARSE_0004",
-                    "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid.",
-                    "is_fatal": True,
-                    "position": [(0, 6)],
-                    "details": "Invalid operator position",
-                }
-            ],
-        ),
-        ("TI Artificial Intelligence AND AB Future", []),
-        (
-            "AI governance OR AB Future",
+            "AI governance OR AB future",
             [
                 {
                     "code": "FIELD_0001",
@@ -258,12 +247,12 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for EBSCOHOST: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|MM|MW|ZY|ZU|PT|ZT|DT|XB",
                 }
             ],
         ),
         (
-            'AI "governance" OR AB Future',
+            'AI "governance" OR AB future',
             [
                 {
                     "code": "FIELD_0001",
@@ -271,7 +260,7 @@ def test_invalid_token_sequences(
                     "message": "Search field is not supported for this database",
                     "is_fatal": True,
                     "position": [(0, 2)],
-                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for PLATFORM.EBSCO: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|ZY|ZU|PT",
+                    "details": "Search field AI at position (0, 2) is not supported. Supported fields for EBSCOHOST: TI|AB|TP|TX|AU|SU|SO|IS|IB|LA|KW|DE|MH|MM|MW|ZY|ZU|PT|ZT|DT|XB",
                 }
             ],
         ),
@@ -289,15 +278,15 @@ def test_invalid_token_sequences(
             ],
         ),
         (
-            'MH "sleep" OR MH "sleep disorders"',
+            'TI "sleep" OR TI "sleep disorders"',
             [
                 {
                     "code": "QUALITY_0005",
                     "label": "redundant-term",
                     "message": "Redundant term in the query",
                     "is_fatal": False,
-                    "position": [(3, 10), (17, 34)],
-                    "details": 'Results for term \x1b[93m"sleep disorders"\x1b[0m are contained in the more general search for \x1b[93m"sleep"\x1b[0m.\nAs both terms are connected with OR, the term "sleep disorders" is redundant.',
+                    "position": [(17, 34)],
+                    "details": 'The term \x1b[93m"sleep disorders"\x1b[0m is redundant in this OR query because another term already matches all of its results.',
                 }
             ],
         ),
@@ -305,6 +294,25 @@ def test_invalid_token_sequences(
             # No message: ZY "sudan" does not match the pattern for ZY "south sudan"
             '(ZY "sudan" OR ZY "south sudan") AND TI "context of vegetarians"',
             [],
+        ),
+        (
+            '"person centred care"or" patient-centered care"',
+            [
+                {
+                    'code': 'STRUCT_0002',
+                    'details': '',
+                    'is_fatal': False,
+                    'label': 'operator-capitalization',
+                    'message': 'Operators should be capitalized',
+                    'position': [
+                        (
+                                21,
+                                23,
+                        ),
+                    ],
+                },
+            ]
+
         ),
         (
             "bias OR OR politics",
@@ -315,9 +323,27 @@ def test_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(5, 10)],
-                    "details": "Cannot have two consecutive operators",
+                    "details": "Invalid operator position",
                 }
             ],
+        ),
+        (
+            'higher N1 level? "of education"',
+            [
+                {
+                    'code': 'PARSE_0004',
+                    'details': 'Missing operator',
+                    'is_fatal': True,
+                    'label': 'invalid-token-sequence',
+                    'message': 'The sequence of tokens is invalid.',
+                    'position': [
+                        (
+                            10,
+                            31,
+                        ),
+                    ],
+                }
+            ]
         ),
         (
             "*ology",
@@ -326,9 +352,9 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
+                    "is_fatal": False,
                     "position": [(0, 1)],
-                    "details": "Wildcard not allowed at the beginning of a term.",
+                    "details": "Wildcard at the beginning of a term has no effect.",
                 }
             ],
         ),
@@ -339,9 +365,9 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 4)],
-                    "details": "Invalid wildcard use: only one leading literal character found. When a wildcard appears within the first four characters, at least two literal (non-wildcard) characters must be present in that span.",
+                    "is_fatal": False,
+                    "position": [(3, 4)],
+                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results."
                 }
             ],
         ),
@@ -352,11 +378,15 @@ def test_invalid_token_sequences(
                     "code": "EBSCO_0001",
                     "label": "wildcard-unsupported",
                     "message": "Unsupported wildcard in search string.",
-                    "is_fatal": True,
-                    "position": [(0, 5)],
-                    "details": "Do not use * in the second position followed by additional letters. Use ? or # instead (e.g., f?tal).",
+                    "is_fatal": False,
+                    "position": [(1, 2)],
+                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
                 }
             ],
+        ),
+        (
+            "midsummer * dream",
+            [],
         ),
         (
             "colo#r",
@@ -382,6 +412,113 @@ def test_invalid_token_sequences(
             "f?tal",
             [],
         ),
+        (
+            "VR N3 simulat*",
+            [
+                {
+                    'code': 'STRUCT_0005',
+                    'details': 'Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.',
+                    'is_fatal': False,
+                    'label': 'search-term-lowercase',
+                    'message': 'Unquoted search terms should be lowercase',
+                    'position': [(0, 2)],
+                },
+            ]
+        ),
+        (
+            'TI "Clinical Judgment (Not Diagnosis)"',
+            []
+        ),
+        (
+            'TI thorac* OR AB thorac*',
+            []
+        ),
+        (
+            'thorac* OR thorac*',
+            [
+                {
+                    'code': 'QUALITY_0005',
+                    'details': 'The term \x1b[93mthorac*\x1b[0m is contained multiple times i.e., redundantly.',
+                    'is_fatal': False,
+                    'label': 'redundant-term',
+                    'message': 'Redundant term in the query',
+                    'position': [(0, 7)],
+                },
+            ]
+        ),
+        (
+          '"hearing difficult*" OR language barrier*" OR "digital literacy"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(24, 42)]
+                }
+            ]
+        ),
+        (
+            '"information synthesi* OR "synthesis writ*"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(0, 22)]
+                },
+            ]
+        ),
+        (
+            '(DE "Graduate Medical Education) OR (DE "Nursing Education")',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(4, 31)]
+                }
+            ]
+        ),
+        (
+            '"smartwatch*" OR "((activit*" OR "fitness") N3 track*)',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched opening quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(17, 18)],
+                },
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(20, 29)],
+                },
+            ]
+        ),
+        (
+            '"Hypoalgesi"*"',
+            [
+                {
+                    'code': 'PARSE_0003',
+                    'details': 'Unmatched closing quote',
+                    'is_fatal': True,
+                    'label': 'unbalanced-quotes',
+                    'message': 'Quotes are unbalanced in the query',
+                    'position': [(12, 14)]
+                }
+            ]
+        ),
     ],
 )
 def test_linter(query_string: str, messages: list) -> None:
@@ -405,7 +542,7 @@ def test_linter(query_string: str, messages: list) -> None:
     "query_string, field_general, messages",
     [
         (
-            "TI Artificial Intelligence AND AB Future",
+            "TI artificial intelligence AND AB future",
             "AB",
             [
                 {
@@ -429,11 +566,11 @@ def test_linter(query_string: str, messages: list) -> None:
                     "is_fatal": True,
                     "position": [(10, 16)],
                     "details": "EBSCOHOst fields must be before search terms and without brackets, e.g. AB robot or TI monitor. '[tiab]' is invalid.",
-                }
+                },
             ],
         ),
         (
-            "Artificial intelligence and Future",
+            "artificial intelligence and future",
             "",
             [
                 {
@@ -454,9 +591,23 @@ def test_linter(query_string: str, messages: list) -> None:
                     "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(8, 14)],
                     "details": "Operator NEAR/2 is not supported by EBSCO. Must be N2 instead.",
+                }
+            ],
+        ),
+        (
+            "arrest* N/2 (record* OR history* OR police)",
+            "",
+            [
+                {
+                    "code": "STRUCT_0004",
+                    "label": "invalid-proximity-use",
+                    "message": "Invalid use of the proximity operator",
+                    "is_fatal": True,
+                    "position": [(8, 11)],
+                    "details": "Operator N/2 is not supported by EBSCO. Must be N2 instead.",
                 }
             ],
         ),
@@ -469,7 +620,7 @@ def test_linter(query_string: str, messages: list) -> None:
                     "code": "STRUCT_0004",
                     "label": "invalid-proximity-use",
                     "message": "Invalid use of the proximity operator",
-                    "is_fatal": False,
+                    "is_fatal": True,
                     "position": [(8, 16)],
                     "details": "Operator WITHIN/2 is not supported by EBSCO. Must be W2 instead.",
                 }
@@ -477,7 +628,7 @@ def test_linter(query_string: str, messages: list) -> None:
         ),
         ("arrest* W2 (record* OR history* OR police)", "", []),
         (
-            '"Artificial Intelligence AND (Future OR Past)"',
+            '"artificial intelligence AND (future OR past)"',
             "",
             [
                 {
@@ -491,7 +642,7 @@ def test_linter(query_string: str, messages: list) -> None:
             ],
         ),
         (
-            "EBSCOHost: Artificial Intelligence AND Future",
+            "EBSCOHost: artificial intelligence AND future",
             "",
             [
                 {
@@ -530,32 +681,32 @@ def test_linter_general_field(
         ),
         # Implicit precedence / artificial parentheses
         (
-            'TI "Artificial Intelligence" AND AB Future NOT AB Past',
-            'AND["Artificial Intelligence"[TI], NOT[Future[AB], Past[AB]]]',
+            'TI "Artificial Intelligence" AND AB future NOT AB past',
+            'AND["Artificial Intelligence"[TI], NOT[future[AB], past[AB]]]',
         ),
         (
-            'TI "Artificial Intelligence" NOT AB Future AND AB Past',
-            'AND[NOT["Artificial Intelligence"[TI], Future[AB]], Past[AB]]',
+            'TI "Artificial Intelligence" NOT AB future AND AB past',
+            'AND[NOT["Artificial Intelligence"[TI], future[AB]], past[AB]]',
         ),
         (
-            'TI "AI" OR AB Robots AND AB Ethics',
-            'OR["AI"[TI], AND[Robots[AB], Ethics[AB]]]',
+            'TI "AI" OR AB robots AND AB ethics',
+            'OR["AI"[TI], AND[robots[AB], ethics[AB]]]',
         ),
         (
-            'TI "AI" AND AB Robots OR AB Ethics',
-            'OR[AND["AI"[TI], Robots[AB]], Ethics[AB]]',
+            'TI "AI" AND AB robots OR AB ethics',
+            'OR[AND["AI"[TI], robots[AB]], ethics[AB]]',
         ),
         (
-            'TI "AI" NOT AB Robots OR AB Ethics',
-            'OR[NOT["AI"[TI], Robots[AB]], Ethics[AB]]',
+            'TI "AI" NOT AB robots OR AB ethics',
+            'OR[NOT["AI"[TI], robots[AB]], ethics[AB]]',
         ),
         (
-            'TI "AI" AND (AB Robots OR AB Ethics NOT AB Bias) OR SU "Technology"',
-            'OR[AND["AI"[TI], OR[Robots[AB], NOT[Ethics[AB], Bias[AB]]]], "Technology"[SU]]',
+            'TI "AI" AND (AB robots OR AB ethics NOT AB bias) OR SU "Technology"',
+            'OR[AND["AI"[TI], OR[robots[AB], NOT[ethics[AB], bias[AB]]]], "Technology"[SU]]',
         ),
         (
-            'TI "Robo*" OR AB Robots AND AB Ethics NOT AB Bias OR SU "Technology"',
-            'OR["Robo*"[TI], AND[Robots[AB], NOT[Ethics[AB], Bias[AB]]], "Technology"[SU]]',
+            'TI "Robo*" OR AB robots AND AB ethics NOT AB bias OR SU "Technology"',
+            'OR["Robo*"[TI], AND[robots[AB], NOT[ethics[AB], bias[AB]]], "Technology"[SU]]',
         ),
         (
             'TX ("digital transformation" N5 "organizational change")',
@@ -689,3 +840,29 @@ def test_list_parser_case_1() -> None:
         q.to_string()
         == '(DE "Irritable Bowel Syndrome" OR "Irritable Bowel Syndrome" OR "Irritable Bowel Syndromes" OR "irritable colon" OR "irritable colons") AND (DE "Clinical Trials" OR DE "Randomized Controlled Trials" OR DE "Randomized Clinical Trials" OR DE "Random Sampling" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies)'
     )
+
+
+def test_list_parser_case_2() -> None:
+    query_list = """
+1. DE \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndrome\" OR \"Irritable Bowel Syndromes\" OR \"irritable colon\" OR \"irritable colons\"
+2. DE \"Clinical Trials\" OR DE \"Randomized Controlled Trials\" OR DE \"Randomized Clinical Trials\" OR DE \"Random Sampling\" OR clinical trial OR clinical trials OR randomized controlled trial OR randomized controlled trials OR randomised controlled trial OR randomised controlled trials OR multicenter study OR multicenter studies
+"""
+
+    list_parser = EBSCOListParser_v1(query_list=query_list)
+    try:
+        list_parser.parse()
+    except ListQuerySyntaxError as exc:
+        print(exc)
+    print(list_parser.linter.messages)
+    assert list_parser.linter.messages == {
+        -1: [
+            {
+                    'code': 'PARSE_1001',
+                    'details': 'The last item of the list must be a combining string.',
+                    'is_fatal': True,
+                    'label': 'list-query-missing-root-node',
+                    'message': 'List format query without root node (typically containing operators)',
+                    'position': [],
+                },
+        ],
+    }
