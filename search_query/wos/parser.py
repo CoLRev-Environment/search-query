@@ -166,14 +166,19 @@ class WOSParser(QueryStringParser):
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            elif depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+            elif depth == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
                 op = self._get_operator_type(token)
                 if prev_op is None:
                     prev_op = op
                     indices.append(i)
                 elif op == prev_op:
                     indices.append(i)
-                elif self.linter.get_precedence(op) < self.linter.get_precedence(prev_op):
+                elif self.linter.get_precedence(op) < self.linter.get_precedence(
+                    prev_op
+                ):
                     indices = [i]
         return indices
 
@@ -320,7 +325,12 @@ class WOSListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        query_str, offset, processed_lines, artificial_to_original_pos = self.build_query_str()
+        (
+            query_str,
+            offset,
+            processed_lines,
+            artificial_to_original_pos,
+        ) = self.build_query_str()
 
         self.linter.validate_query_string(processed_lines)
         self.linter.check_status()
@@ -338,7 +348,9 @@ class WOSListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.adapt_linter_messages_for_list_query(query_parser.linter.messages, artificial_to_original_pos)
+            self.adapt_linter_messages_for_list_query(
+                query_parser.linter.messages, artificial_to_original_pos
+            )
 
             self.linter.check_status()
 

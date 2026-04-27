@@ -9,7 +9,8 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
-from search_query.ebscohost.constants import syntax_str_to_generic_field_set, map_to_standard
+from search_query.ebscohost.constants import map_to_standard
+from search_query.ebscohost.constants import syntax_str_to_generic_field_set
 from search_query.ebscohost.constants import VALID_fieldS_REGEX
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
@@ -96,7 +97,9 @@ class EBSCOQueryStringLinter(QueryStringLinter):
         if self.has_fatal_errors():
             return self.tokens
 
-        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.EBSCO_INVALID_CHARACTER)
+        self.check_invalid_characters_in_term(
+            self.INVALID_CHARACTERS, QueryErrorCode.EBSCO_INVALID_CHARACTER
+        )
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
@@ -165,7 +168,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
-                        fatal=True
+                        fatal=True,
                     )
                     token.value = token.value.replace("NEAR/", "N")
                 if token.value.startswith("WITHIN"):
@@ -177,7 +180,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                         QueryErrorCode.INVALID_PROXIMITY_USE,
                         positions=[token.position],
                         details=details,
-                        fatal=True
+                        fatal=True,
                     )
                     token.value = token.value.replace("WITHIN/", "W")
 
@@ -211,7 +214,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             prev_type = self.tokens[i - 1].type
 
             # Do not consider a single " or a misplaced wildcard for invalid token sequences (already handled by other validation methods)
-            if self.tokens[i - 1].value == '"' or token.value.lstrip('*') in '" ':
+            if self.tokens[i - 1].value == '"' or token.value.lstrip("*") in '" ':
                 continue
 
             if token_type not in self.VALID_TOKEN_SEQUENCES[prev_type]:
@@ -292,7 +295,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     self.add_message(
                         QueryErrorCode.SEARCH_TERM_LOWERCASE,
                         positions=[token.position],
-                        details="Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine."
+                        details="Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.",
                     )
                     token.value = token.value.lower()
 
@@ -312,9 +315,12 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     )
 
                 is_term_start = index == 0 or query.value[:index].strip('"').isspace()
-                is_term_end = index == len(query.value) - 1 or query.value[index:].strip('"').isspace()
+                is_term_end = (
+                    index == len(query.value) - 1
+                    or query.value[index:].strip('"').isspace()
+                )
 
-                if wildcard_value == '*':
+                if wildcard_value == "*":
                     if is_term_start:
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
@@ -322,13 +328,13 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             details="Wildcard at the beginning of a term has no effect.",
                             fatal=False,
                         )
-                    elif not query.value[index - 1] == ' ':
+                    elif not query.value[index - 1] == " ":
                         leading_char_count = 0
                         prev = wildcard_value
                         for c in reversed(query.value[:index]):
                             if c in ' "' or leading_char_count >= 3:
                                 break
-                            if c == '*' or (c in '#?' and prev in '#?'):
+                            if c == "*" or (c in "#?" and prev in "#?"):
                                 # Count multiple # or ? wildcards in a row as one char, skip * wildcards.
                                 continue
                             leading_char_count += 1
@@ -341,7 +347,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                                 fatal=False,
                             )
 
-                if wildcard_value == '?':
+                if wildcard_value == "?":
                     if is_term_start:
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
@@ -357,7 +363,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                             fatal=False,
                         )
 
-                if wildcard_value == '#':
+                if wildcard_value == "#":
                     if is_term_start:
                         self.add_message(
                             QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,

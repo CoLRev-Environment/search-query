@@ -960,7 +960,7 @@ Proximity operators must have a non-negative integer as the distance.
 **Recommended query**:
 
 .. code-block:: text
-    
+
     vr AND game
 
 **Typical fix**: Make unquoted search term lowercase

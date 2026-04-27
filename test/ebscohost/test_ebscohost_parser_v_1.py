@@ -13,12 +13,12 @@ from search_query.ebscohost.linter import EBSCOQueryStringLinter
 from search_query.ebscohost.v_1.parser import EBSCOListParser_v1
 from search_query.ebscohost.v_1.parser import EBSCOParser_v1
 from search_query.ebscohost.v_1.serializer import EBCOSerializer_v1
+from search_query.exception import ListQuerySyntaxError
 from search_query.query import SearchField
 from search_query.query_and import AndQuery
 from search_query.query_near import NEARQuery
 from search_query.query_or import OrQuery
 from search_query.query_term import Term
-from search_query.exception import ListQuerySyntaxError
 
 # flake8: noqa: E501
 
@@ -299,20 +299,19 @@ def test_invalid_token_sequences(
             '"person centred care"or" patient-centered care"',
             [
                 {
-                    'code': 'STRUCT_0002',
-                    'details': '',
-                    'is_fatal': False,
-                    'label': 'operator-capitalization',
-                    'message': 'Operators should be capitalized',
-                    'position': [
+                    "code": "STRUCT_0002",
+                    "details": "",
+                    "is_fatal": False,
+                    "label": "operator-capitalization",
+                    "message": "Operators should be capitalized",
+                    "position": [
                         (
-                                21,
-                                23,
+                            21,
+                            23,
                         ),
                     ],
                 },
-            ]
-
+            ],
         ),
         (
             "bias OR OR politics",
@@ -331,19 +330,19 @@ def test_invalid_token_sequences(
             'higher N1 level? "of education"',
             [
                 {
-                    'code': 'PARSE_0004',
-                    'details': 'Missing operator',
-                    'is_fatal': True,
-                    'label': 'invalid-token-sequence',
-                    'message': 'The sequence of tokens is invalid.',
-                    'position': [
+                    "code": "PARSE_0004",
+                    "details": "Missing operator",
+                    "is_fatal": True,
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "position": [
                         (
                             10,
                             31,
                         ),
                     ],
                 }
-            ]
+            ],
         ),
         (
             "*ology",
@@ -367,7 +366,7 @@ def test_invalid_token_sequences(
                     "message": "Unsupported wildcard in search string.",
                     "is_fatal": False,
                     "position": [(3, 4)],
-                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results."
+                    "details": "EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
                 }
             ],
         ),
@@ -416,108 +415,102 @@ def test_invalid_token_sequences(
             "VR N3 simulat*",
             [
                 {
-                    'code': 'STRUCT_0005',
-                    'details': 'Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.',
-                    'is_fatal': False,
-                    'label': 'search-term-lowercase',
-                    'message': 'Unquoted search terms should be lowercase',
-                    'position': [(0, 2)],
+                    "code": "STRUCT_0005",
+                    "details": "Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.",
+                    "is_fatal": False,
+                    "label": "search-term-lowercase",
+                    "message": "Unquoted search terms should be lowercase",
+                    "position": [(0, 2)],
                 },
-            ]
+            ],
         ),
+        ('TI "Clinical Judgment (Not Diagnosis)"', []),
+        ("TI thorac* OR AB thorac*", []),
         (
-            'TI "Clinical Judgment (Not Diagnosis)"',
-            []
-        ),
-        (
-            'TI thorac* OR AB thorac*',
-            []
-        ),
-        (
-            'thorac* OR thorac*',
+            "thorac* OR thorac*",
             [
                 {
-                    'code': 'QUALITY_0005',
-                    'details': 'The term \x1b[93mthorac*\x1b[0m is contained multiple times i.e., redundantly.',
-                    'is_fatal': False,
-                    'label': 'redundant-term',
-                    'message': 'Redundant term in the query',
-                    'position': [(0, 7)],
+                    "code": "QUALITY_0005",
+                    "details": "The term \x1b[93mthorac*\x1b[0m is contained multiple times i.e., redundantly.",
+                    "is_fatal": False,
+                    "label": "redundant-term",
+                    "message": "Redundant term in the query",
+                    "position": [(0, 7)],
                 },
-            ]
+            ],
         ),
         (
-          '"hearing difficult*" OR language barrier*" OR "digital literacy"',
+            '"hearing difficult*" OR language barrier*" OR "digital literacy"',
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched closing quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(24, 42)]
+                    "code": "PARSE_0003",
+                    "details": "Unmatched closing quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(24, 42)],
                 }
-            ]
+            ],
         ),
         (
             '"information synthesi* OR "synthesis writ*"',
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched opening quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(0, 22)]
+                    "code": "PARSE_0003",
+                    "details": "Unmatched opening quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(0, 22)],
                 },
-            ]
+            ],
         ),
         (
             '(DE "Graduate Medical Education) OR (DE "Nursing Education")',
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched opening quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(4, 31)]
+                    "code": "PARSE_0003",
+                    "details": "Unmatched opening quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(4, 31)],
                 }
-            ]
+            ],
         ),
         (
             '"smartwatch*" OR "((activit*" OR "fitness") N3 track*)',
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched opening quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(17, 18)],
+                    "code": "PARSE_0003",
+                    "details": "Unmatched opening quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(17, 18)],
                 },
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched closing quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(20, 29)],
+                    "code": "PARSE_0003",
+                    "details": "Unmatched closing quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(20, 29)],
                 },
-            ]
+            ],
         ),
         (
             '"Hypoalgesi"*"',
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched closing quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(12, 14)]
+                    "code": "PARSE_0003",
+                    "details": "Unmatched closing quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(12, 14)],
                 }
-            ]
+            ],
         ),
     ],
 )
@@ -857,12 +850,12 @@ def test_list_parser_case_2() -> None:
     assert list_parser.linter.messages == {
         -1: [
             {
-                    'code': 'PARSE_1001',
-                    'details': 'The last item of the list must be a combining string.',
-                    'is_fatal': True,
-                    'label': 'list-query-missing-root-node',
-                    'message': 'List format query without root node (typically containing operators)',
-                    'position': [],
-                },
+                "code": "PARSE_1001",
+                "details": "The last item of the list must be a combining string.",
+                "is_fatal": True,
+                "label": "list-query-missing-root-node",
+                "message": "List format query without root node (typically containing operators)",
+                "position": [],
+            },
         ],
     }

@@ -35,7 +35,7 @@ SYNTAX_GENERIC_MAP = {
     "PT": {Fields.PUBLICATION_TYPE},
     "ZT": {Fields.PUBLICATION_TYPE},
     "DT": {Fields.YEAR_PUBLICATION},
-    "XB": {Fields.TITLE, Fields.ABSTRACT}
+    "XB": {Fields.TITLE, Fields.ABSTRACT},
 }
 
 _RAW_PREPROCESSING_MAP = {

@@ -26,6 +26,10 @@ Parsing errors
 
    PARSE_1002
 
+   PARSE_1003
+
+   PARSE_1004
+
 Query structure errors
 ----------------------
 
@@ -39,6 +43,8 @@ Query structure errors
    STRUCT_0003
 
    STRUCT_0004
+
+   STRUCT_0005
 
 Term errors
 -----------
@@ -97,6 +103,8 @@ Database errors: Web of Science
    WOS_0011
 
    WOS_0012
+
+   WOS_0013
 
 Database errors: EBSCOHost
 --------------------------

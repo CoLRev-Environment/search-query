@@ -158,7 +158,10 @@ class PubmedParser(QueryStringParser):
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR]:
+            if depth == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.RANGE_OPERATOR,
+            ]:
                 op = self._get_operator_type(token)
                 if first_op is None:
                     first_op = op
@@ -318,7 +321,12 @@ class PubmedListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        query_str, offset, processed_lines, artificial_to_original_pos = self.build_query_str()
+        (
+            query_str,
+            offset,
+            processed_lines,
+            artificial_to_original_pos,
+        ) = self.build_query_str()
 
         self.linter.validate_query_string(processed_lines)
         self.linter.check_status()
@@ -336,7 +344,9 @@ class PubmedListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.adapt_linter_messages_for_list_query(query_parser.linter.messages, artificial_to_original_pos)
+            self.adapt_linter_messages_for_list_query(
+                query_parser.linter.messages, artificial_to_original_pos
+            )
 
             self.linter.check_status()
 

@@ -1,0 +1,24 @@
+.. _WOS_0013:
+
+WOS_0013 — invalid-near-query
+=============================
+
+**Error Code**: WOS_0013
+
+**Message**: ``NEAR operator applied to AND query.``
+
+**Problematic query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A AND B) NEAR/3 C)"
+
+**Recommended query**:
+
+.. code-block:: text
+
+    # PLATFORM.WOS
+    "TI=((A NEAR/3 C) AND (B NEAR/3 C))"
+
+**Back to**: :ref:`lint`

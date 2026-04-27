@@ -12,7 +12,9 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query import Query
-from search_query.wos.constants import syntax_str_to_generic_field_set, field_general_to_syntax, map_to_standard
+from search_query.wos.constants import field_general_to_syntax
+from search_query.wos.constants import map_to_standard
+from search_query.wos.constants import syntax_str_to_generic_field_set
 from search_query.wos.constants import VALID_fieldS_REGEX
 from search_query.wos.constants import YEAR_PUBLISHED_FIELD_REGEX
 
@@ -201,7 +203,11 @@ class WOSQueryStringLinter(QueryStringLinter):
                     field_group_depth = None
                 depth -= 1
 
-            elif token.type == TokenTypes.TERM and not in_field_group and prev_token_type != TokenTypes.FIELD:
+            elif (
+                token.type == TokenTypes.TERM
+                and not in_field_group
+                and prev_token_type != TokenTypes.FIELD
+            ):
                 # Term is not in fielded group and has no preceding FIELD token
                 missing_positions.append(token.position)
 
@@ -320,10 +326,14 @@ class WOSQueryStringLinter(QueryStringLinter):
                 continue
 
             # Missing operator
-            if (
-                    token.type in [TokenTypes.TERM, TokenTypes.PARENTHESIS_CLOSED]
-                    and next_token.type in [TokenTypes.TERM, TokenTypes.FIELD, TokenTypes.PARENTHESIS_OPEN]
-            ):
+            if token.type in [
+                TokenTypes.TERM,
+                TokenTypes.PARENTHESIS_CLOSED,
+            ] and next_token.type in [
+                TokenTypes.TERM,
+                TokenTypes.FIELD,
+                TokenTypes.PARENTHESIS_OPEN,
+            ]:
                 self.add_message(
                     QueryErrorCode.INVALID_TOKEN_SEQUENCE,
                     positions=[(token.position[0], next_token.position[1])],
@@ -473,7 +483,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.FIELD_UNSUPPORTED,
                 positions=[],
                 fatal=False,
-                details=f'The extracted search field "{field}" is not supported by WOS.'
+                details=f'The extracted search field "{field}" is not supported by WOS.',
             )
 
     def check_deprecated_field_tags(self, query: Query) -> None:
@@ -632,7 +642,7 @@ class WOSQueryStringLinter(QueryStringLinter):
                     self.add_message(
                         QueryErrorCode.WOS_INVALID_NEAR_QUERY,
                         positions=[child.position] if child.position else [],
-                        fatal=True
+                        fatal=True,
                     )
 
         for child in query.children:
@@ -661,7 +671,9 @@ class WOSQueryStringLinter(QueryStringLinter):
         self._check_unnecessary_nesting(query)
 
         term_field_query = self.get_query_with_normalized_fields_at_terms(query)
-        self._check_redundant_terms(term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="])
+        self._check_redundant_terms(
+            term_field_query, ["TI=", "AB=", "KP=", "TS=", "AK="]
+        )
         self.check_year_format(term_field_query)
         self.check_nr_terms(term_field_query)
         self.check_issn_isbn_format(term_field_query)

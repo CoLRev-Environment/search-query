@@ -109,7 +109,9 @@ class PubmedQueryStringLinter(QueryStringLinter):
             return self.tokens
 
         # No tokens marked as unknown token-type
-        self.check_invalid_characters_in_term(self.INVALID_CHARACTERS, QueryErrorCode.PUBMED_INVALID_CHARACTER)
+        self.check_invalid_characters_in_term(
+            self.INVALID_CHARACTERS, QueryErrorCode.PUBMED_INVALID_CHARACTER
+        )
         self.check_invalid_token_sequences()
         self.check_unbalanced_parentheses()
         self.check_unbalanced_quotes()
@@ -146,8 +148,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
         if not segment.strip():
             return
 
-        if '[' in segment.strip() or ']' in segment.strip():
-            details = f"Unbalanced search field bracket."
+        if "[" in segment.strip() or "]" in segment.strip():
+            details = "Unbalanced search field bracket."
         else:
             details = f"Unparsed segment: '{segment.strip()}'"
 
@@ -266,13 +268,8 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 and prev_type
                 and prev_type not in [TokenTypes.LOGIC_OPERATOR]
             ):
-                details="Missing operator"
-                positions = [
-                    (
-                        self.tokens[i - 1].position[0],
-                        token.position[1]
-                    )
-                ]
+                details = "Missing operator"
+                positions = [(self.tokens[i - 1].position[0], token.position[1])]
 
             self.add_message(
                 QueryErrorCode.INVALID_TOKEN_SEQUENCE,
@@ -409,7 +406,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 )
                 continue
 
-            value = search_phrase_token.value.strip('"').replace('-', ' ')
+            value = search_phrase_token.value.strip('"').replace("-", " ")
             nr_of_terms = len(value.split())
             if nr_of_terms < 2 or not (
                 search_phrase_token.value[0] == '"'
@@ -489,7 +486,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
     def validate_platform_query(self, query: Query) -> None:
         """Validate the query for the PubMed platform"""
 
-        term_field_query = self.get_query_with_normalized_fields_at_terms(query)
+        self.get_query_with_normalized_fields_at_terms(query)
         # self._check_for_opportunities_to_combine_subqueries(term_field_query)
 
     def syntax_str_to_generic_field_set(self, field_value: str) -> set:

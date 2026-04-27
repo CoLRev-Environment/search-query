@@ -11,9 +11,9 @@ from abc import abstractmethod
 from collections import defaultdict
 
 import search_query.parser_base
-from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import Colors
 from search_query.constants import Fields
+from search_query.constants import GENERAL_ERROR_POSITION
 from search_query.constants import Operators
 from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
@@ -316,7 +316,7 @@ class QueryStringLinter:
         """Check query for unbalanced parentheses."""
         i = 0
         for token in self.tokens:
-            if token.position[0] < 0: # Ignore artificial parentheses
+            if token.position[0] < 0:  # Ignore artificial parentheses
                 continue
             if token.type == TokenTypes.PARENTHESIS_OPEN:
                 i += 1
@@ -354,7 +354,9 @@ class QueryStringLinter:
         for token in self.tokens:
             if token.type == TokenTypes.TERM:
                 # Case 1: unmatched opening quote
-                if token.value == '"' or (token.value.startswith('"') and not token.value.endswith('"')):
+                if token.value == '"' or (
+                    token.value.startswith('"') and not token.value.endswith('"')
+                ):
                     self.add_message(
                         QueryErrorCode.UNBALANCED_QUOTES,
                         positions=[token.position],
@@ -427,23 +429,25 @@ class QueryStringLinter:
         for child in query.children:
             self.check_unbalanced_quotes_in_terms(child)
 
-
     def check_apostrophe_phrases(self, query: Query) -> None:
         """Recursively check for search phrases created with apostrophes."""
 
         if query.is_term():
-            if query.value.startswith("'") and query.value.endswith("'") and len(query.value) >= 2:
+            if (
+                query.value.startswith("'")
+                and query.value.endswith("'")
+                and len(query.value) >= 2
+            ):
                 pos_1 = (query.position[0], query.position[0] + 1)
                 pos_2 = (query.position[1] - 1, query.position[1])
                 self.add_message(
                     QueryErrorCode.NON_STANDARD_QUOTES,
                     positions=[pos_1, pos_2],
-                    details='Apostrophes used as quotation marks. Use standard double quotes (") instead.'
+                    details='Apostrophes used as quotation marks. Use standard double quotes (") instead.',
                 )
 
         for child in query.children:
             self.check_apostrophe_phrases(child)
-
 
     def check_unknown_token_types(self) -> None:
         """Check for unknown token types."""
@@ -472,7 +476,7 @@ class QueryStringLinter:
                 continue
 
             value = token.value
-            value_new = ''
+            value_new = ""
 
             # Iterate over term to identify invalid characters
             # and replace them with whitespace
@@ -483,7 +487,7 @@ class QueryStringLinter:
                         positions=[(token.position[0] + i, token.position[0] + i + 1)],
                         details=self._format_invalid_char_details(char, value),
                     )
-                    value_new += ' '
+                    value_new += " "
                 else:
                     value_new += token.value[i]
 
@@ -495,7 +499,6 @@ class QueryStringLinter:
             refined_tokens.append(token)
 
         self.tokens = refined_tokens
-
 
     def check_near_distance_in_range(self, *, max_value: int) -> None:
         """Check for NEAR with a specified distance out of range."""
@@ -686,7 +689,10 @@ class QueryStringLinter:
                 if depth == 0:
                     return operator_tokens
                 depth -= 1
-            if depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+            if depth == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
                 operator_tokens.append(token)
 
         return operator_tokens
@@ -775,7 +781,9 @@ class QueryStringLinter:
         modified_query = query.copy()
         if modified_query.field:
             try:
-                modified_query.field.value = self._normalize_field(modified_query.field.value)
+                modified_query.field.value = self._normalize_field(
+                    modified_query.field.value
+                )
             except ValueError:
                 pass
             if modified_query.operator:
@@ -786,7 +794,9 @@ class QueryStringLinter:
                 modified_query.field = None
 
         for i, child in enumerate(modified_query.children):
-            modified_query.children[i] = self.get_query_with_normalized_fields_at_terms(child)
+            modified_query.children[i] = self.get_query_with_normalized_fields_at_terms(
+                child
+            )
 
         return modified_query
 
@@ -831,7 +841,9 @@ class QueryStringLinter:
     def syntax_str_to_generic_field_set(self, field_value: str) -> set[Fields]:
         """Translate a search field"""
 
-    def _check_non_global_date_filter(self, query: Query, applies_globally: bool = True) -> None:
+    def _check_non_global_date_filter(
+        self, query: Query, applies_globally: bool = True
+    ) -> None:
         """Check for date filters in subqueries"""
 
         if query.operator:
@@ -839,9 +851,10 @@ class QueryStringLinter:
                 return
 
             for child in query.children:
-                applies_globally = (
-                    applies_globally
-                    and not (query.value == Operators.OR and child.operator and child.value != Operators.OR)
+                applies_globally = applies_globally and not (
+                    query.value == Operators.OR
+                    and child.operator
+                    and child.value != Operators.OR
                 )
                 self._check_non_global_date_filter(child, applies_globally)
             return
@@ -868,7 +881,9 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def _check_non_global_journal_filter(self, query: Query, applies_globally: bool = True) -> None:
+    def _check_non_global_journal_filter(
+        self, query: Query, applies_globally: bool = True
+    ) -> None:
         """Check for non-global journal filters."""
 
         if query.operator:
@@ -876,9 +891,10 @@ class QueryStringLinter:
                 return
 
             for child in query.children:
-                applies_globally = (
-                        applies_globally
-                        and not (query.value == Operators.OR and child.operator and child.value != Operators.OR)
+                applies_globally = applies_globally and not (
+                    query.value == Operators.OR
+                    and child.operator
+                    and child.value != Operators.OR
                 )
                 self._check_non_global_journal_filter(child, applies_globally)
             return
@@ -908,22 +924,24 @@ class QueryStringLinter:
                 details=details,
             )
 
-    def  _can_flatten_artificial_nesting(self, query: Query) -> bool:
+    def _can_flatten_artificial_nesting(self, query: Query) -> bool:
         """Check whether query is enclosed in artificial parentheses."""
         token_index_before_query = query.position[0] - 1
         token_index_after_query = query.position[1] + 1
         if (
-                token_index_before_query > 0
-                and token_index_after_query < len(self.tokens)
-                and self.tokens[token_index_before_query] == TokenTypes.PARENTHESIS_OPEN
-                and self.tokens[token_index_before_query].position == (-1, -1)
-                and self.tokens[token_index_after_query] == TokenTypes.PARENTHESIS_CLOSED
-                and self.tokens[token_index_after_query].position == (-1, -1)
+            token_index_before_query > 0
+            and token_index_after_query < len(self.tokens)
+            and self.tokens[token_index_before_query] == TokenTypes.PARENTHESIS_OPEN
+            and self.tokens[token_index_before_query].position == (-1, -1)
+            and self.tokens[token_index_after_query] == TokenTypes.PARENTHESIS_CLOSED
+            and self.tokens[token_index_after_query].position == (-1, -1)
         ):
             return True
         return False
 
-    def _flatten_same_operator(self, query: Query, flatten_artificial_nesting_only: bool = False) -> Query:
+    def _flatten_same_operator(
+        self, query: Query, flatten_artificial_nesting_only: bool = False
+    ) -> Query:
         """Return a copy of the query with same-operator nesting flattened."""
         modified_query = query.copy()
 
@@ -932,10 +950,27 @@ class QueryStringLinter:
 
         flattened_children = []
         for child in modified_query.children:
-            if child.operator and child.value == query.value and (not flatten_artificial_nesting_only or self._can_flatten_artificial_nesting(child)):
-                flattened_children.extend(self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only).children)
+            if (
+                child.operator
+                and child.value == query.value
+                and (
+                    not flatten_artificial_nesting_only
+                    or self._can_flatten_artificial_nesting(child)
+                )
+            ):
+                flattened_children.extend(
+                    self._flatten_same_operator(
+                        child,
+                        flatten_artificial_nesting_only=flatten_artificial_nesting_only,
+                    ).children
+                )
             else:
-                flattened_children.append(self._flatten_same_operator(child, flatten_artificial_nesting_only=flatten_artificial_nesting_only))
+                flattened_children.append(
+                    self._flatten_same_operator(
+                        child,
+                        flatten_artificial_nesting_only=flatten_artificial_nesting_only,
+                    )
+                )
         modified_query.children = flattened_children
 
         return modified_query
@@ -1145,12 +1180,14 @@ class QueryStringLinter:
             return False
         start, closing_paren_pos = pos
         open_paren_pos = start - 1
-        query_str = self.original_str if self.original_str is not None else self.query_str
+        query_str = (
+            self.original_str if self.original_str is not None else self.query_str
+        )
         return (
             0 <= open_paren_pos < len(query_str)
-            and query_str[open_paren_pos] == '('
+            and query_str[open_paren_pos] == "("
             and 0 <= closing_paren_pos < len(query_str)
-            and query_str[closing_paren_pos] == ')'
+            and query_str[closing_paren_pos] == ")"
         )
 
     def _check_unnecessary_nesting(self, query: Query) -> None:
@@ -1159,14 +1196,16 @@ class QueryStringLinter:
             return
 
         # Double nesting
-        if self._is_enclosed_in_paren(query.position) and self._is_enclosed_in_paren((query.position[0] - 1, query.position[1] + 1)):
+        if self._is_enclosed_in_paren(query.position) and self._is_enclosed_in_paren(
+            (query.position[0] - 1, query.position[1] + 1)
+        ):
             start, end = query.position
             open_paren_pos = (start - 2, start - 1)
             end_paren_pos = (end + 1, end + 2)
             self.add_message(
                 QueryErrorCode.UNNECESSARY_PARENTHESES,
                 positions=[open_paren_pos, end_paren_pos],
-                details=f"Unnecessary parentheses around query block.",
+                details="Unnecessary parentheses around query block.",
             )
 
         # Same-level operator nesting
@@ -1176,7 +1215,10 @@ class QueryStringLinter:
                 and child.operator
                 and child.value == query.value
                 and self._is_enclosed_in_paren(child.position)
-                and (not child.field or (query.field and query.field.value == child.field.value))
+                and (
+                    not child.field
+                    or (query.field and query.field.value == child.field.value)
+                )
             ):
                 start, end = child.position
                 open_paren_pos = (start - 1, start)
@@ -1184,7 +1226,7 @@ class QueryStringLinter:
                 self.add_message(
                     QueryErrorCode.UNNECESSARY_PARENTHESES,
                     positions=[open_paren_pos, end_paren_pos],
-                    details=f"Unnecessary parentheses around query block.",
+                    details="Unnecessary parentheses around query block.",
                 )
             self._check_unnecessary_nesting(child)
 
@@ -1254,8 +1296,8 @@ class QueryStringLinter:
 
                     # 1) Exact duplicate term and field values => always redundant
                     if (
-                            term_a.value.lower() == term_b.value.lower()
-                            and field_a == field_b
+                        term_a.value.lower() == term_b.value.lower()
+                        and field_a == field_b
                     ):
                         details = (
                             f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is contained multiple times"
@@ -1269,16 +1311,21 @@ class QueryStringLinter:
                         redundant_terms.add(term_a)
                         continue
 
-                    if field_a not in redundancy_fields or field_b not in redundancy_fields:
+                    if (
+                        field_a not in redundancy_fields
+                        or field_b not in redundancy_fields
+                    ):
                         continue
 
                     # 2) AND: more-specific term makes the broader one redundant
                     if (
                         operator == Operators.AND
-                        and term_a.value.strip('"').lower() in term_b.value.strip('"').lower().split()
+                        and term_a.value.strip('"').lower()
+                        in term_b.value.strip('"').lower().split()
                         and (
                             field_a == field_b
-                            or self._get_generic_field_set(field_a) > self._get_generic_field_set(field_b)
+                            or self._get_generic_field_set(field_a)
+                            > self._get_generic_field_set(field_b)
                         )
                     ):
                         details = (
@@ -1296,10 +1343,12 @@ class QueryStringLinter:
                     # 3) OR: broader term makes the more-specific one redundant
                     if (
                         operator == Operators.OR
-                        and term_b.value.strip('"').lower() in term_a.value.strip('"').lower().split()
+                        and term_b.value.strip('"').lower()
+                        in term_a.value.strip('"').lower().split()
                         and (
                             field_a == field_b
-                            or self._get_generic_field_set(field_a) < self._get_generic_field_set(field_b)
+                            or self._get_generic_field_set(field_a)
+                            < self._get_generic_field_set(field_b)
                         )
                     ):
                         details = (
@@ -1309,14 +1358,12 @@ class QueryStringLinter:
                         self.add_message(
                             QueryErrorCode.REDUNDANT_TERM,
                             positions=[term_a.position],
-                            details=details
+                            details=details,
                         )
                         redundant_terms.add(term_a)
 
     # 10.1079_SEARCHRXIV.2023.00269.json
-    def _check_for_opportunities_to_combine_subqueries(
-        self, query: Query
-    ) -> None:
+    def _check_for_opportunities_to_combine_subqueries(self, query: Query) -> None:
         """Check for opportunities to combine subqueries with the same search field."""
 
         # Only consider top-level OR-connected subqueries with two children each
@@ -1333,10 +1380,24 @@ class QueryStringLinter:
                     b1, b2 = q2.children
 
                     # Identify identical and differing pairs
-                    if a1.value == b1.value and (not (a1.field and b1.field) or a1.field.value == b1.field.value) and a2.value != b2.value:
+                    if (
+                        a1.value == b1.value
+                        and (
+                            not (a1.field and b1.field)
+                            or a1.field.value == b1.field.value
+                        )
+                        and a2.value != b2.value
+                    ):
                         identical = (a1, b1)
                         differing = (a2, b2)
-                    elif a2.value == b2.value and (not (a2.field and b2.field) or a2.field.value == b2.field.value) and a1.value != b1.value:
+                    elif (
+                        a2.value == b2.value
+                        and (
+                            not (a2.field and b2.field)
+                            or a2.field.value == b2.field.value
+                        )
+                        and a1.value != b1.value
+                    ):
                         identical = (a2, b2)
                         differing = (a1, b1)
                     else:
@@ -1382,11 +1443,7 @@ class QueryStringLinter:
                     continue
 
                 # Group terms by search field.
-                key = (
-                    child.field.value
-                    if child.field is not None
-                    else None
-                )
+                key = child.field.value if child.field is not None else None
                 term_query_groups[key].append(child)
 
             term_query_groups = list(term_query_groups.values())
@@ -1394,7 +1451,6 @@ class QueryStringLinter:
                 stemmed = defaultdict(list)
 
                 for term_query in term_query_group:
-
                     # Group term queries by their stemmed value.
                     key = _naive_stem(term_query.value.replace('"', ""))
 
@@ -1402,7 +1458,9 @@ class QueryStringLinter:
                         continue
 
                     # Skip duplicate (redundant) terms for potential wildcard suggestions.
-                    if stemmed.get(key) and any(term_query.value == q.value for q in stemmed[key]):
+                    if stemmed.get(key) and any(
+                        term_query.value == q.value for q in stemmed[key]
+                    ):
                         continue
 
                     stemmed[key].append(term_query)
@@ -1478,8 +1536,8 @@ class QueryListLinter:
         """Check if all list-references exist & check for circular references"""
         for ind, query_node in self.parser.query_dict.items():
             for match in re.finditer(
-                    self.parser.LIST_ITEM_REFERENCE,
-                    str(query_node["node_content"]),
+                self.parser.LIST_ITEM_REFERENCE,
+                str(query_node["node_content"]),
             ):
                 reference = match.group()
                 reference_number = self.parser.extract_reference_value(reference)
@@ -1512,7 +1570,9 @@ class QueryListLinter:
         if not missing:
             return
 
-        if len(processed_lines) == 1 and processed_lines.pop() == max(self.parser.query_dict.keys(), key=int):
+        if len(processed_lines) == 1 and processed_lines.pop() == max(
+            self.parser.query_dict.keys(), key=int
+        ):
             # Missing root node
             self.add_message(
                 QueryErrorCode.LIST_QUERY_MISSING_ROOT_NODE,
@@ -1565,7 +1625,7 @@ class QueryListLinter:
             if list_position not in self.last_read_index:
                 self.last_read_index[list_position] = 0
 
-            new_messages.extend(messages[self.last_read_index[list_position]:])
+            new_messages.extend(messages[self.last_read_index[list_position] :])
 
             self.last_read_index[list_position] += len(messages)
 
@@ -1587,9 +1647,7 @@ class QueryListLinter:
                 color = Colors.ORANGE
                 category = "💡 Warning"
 
-            print(
-                f"{color}{category}{Colors.END}: {representative['label']} ({code})"
-            )
+            print(f"{color}{category}{Colors.END}: {representative['label']} ({code})")
             consolidated_messages = []
             for msg in group:
                 if msg["details"]:
@@ -1654,7 +1712,7 @@ def _naive_stem(word: str) -> str:
         "s",
         "e",
         "ic",
-        "ics"
+        "ics",
     ]
     for suffix in sorted(suffixes, key=len, reverse=True):  # Longest first
         if word.endswith(suffix) and len(word) > len(suffix) + 2:

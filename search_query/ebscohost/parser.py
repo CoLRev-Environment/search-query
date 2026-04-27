@@ -25,9 +25,7 @@ class EBSCOParser(QueryStringParser):
 
     PARENTHESIS_REGEX = re.compile(r"[()]")
     LOGIC_OPERATOR_REGEX = re.compile(r"(?i:\b(AND|OR|NOT)\b)")
-    PROXIMITY_OPERATOR_REGEX = re.compile(
-        r"(?i:[NW]\d+|(NEAR|N|WITHIN)/\d+)"
-    )
+    PROXIMITY_OPERATOR_REGEX = re.compile(r"(?i:[NW]\d+|(NEAR|N|WITHIN)/\d+)")
     FIELD_REGEX = re.compile(r"\b([A-Z]{2})\b")
 
     QUOTATION_MARK_REGEX = re.compile(r'"')
@@ -110,7 +108,10 @@ class EBSCOParser(QueryStringParser):
                     # Boundary: unmatched local closing paren → likely unbalanced quote
                     break
                 open_paren -= 1
-            if token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR] and token.value.isupper():
+            if (
+                token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.RANGE_OPERATOR]
+                and token.value.isupper()
+            ):
                 # Boundary: upper case operator → likely unbalanced quote
                 break
             if token.type == TokenTypes.QUOTATION_MARK:
@@ -148,7 +149,8 @@ class EBSCOParser(QueryStringParser):
 
             if (
                 current.type == TokenTypes.FIELD
-                and next_token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
+                and next_token.type
+                in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]
                 and is_potential_term(current.value)
             ):
                 # Reclassify the second field token as a TERM
@@ -271,14 +273,19 @@ class EBSCOParser(QueryStringParser):
                 depth += 1
             elif token.type == TokenTypes.PARENTHESIS_CLOSED:
                 depth -= 1
-            elif depth == 0 and token.type in [TokenTypes.LOGIC_OPERATOR, TokenTypes.PROXIMITY_OPERATOR]:
+            elif depth == 0 and token.type in [
+                TokenTypes.LOGIC_OPERATOR,
+                TokenTypes.PROXIMITY_OPERATOR,
+            ]:
                 op = self._get_operator_type(token)
                 if prev_op is None:
                     prev_op = op
                     indices.append(i)
                 elif op == prev_op:
                     indices.append(i)
-                elif self.linter.get_precedence(op) < self.linter.get_precedence(prev_op):
+                elif self.linter.get_precedence(op) < self.linter.get_precedence(
+                    prev_op
+                ):
                     indices = [i]
         return indices
 
@@ -409,7 +416,12 @@ class EBSCOListParser(QueryListParser):
         self.linter.validate_tokens()
         self.linter.check_status()
 
-        query_str, offset, processed_lines, artificial_to_original_pos = self.build_query_str()
+        (
+            query_str,
+            offset,
+            processed_lines,
+            artificial_to_original_pos,
+        ) = self.build_query_str()
 
         self.linter.validate_query_string(processed_lines)
         self.linter.check_status()
@@ -427,7 +439,9 @@ class EBSCOListParser(QueryListParser):
         except QuerySyntaxError as exc:
             raise exc
         finally:
-            self.adapt_linter_messages_for_list_query(query_parser.linter.messages, artificial_to_original_pos)
+            self.adapt_linter_messages_for_list_query(
+                query_parser.linter.messages, artificial_to_original_pos
+            )
 
             self.linter.check_status()
 

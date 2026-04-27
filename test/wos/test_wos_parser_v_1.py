@@ -137,22 +137,19 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
-            '(TS=(term1) AND (TS=(term2) OR (term3)))',
+            "(TS=(term1) AND (TS=(term2) OR (term3)))",
             [
                 {
-                    'code': 'FIELD_0002',
-                    'details': '',
-                    'is_fatal': False,
-                    'label': 'field-missing',
-                    'message': 'Search field is missing',
-                    'position': [(32, 37)],
+                    "code": "FIELD_0002",
+                    "details": "",
+                    "is_fatal": False,
+                    "label": "field-missing",
+                    "message": "Search field is missing",
+                    "position": [(32, 37)],
                 },
-            ]
+            ],
         ),
-        (
-            '(TS=(term1)) AND TS=(term2 OR term3)',
-            []
-        ),
+        ("(TS=(term1)) AND TS=(term2 OR term3)", []),
         (
             r"collaborat\* OR assistance",
             [
@@ -384,10 +381,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
         #         },
         #     ],
         # ),
-        (
-            "TS=(diversity NEAR/3 (speci* OR population*))",
-            []
-        ),
+        ("TS=(diversity NEAR/3 (speci* OR population*))", []),
         (
             "TS=(diversity NEAR/3 (speci* AND population*))",
             [
@@ -397,9 +391,9 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "message": "NEAR operator applied to AND query.",
                     "is_fatal": True,
                     "position": [(22, 44)],
-                    "details": ''
+                    "details": "",
                 },
-            ]
+            ],
         ),
         (
             "TI=term1 !term2",
@@ -502,7 +496,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "position": [(0, 15)],
                     "details": "Missing operator",
                 }
-            ]
+            ],
         ),
         (
             "TI=*te",
@@ -720,17 +714,17 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             ],
         ),
         (
-                "TS='carbon'",
-                [
-                    {
-                        "code": "TERM_0001",
-                        "label": "non-standard-quotes",
-                        "message": "Non-standard quotes",
-                        "is_fatal": False,
-                        "position": [(3, 4), (10, 11)],
-                        "details": 'Apostrophes used as quotation marks. Use standard double quotes (") instead.',
-                    }
-                ],
+            "TS='carbon'",
+            [
+                {
+                    "code": "TERM_0001",
+                    "label": "non-standard-quotes",
+                    "message": "Non-standard quotes",
+                    "is_fatal": False,
+                    "position": [(3, 4), (10, 11)],
+                    "details": 'Apostrophes used as quotation marks. Use standard double quotes (") instead.',
+                }
+            ],
         ),
         (
             "ALL=(term1 OR term2 OR term3 OR term4 OR term5 OR term6 OR term7 OR term8 OR term9 OR term10 OR term11 OR term12 OR term13 OR term14 OR term15 OR term16 OR term17 OR term18 OR term19 OR term20 OR term21 OR term22 OR term23 OR term24 OR term25 OR term26 OR term27 OR term28 OR term29 OR term30 OR term31 OR term32 OR term33 OR term34 OR term35 OR term36 OR term37 OR term38 OR term39 OR term40 OR term41 OR term42 OR term43 OR term44 OR term45 OR term46 OR term47 OR term48 OR term49 OR term50 OR term51 OR term52)",
@@ -763,12 +757,12 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             "TS=(activity) AND (TS=(cancer) AND SO=(Lancet))",
             [
                 {
-                    'code': 'QUALITY_0004',
-                    'details': 'Unnecessary parentheses around query block.',
-                    'is_fatal': False,
-                    'label': 'unnecessary-parentheses',
-                    'message': 'Unnecessary parentheses in queries',
-                    'position': [(18, 19), (46, 47)],
+                    "code": "QUALITY_0004",
+                    "details": "Unnecessary parentheses around query block.",
+                    "is_fatal": False,
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "position": [(18, 19), (46, 47)],
                 },
             ],
         ),
@@ -789,22 +783,22 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
             'TS="digital health TS="eHealth"',
             [
                 {
-                    'code': 'PARSE_0004',
-                    'details': 'Missing operator',
-                    'is_fatal': True,
-                    'label': 'invalid-token-sequence',
-                    'message': 'The sequence of tokens is invalid.',
-                    'position': [(3, 22)],
+                    "code": "PARSE_0004",
+                    "details": "Missing operator",
+                    "is_fatal": True,
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "position": [(3, 22)],
                 },
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched opening quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(3, 18)]
+                    "code": "PARSE_0003",
+                    "details": "Unmatched opening quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(3, 18)],
                 },
-            ]
+            ],
         ),
         (
             "Web of Science: TS=eHealth",
@@ -1132,16 +1126,15 @@ def test_list_parser_case_4() -> None:
                 "position": [(25, 41)],
                 "details": 'The term \x1b[93m"Shared leader*"\x1b[0m is contained multiple times i.e., redundantly.',
             },
-
         ],
-        '2': [
+        "2": [
             {
-                'code': 'QUALITY_0006',
-                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
-                'is_fatal': False,
-                'label': 'potential-wildcard-use',
-                'message': 'Potential wildcard use',
-                'position': [(88, 100), (104, 113), (117, 127)],
+                "code": "QUALITY_0006",
+                "details": 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91m"acrobatics" OR "acrobat" OR "acrobats"\x1b[0m with \x1b[92macrobat*\x1b[0m',
+                "is_fatal": False,
+                "label": "potential-wildcard-use",
+                "message": "Potential wildcard use",
+                "position": [(88, 100), (104, 113), (117, 127)],
             },
         ],
     }
@@ -1197,12 +1190,12 @@ def test_list_parser_case_6() -> None:
                 "details": "",
             },
             {
-                'code': 'QUALITY_0006',
-                'details': 'Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m',
-                'is_fatal': False,
-                'label': 'potential-wildcard-use',
-                'message': 'Potential wildcard use',
-                'position': [(83, 88), (92, 98)],
+                "code": "QUALITY_0006",
+                "details": "Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\nReplace \x1b[91mcrohn OR crohns\x1b[0m with \x1b[92mcrohn*\x1b[0m",
+                "is_fatal": False,
+                "label": "potential-wildcard-use",
+                "message": "Potential wildcard use",
+                "position": [(83, 88), (92, 98)],
             },
         ],
         "2": [
@@ -1276,15 +1269,16 @@ def test_list_parser_case_9() -> None:
     assert list_parser.linter.messages == {
         "3": [
             {
-                'code': 'PARSE_1003',
-                'details': 'List reference #3 is circular.',
-                'is_fatal': True,
-                'label': 'list-query-circular-reference',
-                'message': 'Query line references itself',
-                'position': [(101, 103)],
+                "code": "PARSE_1003",
+                "details": "List reference #3 is circular.",
+                "is_fatal": True,
+                "label": "list-query-circular-reference",
+                "message": "Query line references itself",
+                "position": [(101, 103)],
             },
         ]
     }
+
 
 def test_wos_valid_query() -> None:
     """Should pass WOS constraints."""

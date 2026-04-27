@@ -1,11 +1,11 @@
 .. _PUBMED_0002:
 
-PUBMED_0002 — character-replacement
-===================================
+PUBMED_0002 — invalid-character
+===============================
 
 **Error Code**: PUBMED_0002
 
-**Message**: ``Character replacement``
+**Message**: ``Search term contains invalid character``
 
 **Problematic query**:
 

@@ -119,7 +119,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                 Token("treatment", TokenTypes.TERM, (7, 16)),
             ],
             [QueryErrorCode.INVALID_TOKEN_SEQUENCE.label],
-            'Missing operator',
+            "Missing operator",
         ),
         (
             [
@@ -275,25 +275,27 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    'code': 'PARSE_0004',
-                    'details': 'Missing operator',
-                    'is_fatal': True,
-                    'label': 'invalid-token-sequence',
-                    'message': 'The sequence of tokens is invalid.',
-                    'position': [(0, 8)],
+                    "code": "PARSE_0004",
+                    "details": "Missing operator",
+                    "is_fatal": True,
+                    "label": "invalid-token-sequence",
+                    "message": "The sequence of tokens is invalid.",
+                    "position": [(0, 8)],
                 },
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched closing quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(0, 6),],
+                    "code": "PARSE_0003",
+                    "details": "Unmatched closing quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [
+                        (0, 6),
+                    ],
                 },
             ],
         ),
         # This error no longer applies due to the new unbalanced quote validation.
-        #(
+        # (
         #        'eHe"a"l"t"h[ti]',
         #        "",
         #        [
@@ -306,7 +308,7 @@ def test_pubmed_invalid_token_sequences(
         #                "details": "Suspicious or excessive quote usage",
         #            }
         #        ],
-        #),
+        # ),
         (
             '("health tracking" OR "remote monitoring")) AND ("mobile application" OR "wearable device")',
             "Title",
@@ -357,15 +359,17 @@ def test_pubmed_invalid_token_sequences(
             "Title",
             [
                 {
-                    'code': 'PUBMED_0002',
-                    'details': 'Invalid character \'.\' in search term \'"Industry 4.0"\' will be '
-                    'replaced with whitespace.\n'
-                    'See PubMed character conversions: '
-                    'https://pubmed.ncbi.nlm.nih.gov/help/',
-                    'is_fatal': False,
-                    'label': 'invalid-character',
-                    'message': 'Search term contains invalid character',
-                    'position': [(28, 29),],
+                    "code": "PUBMED_0002",
+                    "details": "Invalid character '.' in search term '\"Industry 4.0\"' will be "
+                    "replaced with whitespace.\n"
+                    "See PubMed character conversions: "
+                    "https://pubmed.ncbi.nlm.nih.gov/help/",
+                    "is_fatal": False,
+                    "label": "invalid-character",
+                    "message": "Search term contains invalid character",
+                    "position": [
+                        (28, 29),
+                    ],
                 },
                 {
                     "code": "FIELD_0003",
@@ -439,7 +443,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(9, 32)],
-                    "details": 'Missing operator',
+                    "details": "Missing operator",
                 },
             ],
         ),
@@ -453,7 +457,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
                     "position": [(41, 43)],
-                    "details": 'Missing operator',
+                    "details": "Missing operator",
                 },
             ],
         ),
@@ -521,11 +525,7 @@ def test_pubmed_invalid_token_sequences(
                 },
             ],
         ),
-        (
-            '"VLBW-I"[Title/Abstract:~1]',
-            "",
-            []
-        ),
+        ('"VLBW-I"[Title/Abstract:~1]', "", []),
         (
             '("remote monitoring" NOT "in-person") AND "health outcomes"',
             "Title",
@@ -566,7 +566,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(29, 30), (76, 77)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
                 {
                     "code": "QUALITY_0005",
@@ -588,7 +588,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(17, 18), (67, 68)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
                 {
                     "code": "QUALITY_0005",
@@ -647,17 +647,17 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    'code': 'PUBMED_0002',
-                    'details': "Invalid character \''\' in search term \''\' will be "
-                    'replaced with whitespace.\n'
-                    'See PubMed character conversions: '
-                    'https://pubmed.ncbi.nlm.nih.gov/help/',
-                    'is_fatal': False,
-                    'label': 'invalid-character',
-                    'message': 'Search term contains invalid character',
-                    'position': [(0, 1)],
+                    "code": "PUBMED_0002",
+                    "details": "Invalid character ''' in search term ''' will be "
+                    "replaced with whitespace.\n"
+                    "See PubMed character conversions: "
+                    "https://pubmed.ncbi.nlm.nih.gov/help/",
+                    "is_fatal": False,
+                    "label": "invalid-character",
+                    "message": "Search term contains invalid character",
+                    "position": [(0, 1)],
                 },
-            ]
+            ],
         ),
         (
             "(eHealth OR mHealth)[tiab]",
@@ -692,22 +692,22 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    'code': 'QUALITY_0004',
-                    'details': 'Unnecessary parentheses around query block.',
-                    'is_fatal': False,
-                    'label': 'unnecessary-parentheses',
-                    'message': 'Unnecessary parentheses in queries',
-                    'position': [(21, 22), (66, 67)],
+                    "code": "QUALITY_0004",
+                    "details": "Unnecessary parentheses around query block.",
+                    "is_fatal": False,
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "position": [(21, 22), (66, 67)],
                 },
                 {
-                    'code': 'QUALITY_0004',
-                    'details': 'Unnecessary parentheses around query block.',
-                    'is_fatal': False,
-                    'label': 'unnecessary-parentheses',
-                    'message': 'Unnecessary parentheses in queries',
-                    'position': [(20, 21), (67, 68)],
+                    "code": "QUALITY_0004",
+                    "details": "Unnecessary parentheses around query block.",
+                    "is_fatal": False,
+                    "label": "unnecessary-parentheses",
+                    "message": "Unnecessary parentheses in queries",
+                    "position": [(20, 21), (67, 68)],
                 },
-            ]
+            ],
         ),
         (
             '"activity"[Title/Abstract] OR ("cancer"[Title/Abstract] AND "Lancet"[Journal])',
@@ -747,7 +747,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(0, 1), (40, 41)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
             ],
         ),
@@ -841,7 +841,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(162, 163), (286, 287)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
                 {
                     "code": "QUALITY_0004",
@@ -849,7 +849,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(291, 292), (420, 421)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
                 {
                     "code": "QUALITY_0004",
@@ -857,7 +857,7 @@ def test_pubmed_invalid_token_sequences(
                     "message": "Unnecessary parentheses in queries",
                     "is_fatal": False,
                     "position": [(425, 426), (540, 541)],
-                    "details": 'Unnecessary parentheses around query block.',
+                    "details": "Unnecessary parentheses around query block.",
                 },
                 # {
                 #     "code": "QUALITY_0001",
@@ -904,20 +904,16 @@ def test_pubmed_invalid_token_sequences(
             "",
             [
                 {
-                    'code': 'PARSE_0003',
-                    'details': 'Unmatched opening quote',
-                    'is_fatal': True,
-                    'label': 'unbalanced-quotes',
-                    'message': 'Quotes are unbalanced in the query',
-                    'position': [(0, 15)],
+                    "code": "PARSE_0003",
+                    "details": "Unmatched opening quote",
+                    "is_fatal": True,
+                    "label": "unbalanced-quotes",
+                    "message": "Quotes are unbalanced in the query",
+                    "position": [(0, 15)],
                 },
-            ]
+            ],
         ),
-        (
-            'fog[tiab] OR fogs[tiab] OR foggy[tiab]',
-            "",
-            []
-        ),
+        ("fog[tiab] OR fogs[tiab] OR foggy[tiab]", "", []),
     ],
 )
 def test_linter(
@@ -1120,7 +1116,11 @@ def test_linter_with_general_field(
             'RANGE["1995/01/01"[[pdat]], "3000"[[pdat]]]',
         ),
         ('"wearable device"[ti:~2]', "", 'NEAR/2["wearable device"[[ti]]]'),
-        ('(2019/1/1:2024/2/22[Date - Publication])', "", '2019/1/1:2024/2/22[[Date - Publication]]')
+        (
+            "(2019/1/1:2024/2/22[Date - Publication])",
+            "",
+            "2019/1/1:2024/2/22[[Date - Publication]]",
+        ),
     ],
 )
 def test_parser(query_str: str, field_general: str, expected_parsed: str) -> None:
@@ -1190,24 +1190,24 @@ def test_list_parser_case_3() -> None:
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
         -1: [],
-        '1': [
+        "1": [
             {
-                'code': 'PARSE_0002',
-                'details': 'Unbalanced opening parenthesis',
-                'is_fatal': True,
-                'label': 'unbalanced-parentheses',
-                'message': 'Parentheses are unbalanced in the query',
-                'position': [(3, 4)],
+                "code": "PARSE_0002",
+                "details": "Unbalanced opening parenthesis",
+                "is_fatal": True,
+                "label": "unbalanced-parentheses",
+                "message": "Parentheses are unbalanced in the query",
+                "position": [(3, 4)],
             },
         ],
-        '3': [
+        "3": [
             {
                 "code": "PARSE_0004",
                 "label": "invalid-token-sequence",
                 "message": "The sequence of tokens is invalid.",
                 "is_fatal": True,
                 "position": [(223, 228)],
-                "details": 'Missing operator',
+                "details": "Missing operator",
             },
         ],
         # "1": [
@@ -1315,12 +1315,12 @@ def test_general_list_parser_6() -> None:
     assert list_parser.linter.messages == {
         -1: [
             {
-                'code': 'PARSE_1004',
-                'details': 'Lines 1 and 3 were not included in the combined string. Ensure all lines are referenced in the final list item.',
-                'is_fatal': True,
-                'label': 'list-query-unreferenced-item',
-                'message': 'Unreferenced line in list query',
-                'position': [(3, 65), (99, 125)],
+                "code": "PARSE_1004",
+                "details": "Lines 1 and 3 were not included in the combined string. Ensure all lines are referenced in the final list item.",
+                "is_fatal": True,
+                "label": "list-query-unreferenced-item",
+                "message": "Unreferenced line in list query",
+                "position": [(3, 65), (99, 125)],
             },
         ]
     }
@@ -1341,14 +1341,14 @@ def test_general_list_parser_7() -> None:
 
     assert list_parser.linter.messages == {
         -1: [],
-        '2': [
-             {
-                'code': 'PARSE_0004',
-                'details': 'Missing operator',
-                'is_fatal': True,
-                'label': 'invalid-token-sequence',
-                'message': 'The sequence of tokens is invalid.',
-                'position': [(69, 73)],
+        "2": [
+            {
+                "code": "PARSE_0004",
+                "details": "Missing operator",
+                "is_fatal": True,
+                "label": "invalid-token-sequence",
+                "message": "The sequence of tokens is invalid.",
+                "position": [(69, 73)],
             },
         ],
     }
