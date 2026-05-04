@@ -16,7 +16,7 @@ STRUCT_0005 — search-term-lowercase
 **Recommended query**:
 
 .. code-block:: text
-    
+
     vr AND game
 
 **Typical fix**: Make unquoted search term lowercase
