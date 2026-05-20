@@ -18,9 +18,7 @@ from search_query.query_term import Term
 @pytest.fixture
 def query_setup() -> dict:
     test_node = Term("testvalue", position=(1, 10), field=SearchField(Fields.TITLE))
-    query_robot = NotQuery(
-        ['"Machine Learning"', "robot*"], field=SearchField(Fields.TITLE)
-    )
+    query_robot = NotQuery(["robot*"], field=SearchField(Fields.TITLE))
     query_ai = OrQuery(
         ['"AI"', '"Artificial Intelligence"'],
         field=SearchField(Fields.TITLE),
