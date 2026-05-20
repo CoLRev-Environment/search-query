@@ -112,6 +112,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
 
         self._print_unequal_precedence_warning()
         self.check_general_field()
+        self.check_unicode_escape_sequences_in_terms()
 
         return self.tokens
 
