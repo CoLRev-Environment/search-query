@@ -7,6 +7,7 @@ from search_query.constants import TokenTypes
 from search_query.linter_base import QueryStringLinter
 from search_query.query_and import AndQuery
 from search_query.query_term import Term
+from search_query.utils import aggregate_linter_messages
 
 # ruff: noqa: E501
 # flake8: noqa: E501
@@ -175,5 +176,39 @@ def test_check_invalid_characters_in_term_query() -> None:
             "is_fatal": False,
             "position": [(0, 16)],
             "details": "Invalid character '#' in search term 'digitalizat#ion'",
+        }
+    ]
+
+
+def test_aggregate_linter_messages_combines_positions() -> None:
+    messages = [
+        {
+            "code": "STRUCT_0002",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "position": [(10, 12)],
+            "details": "",
+        },
+        {
+            "code": "STRUCT_0002",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "position": [(22, 24)],
+            "details": "",
+        },
+    ]
+
+    aggregated_messages = aggregate_linter_messages(messages)
+
+    assert aggregated_messages == [
+        {
+            "code": "STRUCT_0002",
+            "label": "operator-capitalization",
+            "message": "Operators should be capitalized",
+            "is_fatal": False,
+            "position": [(10, 12), (22, 24)],
+            "details": "",
         }
     ]
