@@ -45,7 +45,7 @@ def test_and_query(query_setup: dict) -> None:
 
 def test_not_query(query_setup: dict) -> None:
     query_robot = query_setup["query_robot"]
-    assert query_robot.to_generic_string() == 'NOT[title]["Machine Learning", robot*]'
+    assert query_robot.to_generic_string() == "NOT[title][robot*]"
 
 
 def test_nested_queries(query_setup: dict) -> None:

@@ -293,23 +293,22 @@ def test_children_setter() -> None:
 
     # Test for NotQuery ---------------------------------------------
     not_query = NotQuery(
-        ["AI", "ethics"],
+        ["AI"],
         field="abstract",
     )
     assert not_query.children[0].value == "AI"
-    assert not_query.children[1].value == "ethics"
 
     with pytest.raises(TypeError):
         not_query.children = "not_a_list"  # type: ignore
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         not_query.children = ["valid", 123]  # type: ignore
 
     with pytest.raises(ValueError):
         not_query.children = ["new_child", "another_child", "third_child"]  # type: ignore
 
-    with pytest.raises(ValueError):
-        not_query.children = ["new_child"]  # type: ignore
+    # with pytest.raises(ValueError):
+    not_query.children = ["new_child"]  # type: ignore
 
     # Test for NEARQuery ---------------------------------------------
     near_query = NEARQuery(
