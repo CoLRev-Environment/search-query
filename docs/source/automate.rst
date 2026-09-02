@@ -7,19 +7,10 @@ Search-query can be used to automate different steps of the search process,
 such as searching for records in an API, filtering retrieved records, storing
 the results, and creating a search file.
 
-
-API retrieval
-----------------------------------------------------------
-
-Search queries can be used as part of automated API-based literature searches.
-The following example uses a search-query term to construct a Crossref request,
-retrieve the corresponding records, store them as a BibTeX file, and document
-the search in a search file.
-
 .. dropdown:: Installation requirements
    :icon: info
 
-   The example below requires the ``colrev`` package to be installed. You can
+   The examples below requires the ``colrev`` package to be installed. You can
    install it via pip:
 
    .. code-block:: bash
@@ -29,6 +20,14 @@ the search in a search file.
    **Important**: ``colrev`` version 0.16.1 requires Python **3.10** or higher.
    If you are on a different Python version, create a Python 3.10 environment
    (e.g., via ``uv``, ``venv``, or ``conda``) before installing.
+
+API retrieval
+----------------------------------------------------------
+
+Search queries can be used as part of automated API-based literature searches.
+The following example uses a search-query term to construct a Crossref request,
+retrieve the corresponding records, store them as a BibTeX file, and document
+the search in a search file.
 
 .. code-block:: python
    :linenos:
