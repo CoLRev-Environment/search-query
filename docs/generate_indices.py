@@ -1,8 +1,11 @@
-# scripts/generate_errors_index.py
 import json
 import re
-from importlib.resources import files
 from pathlib import Path
+
+try:
+    from importlib.resources import files
+except ImportError:  # pragma: no cover - Python 3.8
+    from importlib_resources import files
 
 from search_query.constants import QueryErrorCode
 
