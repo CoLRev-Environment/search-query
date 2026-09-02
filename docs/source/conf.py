@@ -23,6 +23,7 @@ release = "0.10.0"
 extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.datatemplates",
+    "sphinx_design",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
 ]
