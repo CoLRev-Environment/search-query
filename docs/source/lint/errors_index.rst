@@ -30,6 +30,14 @@ Parsing errors
 
    PARSE_1004
 
+Deprecated syntax
+-----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   LINT_2001
+
 Query structure errors
 ----------------------
 

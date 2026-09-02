@@ -9,14 +9,16 @@ Translators convert between:
 Each translator implements `QueryTranslator`, the abstract base class from ``translator_base.py``.
 
 Translator responsibilities
---------------------------
+---------------------------
 
 A translator must implement the following two class methods:
 
 - ``to_generic_syntax(query, *, field_general) -> Query``
 - ``to_specific_syntax(query) -> Query``
 
-Each method receives a `Query` object (the internal AST) and must return a new `Query` object with appropriately translated search fields and structure.
+Each method receives a :class:`search_query.query.Query` object (the internal
+AST) and must return a new :class:`search_query.query.Query` object with
+appropriately translated search fields and structure.
 
 Versioned translators
 -------------------------
@@ -36,7 +38,7 @@ To introduce a new translator version, duplicate the previous versioned director
 update the implementation as needed, and register the new version in the ``TRANSLATORS`` dictionary.
 
 Utility methods provided
------------------------
+------------------------
 
 The base class (`QueryTranslator`) provides the following utilities:
 
@@ -48,7 +50,7 @@ The base class (`QueryTranslator`) provides the following utilities:
   If all children have the same field, moves it to the parent node.
 
 Search field mapping
--------------------
+--------------------
 
 Field mapping is expected to be defined in a `constants_<source>.py` file and typically includes:
 
@@ -62,14 +64,14 @@ Each translator should:
 3. Optionally restructure the query for consistency
 
 Code skeleton
-------------
+-------------
 
 .. literalinclude:: translator_skeleton.py
    :language: python
 
 
 Advanced features
-----------------
+-----------------
 
 Some translators include advanced restructuring logic:
 

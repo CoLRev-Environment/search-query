@@ -1,6 +1,12 @@
 import json
 import re
+import sys
 from pathlib import Path
+
+# Always generate from the checkout rather than a possibly stale installed
+# distribution, regardless of the directory from which this script is run.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
 
 try:
     from importlib.resources import files
@@ -12,7 +18,7 @@ from search_query.constants import QueryErrorCode
 # ruff: noqa: E501
 # flake8: noqa: E501
 
-OUTPUT_FILE = Path("docs/source/lint/errors_index.rst")
+OUTPUT_FILE = REPO_ROOT / "docs/source/lint/errors_index.rst"
 
 
 # OUTPUT_FILE.write_text(".. _query-error-messages:\n\n")
@@ -24,6 +30,7 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
 
     for group_title, filter_fn in [
         ("Parsing errors", lambda e: e.code.startswith("PARSE_")),
+        ("Deprecated syntax", lambda e: e.code.startswith("LINT_")),
         ("Query structure errors", lambda e: e.code.startswith("STRUCT_")),
         ("Term errors", lambda e: e.code.startswith("TERM_")),
         ("Field errors", lambda e: e.code.startswith("FIELD_")),
@@ -39,7 +46,12 @@ with OUTPUT_FILE.open("a", encoding="utf-8") as f:
             f.write(f"   {error.code}\n")
             f.write("\n")
 
-OUTPUT_DIR = Path("docs/source/lint")
+# Keep generated output stable and leave exactly one newline at EOF.
+OUTPUT_FILE.write_text(
+    OUTPUT_FILE.read_text(encoding="utf-8").rstrip() + "\n", encoding="utf-8"
+)
+
+OUTPUT_DIR = REPO_ROOT / "docs/source/lint"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -59,7 +71,7 @@ def generate_rst_file(error: QueryErrorCode) -> None:
         "",
         f"**Message**: ``{error.message}``",
         "",
-        error.docs.strip()
+        error.docs.strip().replace("code-block:: texts", "code-block:: text")
         if error.docs.strip()
         else "**Description**: " + error.message,
         "",
@@ -90,7 +102,7 @@ for error in QueryErrorCode:
 
 
 query_dir = files("search_query") / "json_db"
-output_dir = Path("docs/source/query_database")
+output_dir = REPO_ROOT / "docs/source/query_database"
 rst_dir = output_dir / "queries"
 rst_dir.mkdir(parents=True, exist_ok=True)
 
