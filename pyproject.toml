@@ -12,24 +12,33 @@ authors = [
 ]
 license = { text = "MIT" }
 readme = "README.md"
-keywords = ["search query", "literature search", "query translation", "research", "reproducible research", "open science", "literature", "literature review", "systematic review", "systematic literature review"]
+keywords = [
+    "search query",
+    "literature search",
+    "query translation",
+    "research",
+    "reproducible research",
+    "open science",
+    "literature",
+    "literature review",
+    "systematic review",
+    "systematic literature review",
+]
 classifiers = [
-   "Development Status :: 4 - Beta",
-   "License :: OSI Approved :: MIT License",
-   "Natural Language :: English",
-   "Programming Language :: Python :: 3",
-   "Programming Language :: Python :: 3.8",
-   "Programming Language :: Python :: 3.9",
-   "Programming Language :: Python :: 3.10",
-   "Programming Language :: Python :: 3.11",
-   "Topic :: Scientific/Engineering",
-   "Operating System :: OS Independent",
-   "Typing :: Typed",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.8"
-dependencies = [
-  'importlib-resources>=5.1; python_version < "3.9"'
-]
+dependencies = ['importlib-resources>=5.1; python_version < "3.9"']
 
 [project.urls]
 Homepage = "https://github.com/CoLRev-Environment/search-query"
@@ -40,13 +49,10 @@ docs = [
     "Sphinx>=5.2.3",
     "sphinx-rtd-theme>=1.1.1",
     "sphinx-copybutton>=0.5.2",
-    "sphinxcontrib.datatemplates>=0.7"
+    "sphinxcontrib.datatemplates>=0.7",
+    "sphinx-design>=0.7.0",
 ]
-dev = [
-    "pylint==3.0.1",
-    "pytest>=7.2.1",
-    "pre-commit>=3.0.0"
-]
+dev = ["pylint==3.0.1", "pytest>=7.2.1", "pre-commit>=3.0.0"]
 
 [project.scripts]
 search-query = "search_query.cli:main"
@@ -55,12 +61,7 @@ search-query = "search_query.cli:main"
 packages = ["search_query"]
 
 [tool.hatch.build.targets.sdist]
-include = [
-  "search_query/**",
-  "LICENSE",
-  "README.md",
-  "pyproject.toml",
-]
+include = ["search_query/**", "LICENSE", "README.md", "pyproject.toml"]
 
 [tool.pylint.MAIN]
 extension-pkg-whitelist = "lxml.etree"
@@ -71,12 +72,7 @@ warn_unused_configs = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = [
-    "requests.*",
-    "yaml.*",
-    "pkg_resources.*",
-    "tabulate.*",
-]
+module = ["requests.*", "yaml.*", "pkg_resources.*", "tabulate.*"]
 ignore_missing_imports = true
 
 [build-system]
