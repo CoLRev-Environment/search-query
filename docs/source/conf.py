@@ -42,6 +42,10 @@ autodoc_default_options = {
     "members": True,
     "undoc-members": True,
     "show-inheritance": True,
+    # Do not turn objects re-exported through a module's ``__all__`` into
+    # additional Python-domain targets.  Their defining modules remain the
+    # canonical API documentation locations.
+    "ignore-module-all": True,
 }
 
 # -- Options for HTML output -------------------------------------------------

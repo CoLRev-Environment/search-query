@@ -16,24 +16,37 @@ def upgrade_query(
     version_current: str,
     version_target: Optional[str] = None,
 ) -> str:
-    """
-    Upgrade a database-specific search query from one syntax *version* to another
-    using the generic query as a platform-agnostic intermediate representation (IR).
+    """Upgrade a database-specific search query between syntax versions.
+
+    The upgrade uses the generic query as a platform-agnostic intermediate
+    representation (IR).
 
     Design intent:
-    - Parse specific query → generic query (IR) → specific query → serialize.
-      By pivoting through a generic IR we avoid
-      O(N^2) pairwise converters, improving maintainability and testability.
-    - Each platform/version only needs: PARSER, TRANSLATOR (to/from IR), SERIALIZER.
-      Adding a new version/platform becomes linear work (plug-in modules).
-    - Unsupported features can be flagged with warnings instead of failing silently.
-    - Using the same `to_generic_syntax()` / `to_specific_syntax()` for upgrades
-      and cross-platform translations ensures consistency and reduces effort.
-    - A round-trip parse after serialization confirms syntactic validity.
+
+    * Parse specific query → generic query (IR) → specific query →
+      serialize. By pivoting through a generic IR we avoid O(N^2) pairwise
+      converters, improving maintainability and testability.
+    * Each platform/version only needs a parser, a translator (to/from the IR),
+      and a serializer. Adding a new version/platform becomes linear work
+      (plug-in modules).
+    * Unsupported features can be flagged with warnings instead of failing
+      silently.
+    * Using the same ``to_generic_syntax()`` and ``to_specific_syntax()``
+      methods for upgrades and cross-platform translations ensures consistency
+      and reduces effort.
+    * A round-trip parse after serialization confirms syntactic validity.
 
     Notes:
-    - The IR should be the most expressive model across supported syntaxes.
+
+    * The IR should be the most expressive model across supported syntaxes.
       Where unavoidable, translators should emit warnings about lossy conversions.
+
+    :param query_str: Database-specific search query to upgrade.
+    :param platform: Platform whose syntax the query uses.
+    :param version_current: Current syntax version of the query.
+    :param version_target: Target syntax version, or ``None``/``"latest"`` for
+        the latest supported version.
+    :return: The query serialized using the target syntax version.
     """
 
     if version_target is None or version_target.lower() == "latest":
