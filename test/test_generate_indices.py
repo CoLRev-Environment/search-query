@@ -1,5 +1,4 @@
 """Tests for deterministic documentation index generation."""
-
 import json
 import os
 import subprocess
