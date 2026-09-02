@@ -98,7 +98,9 @@ def slugify(name: str) -> str:
     return re.sub(r"[^\w\-]+", "-", name.lower()).strip("-")
 
 
-for file in query_dir.iterdir():
+for file in sorted(
+    query_dir.iterdir(), key=lambda path: (path.name.casefold(), path.name)
+):
     if file.suffix == ".json":
         with open(file, encoding="utf-8") as f:
             content = json.load(f)
