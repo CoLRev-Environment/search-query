@@ -276,6 +276,8 @@ class QueryStringLinter:
                 details="The search field is extracted and should be included in the query.",
             )
 
+    # TODO : check: no NOT operator as a top-level operator
+
     def check_unsupported_fields_in_query(self, query: Query) -> None:
         """Check for the correct format of fields.
 
