@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import typing
 from copy import deepcopy
 
 from search_query.constants import Fields
@@ -177,7 +178,7 @@ field_GENERAL_TO_SYNTAX_MAP = {
 
 def field_general_to_syntax(
     field: str,
-) -> str:
+) -> typing.Optional[str]:
     """Map the general search field to the standard syntax of WOS."""
     field = field.strip()
     return field_GENERAL_TO_SYNTAX_MAP.get(field)

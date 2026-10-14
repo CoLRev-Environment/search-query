@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from search_query.constants import ExitCodes
 from search_query.linter import pre_commit_hook
 
@@ -30,8 +32,8 @@ def _write_search_file(
 
 
 def test_pre_commit_hook_passes_valid_query_file(
-    tmp_path: Path, capsys
-) -> None:  # type: ignore
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     file_path = _write_search_file(
         tmp_path, search_string='TS=("digital health" AND privacy)'
     )
@@ -45,11 +47,13 @@ def test_pre_commit_hook_passes_valid_query_file(
 
 
 def test_pre_commit_hook_fails_for_unbalanced_parentheses(
-    tmp_path: Path, capsys
-) -> None:  # type: ignore
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     file_path = _write_search_file(
         tmp_path,
-        search_string='TS=("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]',
+        search_string=(
+            'TS=("digital health"[Title/Abstract]) AND ("privacy"[Title/Abstract]'
+        ),
     )
 
     result = pre_commit_hook(str(file_path))
@@ -60,7 +64,9 @@ def test_pre_commit_hook_fails_for_unbalanced_parentheses(
     assert "unbalanced-parentheses" in captured.out
 
 
-def test_pre_commit_hook_fails_for_unsupported_field(tmp_path: Path, capsys) -> None:  # type: ignore
+def test_pre_commit_hook_fails_for_unsupported_field(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     file_path = _write_search_file(
         tmp_path,
         search_string="TI=term1 AND IY=2020",

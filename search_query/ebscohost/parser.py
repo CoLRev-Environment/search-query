@@ -94,7 +94,7 @@ class EBSCOParser(QueryStringParser):
         return distance
 
     def _has_closing_quote(self, index: int) -> bool:
-        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        """Look ahead for a matching quote, stopping at structural boundaries."""
         if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
             return False
 

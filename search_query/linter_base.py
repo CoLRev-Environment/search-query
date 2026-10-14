@@ -314,14 +314,14 @@ class QueryStringLinter:
 
     def check_unbalanced_parentheses(self) -> None:
         """Check query for unbalanced parentheses."""
-        i = 0
+        unmatched_opening = 0
         for token in self.tokens:
             if token.position[0] < 0:  # Ignore artificial parentheses
                 continue
             if token.type == TokenTypes.PARENTHESIS_OPEN:
-                i += 1
+                unmatched_opening += 1
             if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                if i == 0:
+                if unmatched_opening == 0:
                     self.add_message(
                         QueryErrorCode.UNBALANCED_PARENTHESES,
                         positions=[token.position],
@@ -329,17 +329,17 @@ class QueryStringLinter:
                         fatal=True,
                     )
                 else:
-                    i -= 1
-        if i > 0:
+                    unmatched_opening -= 1
+        if unmatched_opening > 0:
             # Query contains unbalanced opening parentheses
-            i = 0
+            unmatched_opening = 0
             for token in reversed(self.tokens):
                 if token.position[0] < 0:
                     continue
                 if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                    i += 1
+                    unmatched_opening += 1
                 if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    if i == 0:
+                    if unmatched_opening == 0:
                         self.add_message(
                             QueryErrorCode.UNBALANCED_PARENTHESES,
                             positions=[token.position],
@@ -347,7 +347,7 @@ class QueryStringLinter:
                             fatal=True,
                         )
                     else:
-                        i -= 1
+                        unmatched_opening -= 1
 
     def check_unbalanced_quotes(self) -> None:
         """Check token list for unbalanced quotes."""
@@ -438,12 +438,18 @@ class QueryStringLinter:
                 and query.value.endswith("'")
                 and len(query.value) >= 2
             ):
-                pos_1 = (query.position[0], query.position[0] + 1)
-                pos_2 = (query.position[1] - 1, query.position[1])
+                positions = []
+                if query.position is not None:
+                    pos_1 = (query.position[0], query.position[0] + 1)
+                    pos_2 = (query.position[1] - 1, query.position[1])
+                    positions = [pos_1, pos_2]
                 self.add_message(
                     QueryErrorCode.NON_STANDARD_QUOTES,
-                    positions=[pos_1, pos_2],
-                    details='Apostrophes used as quotation marks. Use standard double quotes (") instead.',
+                    positions=positions,
+                    details=(
+                        "Apostrophes used as quotation marks. Use standard double "
+                        'quotes (") instead.'
+                    ),
                 )
 
         for child in query.children:
@@ -460,8 +466,11 @@ class QueryStringLinter:
                     fatal=True,
                 )
 
-    def _format_invalid_char_details(self, char, value: str) -> str:
-        return f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace."
+    def _format_invalid_char_details(self, char: str, value: str) -> str:
+        return (
+            f"Invalid character '{char}' in search term '{value}' will be "
+            "replaced with whitespace."
+        )
 
     def check_invalid_characters_in_term(
         self, invalid_characters: str, error: QueryErrorCode
@@ -680,7 +689,7 @@ class QueryStringLinter:
         if start >= len(tokens):
             return []
 
-        operator_tokens = []
+        operator_tokens: typing.List[Token] = []
         depth = 0
         for token in tokens[start:]:
             if token.type == TokenTypes.PARENTHESIS_OPEN:
@@ -926,6 +935,9 @@ class QueryStringLinter:
 
     def _can_flatten_artificial_nesting(self, query: Query) -> bool:
         """Check whether query is enclosed in artificial parentheses."""
+        if query.position is None:
+            return False
+
         token_index_before_query = query.position[0] - 1
         token_index_after_query = query.position[1] + 1
         if (
@@ -1140,42 +1152,9 @@ class QueryStringLinter:
             # skip added characters ('+')
         return result
 
-    # Examples:
-    # 10.1079_SEARCHRXIV.2023.00129.json , 10.1079_SEARCHRXIV.2023.00269.json ,
-    # 10.1079_SEARCHRXIV.2024.00457.json- position mismtach
-    """
-    def _check_unnecessary_nesting(self, query: Query) -> None:
-        # Check for unnecessary same-operator nesting and provide simplification advice.
-
-        abbreviation_dict: typing.Dict[str, str] = {}
-        query = self._simplify_to_letters(query, abbreviation_dict)
-        query = self._simplify_long_term_lists(query)
-
-        query = self._assign_subsequent_letters(query, abbreviation_dict)
-
-        original = self._flatten_same_operator(query, flatten_artificial_nesting_only=True)
-        original = original.to_string_structured_2()
-
-        flattened = self._flatten_same_operator(query)
-        simplified = flattened.to_string_structured_2()
-
-        original = self._highlight_removed_chars(original, simplified)
-
-        if original == simplified:
-            return  # Skip if no actual simplification occurred
-        legend = "\n".join(f"  {k}: {v}" for k, v in abbreviation_dict.items())
-        self.add_message(
-            QueryErrorCode.UNNECESSARY_PARENTHESES,
-            positions=[],
-            details=(
-                f"Unnecessary parentheses around {query.value} block(s). A query with the structure"
-                f"\n{original}\n can be simplified to \n{simplified}\n"
-                f"with\n{legend}.\n"
-            ),
-        )
-    """
-
-    def _is_enclosed_in_paren(self, pos) -> bool:
+    def _is_enclosed_in_paren(
+        self, pos: typing.Optional[typing.Tuple[int, int]]
+    ) -> bool:
         if pos is None:
             return False
         start, closing_paren_pos = pos
@@ -1192,14 +1171,16 @@ class QueryStringLinter:
 
     def _check_unnecessary_nesting(self, query: Query) -> None:
         """Check for unnecessary same-operator nesting and provide simplification advice."""
-        if not query.position:
+        if query.position is None:
             return
 
         # Double nesting
-        if self._is_enclosed_in_paren(query.position) and self._is_enclosed_in_paren(
-            (query.position[0] - 1, query.position[1] + 1)
+        query_position = query.position
+        expanded_position = (query_position[0] - 1, query_position[1] + 1)
+        if self._is_enclosed_in_paren(query_position) and self._is_enclosed_in_paren(
+            expanded_position
         ):
-            start, end = query.position
+            start, end = query_position
             open_paren_pos = (start - 2, start - 1)
             end_paren_pos = (end + 1, end + 2)
             self.add_message(
@@ -1210,17 +1191,10 @@ class QueryStringLinter:
 
         # Same-level operator nesting
         for child in query.children:
-            if (
-                query.value in (Operators.AND, Operators.OR)
-                and child.operator
-                and child.value == query.value
-                and self._is_enclosed_in_paren(child.position)
-                and (
-                    not child.field
-                    or (query.field and query.field.value == child.field.value)
-                )
-            ):
-                start, end = child.position
+            if self._is_redundantly_nested(query, child):
+                child_position = child.position
+                assert child_position is not None
+                start, end = child_position
                 open_paren_pos = (start - 1, start)
                 end_paren_pos = (end, end + 1)
                 self.add_message(
@@ -1229,6 +1203,18 @@ class QueryStringLinter:
                     details="Unnecessary parentheses around query block.",
                 )
             self._check_unnecessary_nesting(child)
+
+    def _is_redundantly_nested(self, query: Query, child: Query) -> bool:
+        """Check whether a same-operator child has unnecessary parentheses."""
+        if query.value not in (Operators.AND, Operators.OR):
+            return False
+        if not child.operator or child.value != query.value:
+            return False
+        if child.position is None or not self._is_enclosed_in_paren(child.position):
+            return False
+        if not child.field:
+            return True
+        return bool(query.field and query.field.value == child.field.value)
 
     def _extract_subqueries(
         self, query: Query, subqueries: dict, subquery_types: dict, subquery_id: int = 0
@@ -1300,7 +1286,8 @@ class QueryStringLinter:
                         and field_a == field_b
                     ):
                         details = (
-                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is contained multiple times"
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} "
+                            "is contained multiple times"
                             " i.e., redundantly."
                         )
                         self.add_message(
@@ -1329,8 +1316,9 @@ class QueryStringLinter:
                         )
                     ):
                         details = (
-                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is redundant in this AND query "
-                            f"because another term already restricts the results as much or more."
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is "
+                            "redundant in this AND query because another term already "
+                            "restricts the results as much or more."
                         )
                         self.add_message(
                             QueryErrorCode.REDUNDANT_TERM,
@@ -1352,8 +1340,9 @@ class QueryStringLinter:
                         )
                     ):
                         details = (
-                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is redundant in this OR query "
-                            f"because another term already matches all of its results."
+                            f"The term {Colors.ORANGE}{term_a.value}{Colors.END} is "
+                            "redundant in this OR query because another term already "
+                            "matches all of its results."
                         )
                         self.add_message(
                             QueryErrorCode.REDUNDANT_TERM,
@@ -1436,7 +1425,9 @@ class QueryStringLinter:
             return
 
         if term_field_query.value == "OR" and term_field_query.operator:
-            term_query_groups = defaultdict(list)
+            term_query_groups: typing.DefaultDict[
+                typing.Optional[str], typing.List[Query]
+            ] = defaultdict(list)
 
             for child in term_field_query.children:
                 if not child.is_term():
@@ -1446,9 +1437,9 @@ class QueryStringLinter:
                 key = child.field.value if child.field is not None else None
                 term_query_groups[key].append(child)
 
-            term_query_groups = list(term_query_groups.values())
-            for term_query_group in term_query_groups:
-                stemmed = defaultdict(list)
+            grouped_term_queries = list(term_query_groups.values())
+            for term_query_group in grouped_term_queries:
+                stemmed: typing.DefaultDict[str, typing.List[Query]] = defaultdict(list)
 
                 for term_query in term_query_group:
                     # Group term queries by their stemmed value.
@@ -1473,7 +1464,9 @@ class QueryStringLinter:
                             QueryErrorCode.POTENTIAL_WILDCARD_USE,
                             positions=positions,  # type: ignore
                             details=(
-                                "Multiple OR-connected terms stem to the same word. Consider using a wildcard. Note: wildcards may introduce additional matches, trading precision for recall.\n"
+                                "Multiple OR-connected terms stem to the same word. "
+                                "Consider using a wildcard. Note: wildcards may introduce "
+                                "additional matches, trading precision for recall.\n"
                                 f"Replace {Colors.RED}{matching_terms}{Colors.END} with "
                                 f"{Colors.GREEN}{stem}*{Colors.END}"
                             ),
@@ -1563,7 +1556,7 @@ class QueryListLinter:
                         fatal=True,
                     )
 
-    def _check_unreferenced_items(self, processed_lines: set):
+    def _check_unreferenced_items(self, processed_lines: set[str]) -> None:
         """Verify that all query lines were processed during query string construction."""
         missing = set(self.parser.query_dict) - set(processed_lines)
 
@@ -1589,10 +1582,17 @@ class QueryListLinter:
         for line in sorted_lines:
             positions.append(self.parser.query_dict[line]["content_pos"])
         if len(sorted_lines) == 1:
-            details = f"Line {str(sorted_lines[0])} was not included in the combined string. Ensure all lines are referenced in the final list item."
+            details = (
+                f"Line {sorted_lines[0]} was not included in the combined string. "
+                "Ensure all lines are referenced in the final list item."
+            )
         else:
             joined = ", ".join(map(str, sorted_lines[:-1]))
-            details = f"Lines {joined} and {sorted_lines[-1]} were not included in the combined string. Ensure all lines are referenced in the final list item."
+            details = (
+                f"Lines {joined} and {sorted_lines[-1]} were not included in the "
+                "combined string. Ensure all lines are referenced in the final list "
+                "item."
+            )
         self.add_message(
             QueryErrorCode.LIST_QUERY_UNREFERENCED_ITEM,
             list_position=GENERAL_ERROR_POSITION,
@@ -1601,17 +1601,36 @@ class QueryListLinter:
             fatal=True,
         )
 
-    @staticmethod
     def validate_tokens(self) -> None:
         """Validate list tokens."""
 
-    @staticmethod
-    def validate_query_string(self, processed_lines: set) -> None:
+    def validate_query_string(self, processed_lines: set[str]) -> None:
         """Verify query string integrity."""
 
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
+
+    def _print_message_group(self, group: list[dict]) -> None:
+        """Print messages sharing one error code."""
+        representative = group[0]
+        color = Colors.RED if representative["is_fatal"] else Colors.ORANGE
+        category = "❌ Fatal" if representative["is_fatal"] else "💡 Warning"
+        code = representative["code"]
+        print(f"{color}{category}{Colors.END}: {representative['label']} ({code})")
+
+        consolidated_messages = []
+        for message in group:
+            detail = message["details"] or message["message"]
+            consolidated_messages.append(f"  {detail}")
+        for item in set(consolidated_messages):
+            _print_bullet_message(item)
+
+        positions = [pos for message in group for pos in message["position"]]
+        query_info = format_query_string_positions(
+            self.parser.query_list, positions, color=color
+        )
+        _print_bullet_message(query_info, bullet=" ")
 
     # pylint: disable=too-many-branches
     def print_messages(self) -> None:
@@ -1620,13 +1639,10 @@ class QueryListLinter:
             return
 
         new_messages = []
-
         for list_position, messages in self.messages.items():
             if list_position not in self.last_read_index:
                 self.last_read_index[list_position] = 0
-
             new_messages.extend(messages[self.last_read_index[list_position] :])
-
             self.last_read_index[list_position] += len(messages)
 
         grouped_messages = defaultdict(list)
@@ -1634,33 +1650,8 @@ class QueryListLinter:
         for message in new_messages:
             grouped_messages[message["code"]].append(message)
 
-        for code, group in grouped_messages.items():
-            # Take the first message as representative
-            representative = group[0]
-            code = representative["code"]
-
-            category = ""
-            if representative["is_fatal"]:
-                color = Colors.RED
-                category = "❌ Fatal"
-            else:
-                color = Colors.ORANGE
-                category = "💡 Warning"
-
-            print(f"{color}{category}{Colors.END}: {representative['label']} ({code})")
-            consolidated_messages = []
-            for msg in group:
-                if msg["details"]:
-                    consolidated_messages.append(f"  {msg['details']}")
-                else:
-                    consolidated_messages.append(f"  {msg['message']}")
-            for item in set(consolidated_messages):
-                _print_bullet_message(item)
-            positions = [pos for message in group for pos in message["position"]]
-            query_info = format_query_string_positions(
-                self.parser.query_list, positions, color=color
-            )
-            _print_bullet_message(query_info, bullet=" ")
+        for group in grouped_messages.values():
+            self._print_message_group(group)
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors"""

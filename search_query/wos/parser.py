@@ -24,6 +24,8 @@ from search_query.wos.linter import WOSQueryStringLinter
 class WOSParser(QueryStringParser):
     """Parser for Web-of-Science queries."""
 
+    linter: WOSQueryStringLinter
+
     # 1) structured parts
     FIELD_REGEX = re.compile(r"\b\w{2,3}=")
     LOGIC_OPERATOR_REGEX = re.compile(r"\b(AND|OR|NOT)\b", flags=re.IGNORECASE)
@@ -282,9 +284,12 @@ class WOSParser(QueryStringParser):
         self.linter.validate_field_general(self.field_general)
         self.linter.check_status()
 
-        if self.field_general and field_general_to_syntax(self.field_general):
+        field_general_syntax = (
+            field_general_to_syntax(self.field_general) if self.field_general else None
+        )
+        if field_general_syntax:
             field_general = SearchField(
-                value=field_general_to_syntax(self.field_general),
+                value=field_general_syntax,
                 position=(-1, -1),
             )
             query.field = field_general

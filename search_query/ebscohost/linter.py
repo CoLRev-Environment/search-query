@@ -213,7 +213,7 @@ class EBSCOQueryStringLinter(QueryStringLinter):
             token_type = token.type
             prev_type = self.tokens[i - 1].type
 
-            # Do not consider a single " or a misplaced wildcard for invalid token sequences (already handled by other validation methods)
+            # Single quotes and misplaced wildcards are handled by other checks.
             if self.tokens[i - 1].value == '"' or token.value.lstrip("*") in '" ':
                 continue
 
@@ -295,13 +295,15 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     self.add_message(
                         QueryErrorCode.SEARCH_TERM_LOWERCASE,
                         positions=[token.position],
-                        details="Use lowercase for unquoted search terms to improve term recognition by the EBSCOHost search engine.",
+                        details=(
+                            "Use lowercase for unquoted search terms to improve term "
+                            "recognition by the EBSCOHost search engine."
+                        ),
                     )
                     token.value = token.value.lower()
 
     def check_unsupported_wildcards(self, query: Query) -> None:
         """Check for unsupported characters in the search string."""
-
         if query.is_term():
             pattern = re.compile(r"[*?#]")
             for match in pattern.finditer(query.value):
@@ -421,6 +423,6 @@ class EBSCOListLinter(QueryListLinter):
         """Validate list tokens."""
         self._check_invalid_reference()
 
-    def validate_query_string(self, processed_lines: set) -> None:
+    def validate_query_string(self, processed_lines: set[str]) -> None:
         """Verify query string integrity."""
         self._check_unreferenced_items(processed_lines)

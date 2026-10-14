@@ -160,9 +160,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
             fatal=True,
         )
 
-    def _format_invalid_char_details(self, char, value: str) -> str:
+    def _format_invalid_char_details(self, char: str, value: str) -> str:
         return (
-            f"Invalid character '{char}' in search term '{value}' will be replaced with whitespace.\n"
+            f"Invalid character '{char}' in search term '{value}' will be "
+            "replaced with whitespace.\n"
             "See PubMed character conversions: https://pubmed.ncbi.nlm.nih.gov/help/"
         )
 
@@ -223,7 +224,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
             if token_type in self.VALID_TOKEN_SEQUENCES[prev_type]:
                 continue
 
-            # Do not consider a single " for invalid token sequences (already handled by other validation methods)
+            # A lone quote is handled by the other validation methods.
             if self.tokens[i].value == '"':
                 continue
 
@@ -513,7 +514,10 @@ class PubmedQueryStringLinter(QueryStringLinter):
                 self.add_message(
                     QueryErrorCode.FIELD_UNSUPPORTED,
                     positions=[token.position],
-                    details=f"Search field {token.value} is not supported and will be ignored by PubMed.",
+                    details=(
+                        f"Search field {token.value} is not supported and will be "
+                        "ignored by PubMed."
+                    ),
                     fatal=True,
                 )
                 token.value = "[all]"
@@ -565,6 +569,6 @@ class PubmedQueryListLinter(QueryListLinter):
         """Validate list tokens."""
         self._check_invalid_reference()
 
-    def validate_query_string(self, processed_lines: set) -> None:
+    def validate_query_string(self, processed_lines: set[str]) -> None:
         """Verify query string integrity."""
         self._check_unreferenced_items(processed_lines)

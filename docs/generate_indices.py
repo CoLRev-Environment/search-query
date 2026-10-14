@@ -13,7 +13,7 @@ try:
 except ImportError:  # pragma: no cover - Python 3.8
     from importlib_resources import files
 
-from search_query.constants import QueryErrorCode
+from search_query.constants import QueryErrorCode  # noqa: E402
 
 # ruff: noqa: E501
 # flake8: noqa: E501

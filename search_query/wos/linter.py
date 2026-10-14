@@ -475,6 +475,7 @@ class WOSQueryStringLinter(QueryStringLinter):
             self.check_issn_isbn_format(child)
 
     def validate_field_general(self, field: str) -> None:
+        """Check whether the extracted general field is supported by WoS."""
         if not field:
             return
         field = field.strip()
@@ -483,7 +484,9 @@ class WOSQueryStringLinter(QueryStringLinter):
                 QueryErrorCode.FIELD_UNSUPPORTED,
                 positions=[],
                 fatal=False,
-                details=f'The extracted search field "{field}" is not supported by WOS.',
+                details=(
+                    f'The extracted search field "{field}" is not supported by WOS.'
+                ),
             )
 
     def check_deprecated_field_tags(self, query: Query) -> None:
@@ -708,6 +711,6 @@ class WOSQueryListLinter(QueryListLinter):
         """Validate list tokens."""
         self._check_invalid_reference()
 
-    def validate_query_string(self, processed_lines: set) -> None:
+    def validate_query_string(self, processed_lines: set[str]) -> None:
         """Verify query string integrity."""
         self._check_unreferenced_items(processed_lines)

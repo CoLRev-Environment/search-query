@@ -140,7 +140,7 @@ class QueryStringParser(QueryParserBase, ABC):
             last_end = end
 
     def _has_closing_quote(self, index: int) -> bool:
-        """Look ahead from a quote at `index` to see if a matching closing quote exists. Stops at defined structural boundaries to identify likely unbalanced quotes."""
+        """Look ahead for a matching quote, stopping at structural boundaries."""
         if self.tokens[index].type != TokenTypes.QUOTATION_MARK:
             return False
 
@@ -173,7 +173,7 @@ class QueryStringParser(QueryParserBase, ABC):
         return False
 
     def combine_subsequent_terms(self) -> None:
-        """Combine all consecutive TERM tokens into one. Combine contents inside quotation marks into single TERM token."""
+        """Combine consecutive TERM tokens and quoted text into single tokens."""
         combined_tokens = []
         i = 0
         while i < len(self.tokens):
@@ -194,7 +194,7 @@ class QueryStringParser(QueryParserBase, ABC):
                     ].type == TokenTypes.QUOTATION_MARK and not self._has_closing_quote(
                         i
                     ):
-                        # Unbalanced closing quote found -> add to the end of latest search term
+                        # Add an unbalanced closing quote to the latest search term.
                         value += " " * (self.tokens[i].position[0] - end)
                         value += self.tokens[i].value
                         end = self.tokens[i].position[1]
@@ -340,7 +340,7 @@ class QueryListParser(QueryParserBase):
             previous += len(line) + 1
 
     def tokenize_operator_node(self, query_str: str, node_nr: int) -> list:
-        """Tokenize the query string into list-references and non-list-reference contents."""
+        """Tokenize list references and non-reference query text."""
         tokens = []
         last_end = 0
 
@@ -398,8 +398,15 @@ class QueryListParser(QueryParserBase):
         return match.group(1)
 
     def _resolve_reference(
-        self, ref_nr: str, processed_lines: set, artificial_to_original_pos: dict
-    ) -> typing.Tuple[str, dict, dict]:
+        self,
+        ref_nr: str,
+        processed_lines: typing.Set[str],
+        artificial_to_original_pos: typing.Dict[int, typing.Tuple[int, int]],
+    ) -> typing.Tuple[
+        str,
+        typing.Dict[int, int],
+        typing.Dict[int, typing.Tuple[int, int]],
+    ]:
         """Recursively resolve query references."""
         # pylint: disable=too-many-locals
         assert ref_nr in self.query_dict
@@ -418,7 +425,7 @@ class QueryListParser(QueryParserBase):
             operator_base_offset = node_content["content_pos"][0]
 
             parts = []
-            local_pos_dict = {}
+            local_pos_dict: typing.Dict[int, int] = {}
             current_pos = 0
 
             for token in tokens:
@@ -460,7 +467,14 @@ class QueryListParser(QueryParserBase):
 
         return "", {}, artificial_to_original_pos
 
-    def build_query_str(self) -> typing.Tuple[str, dict, set, dict]:
+    def build_query_str(
+        self,
+    ) -> typing.Tuple[
+        str,
+        typing.Dict[int, int],
+        typing.Set[str],
+        typing.Dict[int, typing.Tuple[int, int]],
+    ]:
         """Build the query string from the list format."""
         # The `offset` dictionary maps positions in the `query_str` back to their
         # corresponding character positions in the original (list) query string.
@@ -480,8 +494,8 @@ class QueryListParser(QueryParserBase):
         #   {0: 100, 7: 203, 10: 206}
         # So position 7 ("O" in "OR") traces back to character 203 in the original.
         offset: typing.Dict[int, int] = {}
-        processed_lines = set()
-        artificial_to_original_pos = dict()
+        processed_lines: typing.Set[str] = set()
+        artificial_to_original_pos: typing.Dict[int, typing.Tuple[int, int]] = {}
 
         # Entry point: find the top-level operator node and resolve it
         top_level_node = max(self.query_dict.keys(), key=int)
@@ -492,9 +506,11 @@ class QueryListParser(QueryParserBase):
         return query_str, offset, processed_lines, artificial_to_original_pos
 
     def map_artificial_to_original_positions(
-        self, parser_messages: list, artificial_to_original_pos: dict
-    ):
-        """Map artificial parentheses positions back to the original positions of the list references."""
+        self,
+        parser_messages: typing.List[typing.Dict[str, typing.Any]],
+        artificial_to_original_pos: typing.Dict[int, typing.Tuple[int, int]],
+    ) -> typing.List[typing.Dict[str, typing.Any]]:
+        """Map artificial parentheses to their original list-reference positions."""
         for message in parser_messages:
             new_positions = []
 
@@ -511,7 +527,9 @@ class QueryListParser(QueryParserBase):
 
         return parser_messages
 
-    def assign_linter_messages(self, parser_messages) -> None:  # type: ignore
+    def assign_linter_messages(
+        self, parser_messages: typing.List[typing.Dict[str, typing.Any]]
+    ) -> None:
         """Assign linter messages to the appropriate query nodes."""
         if GENERAL_ERROR_POSITION not in self.linter.messages:
             self.linter.messages[GENERAL_ERROR_POSITION] = []
@@ -534,8 +552,11 @@ class QueryListParser(QueryParserBase):
                 self.linter.messages[GENERAL_ERROR_POSITION].append(message)
 
     def adapt_linter_messages_for_list_query(
-        self, parser_messages: list, artificial_to_original_pos: dict
-    ):
+        self,
+        parser_messages: typing.List[typing.Dict[str, typing.Any]],
+        artificial_to_original_pos: typing.Dict[int, typing.Tuple[int, int]],
+    ) -> None:
+        """Map parser messages to their original list-query positions."""
         parser_messages = self.map_artificial_to_original_positions(
             parser_messages, artificial_to_original_pos
         )
