@@ -145,7 +145,7 @@ class Query:
             if not self._silence_linter:
                 pubmed_linter.check_status()
 
-        elif self.platform == "generic":
+        elif self.platform in {PLATFORM.GENERIC.value, PLATFORM.CROSSREF.value}:
             from search_query.generic.linter import GenericLinter
 
             gen_linter = GenericLinter()
