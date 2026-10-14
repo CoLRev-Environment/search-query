@@ -52,7 +52,14 @@ docs = [
     "sphinxcontrib.datatemplates>=0.7",
     "sphinx-design>=0.7.0; python_version >= '3.11'",
 ]
-dev = ["pylint==3.0.1", "pytest>=7.2.1", "pre-commit>=3.0.0"]
+mesh = ["requests>=2.31", "lxml>=4.9"]
+dev = [
+    "pylint==3.0.1",
+    "pytest>=7.2.1",
+    "pre-commit>=3.0.0",
+    "requests>=2.31",
+    "lxml>=4.9",
+]
 
 [project.scripts]
 search-query = "search_query.cli:main"
