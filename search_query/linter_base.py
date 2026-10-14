@@ -330,24 +330,28 @@ class QueryStringLinter:
                     )
                 else:
                     unmatched_opening -= 1
+
         if unmatched_opening > 0:
-            # Query contains unbalanced opening parentheses
-            unmatched_opening = 0
-            for token in reversed(self.tokens):
-                if token.position[0] < 0:
-                    continue
-                if token.type == TokenTypes.PARENTHESIS_CLOSED:
-                    unmatched_opening += 1
-                if token.type == TokenTypes.PARENTHESIS_OPEN:
-                    if unmatched_opening == 0:
-                        self.add_message(
-                            QueryErrorCode.UNBALANCED_PARENTHESES,
-                            positions=[token.position],
-                            details="Unbalanced opening parenthesis",
-                            fatal=True,
-                        )
-                    else:
-                        unmatched_opening -= 1
+            self._check_unmatched_opening_parentheses()
+
+    def _check_unmatched_opening_parentheses(self) -> None:
+        """Report opening parentheses that have no matching close."""
+        unmatched_closing = 0
+        for token in reversed(self.tokens):
+            if token.position[0] < 0:
+                continue
+            if token.type == TokenTypes.PARENTHESIS_CLOSED:
+                unmatched_closing += 1
+            if token.type == TokenTypes.PARENTHESIS_OPEN:
+                if unmatched_closing == 0:
+                    self.add_message(
+                        QueryErrorCode.UNBALANCED_PARENTHESES,
+                        positions=[token.position],
+                        details="Unbalanced opening parenthesis",
+                        fatal=True,
+                    )
+                else:
+                    unmatched_closing -= 1
 
     def check_unbalanced_quotes(self) -> None:
         """Check token list for unbalanced quotes."""
@@ -706,12 +710,62 @@ class QueryStringLinter:
 
         return operator_tokens
 
+    def _get_unequal_precedence_operators(
+        self, operators: typing.List[Token]
+    ) -> typing.List[Token]:
+        """Return operators whose precedence differs within the same scope."""
+        unequal_operators: typing.List[Token] = []
+        previous_precedence = -1
+        previous_operator = None
+        for operator in operators:
+            precedence = self.get_precedence(operator.value.upper())
+            if previous_precedence not in [precedence, -1]:
+                if not unequal_operators and previous_operator:
+                    unequal_operators.append(previous_operator)
+                unequal_operators.append(operator)
+            previous_precedence = precedence
+            previous_operator = operator
+        return unequal_operators
+
+    def _format_precedence_details(self, unequal_operators: typing.List[Token]) -> str:
+        """Format the explanation for operators with unequal precedence."""
+        precedence_list = [
+            (operator, self.get_precedence(operator.upper()))
+            for operator in {item.value for item in unequal_operators}
+        ]
+        precedence_list.sort(key=lambda item: item[1], reverse=True)
+        precedence_lines = []
+        for index, (operator, precedence) in enumerate(precedence_list):
+            if index == 0:
+                precedence_lines.append(
+                    f"Operator {Colors.GREEN}{operator}{Colors.END} is evaluated first "
+                    f"because it has the highest precedence level ({precedence})."
+                )
+            elif index == len(precedence_list) - 1:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{operator}{Colors.END} is evaluated last "
+                    f"because it has the lowest precedence level ({precedence})."
+                )
+            else:
+                precedence_lines.append(
+                    f"Operator {Colors.ORANGE}{operator}{Colors.END} "
+                    f"has precedence level {precedence}."
+                )
+
+        precedence_info = "\n".join(precedence_lines)
+        return (
+            "The query uses multiple operators with different precedence levels, "
+            "but without parentheses to make the intended logic explicit. "
+            "This can lead to unexpected interpretations of the query.\n\n"
+            "Specifically:\n"
+            f"{precedence_info}\n\n"
+        )
+
     def _print_unequal_precedence_warning(self) -> None:
         """Warn user about unequal precedence operators in the query string."""
         tokens = self.tokens
 
         for index, token in enumerate(self.tokens):
-            unequal_operators: typing.List[Token] = []
             if index == 0:
                 ops = self._get_scoped_operators(tokens, start=index)
             elif token.type == TokenTypes.PARENTHESIS_OPEN:
@@ -719,57 +773,14 @@ class QueryStringLinter:
             else:
                 continue
 
-            prev_value = -1
-            prev_operator = None
-            for op in ops:
-                value = self.get_precedence(op.value.upper())
-                if prev_value not in [value, -1]:
-                    if not unequal_operators and prev_operator:
-                        unequal_operators.append(prev_operator)
-                    unequal_operators.append(op)
-                prev_value = value
-                prev_operator = op
-
+            unequal_operators = self._get_unequal_precedence_operators(ops)
             if not unequal_operators:
                 continue
-
-            precedence_list = [
-                (item, self.get_precedence(item.upper()))
-                for item in {o.value for o in unequal_operators}
-            ]
-            precedence_list.sort(key=lambda x: x[1], reverse=True)
-            precedence_lines = []
-            for idx, (op, prec) in enumerate(precedence_list):
-                if idx == 0:
-                    precedence_lines.append(
-                        f"Operator {Colors.GREEN}{op}{Colors.END} is evaluated first "
-                        f"because it has the highest precedence level ({prec})."
-                    )
-                elif idx == len(precedence_list) - 1:
-                    precedence_lines.append(
-                        f"Operator {Colors.ORANGE}{op}{Colors.END} is evaluated last "
-                        f"because it has the lowest precedence level ({prec})."
-                    )
-                else:
-                    precedence_lines.append(
-                        f"Operator {Colors.ORANGE}{op}{Colors.END} "
-                        f"has precedence level {prec}."
-                    )
-
-            precedence_info = "\n".join(precedence_lines)
-
-            details = (
-                "The query uses multiple operators with different precedence levels, "
-                "but without parentheses to make the intended logic explicit. "
-                "This can lead to unexpected interpretations of the query.\n\n"
-                "Specifically:\n"
-                f"{precedence_info}\n\n"
-            )
 
             self.add_message(
                 QueryErrorCode.IMPLICIT_PRECEDENCE,
                 positions=[o.position for o in unequal_operators],
-                details=details,
+                details=self._format_precedence_details(unequal_operators),
             )
 
     @abstractmethod
@@ -940,16 +951,17 @@ class QueryStringLinter:
 
         token_index_before_query = query.position[0] - 1
         token_index_after_query = query.position[1] + 1
-        if (
-            token_index_before_query > 0
-            and token_index_after_query < len(self.tokens)
-            and self.tokens[token_index_before_query] == TokenTypes.PARENTHESIS_OPEN
-            and self.tokens[token_index_before_query].position == (-1, -1)
-            and self.tokens[token_index_after_query] == TokenTypes.PARENTHESIS_CLOSED
-            and self.tokens[token_index_after_query].position == (-1, -1)
-        ):
-            return True
-        return False
+        if token_index_before_query <= 0 or token_index_after_query >= len(self.tokens):
+            return False
+
+        token_before = self.tokens[token_index_before_query]
+        token_after = self.tokens[token_index_after_query]
+        return (
+            token_before == TokenTypes.PARENTHESIS_OPEN
+            and token_before.position == (-1, -1)
+            and token_after == TokenTypes.PARENTHESIS_CLOSED
+            and token_after.position == (-1, -1)
+        )
 
     def _flatten_same_operator(
         self, query: Query, flatten_artificial_nesting_only: bool = False

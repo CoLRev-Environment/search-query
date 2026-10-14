@@ -202,6 +202,31 @@ def test_format_query_string_positions_merges_overlaps() -> None:
     assert result.startswith(expected)
 
 
+def test_format_query_string_positions_on_same_line() -> None:
+    query_str = "prefix one and two suffix\nother line"
+    positions = [(7, 10), (15, 18)]
+
+    result = format_query_string_positions(query_str, positions, color=Colors.ORANGE)
+
+    assert result == (
+        f"{Colors.GREY}[...]{Colors.END}\n"
+        f"prefix {Colors.ORANGE}one{Colors.END} and "
+        f"{Colors.ORANGE}two{Colors.END} suffix\n"
+        f"{Colors.GREY}[...]{Colors.END}"
+    )
+
+
+def test_format_query_string_positions_in_long_query() -> None:
+    query_str = "word " * 80
+    start = query_str.index("word", 200)
+    positions = [(start, start + len("word"))]
+
+    result = format_query_string_positions(query_str, positions, color=Colors.ORANGE)
+
+    assert f"{Colors.ORANGE}word{Colors.END}" in result
+    assert f"{Colors.GREY}[...]{Colors.END}" in result
+
+
 def test_field() -> None:
     """Test search field."""
 

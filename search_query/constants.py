@@ -634,7 +634,6 @@ search-query upgrade search_query.json --to 2.0.0
     # PubMed
     # -------------------------------------------------------
 
-
     NESTED_QUERY_WITH_FIELD = (
         "PUBMED_0001",
         "nested-query-with-field",

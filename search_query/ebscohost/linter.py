@@ -317,65 +317,92 @@ class EBSCOQueryStringLinter(QueryStringLinter):
                     )
 
                 is_term_start = index == 0 or query.value[:index].strip('"').isspace()
-                is_term_end = (
-                    index == len(query.value) - 1
-                    or query.value[index:].strip('"').isspace()
-                )
-
                 if wildcard_value == "*":
-                    if is_term_start:
-                        self.add_message(
-                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                            positions=[position],
-                            details="Wildcard at the beginning of a term has no effect.",
-                            fatal=False,
-                        )
-                    elif not query.value[index - 1] == " ":
-                        leading_char_count = 0
-                        prev = wildcard_value
-                        for c in reversed(query.value[:index]):
-                            if c in ' "' or leading_char_count >= 3:
-                                break
-                            if c == "*" or (c in "#?" and prev in "#?"):
-                                # Count multiple # or ? wildcards in a row as one char, skip * wildcards.
-                                continue
-                            leading_char_count += 1
-                            prev = c
-                        if leading_char_count < 3:
-                            self.add_message(
-                                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                                positions=[position],
-                                details="EBSCOHost documentation recommends using at least three characters before *. Shorter prefixes may yield inconsistent results.",
-                                fatal=False,
-                            )
-
+                    self._check_asterisk_wildcard(query, position, index, is_term_start)
                 if wildcard_value == "?":
-                    if is_term_start:
-                        self.add_message(
-                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                            positions=[position],
-                            details="Wildcard at the beginning of a term has no effect.",
-                            fatal=False,
-                        )
-                    if is_term_end and query.value[index - 1] != "#":
-                        self.add_message(
-                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                            positions=[position],
-                            details="Trailing ? is interpreted as a literal question mark, not a wildcard. Use #? to force wildcard behavior.",
-                            fatal=False,
-                        )
-
+                    self._check_question_mark_wildcard(query, position, index)
                 if wildcard_value == "#":
-                    if is_term_start:
-                        self.add_message(
-                            QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
-                            positions=[position],
-                            details="Wildcard beginning of a term has no effect.",
-                            fatal=False,
-                        )
+                    self._check_hash_wildcard(position, is_term_start)
 
         for child in query.children:
             self.check_unsupported_wildcards(child)
+
+    def _check_asterisk_wildcard(
+        self, query: Query, position: tuple[int, int], index: int, is_term_start: bool
+    ) -> None:
+        if is_term_start:
+            self.add_message(
+                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                positions=[position],
+                details="Wildcard at the beginning of a term has no effect.",
+                fatal=False,
+            )
+            return
+
+        if query.value[index - 1] == " ":
+            return
+
+        leading_char_count = 0
+        prev = "*"
+        for char in reversed(query.value[:index]):
+            if char in ' "' or leading_char_count >= 3:
+                break
+            if char == "*" or (char in "#?" and prev in "#?"):
+                # Repeated # or ? wildcards count once; skip * wildcards.
+                continue
+            leading_char_count += 1
+            prev = char
+
+        if leading_char_count < 3:
+            self.add_message(
+                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                positions=[position],
+                details=(
+                    "EBSCOHost documentation recommends using at least three "
+                    "characters before *. Shorter prefixes may yield inconsistent "
+                    "results."
+                ),
+                fatal=False,
+            )
+
+    def _check_question_mark_wildcard(
+        self,
+        query: Query,
+        position: tuple[int, int],
+        index: int,
+    ) -> None:
+        is_term_start = index == 0 or query.value[:index].strip('"').isspace()
+        is_term_end = (
+            index == len(query.value) - 1 or query.value[index:].strip('"').isspace()
+        )
+        if is_term_start:
+            self.add_message(
+                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                positions=[position],
+                details="Wildcard at the beginning of a term has no effect.",
+                fatal=False,
+            )
+        if is_term_end and query.value[index - 1] != "#":
+            self.add_message(
+                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                positions=[position],
+                details=(
+                    "Trailing ? is interpreted as a literal question mark, not a "
+                    "wildcard. Use #? to force wildcard behavior."
+                ),
+                fatal=False,
+            )
+
+    def _check_hash_wildcard(
+        self, position: tuple[int, int], is_term_start: bool
+    ) -> None:
+        if is_term_start:
+            self.add_message(
+                QueryErrorCode.EBSCO_WILDCARD_UNSUPPORTED,
+                positions=[position],
+                details="Wildcard beginning of a term has no effect.",
+                fatal=False,
+            )
 
     def _get_generic_field_set(self, value: str) -> set:
         return syntax_str_to_generic_field_set(value)
