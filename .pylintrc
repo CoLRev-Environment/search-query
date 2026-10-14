@@ -1,5 +1,8 @@
 [MAIN]
 extension-pkg-allow-list=lxml.etree
 
+[MESSAGES CONTROL]
+disable=duplicate-code
+
 [BASIC]
 class-rgx=^(?:[A-Z](?:[a-z0-9]+|[A-Z]+))+(?:_v\d+)?$
