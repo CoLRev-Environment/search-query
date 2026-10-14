@@ -189,7 +189,7 @@ class PubmedQueryStringLinter(QueryStringLinter):
                     if query.position:
                         positions = [(query.position[0] + i, query.position[0] + i + 1)]
                     self.add_message(
-                        QueryErrorCode.CHARACTER_REPLACEMENT,
+                        QueryErrorCode.PUBMED_INVALID_CHARACTER,
                         positions=positions,
                         details=details,
                     )

@@ -634,7 +634,6 @@ search-query upgrade search_query.json --to 2.0.0
     # PubMed
     # -------------------------------------------------------
 
-    # Note: PubMed does not have INVALID_CHARACTER, but CHARACTER_REPLACEMENT
 
     NESTED_QUERY_WITH_FIELD = (
         "PUBMED_0001",
@@ -657,6 +656,7 @@ search-query upgrade search_query.json --to 2.0.0
 """,
     )
 
+    # Note: PubMed does not have INVALID_CHARACTER, but CHARACTER_REPLACEMENT
     PUBMED_INVALID_CHARACTER = (
         "PUBMED_0002",
         "invalid-character",
