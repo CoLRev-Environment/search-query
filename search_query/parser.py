@@ -63,6 +63,9 @@ def get_platform(platform_str: str) -> str:
     if platform_str.startswith("pubmed"):
         return PLATFORM.PUBMED.value
 
+    if platform_str in {"aisel", "ais elibrary", "ais e-library"}:
+        return PLATFORM.AISEL.value
+
     if platform_str in ["embase.com", "embase"]:
         return "embase"
     if platform_str in ["medline"]:
