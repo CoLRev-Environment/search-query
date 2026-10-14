@@ -63,6 +63,9 @@ def get_platform(platform_str: str) -> str:
     if platform_str.startswith("pubmed"):
         return PLATFORM.PUBMED.value
 
+    if platform_str.startswith("crossref"):
+        return PLATFORM.CROSSREF.value
+
     if platform_str in ["embase.com", "embase"]:
         return "embase"
     if platform_str in ["medline"]:
