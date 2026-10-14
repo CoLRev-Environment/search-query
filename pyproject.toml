@@ -70,9 +70,6 @@ packages = ["search_query"]
 [tool.hatch.build.targets.sdist]
 include = ["search_query/**", "LICENSE", "README.md", "pyproject.toml"]
 
-[tool.pylint.MAIN]
-extension-pkg-whitelist = "lxml.etree"
-
 [tool.mypy]
 python_version = 3.8
 warn_unused_configs = true
