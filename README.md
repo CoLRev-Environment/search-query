@@ -117,6 +117,7 @@ This Python package is designed for programmatic and CLI-based use, as well as f
 
 - [LitSonar](https://litsonar.com/)
 - [Polyglot](https://sr-accelerator.com/#/polyglot)
+- [Publish or Perish](https://harzing.com/resources/publish-or-perish)
 
 ## Maintainers
 

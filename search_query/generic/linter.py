@@ -43,6 +43,14 @@ class GenericLinter(QueryStringLinter):
         # Note: generic-to-generic translation is not needed
         return set()  # pragma: no cover
 
+    def _get_generic_field_set(self, value: str) -> set[str]:
+        """Return the generic field as a singleton set."""
+        return {value}
+
+    def _normalize_field(self, value: str) -> str:
+        """Normalize generic field values to their canonical lowercase form."""
+        return value.lower()
+
     def validate_tokens(
         self,
         *,

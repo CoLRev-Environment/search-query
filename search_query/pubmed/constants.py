@@ -21,6 +21,9 @@ SYNTAX_GENERIC_MAP = {
     "[sb]": {Fields.FILTER},
     "[ta]": {Fields.JOURNAL},
     "[mh]": {Fields.MESH_TERM},
+    "[mh:noexp]": {Fields.MESH_TERM},
+    "[mj]": {Fields.MESH_TERM},
+    "[sh]": {Fields.MESH_TERM},
     "[pt]": {Fields.PUBLICATION_TYPE},
     "[tw]": {Fields.TEXT_WORD},
     "[ad]": {Fields.AFFILIATION},
@@ -29,7 +32,7 @@ SYNTAX_GENERIC_MAP = {
 }
 
 YEAR_PUBLISHED_FIELD_REGEX: re.Pattern = re.compile(
-    r"\[dp\]|\[publication date\]|\[pdat\]", re.IGNORECASE
+    r"\[dp\]|\[publication date\]|\[pdat\]|\[Date [-–—] Publication\]", re.IGNORECASE
 )
 
 _RAW_PREPROCESSING_MAP: typing.Dict[str, typing.Union[str, typing.Pattern[str]]] = {
@@ -58,11 +61,10 @@ _RAW_PREPROCESSING_MAP: typing.Dict[str, typing.Union[str, typing.Pattern[str]]]
     "[lastau]": r"\[lastau\]|\[last author name\]",
     "[lid]": r"\[lid\]|\[location id\]",
     "[mhda]": r"\[mhda\]|\[mesh date\]",
-    "[mh]": (
-        r"\[mh\]|\[mesh\]|\[mesh terms\]|\[mesh terms:noexp\]|"
-        r"\[mh:noexp\]|\[mesh:noexp\]|\[mesh major topic\]|"
-        r"\[majr\]|\[mj\]|\[mesh subheading\]|\[subheading\]|\[sh\]"
-    ),
+    "[mh]": r"\[mh\]|\[mesh\]|\[mesh terms\]",
+    "[mh:noexp]": r"\[mh:noexp\]|\[mesh:noexp\]|\[mesh terms:noexp\]",
+    "[mj]": r"\[mj\]|\[majr\]|\[mesh major topic\]",
+    "[sh]": r"\[sh\]|\[subheading\]|\[mesh subheading\]",
     "[lr]": r"\[lr\]|\[modification date\]",
     "[jid]": r"\[jid\]|\[nlm unique id\]",
     "[ot]": r"\[ot\]|\[other term\]",

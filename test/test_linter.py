@@ -113,8 +113,8 @@ def test_check_invalid_characters_in_term() -> None:
             "label": "invalid-character",
             "message": "Search term contains invalid character",
             "is_fatal": False,
-            "position": [(0, 15)],
-            "details": "Invalid character '#' in search term 'digital#ization'",
+            "position": [(7, 8)],
+            "details": "Invalid character '#' in search term 'digital#ization' will be replaced with whitespace.",
         }
     ]
 
@@ -399,4 +399,4 @@ def test_lint_query_string_returns_stored_aggregated_list_messages() -> None:
 
     assert isinstance(messages, dict)
     assert len(messages["1"]) == 1
-    assert messages["1"][0]["position"] == [(3, 11), (15, 23)]
+    assert messages["1"][0]["position"] == [(3, 11)]

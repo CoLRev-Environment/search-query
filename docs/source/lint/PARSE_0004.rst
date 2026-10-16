@@ -9,7 +9,7 @@ PARSE_0004 — invalid-token-sequence
 
 **Problematic query**:
 
-.. code-block:: texts
+.. code-block:: text
 
     # Example: Two operators in a row
     eHealth AND OR digital health
