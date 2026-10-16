@@ -259,15 +259,7 @@ def test_tokenization(query_str: str, expected_tokens: list) -> None:
                     "label": "invalid-token-sequence",
                     "message": "The sequence of tokens is invalid.",
                     "is_fatal": True,
-                    "position": [(3, 12)],
-                    "details": "",
-                },
-                {
-                    "code": "PARSE_0004",
-                    "label": "invalid-token-sequence",
-                    "message": "The sequence of tokens is invalid.",
-                    "is_fatal": True,
-                    "position": [(9, 16)],
+                    "position": [(3, 12), (9, 16)],
                     "details": "",
                 },
                 {
@@ -1124,29 +1116,11 @@ def test_list_parser_case_6() -> None:
                 "label": "operator-capitalization",
                 "message": "Operators should be capitalized",
                 "is_fatal": False,
-                "position": [(319, 321)],
-                "details": "",
-            }
-        ],
-        "2": [
-            {
-                "code": "STRUCT_0002",
-                "label": "operator-capitalization",
-                "message": "Operators should be capitalized",
-                "is_fatal": False,
-                "position": [(266, 268)],
+                "position": [(319, 321), (266, 268), (110, 112)],
                 "details": "",
             }
         ],
         "1": [
-            {
-                "code": "STRUCT_0002",
-                "label": "operator-capitalization",
-                "message": "Operators should be capitalized",
-                "is_fatal": False,
-                "position": [(110, 112)],
-                "details": "",
-            },
             {
                 "code": "QUALITY_0006",
                 "label": "potential-wildcard-use",

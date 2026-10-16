@@ -9,7 +9,6 @@ import search_query.parser
 from search_query.constants import ExitCodes
 from search_query.search_file import load_search_file
 from search_query.search_file import SearchFile
-from search_query.utils import aggregate_linter_messages
 
 if typing.TYPE_CHECKING:
     from search_query.parser_base import QueryParserBase
@@ -76,13 +75,7 @@ def lint_query_string(
 
     parser = _run_parser(search_string, platform=platform, field_general=field_general)
 
-    messages = parser.linter.messages  # type: ignore
-    if isinstance(messages, dict):
-        aggregated: dict = {}
-        for list_position, group in messages.items():
-            aggregated[list_position] = aggregate_linter_messages(group)
-        return aggregated
-    return aggregate_linter_messages(messages)
+    return parser.linter.messages  # type: ignore
 
 
 # pylint: disable=too-many-locals

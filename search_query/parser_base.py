@@ -14,6 +14,7 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
+from search_query.utils import aggregate_linter_messages
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.linter_base import QueryStringLinter, QueryListLinter
@@ -412,6 +413,10 @@ class QueryListParser(QueryParserBase):
 
             if not assigned:
                 self.linter.messages[GENERAL_ERROR_POSITION].append(message)
+        for list_position in self.linter.messages:
+            self.linter.messages[list_position] = aggregate_linter_messages(
+                self.linter.messages[list_position]
+            )
 
     @abstractmethod
     def parse(self) -> Query:
