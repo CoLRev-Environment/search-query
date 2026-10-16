@@ -1180,6 +1180,26 @@ def test_list_parser_case_6() -> None:
     print(list_parser.linter.messages)
     assert list_parser.linter.messages == {
         -1: [],
+        "3": [
+            {
+                "code": "STRUCT_0002",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(319, 321)],
+                "details": "",
+            }
+        ],
+        "2": [
+            {
+                "code": "STRUCT_0002",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(266, 268)],
+                "details": "",
+            }
+        ],
         "1": [
             {
                 "code": "STRUCT_0002",
@@ -1197,26 +1217,6 @@ def test_list_parser_case_6() -> None:
                 "message": "Potential wildcard use",
                 "position": [(83, 88), (92, 98)],
             },
-        ],
-        "2": [
-            {
-                "code": "STRUCT_0002",
-                "label": "operator-capitalization",
-                "message": "Operators should be capitalized",
-                "is_fatal": False,
-                "position": [(266, 268)],
-                "details": "",
-            }
-        ],
-        "3": [
-            {
-                "code": "STRUCT_0002",
-                "label": "operator-capitalization",
-                "message": "Operators should be capitalized",
-                "is_fatal": False,
-                "position": [(319, 321)],
-                "details": "",
-            }
         ],
     }
 

@@ -28,7 +28,7 @@ def _run_parser(
         parser_class = search_query.parser.LIST_PARSERS[platform][version]
 
     else:
-        parser_class = search_query.parser.PARSERS[platform][version]
+        parser_class = search_query.parser.PARSERS[platform][version]  # type: ignore
     parser = parser_class(search_string, field_general=field_general)  # type: ignore
 
     try:
@@ -36,8 +36,8 @@ def _run_parser(
     except Exception:
         assert parser.linter.messages  # type: ignore
 
-    if parser.linter.messages == {-1: []}:
-        parser.linter.messages = {}
+    if parser.linter.messages == {-1: []}:  # type: ignore
+        parser.linter.messages = {}  # type: ignore
     return parser
 
 

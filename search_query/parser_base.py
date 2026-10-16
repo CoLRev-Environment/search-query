@@ -14,6 +14,7 @@ from search_query.constants import OperatorNodeTokenTypes
 from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.query import Query
+from search_query.utils import aggregate_linter_messages
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from search_query.linter_base import QueryStringLinter, QueryListLinter
@@ -534,22 +535,53 @@ class QueryListParser(QueryParserBase):
         if GENERAL_ERROR_POSITION not in self.linter.messages:
             self.linter.messages[GENERAL_ERROR_POSITION] = []
         for message in parser_messages:
-            assigned = False
-            if message["position"] != [(-1, -1)] and message["position"] != []:
-                for level, node in self.query_dict.items():
-                    if (
-                        node["content_pos"][0]
-                        <= message["position"][0][0]
-                        <= node["content_pos"][1]
-                    ):
-                        if level not in self.linter.messages:
-                            self.linter.messages[level] = []
-                        self.linter.messages[level].append(message)
-                        assigned = True
-                        break
-
-            if not assigned:
+            positions = message.get("position") or []
+            if not positions or positions == [(-1, -1)]:
                 self.linter.messages[GENERAL_ERROR_POSITION].append(message)
+                self.linter.messages[
+                    GENERAL_ERROR_POSITION
+                ] = aggregate_linter_messages(
+                    self.linter.messages[GENERAL_ERROR_POSITION]
+                )
+                continue
+
+            # A single parser diagnostic can cover positions in several list
+            # lines (for example, an implicit-precedence warning around the
+            # final combining node). Assign each source position separately so
+            # aggregation never collapses distinct list-item buckets.
+            assigned_positions: typing.Dict[str, list] = {}
+            for position in positions:
+                start = position[0]
+                list_position = next(
+                    (
+                        level
+                        for level, node in self.query_dict.items()
+                        if node["content_pos"][0] <= start <= node["content_pos"][1]
+                    ),
+                    None,
+                )
+                if list_position is None:
+                    continue
+                assigned_positions.setdefault(list_position, []).append(position)
+
+            if not assigned_positions:
+                self.linter.messages[GENERAL_ERROR_POSITION].append(message)
+                self.linter.messages[
+                    GENERAL_ERROR_POSITION
+                ] = aggregate_linter_messages(
+                    self.linter.messages[GENERAL_ERROR_POSITION]
+                )
+                continue
+
+            for list_position, item_positions in assigned_positions.items():
+                if list_position not in self.linter.messages:
+                    self.linter.messages[list_position] = []
+                item_message = dict(message)
+                item_message["position"] = item_positions
+                self.linter.messages[list_position].append(item_message)
+                self.linter.messages[list_position] = aggregate_linter_messages(
+                    self.linter.messages[list_position]
+                )
 
     def adapt_linter_messages_for_list_query(
         self,

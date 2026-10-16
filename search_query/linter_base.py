@@ -21,6 +21,7 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import QuerySyntaxError
+from search_query.utils import aggregate_linter_messages
 from search_query.utils import format_query_string_positions
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -68,7 +69,10 @@ class QueryStringLinter:
         self.field_general = ""
         self.query: typing.Optional[Query] = None
         self.messages: typing.List[dict] = []
-        self.last_read_index = 0
+        self._printed_message_state: typing.Dict[
+            typing.Tuple[typing.Any, ...],
+            typing.Dict[str, typing.List[typing.Any]],
+        ] = {}
         # original_str: to preserve the original query string
         # for error messages, if it is different from query_str
         self.original_str = original_str or query_str
@@ -104,22 +108,40 @@ class QueryStringLinter:
             }
         )
 
+    def _message_key(self, message: dict) -> typing.Tuple[typing.Any, ...]:
+        return _linter_message_key(message)
+
     def print_messages(self) -> None:
         """Print the latest linter messages."""
-        if not self.messages or self.silent:
+        if not self.messages:
             return
-
-        grouped_messages = defaultdict(list)
+        if self.silent:
+            return
         utf_output = str(sys.stdout.encoding).lower().startswith("utf")
-
-        for message in self.messages[self.last_read_index :]:
-            grouped_messages[message["code"]].append(message)
-
-        for code, group in grouped_messages.items():
+        for message in self.messages:
+            message_key = self._message_key(message)
+            positions = list(message.get("position") or [])
+            printed_state = self._printed_message_state.setdefault(
+                message_key, {"positions": [], "details": []}
+            )
+            printed_positions = printed_state["positions"]
+            printed_details = printed_state["details"]
+            new_positions = [pos for pos in positions if pos not in printed_positions]
+            detail = message["details"] or message["message"]
+            new_details = [detail] if detail not in printed_details else []
+            if printed_positions and not new_positions and not new_details:
+                continue
+            printed_state["positions"] = list(
+                dict.fromkeys(printed_positions + new_positions)
+            )
+            printed_state["details"] = list(
+                dict.fromkeys(printed_details + new_details)
+            )
             # Take the first message as representative
-            representative = group[0]
+            representative = message
+            code = message["code"]
 
-            if representative["is_fatal"]:
+            if message["is_fatal"]:
                 color = Colors.RED
                 category = "❌" if utf_output else "X"
                 category += " Fatal"
@@ -131,16 +153,10 @@ class QueryStringLinter:
             print(
                 f"{color}{category}{Colors.END}: " f"{representative['label']} ({code})"
             )
-            consolidated_messages = []
-            for message in group:
-                if message["details"]:
-                    consolidated_messages.append(f"  {message['details']}")
-                else:
-                    consolidated_messages.append(f"  {message['message']}")
-            for item in set(consolidated_messages):
-                _print_bullet_message(item)
+            if new_details:
+                _print_bullet_message(f"  {detail}")
 
-            positions = [pos for message in group for pos in message["position"]]
+            positions = new_positions if printed_positions else positions
             query_info = format_query_string_positions(
                 self.original_str,
                 positions,
@@ -148,7 +164,10 @@ class QueryStringLinter:
             )
             _print_bullet_message(query_info, bullet=" Query:")
 
-        self.last_read_index = len(self.messages)
+    def aggregate_messages(self) -> None:
+        """Aggregate equivalent messages in the stored message list in place."""
+        aggregated_messages = aggregate_linter_messages(self.messages)
+        self.messages[:] = aggregated_messages
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors"""
@@ -157,6 +176,7 @@ class QueryStringLinter:
         # allows us to consolidate messages with the same code or even replace messages
         # This means that we need to raise the exception only once (at the end)
 
+        self.aggregate_messages()
         self.print_messages()
 
         if self.has_fatal_errors():
@@ -1502,7 +1522,13 @@ class QueryListLinter:
         self.parser = parser
         self.messages: dict = {}
         self.string_parser_class = string_parser_class
-        self.last_read_index: typing.Dict[int, int] = {}
+        self._printed_message_state: typing.Dict[
+            int,
+            typing.Dict[
+                typing.Tuple[typing.Any, ...],
+                typing.Dict[str, typing.List[typing.Any]],
+            ],
+        ] = {}
         self.original_query_str = original_query_str
         self.ignore_failing_linter = ignore_failing_linter
 
@@ -1619,11 +1645,29 @@ class QueryListLinter:
     def validate_query_string(self, processed_lines: set[str]) -> None:
         """Verify query string integrity."""
 
+    def _message_key(self, message: dict) -> typing.Tuple[typing.Any, ...]:
+        return _linter_message_key(message)
+
     def has_fatal_errors(self) -> bool:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
 
-    def _print_message_group(self, group: list[dict]) -> None:
+    def aggregate_messages(self) -> None:
+        """Aggregate equivalent stored messages independently for each list item."""
+        aggregated_messages = {
+            list_position: aggregate_linter_messages(messages)
+            for list_position, messages in self.messages.items()
+        }
+        self.messages.clear()
+        self.messages.update(aggregated_messages)
+
+    def _print_message_group(
+        self,
+        group: list[dict],
+        *,
+        positions: typing.Optional[typing.List[tuple[int, int]]] = None,
+        details: typing.Optional[typing.List[str]] = None,
+    ) -> None:
         """Print messages sharing one error code."""
         representative = group[0]
         color = Colors.RED if representative["is_fatal"] else Colors.ORANGE
@@ -1631,14 +1675,19 @@ class QueryListLinter:
         code = representative["code"]
         print(f"{color}{category}{Colors.END}: {representative['label']} ({code})")
 
-        consolidated_messages = []
-        for message in group:
-            detail = message["details"] or message["message"]
-            consolidated_messages.append(f"  {detail}")
-        for item in set(consolidated_messages):
-            _print_bullet_message(item)
+        if details is None:
+            details = list(
+                dict.fromkeys(
+                    message["details"] or message["message"] for message in group
+                )
+            )
+        for detail in details:
+            _print_bullet_message(f"  {detail}")
 
-        positions = [pos for message in group for pos in message["position"]]
+        if positions is None:
+            positions = [
+                pos for message in group for pos in (message.get("position") or [])
+            ]
         query_info = format_query_string_positions(
             self.parser.query_list, positions, color=color
         )
@@ -1649,25 +1698,62 @@ class QueryListLinter:
         """Print the latest linter messages."""
         if not self.messages:
             return
-
-        new_messages = []
+        self.aggregate_messages()
         for list_position, messages in self.messages.items():
-            if list_position not in self.last_read_index:
-                self.last_read_index[list_position] = 0
-            new_messages.extend(messages[self.last_read_index[list_position] :])
-            self.last_read_index[list_position] += len(messages)
+            printed_state_by_key = self._printed_message_state.setdefault(
+                list_position, {}
+            )
+            grouped_messages = defaultdict(list)
+            for message in messages:
+                grouped_messages[message["code"]].append(message)
 
-        grouped_messages = defaultdict(list)
-        str(sys.stdout.encoding).lower().startswith("utf")
-        for message in new_messages:
-            grouped_messages[message["code"]].append(message)
+            for group in grouped_messages.values():
+                by_message_key: typing.DefaultDict[
+                    typing.Tuple[typing.Any, ...], typing.List[dict]
+                ] = defaultdict(list)
+                for message in group:
+                    by_message_key[self._message_key(message)].append(message)
 
-        for group in grouped_messages.values():
-            self._print_message_group(group)
+                for message_key, equivalent_messages in by_message_key.items():
+                    printed_state = printed_state_by_key.setdefault(
+                        message_key, {"positions": [], "details": []}
+                    )
+                    printed_positions = printed_state["positions"]
+                    printed_details = printed_state["details"]
+                    positions = [
+                        position
+                        for message in equivalent_messages
+                        for position in (message.get("position") or [])
+                    ]
+                    new_positions = [
+                        position
+                        for position in positions
+                        if position not in printed_positions
+                    ]
+                    new_details = [
+                        message["details"] or message["message"]
+                        for message in equivalent_messages
+                        if (message["details"] or message["message"])
+                        not in printed_details
+                    ]
+                    if printed_positions and not new_positions and not new_details:
+                        continue
+                    printed_state["positions"] = list(
+                        dict.fromkeys(printed_positions + new_positions)
+                    )
+                    printed_state["details"] = list(
+                        dict.fromkeys(printed_details + new_details)
+                    )
+                    self._print_message_group(
+                        equivalent_messages,
+                        positions=new_positions if printed_positions else positions,
+                        details=new_details if printed_details else None,
+                    )
 
     def check_status(self) -> None:
         """Check the output of the linter and report errors"""
 
+        self.aggregate_messages()
         self.print_messages()
 
         if self.has_fatal_errors():
@@ -1678,6 +1764,17 @@ class QueryListLinter:
                 )
             else:
                 raise ListQuerySyntaxError(self)
+
+
+def _linter_message_key(message: dict) -> typing.Tuple[typing.Any, ...]:
+    """Return message identity without its position(s)."""
+    return (
+        message.get("code"),
+        message.get("label"),
+        message.get("message"),
+        message.get("is_fatal"),
+        message.get("details", ""),
+    )
 
 
 def _print_bullet_message(message: str, indent: int = 2, bullet: str = "-") -> None:

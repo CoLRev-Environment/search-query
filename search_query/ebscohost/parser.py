@@ -380,7 +380,6 @@ class EBSCOParser(QueryStringParser):
         query = self.parse_query_tree(self.tokens)
         self.linter.validate_query_tree(query)
         self.linter.check_status()
-
         query.set_platform_unchecked(PLATFORM.EBSCO.value, silent=True)
 
         return query
