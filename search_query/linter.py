@@ -76,7 +76,13 @@ def lint_query_string(
 
     parser = _run_parser(search_string, platform=platform, field_general=field_general)
 
-    return aggregate_linter_messages(parser.linter.messages)  # type: ignore
+    messages = parser.linter.messages  # type: ignore
+    if isinstance(messages, dict):
+        aggregated: dict = {}
+        for list_position, group in messages.items():
+            aggregated[list_position] = aggregate_linter_messages(group)
+        return aggregated
+    return aggregate_linter_messages(messages)
 
 
 # pylint: disable=too-many-locals

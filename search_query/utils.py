@@ -143,18 +143,10 @@ def aggregate_linter_messages(
         )
 
         if key not in message_index:
-            # Copy the message so we don't mutate the original list.
-            copied_message = {
-                "code": message.get("code"),
-                "label": message.get("label"),
-                "message": message.get("message"),
-                "is_fatal": message.get("is_fatal"),
-                "details": message.get("details", ""),
-                "position": None,
-            }
-
-            if message.get("position") is not None:
-                copied_message["position"] = list(message["position"])
+            # Copy the message so aggregation doesn't mutate the original.
+            copied_message = dict(message)
+            if copied_message.get("position") is not None:
+                copied_message["position"] = list(copied_message["position"])
 
             aggregated_messages.append(copied_message)
             message_index[key] = len(aggregated_messages) - 1
@@ -162,11 +154,13 @@ def aggregate_linter_messages(
 
         aggregated_message = aggregated_messages[message_index[key]]
 
-        if aggregated_message["position"] is None or message.get("position") is None:
+        aggregated_positions = aggregated_message.get("position")
+        message_positions = message.get("position")
+        if aggregated_positions is None or message_positions is None:
             continue
 
-        for position in message["position"]:
-            if position not in aggregated_message["position"]:
-                aggregated_message["position"].append(position)
+        for position in message_positions:
+            if position not in aggregated_positions:
+                aggregated_positions.append(position)
 
     return aggregated_messages

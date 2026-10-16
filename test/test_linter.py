@@ -4,6 +4,8 @@ from search_query.constants import PLATFORM
 from search_query.constants import QueryErrorCode
 from search_query.constants import Token
 from search_query.constants import TokenTypes
+from search_query.linter import lint_query_string
+from search_query.linter_base import QueryListLinter
 from search_query.linter_base import QueryStringLinter
 from search_query.query_and import AndQuery
 from search_query.query_term import Term
@@ -212,3 +214,107 @@ def test_aggregate_linter_messages_combines_positions() -> None:
             "details": "",
         }
     ]
+
+
+def test_aggregate_linter_messages_preserves_fields_and_input() -> None:
+    message = {
+        "code": "STRUCT_0002",
+        "label": "operator-capitalization",
+        "message": "Operators should be capitalized",
+        "is_fatal": False,
+        "position": [(10, 12)],
+        "details": "",
+        "metadata": {"source": "test"},
+    }
+
+    aggregated_messages = aggregate_linter_messages([message])
+
+    assert aggregated_messages == [message]
+    assert aggregated_messages[0] is not message
+    assert aggregated_messages[0]["metadata"] is message["metadata"]
+
+
+def test_aggregate_linter_messages_preserves_missing_position() -> None:
+    message = {
+        "code": "STRUCT_0002",
+        "label": "operator-capitalization",
+        "message": "Operators should be capitalized",
+        "is_fatal": False,
+    }
+
+    assert aggregate_linter_messages([message]) == [message]
+
+
+def test_print_messages_aggregates_duplicate_messages(capsys) -> None:
+    linter = QueryStringLinter("a AND b and c")  # type: ignore
+    message = {
+        "code": "STRUCT_0002",
+        "label": "operator-capitalization",
+        "message": "Operators should be capitalized",
+        "is_fatal": False,
+        "position": [(6, 9)],
+        "details": "Capitalize the operator",
+    }
+    second_message = {**message, "position": [(12, 15)]}
+    linter.messages = [message, second_message]
+
+    linter.print_messages()
+
+    output = capsys.readouterr().out
+    assert output.count("operator-capitalization (STRUCT_0002)") == 1
+    assert output.count("Capitalize the operator") == 1
+    assert "\x1b[93mb a\x1b[0mnd" in output
+    assert "\x1b[93mc\x1b[0m" in output
+    assert linter.messages == [message, second_message]
+
+
+def test_list_linter_print_messages_aggregates_within_item(capsys) -> None:
+    class DummyParser:
+        query_list = "a AND b and c"
+
+    list_linter = QueryListLinter(
+        parser=DummyParser(),  # type: ignore[arg-type]
+        string_parser_class=object,  # type: ignore[arg-type]
+    )
+    list_linter.messages = {
+        1: [
+            {
+                "code": "STRUCT_0002",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(6, 9)],
+                "details": "Capitalize the operator",
+            },
+            {
+                "code": "STRUCT_0002",
+                "label": "operator-capitalization",
+                "message": "Operators should be capitalized",
+                "is_fatal": False,
+                "position": [(12, 15)],
+                "details": "Capitalize the operator",
+            },
+        ]
+    }
+
+    list_linter.print_messages()
+
+    output = capsys.readouterr().out
+    assert output.count("operator-capitalization (STRUCT_0002)") == 1
+    assert output.count("Capitalize the operator") == 1
+
+    aggregated_groups = list_linter._aggregate_messages_for_output(
+        list_linter.messages[1]
+    )
+    assert len(aggregated_groups) == 1
+    assert aggregated_groups[0][0]["position"] == [(6, 9), (12, 15)]
+
+
+def test_lint_query_string_aggregates_list_messages_by_item() -> None:
+    query_list = "1. insomnia OR insomnia\n2. S1 AND S1"
+
+    messages = lint_query_string(query_list, platform="ebscohost")
+
+    assert isinstance(messages, dict)
+    assert len(messages["1"]) == 1
+    assert messages["1"][0]["position"] == [(3, 11), (15, 23)]

@@ -20,6 +20,7 @@ from search_query.constants import Token
 from search_query.constants import TokenTypes
 from search_query.exception import ListQuerySyntaxError
 from search_query.exception import QuerySyntaxError
+from search_query.utils import aggregate_linter_messages
 from search_query.utils import format_query_string_positions
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -111,12 +112,24 @@ class QueryStringLinter:
         grouped_messages = defaultdict(list)
         utf_output = str(sys.stdout.encoding).lower().startswith("utf")
 
-        for message in self.messages[self.last_read_index :]:
-            grouped_messages[message["code"]].append(message)
+        new_messages = self.messages[self.last_read_index :]
+        for message in new_messages:
+            key = (
+                message["code"],
+                message["label"],
+                message["message"],
+                message["is_fatal"],
+                message["details"],
+            )
+            grouped_messages[key].append(message)
 
-        for code, group in grouped_messages.items():
+        for key, group in list(grouped_messages.items()):
+            grouped_messages[key] = aggregate_linter_messages(group)
+
+        for group in grouped_messages.values():
             # Take the first message as representative
             representative = group[0]
+            code = representative["code"]
 
             if representative["is_fatal"]:
                 color = Colors.RED
@@ -139,7 +152,9 @@ class QueryStringLinter:
             for item in set(consolidated_messages):
                 _print_bullet_message(item)
 
-            positions = [pos for message in group for pos in message["position"]]
+            positions = [
+                pos for message in group for pos in (message.get("position") or [])
+            ]
             query_info = format_query_string_positions(
                 self.original_str,
                 positions,
@@ -1572,6 +1587,22 @@ class QueryListLinter:
         """Check if there are any fatal errors."""
         return any(d["is_fatal"] for e in self.messages.values() for d in e)
 
+    def _aggregate_messages_for_output(
+        self, messages: typing.List[dict]
+    ) -> list[list[dict]]:
+        """Group equivalent messages and merge their positions for display."""
+        grouped_messages = defaultdict(list)
+        for message in messages:
+            key = (
+                message["code"],
+                message["label"],
+                message["message"],
+                message["is_fatal"],
+                message["details"],
+            )
+            grouped_messages[key].append(message)
+        return [aggregate_linter_messages(group) for group in grouped_messages.values()]
+
     # pylint: disable=too-many-branches
     def print_messages(self) -> None:
         """Print the latest linter messages."""
@@ -1584,13 +1615,8 @@ class QueryListLinter:
 
             messages = messages[self.last_read_index[list_position] :]
 
-            grouped_messages = defaultdict(list)
             str(sys.stdout.encoding).lower().startswith("utf")
-
-            for message in messages[self.last_read_index[list_position] :]:
-                grouped_messages[message["code"]].append(message)
-
-            for code, group in grouped_messages.items():
+            for group in self._aggregate_messages_for_output(messages):
                 # Take the first message as representative
                 representative = group[0]
                 code = representative["code"]
@@ -1614,7 +1640,9 @@ class QueryListLinter:
                         consolidated_messages.append(f"  {message['message']}")
                 for item in set(consolidated_messages):
                     _print_bullet_message(item)
-                positions = [pos for message in group for pos in message["position"]]
+                positions = [
+                    pos for message in group for pos in (message.get("position") or [])
+                ]
                 query_info = format_query_string_positions(
                     self.parser.query_list, positions, color=color
                 )
