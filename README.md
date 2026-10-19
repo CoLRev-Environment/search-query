@@ -103,6 +103,21 @@ Bug reports or issues can be submitted via [the issue tracker](https://github.co
 
 Eckhardt, P., Ernst, K., Fleischmann, T., Geßler, A., Schnickmann, K., Thurner, L., and Wagner, G. search-query: An open source Python library for academic search queries. *Journal of Open Source Software*, 11(118), 8775, https://doi.org/10.21105/joss.08775
 
+Copy BibTeX:
+
+```bibtex
+@article{Eckhardt2026,
+  author  = {Eckhardt, P. and Ernst, K. and Fleischmann, T. and Geßler, A. and Schnickmann, K. and Thurner, L. and Wagner, G.},
+  title   = {search-query: An open source Python library for academic search queries},
+  journal = {Journal of Open Source Software},
+  volume  = {11},
+  number  = {118},
+  pages   = {8775},
+  year    = {2026},
+  doi     = {10.21105/joss.08775}
+}
+```
+
 The package was developed as part of Bachelor's theses:
 
 - Fleischmann, T. (2025). Advances in literature search queries: Validation and translation of search strings for EBSCOHost. Otto-Friedrich-University of Bamberg.
