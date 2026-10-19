@@ -5,12 +5,12 @@
 
 <div align="center">
 
+[![JOSS Publication](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9/status.svg)](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9)<br>
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CoLRev-Environment/search-query/.github%2Fworkflows%2Ftests.yml?label=tests)](https://github.com/CoLRev-Environment/search-query/actions/workflows/tests.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
 ![Coverage](https://raw.githubusercontent.com/CoLRev-Environment/search-query/main/test/coverage.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/search-query?color=blue)](https://pypi.org/project/search-query/)
-[![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)
-[![status](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9/status.svg)](https://joss.theoj.org/papers/ea1fcafb8f80fa98bcbd857cf1cfada9)
+[![GitHub License](https://img.shields.io/github/license/CoLRev-Environment/search-query)](https://github.com/CoLRev-Environment/search-query/releases/)<br>
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/CoLRev-Environment/search-query/HEAD?labpath=docs%2Fsource%2Fdemo.ipynb)
 [![Web GUI](https://img.shields.io/badge/Web%20GUI-Open-6f42c1)](https://colrev-environment.github.io/search-query-gui/)
 
