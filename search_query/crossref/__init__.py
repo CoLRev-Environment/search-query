@@ -1,0 +1,1 @@
+"""Crossref API query support."""

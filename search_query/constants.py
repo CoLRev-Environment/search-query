@@ -21,6 +21,7 @@ class PLATFORM(Enum):
     WOS = "wos"
     PUBMED = "pubmed"
     EBSCO = "ebscohost"
+    CROSSREF = "crossref"
     GENERIC = "generic"
     STRUCTURED = "structured"
     PRE_NOTATION = "pre_notation"
